@@ -1,0 +1,172 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+
+const now = new Date();
+const currentMonth = now.getMonth() + 1; // 1..12
+const currentYear = now.getFullYear();
+
+const months = [
+  { v: 1, n: 'Ianuarie' }, { v: 2, n: 'Februarie' }, { v: 3, n: 'Martie' },
+  { v: 4, n: 'Aprilie' }, { v: 5, n: 'Mai' }, { v: 6, n: 'Iunie' },
+  { v: 7, n: 'Iulie' }, { v: 8, n: 'August' }, { v: 9, n: 'Septembrie' },
+  { v: 10, n: 'Octombrie' }, { v: 11, n: 'Noiembrie' }, { v: 12, n: 'Decembrie' },
+];
+const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
+---
+
+<AppLayout title="Declarații" activeTab="declaratii">
+  <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <p class="th-eyebrow">Rapoarte · Fiscal</p>
+      <h1 class="th-h1 mt-1">Declarații fiscale</h1>
+      <p class="text-sm text-[#6B6B68] mt-1">Generează fișierele pentru depunere la ANAF pe baza facturilor emise și a cheltuielilor. Verifică întotdeauna rezultatul în PDF-ul inteligent ANAF înainte de depunere.</p>
+    </div>
+    <a href="/app/facturare/rapoarte" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la rapoarte</a>
+  </div>
+
+  <!-- Period picker -->
+  <div class="bg-white border border-[#E8E8E4] rounded-xl p-4 mb-6">
+    <p class="text-[10px] uppercase tracking-wider text-[#8A8A85] mb-3">Perioada de raportare</p>
+    <div class="flex items-end gap-3 flex-wrap">
+      <div>
+        <label class="block text-xs text-[#6B6B68] mb-1.5" for="decl-month">Luna</label>
+        <select id="decl-month" class="h-11 px-4 border border-[#E8E8E4] rounded-xl text-sm bg-white min-w-[160px]">
+          {months.map((m) => (
+            <option value={m.v} selected={m.v === currentMonth}>{m.n}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs text-[#6B6B68] mb-1.5" for="decl-year">An</label>
+        <select id="decl-year" class="h-11 px-4 border border-[#E8E8E4] rounded-xl text-sm bg-white min-w-[120px]">
+          {years.map((y) => (
+            <option value={y} selected={y === currentYear}>{y}</option>
+          ))}
+        </select>
+      </div>
+      <p class="text-[11px] text-[#8A8A85] pb-3">Declarațiile lunare se generează pentru luna și anul selectate.</p>
+    </div>
+  </div>
+
+  <!-- Declaration cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <!-- D394 -->
+    <div class="bg-white border border-[#E8E8E4] rounded-xl p-5 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[10px] uppercase tracking-wider text-[#8A8A85] font-mono">D394</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#FAFAF8] border border-[#E8E8E4] text-[#6B6B68]">XML</span>
+      </div>
+      <h3 class="text-base font-bold text-[#0A0A0A]">Declarația informativă 394</h3>
+      <p class="text-sm text-[#6B6B68] mt-1 flex-1">Livrările și achizițiile pe teritoriul național, grupate pe partener (CUI), cu baza impozabilă și TVA.</p>
+      <button type="button" data-decl="d394" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl bg-[#0A0A0A] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
+        <span class="decl-label">Descarcă</span>
+      </button>
+    </div>
+
+    <!-- D300 -->
+    <div class="bg-white border border-[#E8E8E4] rounded-xl p-5 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[10px] uppercase tracking-wider text-[#8A8A85] font-mono">D300</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#FAFAF8] border border-[#E8E8E4] text-[#6B6B68]">XML / CSV</span>
+      </div>
+      <h3 class="text-base font-bold text-[#0A0A0A]">Decont TVA (D300)</h3>
+      <p class="text-sm text-[#6B6B68] mt-1 flex-1">TVA colectată din facturi minus TVA deductibilă din cheltuieli, cu soldul de plată sau de recuperat.</p>
+      <div class="mt-4 flex gap-2">
+        <button type="button" data-decl="d300" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl bg-[#0A0A0A] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
+          <span class="decl-label">Descarcă XML</span>
+        </button>
+        <button type="button" data-decl="d300-csv" class="decl-dl inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl bg-white border border-[#E8E8E4] text-[#0A0A0A] text-sm font-medium hover:bg-[#FAFAF8] disabled:opacity-50">
+          <span class="decl-label">CSV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SAF-T D406 link -->
+    <div class="bg-white border border-[#E8E8E4] rounded-xl p-5 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[10px] uppercase tracking-wider text-[#8A8A85] font-mono">D406</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#FAFAF8] border border-[#E8E8E4] text-[#6B6B68]">SAF-T XML</span>
+      </div>
+      <h3 class="text-base font-bold text-[#0A0A0A]">SAF-T (D406)</h3>
+      <p class="text-sm text-[#6B6B68] mt-1 flex-1">Fișierul standard de audit fiscal pentru luna selectată (MasterFiles + facturi emise).</p>
+      <button type="button" data-decl="d406" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl bg-white border border-[#E8E8E4] text-[#0A0A0A] text-sm font-medium hover:bg-[#FAFAF8] disabled:opacity-50">
+        <span class="decl-label">Descarcă</span>
+      </button>
+    </div>
+  </div>
+
+  <p id="decl-error" class="text-sm text-[#B91C1C] mt-4 hidden"></p>
+
+  <div class="mt-8 text-xs text-[#8A8A85] leading-relaxed max-w-2xl">
+    <p><strong>Notă.</strong> Fișierele sunt generate automat din datele tale (facturi emise și cheltuieli înregistrate). Structura urmează declarațiile ANAF, dar versiunile schemei se schimbă periodic. Validează rezultatul în aplicația PDF inteligent ANAF înainte de depunere.</p>
+  </div>
+</AppLayout>
+
+<script is:inline>
+  (function () {
+    const monthEl = document.getElementById('decl-month');
+    const yearEl = document.getElementById('decl-year');
+    const errEl = document.getElementById('decl-error');
+
+    function endpointFor(kind, month, year) {
+      const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+      const mm = String(month).padStart(2, '0');
+      const from = year + '-' + mm + '-01';
+      const to = year + '-' + mm + '-' + String(lastDay).padStart(2, '0');
+      switch (kind) {
+        case 'd394': return '/api/invoicing/reports/d394?month=' + month + '&year=' + year;
+        case 'd300': return '/api/invoicing/reports/d300?month=' + month + '&year=' + year;
+        case 'd300-csv': return '/api/invoicing/reports/d300?month=' + month + '&year=' + year + '&format=csv';
+        case 'd406': return '/api/invoicing/reports/saft-d406?from=' + from + '&to=' + to + '&type=L';
+        default: return null;
+      }
+    }
+
+    async function download(btn) {
+      const kind = btn.getAttribute('data-decl');
+      const month = parseInt(monthEl.value, 10);
+      const year = parseInt(yearEl.value, 10);
+      const endpoint = endpointFor(kind, month, year);
+      if (!endpoint) return;
+
+      const label = btn.querySelector('.decl-label');
+      const original = label ? label.textContent : '';
+      btn.disabled = true;
+      if (label) label.textContent = 'Se generează...';
+      errEl.classList.add('hidden');
+
+      try {
+        const res = await fetch(endpoint);
+        if (!res.ok) {
+          let msg = 'Eroare la generare (' + res.status + ')';
+          try { const d = await res.json(); if (d && d.error) msg = d.error; } catch (e) {}
+          errEl.textContent = msg;
+          errEl.classList.remove('hidden');
+          return;
+        }
+        const blob = await res.blob();
+        const cd = res.headers.get('Content-Disposition') || '';
+        const m = cd.match(/filename="?([^"]+)"?/);
+        const fname = m ? m[1] : (kind + '_' + year + '_' + month + '.xml');
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fname;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+      } catch (e) {
+        errEl.textContent = 'Eroare de conexiune. Încearcă din nou.';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false;
+        if (label) label.textContent = original;
+      }
+    }
+
+    document.querySelectorAll('.decl-dl').forEach(function (btn) {
+      btn.addEventListener('click', function () { download(btn); });
+    });
+  })();
+</script>

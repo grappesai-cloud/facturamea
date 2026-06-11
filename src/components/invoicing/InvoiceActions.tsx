@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat } from 'lucide-react';
+import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat, CreditCard } from 'lucide-react';
 
 export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId }: {
   invoiceId: string;
@@ -16,11 +16,13 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   const [showPayModal, setShowPayModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [payLinkUrl, setPayLinkUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const remaining = totalCents - paidCents;
   const canRecordPayment = kind === 'factura' && status !== 'paid' && status !== 'voided' && status !== 'draft';
+  const canPayLink = kind === 'factura' && remaining > 0 && status !== 'voided' && status !== 'draft';
   const canSend = status !== 'draft';
   const canSubmitSpv = (kind === 'factura' || kind === 'storno') && status !== 'draft';
   const canStorno = kind === 'factura' && status !== 'draft' && status !== 'voided';
@@ -38,6 +40,17 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   };
 
   const doCopy = () => { window.location.href = `/app/facturare/emite?kind=${kind}&from=${invoiceId}`; };
+
+  const doPayLink = async () => {
+    setBusy(true); setError('');
+    try {
+      const res = await fetch(`/api/invoicing/invoices/${invoiceId}/payment-link`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Eroare'); return; }
+      setPayLinkUrl(data.url);
+      window.open(data.url, '_blank');
+    } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
+  };
 
   const doRecur = async () => {
     if (!confirm('Creezi un abonament de facturare recurentă pe baza acestei facturi (frecvență lunară)? O poți edita apoi în Recurente.')) return;
@@ -133,6 +146,12 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
           <Receipt className="w-4 h-4 mr-1.5" /> Înregistrează încasare
         </Button>
       )}
+      {canPayLink && (
+        <Button variant="outline" size="sm" disabled={busy} onClick={doPayLink}>
+          {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <CreditCard className="w-4 h-4 mr-1.5" />}
+          Link de plată
+        </Button>
+      )}
       {canSubmitSpv && (
         <Button variant="outline" size="sm" disabled={busy} onClick={submitSpv}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Send className="w-4 h-4 mr-1.5" />}
@@ -163,6 +182,9 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
 
       {shareUrl && (
         <ShareModal url={shareUrl} invoiceId={invoiceId} onClose={() => setShareUrl(null)} onRevoke={() => setShareUrl(null)} />
+      )}
+      {payLinkUrl && (
+        <PayLinkModal url={payLinkUrl} onClose={() => setPayLinkUrl(null)} />
       )}
       {showPayModal && (
         <PaymentModal
@@ -266,6 +288,29 @@ function ShareModal({ url, invoiceId, onClose, onRevoke }: { url: string; invoic
           <Button variant="outline" disabled={revoking} onClick={revoke} className="text-[#B91C1C] border-[#F0C9C9] hover:bg-[#FFF5F5]">
             {revoking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Revocă linkul'}
           </Button>
+          <Button variant="outline" onClick={onClose}>Închide</Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PayLinkModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  };
+  return (
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-bold text-[#0A0A0A] mb-2 flex items-center gap-2"><CreditCard className="w-5 h-5" /> Link de plată online</h3>
+        <p className="text-xs text-[#6B6B68] mb-4">Trimite acest link clientului ca să plătească factura cu cardul. Încasarea se înregistrează automat când plata reușește.</p>
+        <div className="flex gap-2">
+          <Input value={url} readOnly className="flex-1 font-mono text-xs" />
+          <Button size="sm" onClick={copy}>{copied ? 'Copiat!' : 'Copiază link'}</Button>
+        </div>
+        <div className="flex justify-end gap-2 mt-5">
+          <Button variant="outline" onClick={() => window.open(url, '_blank')}>Deschide pagina de plată</Button>
           <Button variant="outline" onClick={onClose}>Închide</Button>
         </div>
       </div>

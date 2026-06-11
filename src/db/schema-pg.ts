@@ -1882,6 +1882,10 @@ export const transportInvoices = pgTable('transport_invoices', {
   // Single optional attachment (Oblio "Atașează document").
   attachmentUrl: text('attachment_url'),
   attachmentName: varchar('attachment_name', { length: 200 }),
+  // Online payment link (Stripe) so the client can pay the invoice by card.
+  paymentLinkUrl: text('payment_link_url'),
+  paymentLinkId: varchar('payment_link_id', { length: 80 }),
+  paymentLinkStatus: varchar('payment_link_status', { length: 16 }), // active | paid
   // Notes
   notes: text('notes'),
   createdAt: timestamp('created_at').defaultNow(),
@@ -2472,4 +2476,132 @@ export const importJobs = pgTable('import_jobs', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [
   index('idx_import_jobs_company').on(table.companyId),
+]);
+
+// ═══════════════════════════════════════════════════════════════════════
+// facturamea — round 2: inbound e-Factura, e-Transport, bank reconciliation,
+// online payment links, e-commerce connectors, courier shipments.
+// ═══════════════════════════════════════════════════════════════════════
+
+// Received e-Factura messages pulled from ANAF SPV (facturi primite).
+export const efacturaInbox = pgTable('efactura_inbox', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  anafMsgId: varchar('anaf_msg_id', { length: 64 }).notNull(),
+  msgType: varchar('msg_type', { length: 32 }),       // FACTURA PRIMITA | ERORI | etc.
+  fromCif: varchar('from_cif', { length: 20 }),
+  supplierName: varchar('supplier_name', { length: 200 }),
+  detail: text('detail'),
+  xml: text('xml'),
+  totalCents: integer('total_cents'),
+  currency: varchar('currency', { length: 5 }).default('RON'),
+  issueDate: date('issue_date', { mode: 'string' }),
+  status: varchar('status', { length: 20 }).notNull().default('nou'), // nou | importat | ignorat
+  importedExpenseId: text('imported_expense_id'),
+  receivedAt: timestamp('received_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('uq_efactura_inbox_msg').on(table.companyId, table.anafMsgId),
+  index('idx_efactura_inbox_company').on(table.companyId),
+]);
+
+// e-Transport declarations (UIT) created from the app.
+export const etransportDeclarations = pgTable('etransport_declarations', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  uit: varchar('uit', { length: 64 }),
+  spvIndex: varchar('spv_index', { length: 64 }),
+  operationType: varchar('operation_type', { length: 40 }),   // AIC | transport intern | etc.
+  senderName: varchar('sender_name', { length: 200 }),
+  recipientName: varchar('recipient_name', { length: 200 }),
+  loadingAddress: text('loading_address'),
+  unloadingAddress: text('unloading_address'),
+  vehiclePlate: varchar('vehicle_plate', { length: 20 }),
+  goodsJson: text('goods_json'),                              // line items snapshot
+  totalValueCents: integer('total_value_cents'),
+  status: varchar('status', { length: 20 }).notNull().default('draft'), // draft | sent | confirmed | error
+  errorText: text('error_text'),
+  xml: text('xml'),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_etransport_company').on(table.companyId),
+]);
+
+// Bank accounts + imported statement transactions (reconciliere bancară).
+export const bankAccounts = pgTable('bank_accounts', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 120 }).notNull(),
+  iban: varchar('iban', { length: 40 }),
+  bank: varchar('bank', { length: 80 }),
+  currency: varchar('currency', { length: 5 }).notNull().default('RON'),
+  balanceCents: integer('balance_cents').default(0),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_bank_accounts_company').on(table.companyId),
+]);
+
+export const bankTransactions = pgTable('bank_transactions', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  accountId: text('account_id').notNull().references(() => bankAccounts.id, { onDelete: 'cascade' }),
+  bookingDate: date('booking_date', { mode: 'string' }),
+  amountCents: integer('amount_cents').notNull(),   // + incoming, - outgoing
+  currency: varchar('currency', { length: 5 }).notNull().default('RON'),
+  description: text('description'),
+  counterparty: varchar('counterparty', { length: 200 }),
+  counterpartyIban: varchar('counterparty_iban', { length: 40 }),
+  reference: varchar('reference', { length: 120 }),
+  reconciled: boolean('reconciled').notNull().default(false),
+  matchedType: varchar('matched_type', { length: 16 }),  // invoice | expense
+  matchedId: text('matched_id'),
+  externalId: varchar('external_id', { length: 120 }),   // dedupe key from statement
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_bank_tx_company').on(table.companyId),
+  index('idx_bank_tx_account').on(table.accountId),
+  index('idx_bank_tx_reconciled').on(table.companyId, table.reconciled),
+]);
+
+// E-commerce / external integrations (WooCommerce, Shopify, PrestaShop, custom).
+export const integrationConnections = pgTable('integration_connections', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 40 }).notNull(), // woocommerce | shopify | prestashop | custom
+  label: varchar('label', { length: 120 }),
+  baseUrl: text('base_url'),
+  configEnc: text('config_enc'),                 // encrypted API creds (when needed)
+  webhookSecret: varchar('webhook_secret', { length: 64 }),
+  autoInvoice: boolean('auto_invoice').default(true),
+  isActive: boolean('is_active').default(true),
+  lastEventAt: timestamp('last_event_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_integration_conn_company').on(table.companyId),
+  uniqueIndex('uq_integration_webhook').on(table.webhookSecret),
+]);
+
+// Courier shipments / AWB (Sameday, FAN, DPD, ...).
+export const shipments = pgTable('shipments', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  provider: varchar('provider', { length: 24 }).notNull(), // sameday | fan | dpd | cargus
+  awb: varchar('awb', { length: 64 }),
+  invoiceId: text('invoice_id').references(() => transportInvoices.id, { onDelete: 'set null' }),
+  recipientName: varchar('recipient_name', { length: 200 }),
+  recipientPhone: varchar('recipient_phone', { length: 40 }),
+  address: text('address'),
+  city: varchar('city', { length: 120 }),
+  county: varchar('county', { length: 80 }),
+  parcels: integer('parcels').default(1),
+  weightKg: doublePrecision('weight_kg'),
+  codCents: integer('cod_cents').default(0),          // ramburs
+  status: varchar('status', { length: 24 }).default('draft'),
+  labelUrl: text('label_url'),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_shipments_company').on(table.companyId),
 ]);

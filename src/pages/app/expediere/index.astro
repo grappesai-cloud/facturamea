@@ -1,0 +1,157 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ShipmentForm from '../../../components/expediere/ShipmentForm';
+import { db } from '../../../db';
+import { shipments } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select()
+    .from(shipments)
+    .where(eq(shipments.companyId, companyId))
+    .orderBy(desc(shipments.createdAt))
+    .limit(150);
+} catch (e) {
+  /* DB not provisioned */
+}
+
+const PROVIDER_LABELS: Record<string, string> = {
+  sameday: 'Sameday',
+  fan: 'FAN Courier',
+  dpd: 'DPD',
+  cargus: 'Cargus',
+};
+
+function statusBadge(status: string | null) {
+  switch (status) {
+    case 'generated':
+    case 'awb':
+      return { label: 'AWB generat', cls: 'bg-[#E7F7EC] text-[#15803D]' };
+    case 'delivered':
+      return { label: 'Livrat', cls: 'bg-[#EAF2FF] text-[#1D4ED8]' };
+    case 'canceled':
+      return { label: 'Anulat', cls: 'bg-[#FDECEC] text-[#B91C1C]' };
+    default:
+      return { label: 'Ciornă', cls: 'bg-[#F0F0EC] text-[#6B6B68]' };
+  }
+}
+
+const fmtDate = (d: any) => {
+  if (!d) return '—';
+  try {
+    return new Intl.DateTimeFormat('ro-RO', { dateStyle: 'medium' }).format(new Date(d));
+  } catch {
+    return '—';
+  }
+};
+---
+
+<AppLayout title="Expediere — facturamea" activeTab="expediere" breadcrumbTitle="Expediere">
+  <div class="max-w-5xl">
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">Expediere (AWB curier)</h1>
+        <p class="text-[16px] text-[#6B6B68] mt-1.5 leading-relaxed">
+          Pregătește expedierile pentru Sameday, FAN, DPD sau Cargus. Salvăm datele coletului, iar AWB-ul real se
+          generează după conectarea contului de curier.
+        </p>
+      </div>
+      <div id="form-mount">
+        <ShipmentForm client:load />
+      </div>
+    </div>
+
+    <!-- Connect-account hint -->
+    <div class="mb-4 flex flex-wrap items-center gap-3 px-4 py-3 bg-[#FFF3E9] border border-[#FF5C00]/25 rounded-xl">
+      <span class="w-2 h-2 rounded-full bg-[#FF5C00]"></span>
+      <p class="text-[15px] text-[#0A0A0A]">
+        Conectează contul de curier ca să generezi AWB real. Deocamdată expedierile sunt salvate ca ciorne.
+      </p>
+    </div>
+
+    <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
+      {rows.length === 0 ? (
+        <div class="px-5 py-12 text-center text-[15px] text-[#6B6B68]">Nicio expediere încă. Apasă „AWB nou".</div>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="w-full text-[15px]">
+            <thead>
+              <tr class="text-left text-[12px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+                <th class="px-5 py-3 font-medium">Curier</th>
+                <th class="px-5 py-3 font-medium">Destinatar</th>
+                <th class="px-5 py-3 font-medium">Localitate</th>
+                <th class="px-5 py-3 font-medium text-center">Colete</th>
+                <th class="px-5 py-3 font-medium text-right">Ramburs</th>
+                <th class="px-5 py-3 font-medium">AWB</th>
+                <th class="px-5 py-3 font-medium">Status</th>
+                <th class="px-5 py-3 font-medium">Data</th>
+                <th class="px-5 py-3 font-medium text-right">Acțiune</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((s) => {
+                const badge = statusBadge(s.status);
+                return (
+                  <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors" data-row data-id={s.id}>
+                    <td class="px-5 py-3.5 font-semibold text-[#0A0A0A]">{PROVIDER_LABELS[s.provider] || s.provider}</td>
+                    <td class="px-5 py-3.5 text-[#3D3D3A]">
+                      {s.recipientName}
+                      {s.recipientPhone && <span class="block text-[13px] text-[#8A8A85]">{s.recipientPhone}</span>}
+                    </td>
+                    <td class="px-5 py-3.5 text-[#3D3D3A]">{[s.city, s.county].filter(Boolean).join(', ') || '—'}</td>
+                    <td class="px-5 py-3.5 text-center text-[#3D3D3A]">{s.parcels || 1}</td>
+                    <td class="px-5 py-3.5 text-right text-[#0A0A0A]">{s.codCents ? ron(s.codCents) : '—'}</td>
+                    <td class="px-5 py-3.5 font-mono text-[#0A0A0A]">{s.awb || '—'}</td>
+                    <td class="px-5 py-3.5">
+                      <span class={`inline-block px-2.5 py-1 rounded-lg text-[13px] font-medium ${badge.cls}`}>
+                        {badge.label}
+                      </span>
+                    </td>
+                    <td class="px-5 py-3.5 text-[#6B6B68]">{fmtDate(s.createdAt)}</td>
+                    <td class="px-5 py-3.5 text-right">
+                      <button
+                        class="delete-shipment px-3 h-10 rounded-xl text-[14px] font-semibold text-[#B91C1C] border border-transparent hover:border-[#B91C1C]/30 transition-colors"
+                        data-id={s.id}
+                      >
+                        Șterge
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('.delete-shipment').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id) return;
+        if (!confirm('Sigur ștergi această expediere?')) return;
+        try {
+          const res = await fetch(`/api/curierat/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            btn.closest('[data-row]')?.remove();
+          } else {
+            alert('Eroare la ștergere.');
+          }
+        } catch {
+          alert('Eroare de rețea.');
+        }
+      });
+    });
+  </script>
+</AppLayout>
