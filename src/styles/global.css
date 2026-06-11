@@ -401,3 +401,39 @@ html[data-fs="125"] { zoom: 1.125; }
   margin: 0 auto;
 }
 @page { size: A4; margin: 12mm; }
+
+/* ════════════════════════════════════════════════════════════════════
+   Comfortable mode — legibility for an older audience (avg. 50+).
+   Upsizes the small arbitrary text utilities used across the app so every
+   page becomes easier to read WITHOUT touching each file. Unlayered + the
+   !important mirror the dark-mode overrides above so these win over Tailwind
+   utilities. Print is exempt (handled by .print-doc rules).
+   ════════════════════════════════════════════════════════════════════ */
+@media screen {
+  .text-\[9px\]    { font-size: 11px !important; }
+  .text-\[10px\]   { font-size: 12px !important; }
+  .text-\[11px\]   { font-size: 13px !important; line-height: 1.45 !important; }
+  .text-\[12px\]   { font-size: 14px !important; line-height: 1.45 !important; }
+  .text-\[12\.5px\]{ font-size: 14.5px !important; line-height: 1.45 !important; }
+  .text-\[13px\]   { font-size: 15px !important; line-height: 1.5 !important; }
+  .text-\[13\.5px\]{ font-size: 15.5px !important; line-height: 1.5 !important; }
+  .text-\[14px\]   { font-size: 16px !important; line-height: 1.5 !important; }
+  .text-\[14\.5px\]{ font-size: 16.5px !important; line-height: 1.5 !important; }
+  .text-\[15px\]   { font-size: 16.5px !important; line-height: 1.5 !important; }
+
+  /* Stronger contrast for faint secondary text. */
+  .text-\[\#8A8A85\] { color: #5c5c58 !important; }
+  .text-\[\#A8A8A4\] { color: #6f6f6b !important; }
+
+  /* Bigger, easier form controls + buttons. */
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  select,
+  textarea {
+    font-size: 16px !important;       /* also stops iOS zoom-on-focus */
+    min-height: 44px;
+  }
+  textarea { min-height: 88px; }
+  button, [role='button'], a.btn { line-height: 1.4; }
+}
+html.th-dark .text-\[\#8A8A85\] { color: #9a978d !important; }
+html.th-dark .text-\[\#A8A8A4\] { color: #8a877d !important; }

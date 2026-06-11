@@ -1,8 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import Breadcrumbs from '../components/Breadcrumbs.astro';
 import CompanySwitcher from '../components/CompanySwitcher';
-import { tFn } from '../lib/i18n';
+import { NAV_MODULES } from '../lib/nav-modules';
 
 interface Props {
   title: string;
@@ -13,703 +12,246 @@ interface Props {
   hideFooter?: boolean;
 }
 
-const { title, activeTab, hideBreadcrumbs, breadcrumbTitle, breadcrumbParent, hideFooter } = Astro.props;
+const { title, hideFooter } = Astro.props;
 const user = Astro.locals.user;
+const company = Astro.locals.company;
 const license = Astro.locals.license;
-const showTrialBanner = license && license.plan === 'trial' && license.status === 'active';
-const locale = Astro.locals.locale;
-const t = tFn(locale);
 const currentPath = Astro.url.pathname;
+const isHome = currentPath === '/app';
+const showTrialBanner = license && license.plan === 'trial' && license.status === 'active';
 
-// ─── Sidebar nav (left) ─────────────────────────────────────────────────
-//   • section labels sunt titluri gri non-clickable
-//   • top-level items au cerculeț pe stânga; cele cu `subs` au și chevron dropdown
-//   • `roles`: filtrează după rolul în companie. Omis = vizibil pentru toți.
-type SubItem = { href: string; label: string; paths?: string[]; activeIds?: string[]; roles?: string[]; companyOnly?: boolean; badgeId?: string };
-type NavItem = { href?: string; label: string; paths?: string[]; activeIds?: string[]; badgeId?: string; roles?: string[]; subs?: SubItem[] };
-type NavGroup = { label: string; items: NavItem[] };
-
-// Roluri în companie: owner / accountant (contabil) / operator / viewer.
-const ROLE_WRITE = ['owner', 'accountant', 'operator'];
-
-const groups: NavGroup[] = [
-  {
-    label: 'Principal',
-    items: [
-      { href: '/app', label: 'Tablou de bord', activeIds: ['dashboard'], paths: ['/app'] },
-      {
-        label: 'Facturare',
-        subs: [
-          { href: '/app/facturare',           label: 'Facturi',          paths: ['/app/facturare'], activeIds: ['facturi'] },
-          { href: '/app/facturare/proforme',  label: 'Proforme',         paths: ['/app/facturare/proforme'] },
-          { href: '/app/facturare/avize',     label: 'Avize',            paths: ['/app/facturare/avize'] },
-          { href: '/app/facturare/chitante',  label: 'Chitanțe',         paths: ['/app/facturare/chitante'] },
-          { href: '/app/facturare/recurente', label: 'Facturi recurente', paths: ['/app/facturare/recurente'] },
-          { href: '/app/facturare/emite',     label: 'Emite document',   paths: ['/app/facturare/emite'], roles: ROLE_WRITE },
-        ],
-      },
-      {
-        label: 'Gestiune stocuri',
-        subs: [
-          { href: '/app/gestiune',           label: 'Stocuri & produse', paths: ['/app/gestiune'], activeIds: ['stocuri'] },
-          { href: '/app/gestiune/depozite',  label: 'Gestiuni',          paths: ['/app/gestiune/depozite'] },
-          { href: '/app/gestiune/nir',       label: 'Recepții (NIR)',    paths: ['/app/gestiune/nir'] },
-          { href: '/app/gestiune/miscari',   label: 'Mișcări stoc',      paths: ['/app/gestiune/miscari'] },
-        ],
-      },
-      { href: '/app/pos', label: 'POS / Casă', activeIds: ['pos'], paths: ['/app/pos'] },
-      {
-        label: 'Cheltuieli',
-        subs: [
-          { href: '/app/cheltuieli',           label: 'Cheltuieli', paths: ['/app/cheltuieli'], activeIds: ['cheltuieli'] },
-          { href: '/app/cheltuieli/furnizori', label: 'Furnizori',  paths: ['/app/cheltuieli/furnizori'] },
-        ],
-      },
-    ],
-  },
-  {
-    label: 'Nomenclatoare',
-    items: [
-      { href: '/app/facturare/clienti', label: 'Clienți',           activeIds: ['clienti'], paths: ['/app/facturare/clienti'] },
-      { href: '/app/facturare/produse', label: 'Produse & servicii', activeIds: ['produse'], paths: ['/app/facturare/produse'] },
-      { href: '/app/facturare/tva',     label: 'Cote TVA',          activeIds: ['tva'], paths: ['/app/facturare/tva'] },
-      {
-        label: 'Serii & șabloane',
-        subs: [
-          { href: '/app/facturare/setari', label: 'Serii documente', paths: ['/app/facturare/setari'] },
-          { href: '/app/facturare/model',  label: 'Șabloane factură', paths: ['/app/facturare/model'] },
-          { href: '/app/facturare/limbi',  label: 'Limbi',           paths: ['/app/facturare/limbi'] },
-        ],
-      },
-    ],
-  },
-  {
-    label: 'Fiscal',
-    items: [
-      { href: '/app/facturare/efactura', label: 'e-Factura', activeIds: ['efactura'], paths: ['/app/facturare/efactura'] },
-      { href: '/app/facturare/rapoarte', label: 'Rapoarte',  activeIds: ['rapoarte'], paths: ['/app/facturare/rapoarte'] },
-      { href: '/app/rapoarte/saft',      label: 'SAF-T (D406)', activeIds: ['saft'], paths: ['/app/rapoarte/saft'] },
-    ],
-  },
+const groups: { label: string; items: typeof NAV_MODULES }[] = [
+  { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare') },
+  { label: 'Vânzări', items: NAV_MODULES.filter((m) => m.group === 'Vanzari') },
+  { label: 'Gestiune', items: NAV_MODULES.filter((m) => m.group === 'Gestiune') },
+  { label: 'Cont', items: NAV_MODULES.filter((m) => m.group === 'Cont') },
 ];
-
-type ProfileItem = { href: string; label: string; icon: string; paths?: string[]; badgeId?: string; roles?: string[] };
-type ProfileGroup = { label: string; items: ProfileItem[] };
-
-const profileGroups: ProfileGroup[] = [
-  {
-    label: 'Activitate',
-    items: [
-      { href: '/app/notificari', label: 'Notificări', paths: ['/app/notificari'], badgeId: 'pp-notif-badge',
-        icon: 'M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0' },
-    ],
-  },
-  {
-    label: 'Companie',
-    items: [
-      { href: '/app/setari/companie',      label: 'Date firmă',     paths: ['/app/setari/companie'],
-        icon: 'M3 21h18M3 7v14m18-14v14M6 7V3h12v4M9 11h.01M9 15h.01M14.99 11H15m-.01 4H15' },
-      { href: '/app/setari/sub-users',     label: 'Echipă & roluri', paths: ['/app/setari/sub-users'],
-        icon: 'M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0z' },
-      { href: '/app/setari/integrari-anaf', label: 'Integrare ANAF', paths: ['/app/setari/integrari-anaf'],
-        icon: 'M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244' },
-      { href: '/app/setari/api',           label: 'API & integrări', paths: ['/app/setari/api'],
-        icon: 'M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5' },
-      { href: '/app/import',               label: 'Import date',     paths: ['/app/import'],
-        icon: 'M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3' },
-      { href: '/app/setari/abonament',     label: 'Licență & plată', paths: ['/app/setari/abonament'],
-        icon: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z' },
-    ],
-  },
-  {
-    label: 'Cont',
-    items: [
-      { href: '/app/setari', label: 'Setări', paths: ['/app/setari'],
-        icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065zM15 12a3 3 0 11-6 0 3 3 0 016 0z' },
-    ],
-  },
-];
-
-// Rolul utilizatorului în compania activă (gating la scriere). Platform admin vede tot.
-const userRole = (Astro.locals.company as any)?.role || (user as any)?.companyRole || 'owner';
-const hasCompany = !!Astro.locals.company;
-
-function isItemAllowed(item: NavItem): boolean {
-  if (!item.roles) return true;
-  return item.roles.includes(userRole);
-}
-function isSubAllowed(s: SubItem): boolean {
-  if (s.roles && !s.roles.includes(userRole)) return false;
-  if (s.companyOnly && !hasCompany) return false;
-  return true;
-}
-function visibleSubs(item: NavItem): SubItem[] {
-  return (item.subs || []).filter(isSubAllowed);
-}
-
-// ─── Active-leaf resolution ─────────────────────────────────────────────
-type Leaf = { parent: NavItem | null; item: NavItem | SubItem };
-const leaves: Leaf[] = [];
-for (const group of groups) {
-  for (const item of group.items) {
-    if (!isItemAllowed(item)) continue;
-    if (item.subs) {
-      for (const s of visibleSubs(item)) leaves.push({ parent: item, item: s });
-    } else {
-      leaves.push({ parent: null, item });
-    }
-  }
-}
-
-const pathMatchLen = (paths?: string[]): number => {
-  if (!paths) return -1;
-  let best = -1;
-  for (const p of paths) {
-    if (p === '/app') {
-      if (currentPath === '/app') best = Math.max(best, p.length);
-      continue;
-    }
-    if (currentPath === p || currentPath.startsWith(p + '/')) best = Math.max(best, p.length);
-  }
-  return best;
-};
-
-let activeLeaf: NavItem | SubItem | null = null;
-if (activeTab) {
-  const byTab = leaves.find((l) => l.item.activeIds?.includes(activeTab));
-  if (byTab) activeLeaf = byTab.item;
-}
-if (!activeLeaf) {
-  let bestScore = -1;
-  for (const l of leaves) {
-    const score = pathMatchLen(l.item.paths);
-    if (score > bestScore) { bestScore = score; activeLeaf = l.item; }
-  }
-}
-
-function isItemActive(item: NavItem): boolean { return item === activeLeaf; }
-function isSubActive(s: SubItem): boolean { return s === activeLeaf; }
-function isParentActive(item: NavItem): boolean {
-  return !!activeLeaf && (item.subs || []).includes(activeLeaf as SubItem);
-}
-
-let navBaseTrail: { label: string; href?: string }[] | undefined;
-let navBasePath: string | undefined;
-if (activeLeaf && activeLeaf.href && activeLeaf.href !== '/app') {
-  const owner = leaves.find((l) => l.item === activeLeaf);
-  const trail: { label: string; href?: string }[] = [{ label: 'Acasă', href: '/app' }];
-  if (owner?.parent) trail.push({ label: owner.parent.label, href: owner.parent.href });
-  trail.push({ label: activeLeaf.label, href: activeLeaf.href });
-  navBaseTrail = trail;
-  navBasePath = activeLeaf.href.split('?')[0];
-}
-
-const slug = (s: string) =>
-  s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-
-const roleLabels: Record<string, string> = {
-  owner: 'Administrator',
-  accountant: 'Contabil',
-  operator: 'Operator',
-  viewer: 'Vizualizare',
-};
 ---
 
 <BaseLayout title={title} themeColor="#FAFAF8">
-  <div class="min-h-screen flex bg-[#FAFAF8] text-[#0A0A0A]" style="font-family:var(--th-font)">
-    <!-- ─── Mobile: floating hamburger ─── -->
-    <button
-      id="sidebar-toggle"
-      class="lg:hidden fixed top-3 left-3 z-50 w-10 h-10 bg-white border border-[#E8E8E4] shadow-sm rounded-xl flex items-center justify-center text-[#0A0A0A] hover:bg-[#F0F0EC] transition-colors"
-      aria-label="Meniu"
-    >
-      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" /></svg>
-    </button>
+  <div class="min-h-screen bg-[#FAFAF8] text-[#0A0A0A] flex flex-col" style="font-family:'Inter',ui-sans-serif,system-ui,sans-serif">
 
-    <!-- ─── Sidebar (left, full-height) ─── -->
-    <aside
-      id="sidebar"
-      class="fixed lg:sticky top-0 left-0 z-40 h-screen lg:h-screen w-[260px] bg-[#ECEBE5] lg:rounded-r-3xl flex flex-col -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-out shadow-[0_8px_24px_-12px_rgba(0,0,0,0.08)]"
-    >
-      <!-- Sidebar header: logo -->
-      <div class="px-4 py-4 border-b border-[#DBDAD3]">
-        <div class="flex items-center justify-between gap-2">
-          <a href="/app" class="flex items-center gap-2 group">
-            <span class="text-[15px] font-bold tracking-tight">factura<span class="text-[#FF5C00]">mea</span></span>
+    <!-- ───────── Top bar ───────── -->
+    <header class="sticky top-0 z-40 bg-[#FAFAF8]/90 backdrop-blur border-b border-[#E5E4DD]">
+      <div class="max-w-[1180px] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-3 min-w-0">
+          <a href="/app" class="flex items-center gap-2 shrink-0">
+            <span class="w-8 h-8 rounded-xl bg-[#FF5C00] flex items-center justify-center text-white font-bold text-[15px]">f</span>
+            <span class="text-[17px] font-bold tracking-[-0.02em] hidden sm:inline">factura<span class="text-[#FF5C00]">mea</span></span>
           </a>
-          <button id="sidebar-close" class="lg:hidden p-1.5 -mr-1.5 text-[#5C5C58] hover:text-[#0A0A0A]" aria-label="Închide">
-            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-          </button>
-        </div>
-      </div>
-
-      <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-6">
-        {groups.map((group) => {
-          const visibleItems = group.items.filter((item) => {
-            if (!isItemAllowed(item)) return false;
-            if (item.subs && visibleSubs(item).length === 0) return false;
-            return true;
-          });
-          if (!visibleItems.length) return null;
-          return (
-            <div>
-              <p class="px-3 mb-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8A8A85]">{group.label}</p>
-              <ul class="space-y-0.5">
-                {visibleItems.map((item) => {
-                  const hasSubs = !!item.subs;
-                  if (!hasSubs) {
-                    const active = isItemActive(item);
-                    return (
-                      <li>
-                        <a
-                          href={item.href}
-                          class:list={[
-                            'flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] transition-colors',
-                            active
-                              ? 'bg-[#0A0A0A] text-white font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.15)]'
-                              : 'text-[#3D3D3A] hover:text-[#0A0A0A] hover:bg-[#DEDDD6] font-medium'
-                          ]}
-                        >
-                          <span class:list={['w-[7px] h-[7px] rounded-full shrink-0 transition-colors', active ? 'bg-[#FF5C00]' : 'bg-[#0A0A0A]/35']}></span>
-                          <span class="flex-1 truncate">{item.label}</span>
-                        </a>
-                      </li>
-                    );
-                  }
-                  const subs = visibleSubs(item);
-                  const parentActive = isParentActive(item);
-                  const itemSlug = slug(item.label);
-                  return (
-                    <li data-expandable data-key={itemSlug} data-expanded={String(parentActive)}>
-                      <button
-                        type="button"
-                        class:list={[
-                          'sub-toggle w-full flex items-center gap-3 px-3 py-2 rounded-xl text-[13px] transition-colors text-left',
-                          parentActive
-                            ? 'text-[#0A0A0A] font-semibold bg-[#DEDDD6]'
-                            : 'text-[#3D3D3A] hover:text-[#0A0A0A] hover:bg-[#DEDDD6] font-medium'
-                        ]}
-                        aria-expanded={parentActive ? 'true' : 'false'}
-                      >
-                        <span class:list={['w-[7px] h-[7px] rounded-full shrink-0 transition-colors', parentActive ? 'bg-[#FF5C00]' : 'bg-[#0A0A0A]/35']}></span>
-                        <span class="flex-1 truncate">{item.label}</span>
-                        <svg class="chevron w-3.5 h-3.5 shrink-0 text-[#6B6B68] transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-                      </button>
-                      <ul class="sub-list mt-0.5 mb-1 ml-[15px] pl-3 border-l border-[#D3D2CB] space-y-0.5">
-                        {subs.map((s) => {
-                          const subActive = isSubActive(s);
-                          return (
-                            <li>
-                              <a
-                                href={s.href}
-                                class:list={[
-                                  'block px-2.5 py-1.5 rounded-xl text-[12.5px] transition-colors',
-                                  subActive
-                                    ? 'bg-[#0A0A0A] text-white font-semibold'
-                                    : 'text-[#3D3D3A] hover:text-[#0A0A0A] hover:bg-[#DEDDD6] font-medium'
-                                ]}
-                              >
-                                {s.label}
-                              </a>
-                            </li>
-                          );
-                        })}
-                      </ul>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          );
-        })}
-      </nav>
-
-      {user?.userType === 'admin' && (
-        <a href="/admin" class="mx-3 mb-2 flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-[#0A0A0A] text-white text-[12px] font-semibold hover:bg-[#2E2E2C] transition-colors print:hidden">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          Panou Admin →
-        </a>
-      )}
-
-      <!-- ─── Aspect: theme + font size + font family ─── -->
-      <div class="px-3 pt-2 pb-3 border-t border-[#DBDAD3] print:hidden">
-        <button
-          id="th-aspect-toggle"
-          type="button"
-          aria-expanded="true"
-          aria-controls="th-aspect-body"
-          title="Arată / ascunde setările de aspect"
-          class="w-full flex items-center justify-between gap-2 pl-2 pr-1.5 py-1 rounded-xl text-[#5C5C58] hover:text-[#0A0A0A] hover:bg-[#DEDDD6] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C00]"
-        >
-          <span class="text-[11px] font-medium">Aspect</span>
-          <svg id="th-aspect-chevron" class="w-3.5 h-3.5 text-[#6B6B68] transition-transform duration-200 rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" /></svg>
-        </button>
-
-        <div id="th-aspect-body" class="grid [grid-template-rows:1fr] transition-[grid-template-rows] duration-200 ease-out">
-          <div class="overflow-hidden">
-           <div class="pt-2.5 space-y-2.5">
-            <div class="flex items-center justify-between gap-2 pl-2">
-            <span class="text-[11px] text-[#5C5C58]">Temă</span>
-            <button
-              id="th-dark-btn"
-              type="button"
-              title="Mod întunecat"
-              aria-label="Comută mod întunecat"
-              aria-pressed="false"
-              class="inline-flex items-center justify-center w-8 h-8 rounded-xl text-[#3D3D3A] hover:text-[#0A0A0A] hover:bg-[#DEDDD6] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C00]"
-            >
-              <svg id="th-dark-icon-moon" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-              <svg id="th-dark-icon-sun" class="hidden w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-            </button>
-          </div>
-
-          <div class="flex items-center justify-between gap-2 pl-2">
-            <span class="text-[11px] text-[#5C5C58]">Dimensiune</span>
-            <div class="inline-flex items-stretch rounded-xl border border-[#D4D4CE] overflow-hidden bg-white" role="group" aria-label="Mărimea textului">
-              <button type="button" class="th-fs-btn px-2 py-1 text-[10px] font-semibold text-[#3D3D3A] hover:bg-[#EFEEE8] border-r border-[#D4D4CE]" data-fs="75" title="Mai mic">A−</button>
-              <button type="button" class="th-fs-btn px-2 py-1 text-[12px] font-semibold text-[#3D3D3A] hover:bg-[#EFEEE8] border-r border-[#D4D4CE]" data-fs="100" title="Normal">A</button>
-              <button type="button" class="th-fs-btn px-2 py-1 text-[13px] font-semibold text-[#3D3D3A] hover:bg-[#EFEEE8]" data-fs="125" title="Mai mare">A+</button>
-            </div>
-          </div>
-
-          <div class="flex items-center justify-between gap-2 pl-2">
-            <span class="text-[11px] text-[#5C5C58]">Font</span>
-            <select
-              id="th-font-select"
-              aria-label="Familia de font"
-              class="text-[11px] rounded-xl border border-[#D4D4CE] bg-white px-2 py-1 text-[#3D3D3A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C00]"
-            >
-              <option value="inter">Inter</option>
-              <option value="system">Sistem</option>
-              <option value="serif">Serif</option>
-              <option value="mono">Mono</option>
-            </select>
-            </div>
-           </div>
-          </div>
-        </div>
-      </div>
-      <script is:inline>
-        (function () {
-          try {
-            if (localStorage.getItem('th-aspect-open') === '0') {
-              var body = document.getElementById('th-aspect-body');
-              var btn = document.getElementById('th-aspect-toggle');
-              var chev = document.getElementById('th-aspect-chevron');
-              if (body) body.style.gridTemplateRows = '0fr';
-              if (btn) btn.setAttribute('aria-expanded', 'false');
-              if (chev) chev.classList.remove('rotate-180');
-            }
-          } catch (e) {}
-        })();
-      </script>
-
-      <!-- Bottom user card = profile-panel trigger -->
-      {user && (
-        <div class="relative">
-          <button
-            id="profile-menu-btn"
-            aria-haspopup="menu"
-            aria-expanded="false"
-            class="w-full p-4 border-t border-[#DBDAD3] bg-[#E5E4DD] hover:bg-[#DEDDD6] lg:rounded-br-3xl flex items-center gap-3 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF5C00]"
-          >
-            <div class="w-9 h-9 bg-[#0A0A0A] rounded-xl flex items-center justify-center text-[13px] font-semibold text-white shrink-0">
-              {user.name?.charAt(0)?.toUpperCase() || '?'}
-            </div>
-            <div class="min-w-0 flex-1">
-              <p class="text-[12px] font-semibold text-[#0A0A0A] truncate">{user.name}</p>
-              <div class="flex items-center gap-1.5 mt-0.5">
-                <span class="text-[11px] text-[#5C5C58] font-mono truncate">{user.platformId}</span>
-                <span class="text-[10px] text-[#8A8A85]">·</span>
-                <span class="text-[11px] text-[#5C5C58] truncate">{roleLabels[userRole] || ''}</span>
-              </div>
-            </div>
-            <svg class="w-4 h-4 text-[#8A8A85] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" /></svg>
-          </button>
-
-          <div
-            id="profile-menu-panel"
-            class="hidden absolute bottom-full left-3 right-3 mb-2 max-h-[calc(100vh-8rem)] overflow-y-auto bg-white rounded-xl shadow-[0_-12px_48px_-12px_rgba(0,0,0,0.20)] border border-[#E8E8E4] z-50"
-            role="menu"
-          >
-            {Astro.locals.company && (
-              <div class="px-3 pt-3 pb-2 border-b border-[#E8E8E4]">
-                <p class="px-1 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8A8A85]">Companie activă</p>
-                <CompanySwitcher
-                  client:load
-                  currentCompanyId={Astro.locals.company.id}
-                  currentCompanyName={Astro.locals.company.name}
-                />
-              </div>
-            )}
-
-            {profileGroups.map((group) => (
-              <div class="px-3 pt-3 pb-2 border-b border-[#E8E8E4]">
-                <p class="px-1 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8A8A85]">{group.label}</p>
-                <ul class="space-y-0.5">
-                  {group.items.map((item) => {
-                    const active = isItemActive(item as any);
-                    return (
-                      <li>
-                        <a
-                          href={item.href}
-                          class:list={[
-                            'flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-[13px] transition-colors',
-                            active
-                              ? 'bg-[#F0F0EC] text-[#0A0A0A] font-semibold'
-                              : 'text-[#3D3D3A] hover:text-[#0A0A0A] hover:bg-[#FAFAF8]'
-                          ]}
-                        >
-                          <svg class="w-[16px] h-[16px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d={item.icon} /></svg>
-                          <span class="flex-1 truncate">{item.label}</span>
-                          {item.badgeId && (
-                            <span id={item.badgeId} class="hidden min-w-[18px] h-[18px] bg-[#FF5C00] text-white text-[10px] font-bold rounded-full px-1.5 flex items-center justify-center"></span>
-                          )}
-                        </a>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-
-            <div class="px-3 py-3 rounded-b-xl">
-              <form method="POST" action="/api/auth/logout">
-                <button type="submit" class="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-xl text-[13px] font-medium text-[#B91C1C] hover:bg-[#FFF5F5] transition-colors">
-                  <svg class="w-[16px] h-[16px] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
-                  Deconectare
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-    </aside>
-
-    <div id="sidebar-backdrop" class="hidden fixed inset-0 z-30 bg-[#0A0A0A]/40 lg:hidden"></div>
-
-    <div class="flex-1 min-w-0 flex flex-col">
-      <main class="th-app-main flex-1 px-4 lg:px-8 py-6 lg:py-8 pt-16 lg:pt-8">
-        <div class="max-w-[1180px] mx-auto">
-          {showTrialBanner && (
-            <a href="/app/setari/abonament" class="mb-4 flex flex-wrap items-center gap-2 px-4 py-2.5 bg-[#FFF3E9] border border-[#FF5C00]/30 rounded-xl text-[13px] text-[#0A0A0A] hover:bg-[#FFEBDB] transition-colors print:hidden">
-              <span class="w-2 h-2 rounded-full bg-[#FF5C00]"></span>
-              <span><strong>Perioadă de probă</strong> · mai ai {license!.trialDaysLeft} {license!.trialDaysLeft === 1 ? 'zi' : 'zile'}.</span>
-              <span class="ml-auto font-semibold text-[#FF5C00]">Activează licența pe viață (700 RON) →</span>
-            </a>
+          {!isHome && (
+            <>
+              <span class="text-[#D4D4CE] hidden sm:inline">/</span>
+              <span class="text-[16px] font-semibold text-[#3D3D3A] truncate">{title}</span>
+            </>
           )}
-          {!hideBreadcrumbs && <Breadcrumbs currentTitle={breadcrumbTitle} parentLabel={breadcrumbParent?.label} parentHref={breadcrumbParent?.href} baseTrail={breadcrumbParent ? undefined : navBaseTrail} basePath={breadcrumbParent ? undefined : navBasePath} />}
-          <slot />
         </div>
-      </main>
-      {!hideFooter && (
-        <footer class="px-4 lg:px-8 py-4 border-t border-[#E8E8E4] text-[11px] text-[#8A8A85] flex flex-wrap items-center justify-between gap-2">
+
+        <div class="flex items-center gap-2">
+          <button id="menu-open" class="inline-flex items-center gap-2 px-3.5 sm:px-4 h-11 rounded-xl bg-white border border-[#E0E0DA] hover:border-[#0A0A0A] text-[15px] font-semibold transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+            <span class="hidden sm:inline">Meniu</span>
+          </button>
+          <button id="help-open" class="inline-flex items-center gap-2 px-3.5 sm:px-4 h-11 rounded-xl bg-white border border-[#E0E0DA] hover:border-[#0A0A0A] text-[15px] font-semibold transition-colors" title="Ajutor">
+            <svg class="w-5 h-5 text-[#FF5C00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 17.25h.007v.008H12v-.008zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span class="hidden sm:inline">Ajutor</span>
+          </button>
+
+          {user && (
+            <div class="relative">
+              <button id="user-btn" aria-haspopup="menu" aria-expanded="false" class="flex items-center gap-2 pl-2 pr-3 h-11 rounded-xl bg-white border border-[#E0E0DA] hover:border-[#0A0A0A] transition-colors">
+                <span class="w-7 h-7 rounded-lg bg-[#0A0A0A] text-white flex items-center justify-center text-[14px] font-semibold">{user.name?.charAt(0)?.toUpperCase() || '?'}</span>
+                <span class="text-[15px] font-semibold max-w-[120px] truncate hidden sm:inline">{user.name?.split(' ')[0]}</span>
+                <svg class="w-4 h-4 text-[#8A8A85]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+              </button>
+
+              <div id="user-menu" class="hidden absolute right-0 top-full mt-2 w-[280px] bg-white rounded-2xl shadow-[0_20px_60px_-20px_rgba(0,0,0,0.30)] border border-[#E8E8E4] z-50 overflow-hidden">
+                <div class="px-4 py-3 border-b border-[#F0F0EC]">
+                  <p class="text-[15px] font-semibold truncate">{user.name}</p>
+                  <p class="text-[13px] text-[#6B6B68] truncate">{user.email}</p>
+                </div>
+                {company && (
+                  <div class="px-4 py-3 border-b border-[#F0F0EC]">
+                    <p class="text-[12px] uppercase tracking-[0.12em] text-[#8A8A85] font-semibold mb-1.5">Companie</p>
+                    <CompanySwitcher client:load currentCompanyId={company.id} currentCompanyName={company.name} />
+                  </div>
+                )}
+                <nav class="py-2">
+                  <a href="/app/setari/companie" class="flex items-center gap-3 px-4 py-2.5 text-[15px] hover:bg-[#FAFAF8]"><span class="w-2 h-2 rounded-full bg-[#0A0A0A]/35"></span>Date firmă</a>
+                  <a href="/app/setari/sub-users" class="flex items-center gap-3 px-4 py-2.5 text-[15px] hover:bg-[#FAFAF8]"><span class="w-2 h-2 rounded-full bg-[#0A0A0A]/35"></span>Echipă și roluri</a>
+                  <a href="/app/setari/integrari-anaf" class="flex items-center gap-3 px-4 py-2.5 text-[15px] hover:bg-[#FAFAF8]"><span class="w-2 h-2 rounded-full bg-[#0A0A0A]/35"></span>Integrare ANAF</a>
+                  <a href="/app/setari/abonament" class="flex items-center gap-3 px-4 py-2.5 text-[15px] hover:bg-[#FAFAF8]"><span class="w-2 h-2 rounded-full bg-[#0A0A0A]/35"></span>Licență și plată</a>
+                  <a href="/app/setari" class="flex items-center gap-3 px-4 py-2.5 text-[15px] hover:bg-[#FAFAF8]"><span class="w-2 h-2 rounded-full bg-[#0A0A0A]/35"></span>Toate setările</a>
+                </nav>
+                <div class="px-4 py-3 border-t border-[#F0F0EC] flex items-center justify-between gap-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-[13px] text-[#6B6B68] mr-1">Text</span>
+                    <button class="th-fs-btn w-8 h-8 rounded-lg border border-[#E0E0DA] text-[13px] font-bold hover:bg-[#F0F0EC]" data-fs="100">A</button>
+                    <button class="th-fs-btn w-8 h-8 rounded-lg border border-[#E0E0DA] text-[16px] font-bold hover:bg-[#F0F0EC]" data-fs="125">A+</button>
+                  </div>
+                  <button id="th-dark-btn" class="w-9 h-9 rounded-lg border border-[#E0E0DA] flex items-center justify-center hover:bg-[#F0F0EC]" aria-pressed="false" title="Mod întunecat">
+                    <svg id="th-moon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                    <svg id="th-sun" class="hidden w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                  </button>
+                </div>
+                <form method="POST" action="/api/auth/logout" class="border-t border-[#F0F0EC]">
+                  <button type="submit" class="w-full flex items-center gap-3 px-4 py-3 text-[15px] font-semibold text-[#B91C1C] hover:bg-[#FFF5F5]">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+                    Deconectare
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+
+    <!-- ───────── Content ───────── -->
+    <main class="flex-1 w-full">
+      <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {showTrialBanner && (
+          <a href="/app/setari/abonament" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#FFF3E9] border border-[#FF5C00]/30 rounded-2xl text-[15px] hover:bg-[#FFEBDB] transition-colors">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#FF5C00]"></span>
+            <span><strong>Perioadă de probă</strong> · mai ai {license!.trialDaysLeft} {license!.trialDaysLeft === 1 ? 'zi' : 'zile'}.</span>
+            <span class="ml-auto font-semibold text-[#FF5C00]">Activează licența pe viață (700 RON) →</span>
+          </a>
+        )}
+        {!isHome && (
+          <a href="/app" class="inline-flex items-center gap-1.5 mb-4 text-[15px] font-medium text-[#6B6B68] hover:text-[#0A0A0A] transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Înapoi la meniu
+          </a>
+        )}
+        <slot />
+      </div>
+    </main>
+
+    {!hideFooter && (
+      <footer class="border-t border-[#E5E4DD] mt-8">
+        <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[#8A8A85]">
           <span>© {new Date().getFullYear()} facturamea</span>
           <div class="flex items-center gap-4">
+            <button id="help-open-2" class="hover:text-[#0A0A0A] transition-colors">Ajutor</button>
             <a href="/termeni" class="hover:text-[#0A0A0A] transition-colors">Termeni</a>
-            <a href="/confidentialitate" class="hover:text-[#0A0A0A] transition-colors">Confidențialitate</a>
             <a href="/contact" class="hover:text-[#0A0A0A] transition-colors">Contact</a>
           </div>
-        </footer>
-      )}
+        </div>
+      </footer>
+    )}
+  </div>
+
+  <!-- ───────── Meniu overlay ───────── -->
+  <div id="menu-overlay" class="hidden fixed inset-0 z-[80] bg-[#FAFAF8] overflow-y-auto">
+    <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-6">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em]">Ce vrei să faci?</h2>
+        <button id="menu-close" class="inline-flex items-center gap-2 px-4 h-11 rounded-xl bg-white border border-[#E0E0DA] hover:border-[#0A0A0A] text-[15px] font-semibold">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          Închide
+        </button>
+      </div>
+      {groups.map((g) => g.items.length > 0 && (
+        <div class="mb-7">
+          <p class="text-[13px] uppercase tracking-[0.14em] text-[#8A8A85] font-semibold mb-3">{g.label}</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {g.items.map((m) => (
+              <a href={m.href} class:list={['group flex items-start gap-3 p-4 rounded-2xl border transition-all hover:-translate-y-0.5', m.primary ? 'bg-[#0A0A0A] text-white border-[#0A0A0A]' : 'bg-white border-[#E8E8E4] hover:border-[#0A0A0A]']}>
+                <span class:list={['shrink-0 w-11 h-11 rounded-xl flex items-center justify-center', m.primary ? 'bg-[#FF5C00] text-white' : 'bg-[#FFF3E9] text-[#FF5C00]']}>
+                  <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="block text-[16px] font-semibold leading-tight">{m.label}</span>
+                  <span class:list={['block text-[13px] mt-0.5', m.primary ? 'text-white/60' : 'text-[#6B6B68]']}>{m.desc}</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+
+  <!-- ───────── Ajutor modal ───────── -->
+  <div id="help-modal" class="hidden fixed inset-0 z-[90] bg-[#0A0A0A]/50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full sm:max-w-[520px] sm:rounded-2xl rounded-t-2xl shadow-2xl max-h-[88vh] overflow-y-auto">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-[#F0F0EC] sticky top-0 bg-white">
+        <h3 class="text-[18px] font-bold">Ajutor</h3>
+        <button id="help-close" class="w-9 h-9 rounded-lg hover:bg-[#F0F0EC] flex items-center justify-center" aria-label="Închide">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="px-5 py-4 space-y-5 text-[15px] leading-relaxed text-[#3D3D3A]">
+        <div>
+          <p class="font-semibold text-[#0A0A0A] mb-2">Cum începi în 3 pași</p>
+          <ol class="space-y-2 list-decimal list-inside">
+            <li>Adaugă-ți firma în <a href="/app/setari/companie" class="text-[#FF5C00] font-medium underline">Date firmă</a>.</li>
+            <li>Adaugă un client în <a href="/app/facturare/clienti" class="text-[#FF5C00] font-medium underline">Clienți</a>.</li>
+            <li>Apasă <a href="/app/facturare/emite" class="text-[#FF5C00] font-medium underline">Emite factură</a> și gata.</li>
+          </ol>
+        </div>
+        <div>
+          <p class="font-semibold text-[#0A0A0A] mb-1">Ai date în Oblio sau SmartBill?</p>
+          <p>Le aduci automat din <a href="/app/import" class="text-[#FF5C00] font-medium underline">Import date</a>.</p>
+        </div>
+        <div class="rounded-xl bg-[#FAFAF8] border border-[#E8E8E4] p-4">
+          <p class="font-semibold text-[#0A0A0A] mb-1">Ai nevoie de un om?</p>
+          <p>Scrie-ne la <a href="mailto:contact@facturamea.com" class="text-[#FF5C00] font-medium underline">contact@facturamea.com</a> și te ajutăm.</p>
+        </div>
+        <p class="text-[13px] text-[#8A8A85]">Sfat: din colțul dreapta sus poți mări textul (A+) sau porni modul întunecat.</p>
+      </div>
     </div>
   </div>
 
   <script>
-    // Aspect panel collapse/expand
-    (function () {
-      const ASPECT_KEY = 'th-aspect-open';
-      const aspectBtn = document.getElementById('th-aspect-toggle');
-      const aspectBody = document.getElementById('th-aspect-body') as HTMLElement | null;
-      const aspectChev = document.getElementById('th-aspect-chevron');
-      aspectBtn?.addEventListener('click', () => {
-        const open = aspectBody?.style.gridTemplateRows === '0fr';
-        if (aspectBody) aspectBody.style.gridTemplateRows = open ? '1fr' : '0fr';
-        aspectBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        aspectChev?.classList.toggle('rotate-180', open);
-        localStorage.setItem(ASPECT_KEY, open ? '1' : '0');
-      });
-    })();
+    function bind(id: string, fn: () => void) { document.getElementById(id)?.addEventListener('click', fn); }
+    const menu = document.getElementById('menu-overlay');
+    const help = document.getElementById('help-modal');
+    const userMenu = document.getElementById('user-menu');
+    const userBtn = document.getElementById('user-btn');
+    const openMenu = () => menu?.classList.remove('hidden');
+    const closeMenu = () => menu?.classList.add('hidden');
+    const openHelp = () => help?.classList.remove('hidden');
+    const closeHelp = () => help?.classList.add('hidden');
+    bind('menu-open', openMenu); bind('menu-close', closeMenu);
+    bind('help-open', openHelp); bind('help-open-2', openHelp); bind('help-close', closeHelp);
+    help?.addEventListener('click', (e) => { if (e.target === help) closeHelp(); });
 
-    // Dark mode + font scale + font family
-    (function () {
-      const DM_KEY = 'th-dark';
-      const darkBtn = document.getElementById('th-dark-btn');
-      const moon = document.getElementById('th-dark-icon-moon');
-      const sun = document.getElementById('th-dark-icon-sun');
-      function applyDark(dm: boolean) {
-        document.documentElement.classList.toggle('th-dark', dm);
-        darkBtn?.setAttribute('aria-pressed', dm ? 'true' : 'false');
-        moon?.classList.toggle('hidden', dm);
-        sun?.classList.toggle('hidden', !dm);
-      }
-      applyDark(localStorage.getItem(DM_KEY) === '1');
-      darkBtn?.addEventListener('click', () => {
-        const next = !document.documentElement.classList.contains('th-dark');
-        localStorage.setItem(DM_KEY, next ? '1' : '0');
-        applyDark(next);
-      });
-
-      const FS_KEY = 'th-font-scale';
-      const fsBtns = Array.from(document.querySelectorAll('.th-fs-btn'));
-      function applyFs(s: string) {
-        if (s === '100') document.documentElement.removeAttribute('data-fs');
-        else document.documentElement.setAttribute('data-fs', s);
-        fsBtns.forEach((b) => b.setAttribute('data-active', b.getAttribute('data-fs') === s ? 'true' : 'false'));
-      }
-      const fsStored = localStorage.getItem(FS_KEY);
-      applyFs(fsStored === '75' || fsStored === '125' ? fsStored : '100');
-      fsBtns.forEach((b) => b.addEventListener('click', () => {
-        const s = b.getAttribute('data-fs') || '100';
-        localStorage.setItem(FS_KEY, s);
-        applyFs(s);
-      }));
-
-      const FF_KEY = 'th-font';
-      const fontSel = document.getElementById('th-font-select') as HTMLSelectElement | null;
-      function applyFont(f: string) {
-        if (!f || f === 'inter') document.documentElement.removeAttribute('data-font');
-        else document.documentElement.setAttribute('data-font', f);
-        if (fontSel) fontSel.value = f || 'inter';
-      }
-      applyFont(localStorage.getItem(FF_KEY) || 'inter');
-      fontSel?.addEventListener('change', () => {
-        localStorage.setItem(FF_KEY, fontSel.value);
-        applyFont(fontSel.value);
-      });
-    })();
-
-    // Profile dropdown
-    const profileBtn = document.getElementById('profile-menu-btn');
-    const profilePanel = document.getElementById('profile-menu-panel');
-    profileBtn?.addEventListener('click', (e) => {
+    userBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
-      profilePanel?.classList.toggle('hidden');
-      const expanded = profilePanel && !profilePanel.classList.contains('hidden');
-      profileBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+      userMenu?.classList.toggle('hidden');
+      userBtn.setAttribute('aria-expanded', userMenu && !userMenu.classList.contains('hidden') ? 'true' : 'false');
     });
     document.addEventListener('click', (e) => {
-      if (!profilePanel || profilePanel.classList.contains('hidden')) return;
-      const target = e.target as Node;
-      if (profilePanel.contains(target) || profileBtn?.contains(target)) return;
-      profilePanel.classList.add('hidden');
-      profileBtn?.setAttribute('aria-expanded', 'false');
+      if (!userMenu || userMenu.classList.contains('hidden')) return;
+      const t = e.target as Node;
+      if (userMenu.contains(t) || userBtn?.contains(t)) return;
+      userMenu.classList.add('hidden'); userBtn?.setAttribute('aria-expanded', 'false');
     });
-
-    // Mobile sidebar
-    const sidebar = document.getElementById('sidebar');
-    const sidebarToggle = document.getElementById('sidebar-toggle');
-    const sidebarClose = document.getElementById('sidebar-close');
-    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
-    function openSidebar() {
-      sidebar?.classList.remove('-translate-x-full');
-      sidebar?.classList.add('translate-x-0');
-      sidebarBackdrop?.classList.remove('hidden');
-    }
-    function closeSidebar() {
-      sidebar?.classList.add('-translate-x-full');
-      sidebar?.classList.remove('translate-x-0');
-      sidebarBackdrop?.classList.add('hidden');
-    }
-    sidebarToggle?.addEventListener('click', openSidebar);
-    sidebarClose?.addEventListener('click', closeSidebar);
-    sidebarBackdrop?.addEventListener('click', closeSidebar);
-
-    // Sidebar dropdown toggles
-    document.querySelectorAll<HTMLLIElement>('li[data-expandable]').forEach((li) => {
-      const key = li.dataset.key!;
-      const stored = localStorage.getItem(`th-sub-${key}`);
-      if (stored === 'true' || stored === 'false') {
-        li.dataset.expanded = stored;
-        const btn = li.querySelector<HTMLButtonElement>('.sub-toggle');
-        btn?.setAttribute('aria-expanded', stored);
-      }
-      const btn = li.querySelector<HTMLButtonElement>('.sub-toggle');
-      btn?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isOpen = li.dataset.expanded === 'true';
-        const next = isOpen ? 'false' : 'true';
-        li.dataset.expanded = next;
-        btn.setAttribute('aria-expanded', next);
-        localStorage.setItem(`th-sub-${key}`, next);
-      });
-    });
-
-    // Unread notifications badge
-    async function refreshBadges() {
-      try {
-        const notifRes = await fetch('/api/notifications?unread=1').then((r) => r.ok ? r.json() : null);
-        const notifBadge = document.getElementById('pp-notif-badge');
-        if (notifBadge && notifRes) {
-          const n = notifRes.unreadCount || 0;
-          if (n > 0) { notifBadge.textContent = n > 99 ? '99+' : String(n); notifBadge.classList.remove('hidden'); }
-          else notifBadge.classList.add('hidden');
-        }
-      } catch {}
-    }
-    refreshBadges();
-    setInterval(refreshBadges, 60000);
-
-    // Keyboard shortcuts (g+key)
-    let lastKey = '';
-    let lastKeyTime = 0;
-    const SHORTCUTS: Record<string, { href: string; label: string }> = {
-      'g+d': { href: '/app',                  label: 'Tablou de bord' },
-      'g+f': { href: '/app/facturare',        label: 'Facturi' },
-      'g+e': { href: '/app/facturare/emite',  label: 'Emite' },
-      'g+c': { href: '/app/facturare/clienti', label: 'Clienți' },
-      'g+p': { href: '/app/facturare/produse', label: 'Produse' },
-      'g+g': { href: '/app/gestiune',         label: 'Gestiune' },
-      'g+n': { href: '/app/notificari',       label: 'Notificări' },
-      'g+s': { href: '/app/setari',           label: 'Setări' },
-    };
     document.addEventListener('keydown', (e) => {
-      const target = e.target as HTMLElement;
-      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) return;
-      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        document.getElementById('shortcut-help')?.classList.toggle('hidden');
-        return;
-      }
-      if (e.key === 'Escape') {
-        document.getElementById('shortcut-help')?.classList.add('hidden');
-        closeSidebar();
-        profilePanel?.classList.add('hidden');
-        profileBtn?.setAttribute('aria-expanded', 'false');
-      }
-      const now = Date.now();
-      if (lastKey === 'g' && now - lastKeyTime < 1000) {
-        const combo = `g+${e.key.toLowerCase()}`;
-        const entry = SHORTCUTS[combo];
-        if (entry) { e.preventDefault(); window.location.href = entry.href; lastKey = ''; return; }
-      }
-      if (e.key.toLowerCase() === 'g') { lastKey = 'g'; lastKeyTime = now; }
-      else { lastKey = ''; }
+      if (e.key === 'Escape') { closeMenu(); closeHelp(); userMenu?.classList.add('hidden'); }
     });
+
+    // Text size (data-fs) + dark mode
+    const FS_KEY = 'th-font-scale';
+    const fsBtns = Array.from(document.querySelectorAll('.th-fs-btn'));
+    function applyFs(s: string) {
+      if (s === '100') document.documentElement.removeAttribute('data-fs');
+      else document.documentElement.setAttribute('data-fs', s);
+      fsBtns.forEach((b) => b.setAttribute('data-active', b.getAttribute('data-fs') === s ? 'true' : 'false'));
+    }
+    applyFs(localStorage.getItem(FS_KEY) === '125' ? '125' : '100');
+    fsBtns.forEach((b) => b.addEventListener('click', () => { const s = b.getAttribute('data-fs') || '100'; localStorage.setItem(FS_KEY, s); applyFs(s); }));
+
+    const DM_KEY = 'th-dark';
+    const darkBtn = document.getElementById('th-dark-btn');
+    const moon = document.getElementById('th-moon'); const sun = document.getElementById('th-sun');
+    function applyDark(dm: boolean) {
+      document.documentElement.classList.toggle('th-dark', dm);
+      darkBtn?.setAttribute('aria-pressed', dm ? 'true' : 'false');
+      moon?.classList.toggle('hidden', dm); sun?.classList.toggle('hidden', !dm);
+    }
+    applyDark(localStorage.getItem(DM_KEY) === '1');
+    darkBtn?.addEventListener('click', () => { const next = !document.documentElement.classList.contains('th-dark'); localStorage.setItem(DM_KEY, next ? '1' : '0'); applyDark(next); });
   </script>
-
-  <!-- Shortcut help modal -->
-  <div id="shortcut-help" class="hidden fixed inset-0 z-[100] bg-[#0A0A0A]/60 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="shortcut-help-title">
-    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-[#E8E8E4]">
-      <div class="flex items-center justify-between mb-4">
-        <h3 id="shortcut-help-title" class="font-bold text-[#0A0A0A]">Scurtături tastatură</h3>
-        <button aria-label="Închide" onclick="document.getElementById('shortcut-help')?.classList.add('hidden')" class="text-[#6B6B68] hover:text-[#0A0A0A]">✕</button>
-      </div>
-      <div class="space-y-2 text-[13px]">
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Tablou de bord</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G D</kbd></div>
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Facturi</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G F</kbd></div>
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Emite</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G E</kbd></div>
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Clienți</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G C</kbd></div>
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Produse</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G P</kbd></div>
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Gestiune</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G G</kbd></div>
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Notificări</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G N</kbd></div>
-        <div class="flex justify-between"><span class="text-[#0A0A0A]">Setări</span><kbd class="px-2 py-0.5 bg-[#F0F0EC] rounded text-xs font-mono">G S</kbd></div>
-      </div>
-    </div>
-  </div>
 </BaseLayout>
-
-<style is:global>
-  li[data-expandable][data-expanded='false'] > ul.sub-list { display: none; }
-  li[data-expandable][data-expanded='true']  > button.sub-toggle .chevron { transform: rotate(180deg); }
-</style>

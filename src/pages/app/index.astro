@@ -3,6 +3,7 @@ import AppLayout from '../../layouts/AppLayout.astro';
 import { db } from '../../db';
 import { transportInvoices } from '../../db/schema';
 import { and, eq, gte, sql, desc, inArray } from 'drizzle-orm';
+import { NAV_MODULES } from '../../lib/nav-modules';
 
 const user = Astro.locals.user!;
 const company = Astro.locals.company;
@@ -14,54 +15,29 @@ const ron = (cents: number) =>
 const now = new Date();
 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-let kpis = { invoicedMonth: 0, collectedMonth: 0, outstanding: 0, overdue: 0, efacturaPending: 0, efacturaError: 0 };
+let kpis = { invoicedMonth: 0, collectedMonth: 0, outstanding: 0, overdue: 0 };
 let recent: any[] = [];
 
 if (companyId) {
   try {
     const base = and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'));
-
-    const [mRow] = await db
-      .select({
-        invoiced: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}), 0)`,
-        collected: sql<number>`COALESCE(SUM(${transportInvoices.paidCents}), 0)`,
-      })
-      .from(transportInvoices)
-      .where(and(base, gte(transportInvoices.issuedAt, monthStart)));
+    const [mRow] = await db.select({
+      invoiced: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}), 0)`,
+      collected: sql<number>`COALESCE(SUM(${transportInvoices.paidCents}), 0)`,
+    }).from(transportInvoices).where(and(base, gte(transportInvoices.issuedAt, monthStart)));
     kpis.invoicedMonth = Number(mRow?.invoiced ?? 0);
     kpis.collectedMonth = Number(mRow?.collected ?? 0);
 
-    const [oRow] = await db
-      .select({ outstanding: sql<number>`COALESCE(SUM(${transportInvoices.totalCents} - ${transportInvoices.paidCents}), 0)` })
-      .from(transportInvoices)
-      .where(and(base, inArray(transportInvoices.status, ['issued', 'sent', 'partial', 'overdue'])));
+    const [oRow] = await db.select({ outstanding: sql<number>`COALESCE(SUM(${transportInvoices.totalCents} - ${transportInvoices.paidCents}), 0)` })
+      .from(transportInvoices).where(and(base, inArray(transportInvoices.status, ['issued', 'sent', 'partial', 'overdue'])));
     kpis.outstanding = Number(oRow?.outstanding ?? 0);
 
-    const [ovRow] = await db
-      .select({ overdue: sql<number>`COALESCE(SUM(${transportInvoices.totalCents} - ${transportInvoices.paidCents}), 0)` })
-      .from(transportInvoices)
-      .where(and(base, eq(transportInvoices.status, 'overdue')));
+    const [ovRow] = await db.select({ overdue: sql<number>`COALESCE(SUM(${transportInvoices.totalCents} - ${transportInvoices.paidCents}), 0)` })
+      .from(transportInvoices).where(and(base, eq(transportInvoices.status, 'overdue')));
     kpis.overdue = Number(ovRow?.overdue ?? 0);
 
-    const [efRow] = await db
-      .select({
-        pending: sql<number>`COUNT(*) FILTER (WHERE ${transportInvoices.efacturaStatus} IS NULL OR ${transportInvoices.efacturaStatus} = 'pending')`,
-        err: sql<number>`COUNT(*) FILTER (WHERE ${transportInvoices.efacturaStatus} = 'error')`,
-      })
-      .from(transportInvoices)
-      .where(and(base, inArray(transportInvoices.status, ['issued', 'sent', 'partial', 'overdue', 'paid'])));
-    kpis.efacturaPending = Number(efRow?.pending ?? 0);
-    kpis.efacturaError = Number(efRow?.err ?? 0);
-
-    recent = await db
-      .select()
-      .from(transportInvoices)
-      .where(eq(transportInvoices.companyId, companyId))
-      .orderBy(desc(transportInvoices.createdAt))
-      .limit(8);
-  } catch (e) {
-    // DB not provisioned yet — render empty dashboard.
-  }
+    recent = await db.select().from(transportInvoices).where(eq(transportInvoices.companyId, companyId)).orderBy(desc(transportInvoices.createdAt)).limit(6);
+  } catch (e) { /* DB not ready */ }
 }
 
 const statusLabels: Record<string, { label: string; cls: string }> = {
@@ -79,76 +55,82 @@ const cards = [
   { label: 'Facturat luna aceasta', value: ron(kpis.invoicedMonth), accent: 'text-[#0A0A0A]' },
   { label: 'Încasat luna aceasta', value: ron(kpis.collectedMonth), accent: 'text-[#15803D]' },
   { label: 'De încasat', value: ron(kpis.outstanding), accent: 'text-[#0A0A0A]' },
-  { label: 'Restant (termen depășit)', value: ron(kpis.overdue), accent: 'text-[#B91C1C]' },
+  { label: 'Restant', value: ron(kpis.overdue), accent: 'text-[#B91C1C]' },
 ];
+
+const primary = NAV_MODULES.find((m) => m.primary)!;
+const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import');
 ---
 
-<AppLayout title="Tablou de bord" activeTab="dashboard">
-  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
-    <div>
-      <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">Bună, {user.name?.split(' ')[0] || 'utilizator'} 👋</h1>
-      <p class="text-[13px] text-[#6B6B68] mt-1">{company?.name || 'Configurează-ți firma în Setări → Date firmă'}</p>
-    </div>
-    <a href="/app/facturare/emite" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white text-[13px] font-semibold rounded-xl transition-colors">
-      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-      Emite factură
-    </a>
+<AppLayout title="Acasă" hideBreadcrumbs>
+  <!-- Greeting -->
+  <div class="mb-6">
+    <h1 class="text-[26px] sm:text-[32px] font-bold tracking-[-0.025em]">Bună, {user.name?.split(' ')[0] || 'utilizator'} 👋</h1>
+    <p class="text-[16px] text-[#6B6B68] mt-1">{company?.name || 'Adaugă-ți firma în Setări → Date firmă'}</p>
   </div>
 
-  {(kpis.efacturaPending > 0 || kpis.efacturaError > 0) && (
-    <div class="mb-5 flex flex-wrap items-center gap-3 px-4 py-3 bg-white border border-[#E8E8E4] rounded-xl">
-      <span class="w-2 h-2 rounded-full bg-[#FF5C00]"></span>
-      <p class="text-[13px] text-[#0A0A0A]">
-        <strong>e-Factura:</strong> {kpis.efacturaPending} netrimise{kpis.efacturaError > 0 ? `, ${kpis.efacturaError} cu erori` : ''}.
-      </p>
-      <a href="/app/facturare/efactura" class="text-[12px] font-semibold text-[#FF5C00] hover:underline ml-auto">Gestionează →</a>
-    </div>
-  )}
-
-  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+  <!-- KPI strip -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
     {cards.map((c) => (
-      <div class="bg-white border border-[#E8E8E4] rounded-2xl p-4">
-        <p class="text-[11px] uppercase tracking-[0.12em] text-[#8A8A85] font-medium">{c.label}</p>
-        <p class={`text-[22px] font-bold tracking-[-0.02em] mt-2 ${c.accent}`}>{c.value}</p>
+      <div class="bg-white border border-[#E8E8E4] rounded-2xl p-4 sm:p-5">
+        <p class="text-[14px] text-[#6B6B68] font-medium">{c.label}</p>
+        <p class={`text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 ${c.accent}`}>{c.value}</p>
       </div>
     ))}
   </div>
 
-  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
-    <div class="flex items-center justify-between px-5 py-3.5 border-b border-[#F0F0EC]">
-      <h2 class="text-[14px] font-semibold text-[#0A0A0A]">Documente recente</h2>
-      <a href="/app/facturare" class="text-[12px] font-medium text-[#6B6B68] hover:text-[#0A0A0A]">Vezi toate →</a>
+  <!-- Primary action -->
+  <a href={primary.href} class="group flex items-center gap-4 p-5 sm:p-6 rounded-2xl bg-[#0A0A0A] text-white mb-4 hover:bg-[#1a1a1a] transition-colors">
+    <span class="shrink-0 w-14 h-14 rounded-2xl bg-[#FF5C00] flex items-center justify-center">
+      <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d={primary.icon}/></svg>
+    </span>
+    <span class="flex-1">
+      <span class="block text-[20px] sm:text-[22px] font-bold">{primary.label}</span>
+      <span class="block text-[15px] text-white/60 mt-0.5">Creează și trimite o factură în câteva secunde</span>
+    </span>
+    <svg class="w-7 h-7 text-white/70 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+  </a>
+
+  <!-- Action cards -->
+  <h2 class="text-[18px] font-bold mt-8 mb-3">Ce vrei să faci?</h2>
+  <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+    {rest.map((m) => (
+      <a href={m.href} class="group flex items-start gap-3 p-4 sm:p-5 rounded-2xl bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] hover:-translate-y-0.5 transition-all">
+        <span class="shrink-0 w-12 h-12 rounded-xl bg-[#FFF3E9] text-[#FF5C00] flex items-center justify-center">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
+        </span>
+        <span class="min-w-0">
+          <span class="block text-[16px] sm:text-[17px] font-semibold leading-tight">{m.label}</span>
+          <span class="block text-[13px] text-[#6B6B68] mt-1">{m.desc}</span>
+        </span>
+      </a>
+    ))}
+  </div>
+
+  <!-- Recent documents -->
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden mt-8">
+    <div class="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[#F0F0EC]">
+      <h2 class="text-[17px] font-bold">Documente recente</h2>
+      <a href="/app/facturare" class="text-[14px] font-semibold text-[#6B6B68] hover:text-[#0A0A0A]">Vezi toate →</a>
     </div>
     {recent.length === 0 ? (
-      <div class="px-5 py-12 text-center">
-        <p class="text-[14px] text-[#6B6B68]">Niciun document încă.</p>
-        <a href="/app/facturare/emite" class="inline-block mt-3 text-[13px] font-semibold text-[#FF5C00] hover:underline">Emite prima factură →</a>
+      <div class="px-6 py-14 text-center">
+        <p class="text-[16px] text-[#6B6B68]">Niciun document încă.</p>
+        <a href={primary.href} class="inline-block mt-3 text-[15px] font-semibold text-[#FF5C00] hover:underline">Emite prima factură →</a>
       </div>
     ) : (
-      <div class="overflow-x-auto">
-      <table class="w-full text-[13px]">
-        <thead>
-          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
-            <th class="px-5 py-2.5 font-medium">Număr</th>
-            <th class="px-5 py-2.5 font-medium">Client</th>
-            <th class="px-5 py-2.5 font-medium text-right">Total</th>
-            <th class="px-5 py-2.5 font-medium">Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {recent.map((inv) => {
-            const st = statusLabels[inv.status] || statusLabels.draft;
-            return (
-              <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors">
-                <td class="px-5 py-3"><a href={`/app/facturare/${inv.id}`} class="font-mono font-medium text-[#0A0A0A] hover:text-[#FF5C00]">{inv.fullNumber}</a></td>
-                <td class="px-5 py-3 text-[#3D3D3A] truncate max-w-[220px]">{inv.clientNameSnap}</td>
-                <td class="px-5 py-3 text-right font-semibold text-[#0A0A0A]">{ron(inv.totalCents)}</td>
-                <td class="px-5 py-3"><span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${st.cls}`}>{st.label}</span></td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      <div class="divide-y divide-[#F6F6F2]">
+        {recent.map((inv) => {
+          const st = statusLabels[inv.status] || statusLabels.draft;
+          return (
+            <a href={`/app/facturare/${inv.id}`} class="flex items-center gap-4 px-5 sm:px-6 py-4 hover:bg-[#FAFAF8] transition-colors">
+              <span class="font-mono font-semibold text-[15px] w-[120px] shrink-0">{inv.fullNumber}</span>
+              <span class="flex-1 min-w-0 text-[15px] text-[#3D3D3A] truncate">{inv.clientNameSnap}</span>
+              <span class="text-[16px] font-bold tabular-nums shrink-0">{ron(inv.totalCents)}</span>
+              <span class={`hidden sm:inline-block px-2.5 py-1 rounded-lg text-[13px] font-medium shrink-0 ${st.cls}`}>{st.label}</span>
+            </a>
+          );
+        })}
       </div>
     )}
   </div>
