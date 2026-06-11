@@ -1,7 +1,7 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
-import { transportInvoices } from '../../../db/schema';
+import { transportInvoices, companies } from '../../../db/schema';
 import { and, eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user!;
@@ -12,72 +12,89 @@ const ron = (cents: number) =>
   new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
 
 let rows: any[] = [];
+let autoSend = false;
 try {
-  rows = await db
-    .select()
-    .from(transportInvoices)
+  rows = await db.select().from(transportInvoices)
     .where(and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura')))
-    .orderBy(desc(transportInvoices.createdAt))
-    .limit(150);
-} catch (e) {
-  // DB not provisioned — render empty.
-}
+    .orderBy(desc(transportInvoices.createdAt)).limit(150);
+  const [co] = await db.select({ auto: companies.efacturaAutoSend }).from(companies).where(eq(companies.id, companyId)).limit(1);
+  autoSend = !!co?.auto;
+} catch (e) { /* DB not provisioned */ }
 
-// Map efacturaStatus (null/'pending'/'sent'/'validated'/'error') to a badge.
+// efacturaStatus values set by the engine: null/'pending' | 'submitted' | 'validated' | 'rejected'/'error'.
 function efBadge(status: string | null) {
   switch (status) {
+    case 'submitted':
     case 'sent': return { label: 'Trimisă', cls: 'bg-[#EAF2FF] text-[#1D4ED8]' };
     case 'validated': return { label: 'Validată', cls: 'bg-[#E7F7EC] text-[#15803D]' };
+    case 'rejected':
     case 'error': return { label: 'Eroare', cls: 'bg-[#FDECEC] text-[#B91C1C]' };
-    case 'pending':
-    case null:
-    case undefined:
     default: return { label: 'Netrimisă', cls: 'bg-[#F0F0EC] text-[#6B6B68]' };
   }
 }
+const isSendable = (s: string | null) => !(s === 'submitted' || s === 'sent' || s === 'validated');
 ---
 
 <AppLayout title="e-Factura" activeTab="efactura">
   <div class="mb-6">
     <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">e-Factura (ANAF)</h1>
-    <p class="text-[13px] text-[#6B6B68] mt-1">Statusul transmiterii facturilor în sistemul național RO e-Factura.</p>
+    <p class="text-[15px] text-[#6B6B68] mt-1">Trimite facturile în sistemul național RO e-Factura, automat sau la cerere.</p>
   </div>
 
-  <div class="mb-5 flex flex-wrap items-center gap-3 px-4 py-3 bg-white border border-[#E8E8E4] rounded-xl">
+  <!-- Auto-send toggle -->
+  <div class="mb-4 flex flex-wrap items-center gap-3 px-5 py-4 bg-white border border-[#E8E8E4] rounded-2xl">
+    <div class="flex-1 min-w-[220px]">
+      <p class="text-[16px] font-semibold text-[#0A0A0A]">Trimitere automată la ANAF</p>
+      <p class="text-[14px] text-[#6B6B68] mt-0.5">Când e pornit, fiecare factură nouă pleacă singură la e-Factura la emitere.</p>
+    </div>
+    <button id="auto-toggle" role="switch" aria-checked={autoSend ? 'true' : 'false'}
+      class:list={['relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0', autoSend ? 'bg-[#FF5C00]' : 'bg-[#D4D4CE]']}>
+      <span class:list={['inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow', autoSend ? 'translate-x-7' : 'translate-x-1']}></span>
+    </button>
+    <span id="auto-state" class="text-[14px] font-semibold w-[60px]">{autoSend ? 'Pornit' : 'Oprit'}</span>
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center gap-3 px-4 py-3 bg-[#FFF3E9] border border-[#FF5C00]/25 rounded-xl">
     <span class="w-2 h-2 rounded-full bg-[#FF5C00]"></span>
-    <p class="text-[13px] text-[#0A0A0A]">
-      Conectarea la ANAF se face din <strong>Setări → Integrare ANAF</strong>. După conectare, facturile pot fi transmise automat în SPV.
-    </p>
-    <a href="/app/setari/integrari-anaf" class="text-[12px] font-semibold text-[#FF5C00] hover:underline ml-auto">Configurează →</a>
+    <p class="text-[14px] text-[#0A0A0A]">Conectarea la ANAF se face din <strong>Setări → Integrare ANAF</strong> (necesară pentru transmitere).</p>
+    <a href="/app/setari/integrari-anaf" class="text-[14px] font-semibold text-[#FF5C00] hover:underline ml-auto">Configurează →</a>
+    <button id="send-all" class="px-4 h-10 rounded-xl bg-[#0A0A0A] text-white text-[14px] font-semibold hover:bg-[#1a1a1a]">Trimite toate netrimise</button>
   </div>
 
   <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
     {rows.length === 0 ? (
-      <div class="px-5 py-12 text-center text-sm text-[#6B6B68]">Nicio factură de transmis.</div>
+      <div class="px-5 py-12 text-center text-[15px] text-[#6B6B68]">Nicio factură de transmis.</div>
     ) : (
       <div class="overflow-x-auto">
-        <table class="w-full text-[13px]">
+        <table class="w-full text-[14px]">
           <thead>
-            <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
-              <th class="px-5 py-2.5 font-medium">Număr</th>
-              <th class="px-5 py-2.5 font-medium">Client</th>
-              <th class="px-5 py-2.5 font-medium text-right">Total</th>
-              <th class="px-5 py-2.5 font-medium">Status e-Factura</th>
+            <tr class="text-left text-[12px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+              <th class="px-5 py-3 font-medium">Număr</th>
+              <th class="px-5 py-3 font-medium">Client</th>
+              <th class="px-5 py-3 font-medium text-right">Total</th>
+              <th class="px-5 py-3 font-medium">Status</th>
+              <th class="px-5 py-3 font-medium text-right">Acțiune</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((inv) => {
               const ef = efBadge(inv.efacturaStatus);
+              const sendable = isSendable(inv.efacturaStatus);
               return (
-                <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors">
-                  <td class="px-5 py-3"><a href={`/app/facturare/${inv.id}`} class="font-mono font-medium text-[#0A0A0A] hover:text-[#FF5C00]">{inv.fullNumber}</a></td>
-                  <td class="px-5 py-3 text-[#3D3D3A] truncate max-w-[220px]">{inv.clientNameSnap}</td>
-                  <td class="px-5 py-3 text-right font-semibold text-[#0A0A0A]">{ron(inv.totalCents)}</td>
-                  <td class="px-5 py-3">
-                    <span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${ef.cls}`}>{ef.label}</span>
-                    {inv.efacturaStatus === 'error' && inv.efacturaError && (
-                      <span class="block text-[11px] text-[#B91C1C] mt-1 truncate max-w-[260px]">{inv.efacturaError}</span>
+                <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors" data-row data-id={inv.id} data-sendable={sendable ? '1' : '0'}>
+                  <td class="px-5 py-3.5"><a href={`/app/facturare/${inv.id}`} class="font-mono font-semibold text-[#0A0A0A] hover:text-[#FF5C00]">{inv.fullNumber}</a></td>
+                  <td class="px-5 py-3.5 text-[#3D3D3A] truncate max-w-[220px]">{inv.clientNameSnap}</td>
+                  <td class="px-5 py-3.5 text-right font-semibold text-[#0A0A0A]">{ron(inv.totalCents)}</td>
+                  <td class="px-5 py-3.5">
+                    <span class={`ef-badge inline-block px-2.5 py-1 rounded-lg text-[13px] font-medium ${ef.cls}`}>{ef.label}</span>
+                    {(inv.efacturaStatus === 'rejected' || inv.efacturaStatus === 'error') && inv.efacturaError && (
+                      <span class="block text-[13px] text-[#B91C1C] mt-1 truncate max-w-[260px]">{inv.efacturaError}</span>
                     )}
+                  </td>
+                  <td class="px-5 py-3.5 text-right">
+                    <button class="send-one px-3.5 h-10 rounded-xl bg-white border border-[#E0E0DA] hover:border-[#0A0A0A] text-[14px] font-semibold whitespace-nowrap" data-id={inv.id}>
+                      {sendable ? 'Trimite acum' : 'Retrimite'}
+                    </button>
                   </td>
                 </tr>
               );
@@ -87,4 +104,60 @@ function efBadge(status: string | null) {
       </div>
     )}
   </div>
+
+  <script>
+    // Auto-send toggle
+    const toggle = document.getElementById('auto-toggle');
+    const stateLbl = document.getElementById('auto-state');
+    toggle?.addEventListener('click', async () => {
+      const next = toggle.getAttribute('aria-checked') !== 'true';
+      toggle.setAttribute('aria-checked', next ? 'true' : 'false');
+      toggle.classList.toggle('bg-[#FF5C00]', next);
+      toggle.classList.toggle('bg-[#D4D4CE]', !next);
+      const knob = toggle.querySelector('span');
+      knob?.classList.toggle('translate-x-7', next);
+      knob?.classList.toggle('translate-x-1', !next);
+      if (stateLbl) stateLbl.textContent = next ? 'Pornit' : 'Oprit';
+      try {
+        await fetch('/api/invoicing/efactura-settings', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ autoSend: next }),
+        });
+      } catch {}
+    });
+
+    async function sendOne(btn: HTMLButtonElement) {
+      const id = btn.dataset.id;
+      if (!id) return;
+      const original = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Se trimite...';
+      try {
+        const res = await fetch(`/api/invoicing/invoices/${id}/efactura`, { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          const row = btn.closest('[data-row]');
+          const badge = row?.querySelector('.ef-badge');
+          if (badge) { badge.textContent = 'Trimisă'; badge.className = 'ef-badge inline-block px-2.5 py-1 rounded-lg text-[13px] font-medium bg-[#EAF2FF] text-[#1D4ED8]'; }
+          btn.textContent = 'Retrimite';
+        } else {
+          btn.textContent = original || 'Trimite acum';
+          alert('Nu s-a putut trimite: ' + (data.error || 'verifică conexiunea ANAF din Setări.'));
+        }
+      } catch {
+        btn.textContent = original || 'Trimite acum';
+        alert('Eroare de rețea.');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    document.querySelectorAll<HTMLButtonElement>('.send-one').forEach((b) => b.addEventListener('click', () => sendOne(b)));
+
+    document.getElementById('send-all')?.addEventListener('click', async () => {
+      const btns = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-row][data-sendable="1"] .send-one'));
+      if (!btns.length) { alert('Nu există facturi netrimise.'); return; }
+      if (!confirm(`Trimit ${btns.length} facturi la ANAF?`)) return;
+      for (const b of btns) { await sendOne(b); }
+    });
+  </script>
 </AppLayout>

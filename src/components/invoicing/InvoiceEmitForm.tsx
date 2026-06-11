@@ -82,7 +82,7 @@ interface DossierPrefill {
   currency?: string;
 }
 
-export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill }: { kind: Kind; orderId?: string; fromId?: string; dossierPrefill?: DossierPrefill }) {
+export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill, efacturaAutoSend = false }: { kind: Kind; orderId?: string; fromId?: string; dossierPrefill?: DossierPrefill; efacturaAutoSend?: boolean }) {
   // Recipient — picker uses external clients only for now. Internal linking
   // comes from the comenzi-emit-invoice flow with orderId pre-populated.
   const [clientSearch, setClientSearch] = useState('');
@@ -124,6 +124,8 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill 
   const [seriesId, setSeriesId] = useState('');
   // Mark the invoice paid + emit a chitanță in one go (only for kind=factura).
   const [collectNow, setCollectNow] = useState(false);
+  // e-Factura: trimite la ANAF la emitere. Implicit = setajul firmei (auto-send).
+  const [sendEfactura, setSendEfactura] = useState(efacturaAutoSend);
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [bnr, setBnr] = useState<{ rate: number; date: string } | null>(null);
 
@@ -327,6 +329,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill 
           attachmentName: attachmentName.trim() || null,
           dueAt: dueDate || null,
           issueImmediately,
+          sendEfactura: kind === 'factura' ? sendEfactura : false,
           notes: notes || null,
           lines: lines.map((l) => ({
             code: l.code.trim() || null,
@@ -665,6 +668,12 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill 
           <label className="flex items-center gap-2 text-sm text-[#0A0A0A]">
             <input type="checkbox" checked={collectNow} onChange={(e) => setCollectNow(e.target.checked)} />
             Încasează factura acum (emite chitanță)
+          </label>
+        )}
+        {kind === 'factura' && issueImmediately && (
+          <label className="flex items-center gap-2 text-sm text-[#0A0A0A]">
+            <input type="checkbox" checked={sendEfactura} onChange={(e) => setSendEfactura(e.target.checked)} />
+            Trimite la e-Factura (ANAF) acum
           </label>
         )}
         <div className="flex-1" />

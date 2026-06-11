@@ -7,6 +7,7 @@ import { ensureDefaultSeries, nextSeriesNumber, INVOICE_NUMBER_FORMAT, type Invo
 import { validateBody, invoiceCreateSchema } from '../../../../lib/validation';
 import { captureBnrSnapshot } from '../../../../lib/bnr-fx';
 import { notify } from '../../../../lib/notifications';
+import { submitInvoiceToAnaf } from '../../../../lib/efactura-submit';
 
 const VALID_KINDS: InvoiceKind[] = ['factura', 'proforma', 'storno', 'chitanta'];
 
@@ -189,5 +190,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
   }
 
-  return new Response(JSON.stringify({ id: invoiceId, fullNumber, totalCents }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+  // e-Factura auto-send: per-invoice `sendEfactura` flag wins; otherwise the
+  // company's `efacturaAutoSend` default. Only issued facturi. Best-effort —
+  // never blocks invoice creation.
+  let efactura: { sent: boolean; ok?: boolean; error?: string } | undefined;
+  if (kind === 'factura' && status === 'issued') {
+    let sendFlag: boolean | undefined = typeof body.sendEfactura === 'boolean' ? body.sendEfactura : undefined;
+    if (sendFlag === undefined) {
+      const [co] = await db.select({ auto: companies.efacturaAutoSend }).from(companies).where(eq(companies.id, cid)).limit(1);
+      sendFlag = !!co?.auto;
+    }
+    if (sendFlag) {
+      try {
+        const r = await submitInvoiceToAnaf(invoiceId, { userId: locals.user.id });
+        efactura = { sent: true, ok: r.ok, error: r.ok ? undefined : r.error };
+      } catch {
+        efactura = { sent: true, ok: false, error: 'send_failed' };
+      }
+    }
+  }
+
+  return new Response(JSON.stringify({ id: invoiceId, fullNumber, totalCents, efactura }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 };

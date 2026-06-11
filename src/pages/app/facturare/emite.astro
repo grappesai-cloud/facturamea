@@ -2,11 +2,18 @@
 import AppLayout from '../../../layouts/AppLayout.astro';
 import InvoiceEmitForm from '../../../components/invoicing/InvoiceEmitForm';
 import { db } from '../../../db';
-import { transportDossiers, orders, freight } from '../../../db/schema';
+import { transportDossiers, orders, freight, companies } from '../../../db/schema';
 import { eq, and } from 'drizzle-orm';
 
 const user = Astro.locals.user!;
 if (!user.companyId) return Astro.redirect('/app/setari');
+
+// e-Factura auto-send default for the "trimite acum" checkbox.
+let efacturaAutoSend = false;
+try {
+  const [co] = await db.select({ auto: companies.efacturaAutoSend }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
+  efacturaAutoSend = !!co?.auto;
+} catch {}
 
 const kindParam = Astro.url.searchParams.get('kind') || 'factura';
 const validKinds = ['factura', 'proforma', 'storno', 'chitanta'] as const;
@@ -57,6 +64,6 @@ if (!dossierPrefill && orderId) {
     <a href="/app/facturare" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la facturare</a>
   </div>
   <div class="max-w-5xl">
-    <InvoiceEmitForm kind={kind} orderId={orderId} fromId={fromId} dossierPrefill={dossierPrefill} client:load />
+    <InvoiceEmitForm kind={kind} orderId={orderId} fromId={fromId} dossierPrefill={dossierPrefill} efacturaAutoSend={efacturaAutoSend} client:load />
   </div>
 </AppLayout>

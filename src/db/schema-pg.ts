@@ -117,6 +117,8 @@ export const companies = pgTable('companies', {
   invoiceSignatureUrl: text('invoice_signature_url'),
   invoiceFooterText: text('invoice_footer_text'),
   tvaAtCollection: boolean('tva_at_collection').default(false),
+  // e-Factura: when true, every issued invoice is auto-submitted to ANAF SPV on creation.
+  efacturaAutoSend: boolean('efactura_auto_send').default(false),
   // Payment-behavior engine — rolled up from invoice scadență vs. paidAt.
   // paymentScore 0..100 ("Payment Reliability Score"); recomputed by the daily
   // cron + after every chitanță. avgDaysToPay = mean delay (issue→paid),
