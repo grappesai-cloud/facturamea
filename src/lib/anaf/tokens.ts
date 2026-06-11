@@ -68,6 +68,23 @@ export async function listConnections(companyId: string) {
     .where(and(eq(anafConnections.companyId, companyId), isNull(anafConnections.revokedAt)));
 }
 
+// Lightweight status for the UI indicator: connected to e-Factura/SPV with a
+// still-valid refresh token. Returns { connected, cif }.
+export async function getAnafStatus(companyId: string): Promise<{ connected: boolean; cif: string | null }> {
+  try {
+    const conns = await listConnections(companyId);
+    const now = Date.now();
+    const live = conns.find((c) => (c.scope === 'e-factura' || c.scope === 'spv') && new Date(c.refreshExpiresAt).getTime() > now);
+    return { connected: !!live, cif: live?.cif || null };
+  } catch {
+    return { connected: false, cif: null };
+  }
+}
+
+export async function isAnafConnected(companyId: string): Promise<boolean> {
+  return (await getAnafStatus(companyId)).connected;
+}
+
 export async function getValidAccessToken(companyId: string, scope: AnafScope): Promise<string> {
   const conn = await getConnection(companyId, scope);
   if (!conn) throw new Error(`ANAF nu este conectat pentru ${scope}. Conectează-te din Setări → Integrări ANAF.`);

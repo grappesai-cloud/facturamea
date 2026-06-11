@@ -7,6 +7,7 @@ import { getLocaleFromCookie } from './lib/i18n';
 import { rateLimitAsync, getClientIp } from './lib/security';
 import { captureError } from './lib/observability';
 import { licenseState } from './lib/license';
+import { isAnafConnected } from './lib/anaf/tokens';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
@@ -248,6 +249,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
       // Load company data
       context.locals.license = null;
+      context.locals.anafConnected = null;
       if (user.companyId) {
         const [company] = await db.select().from(companies).where(eq(companies.id, user.companyId));
         context.locals.company = company ? {
@@ -267,6 +269,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
               return context.redirect('/app/setari/abonament');
             }
           } catch { /* DB not ready — don't lock out */ }
+          try { context.locals.anafConnected = await isAnafConnected(user.companyId); } catch {}
         }
       } else {
         context.locals.company = null;

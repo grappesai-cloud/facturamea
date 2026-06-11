@@ -41,6 +41,7 @@ declare namespace App {
       active: boolean;
       trialDaysLeft: number;
     } | null;
+    anafConnected: boolean | null;
     locale: 'ro' | 'en';
     requestId: string;
   }

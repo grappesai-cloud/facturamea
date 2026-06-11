@@ -64,6 +64,6 @@ if (!dossierPrefill && orderId) {
     <a href="/app/facturare" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la facturare</a>
   </div>
   <div class="max-w-5xl">
-    <InvoiceEmitForm kind={kind} orderId={orderId} fromId={fromId} dossierPrefill={dossierPrefill} efacturaAutoSend={efacturaAutoSend} client:load />
+    <InvoiceEmitForm kind={kind} orderId={orderId} fromId={fromId} dossierPrefill={dossierPrefill} efacturaAutoSend={efacturaAutoSend} anafConnected={Astro.locals.anafConnected ?? false} client:load />
   </div>
 </AppLayout>

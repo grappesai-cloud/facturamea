@@ -82,7 +82,7 @@ interface DossierPrefill {
   currency?: string;
 }
 
-export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill, efacturaAutoSend = false }: { kind: Kind; orderId?: string; fromId?: string; dossierPrefill?: DossierPrefill; efacturaAutoSend?: boolean }) {
+export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill, efacturaAutoSend = false, anafConnected = true }: { kind: Kind; orderId?: string; fromId?: string; dossierPrefill?: DossierPrefill; efacturaAutoSend?: boolean; anafConnected?: boolean }) {
   // Recipient — picker uses external clients only for now. Internal linking
   // comes from the comenzi-emit-invoice flow with orderId pre-populated.
   const [clientSearch, setClientSearch] = useState('');
@@ -674,6 +674,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
           <label className="flex items-center gap-2 text-sm text-[#0A0A0A]">
             <input type="checkbox" checked={sendEfactura} onChange={(e) => setSendEfactura(e.target.checked)} />
             Trimite la e-Factura (ANAF) acum
+            {!anafConnected && <span className="text-[#B45309]">(ANAF neconectat)</span>}
           </label>
         )}
         <div className="flex-1" />
