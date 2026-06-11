@@ -1,0 +1,138 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import OpenBankingConnect from '../../../components/plati/OpenBankingConnect';
+import { isStripeConfigured } from '../../../lib/stripe';
+import { isNetopiaConfigured, isNetopiaSandbox } from '../../../lib/netopia';
+import { isOpenBankingConfigured } from '../../../lib/openbanking';
+import { db } from '../../../db';
+import { bankAccounts } from '../../../db/schema';
+import { and, eq } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+
+// Server-side capability checks (env-gated, never throw without creds).
+const stripeOn = isStripeConfigured();
+const netopiaOn = isNetopiaConfigured();
+const netopiaSandbox = netopiaOn && isNetopiaSandbox();
+const openBankingOn = isOpenBankingConfigured();
+
+// Existing bank accounts so the open banking sync can pin to one (optional).
+let localAccounts: { id: string; name: string; iban: string | null; currency: string }[] = [];
+try {
+  const rows = await db
+    .select({ id: bankAccounts.id, name: bankAccounts.name, iban: bankAccounts.iban, currency: bankAccounts.currency })
+    .from(bankAccounts)
+    .where(and(eq(bankAccounts.companyId, user.companyId), eq(bankAccounts.isActive, true)));
+  localAccounts = rows.map((r) => ({ id: r.id, name: r.name, iban: r.iban, currency: r.currency || 'RON' }));
+} catch {
+  // DB not ready locally — degrade silently, the island still works.
+  localAccounts = [];
+}
+
+const card = 'bg-white border border-[#E8E8E4] rounded-2xl';
+---
+
+<AppLayout title="Plăți și bancă — facturamea" activeTab="setari" breadcrumbTitle="Plăți și bancă" breadcrumbParent={{ label: 'Setări', href: '/app/setari' }}>
+  <div class="max-w-4xl">
+    <PageHeader tagline="Cont" title="Plăți și bancă" subtitle="Plată online a facturilor și conectarea automată la bancă." />
+
+    <!-- ─── Plată online ──────────────────────────────────────────── -->
+    <section class="mb-12">
+      <h2 class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium mb-4">Plată online</h2>
+      <p class="text-[15px] text-[#6B6B68] leading-relaxed mb-5">
+        Adaugă pe facturi un buton „Link de plată" prin care clientul poate plăti cu cardul.
+        Când plata reușește, încasarea se înregistrează automat pe factură.
+      </p>
+
+      <div class="space-y-4">
+        <!-- Stripe -->
+        <div class={`${card} p-6`}>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-[16px] font-semibold text-[#0A0A0A]">Stripe (card internațional)</h3>
+              <p class="text-[14px] text-[#6B6B68] mt-1 leading-relaxed">
+                Procesator de plăți cu cardul, util pentru clienți internaționali. Linkul de plată generează un
+                checkout Stripe pentru suma rămasă de încasat.
+              </p>
+            </div>
+            <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${stripeOn ? 'bg-[#ECFDF3] text-[#15803D]' : 'bg-[#FAFAF8] text-[#6B6B68] border border-[#E8E8E4]'}`}>
+              <span class={`w-1.5 h-1.5 rounded-full ${stripeOn ? 'bg-[#15803D]' : 'bg-[#A8A8A4]'}`}></span>
+              {stripeOn ? 'Configurat' : 'Neconfigurat'}
+            </span>
+          </div>
+          {!stripeOn && (
+            <div class="mt-4 px-4 py-3 rounded-xl bg-[#FAFAF8] border border-[#E8E8E4]">
+              <p class="text-[13px] text-[#6B6B68]">
+                Pentru a activa, setează variabila de mediu
+                <span class="font-mono text-[#0A0A0A]">STRIPE_SECRET_KEY</span>
+                (și <span class="font-mono text-[#0A0A0A]">STRIPE_WEBHOOK_SECRET</span> pentru confirmarea automată a plății).
+              </p>
+            </div>
+          )}
+        </div>
+
+        <!-- Netopia -->
+        <div class={`${card} p-6`}>
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h3 class="text-[16px] font-semibold text-[#0A0A0A]">
+                Netopia (mobilPay)
+                {netopiaSandbox && (
+                  <span class="ml-2 align-middle text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3C7] text-[#B45309]">sandbox</span>
+                )}
+              </h3>
+              <p class="text-[14px] text-[#6B6B68] mt-1 leading-relaxed">
+                Procesatorul de plăți românesc. Recomandat pentru clienți din România (carduri locale, plată în RON).
+                Linkul de plată trimite clientul către pagina securizată Netopia.
+              </p>
+            </div>
+            <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${netopiaOn ? 'bg-[#ECFDF3] text-[#15803D]' : 'bg-[#FAFAF8] text-[#6B6B68] border border-[#E8E8E4]'}`}>
+              <span class={`w-1.5 h-1.5 rounded-full ${netopiaOn ? 'bg-[#15803D]' : 'bg-[#A8A8A4]'}`}></span>
+              {netopiaOn ? 'Configurat' : 'Neconfigurat'}
+            </span>
+          </div>
+          {!netopiaOn && (
+            <div class="mt-4 px-4 py-3 rounded-xl bg-[#FAFAF8] border border-[#E8E8E4]">
+              <p class="text-[13px] text-[#6B6B68] mb-2">
+                Pentru a activa, obține cheile din contul Netopia (Admin · Securitate) și setează variabilele de mediu:
+              </p>
+              <ul class="space-y-1.5 text-[13px] font-mono text-[#0A0A0A]">
+                <li class="px-3 py-2 rounded-lg bg-white border border-[#E8E8E4]">NETOPIA_API_KEY</li>
+                <li class="px-3 py-2 rounded-lg bg-white border border-[#E8E8E4]">NETOPIA_SIGNATURE</li>
+                <li class="px-3 py-2 rounded-lg bg-white border border-[#E8E8E4]">NETOPIA_SANDBOX=1 <span class="text-[#6B6B68]">(opțional, pentru teste)</span></li>
+              </ul>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div class={`${card} p-6 mt-4`}>
+        <h3 class="text-[15px] font-semibold text-[#0A0A0A] mb-2">Cum funcționează linkul de plată</h3>
+        <ol class="space-y-2 text-[14px] text-[#6B6B68] leading-relaxed list-decimal pl-5">
+          <li>Deschizi o factură și apeși „Link de plată" (card).</li>
+          <li>Clientul plătește pe pagina securizată a procesatorului (Stripe sau Netopia).</li>
+          <li>La confirmarea plății, încasarea se înregistrează automat pe factură și statusul devine „Plătită".</li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ─── Open banking ──────────────────────────────────────────── -->
+    <section class="mb-10">
+      <h2 class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium mb-4">Open banking</h2>
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <p class="text-[15px] text-[#6B6B68] leading-relaxed">
+          Conectează-ți conturile bancare prin GoCardless Bank Account Data și importă tranzacțiile automat,
+          gata de reconciliere cu facturile și cheltuielile.
+        </p>
+        <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${openBankingOn ? 'bg-[#ECFDF3] text-[#15803D]' : 'bg-[#FAFAF8] text-[#6B6B68] border border-[#E8E8E4]'}`}>
+          <span class={`w-1.5 h-1.5 rounded-full ${openBankingOn ? 'bg-[#15803D]' : 'bg-[#A8A8A4]'}`}></span>
+          {openBankingOn ? 'Configurat' : 'Neconfigurat'}
+        </span>
+      </div>
+
+      <OpenBankingConnect client:load configured={openBankingOn} localAccounts={localAccounts} />
+    </section>
+  </div>
+</AppLayout>

@@ -1,0 +1,187 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { ledgerAccounts } from '../../../db/schema';
+import { eq, asc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const TYPE_LABELS: Record<string, string> = {
+  A: 'Activ', P: 'Pasiv', B: 'Bifuncțional', V: 'Venit', C: 'Cheltuială',
+};
+
+let accounts: any[] = [];
+try {
+  accounts = await db
+    .select()
+    .from(ledgerAccounts)
+    .where(eq(ledgerAccounts.companyId, companyId))
+    .orderBy(asc(ledgerAccounts.code));
+} catch (e) {
+  // DB not provisioned.
+}
+---
+
+<AppLayout title="Plan de conturi" activeTab="contabilitate">
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">Plan de conturi</h1>
+      <p class="text-[15px] text-[#6B6B68] mt-1">Conturile contabile ale firmei tale.</p>
+    </div>
+    <button id="add-btn" class="inline-flex items-center gap-2 px-4 h-11 rounded-xl bg-[#0A0A0A] text-white text-[15px] font-semibold hover:bg-[#1a1a1a] transition-colors">
+      <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      Cont nou
+    </button>
+  </div>
+
+  <!-- Add/edit form -->
+  <div id="form-card" class="hidden bg-white border border-[#E8E8E4] rounded-2xl p-5 sm:p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 id="form-title" class="text-[18px] font-bold text-[#0A0A0A]">Cont nou</h2>
+      <button id="form-close" class="w-9 h-9 rounded-lg hover:bg-[#F0F0EC] flex items-center justify-center" aria-label="Închide">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <input type="hidden" id="f-id" />
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+      <div>
+        <label class="block text-[13px] font-medium text-[#6B6B68] mb-1.5">Cod</label>
+        <input id="f-code" type="text" placeholder="Ex: 5121" class="w-full h-11 px-3 rounded-xl border border-[#E0E0DA] bg-white text-[15px] focus:outline-none focus:border-[#FF5C00]" />
+      </div>
+      <div class="sm:col-span-2">
+        <label class="block text-[13px] font-medium text-[#6B6B68] mb-1.5">Denumire</label>
+        <input id="f-name" type="text" placeholder="Ex: Conturi la bănci în lei" class="w-full h-11 px-3 rounded-xl border border-[#E0E0DA] bg-white text-[15px] focus:outline-none focus:border-[#FF5C00]" />
+      </div>
+      <div>
+        <label class="block text-[13px] font-medium text-[#6B6B68] mb-1.5">Tip</label>
+        <select id="f-type" class="w-full h-11 px-3 rounded-xl border border-[#E0E0DA] bg-white text-[15px] focus:outline-none focus:border-[#FF5C00]">
+          <option value="A">Activ</option>
+          <option value="P">Pasiv</option>
+          <option value="B">Bifuncțional</option>
+          <option value="V">Venit</option>
+          <option value="C">Cheltuială</option>
+        </select>
+      </div>
+    </div>
+    <p id="f-error" class="text-[14px] text-[#B91C1C] mt-3 hidden"></p>
+    <div class="mt-4 flex items-center gap-3">
+      <button id="f-save" class="px-5 h-11 rounded-xl bg-[#FF5C00] text-white text-[15px] font-semibold hover:bg-[#e85400] transition-colors">Salvează</button>
+      <button id="f-cancel" class="px-5 h-11 rounded-xl border border-[#E0E0DA] text-[15px] font-semibold text-[#0A0A0A] hover:border-[#0A0A0A] transition-colors">Renunță</button>
+    </div>
+  </div>
+
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
+    {accounts.length === 0 ? (
+      <div class="px-5 py-14 text-center">
+        <p class="text-[16px] text-[#6B6B68]">Planul de conturi nu este inițializat.</p>
+        <a href="/app/contabilitate" class="inline-block mt-3 text-[15px] font-semibold text-[#FF5C00] hover:underline">Inițializează planul →</a>
+      </div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[14px]">
+          <thead>
+            <tr class="text-left text-[12px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC] bg-[#FAFAF8]">
+              <th class="px-4 py-3 font-medium">Cod</th>
+              <th class="px-4 py-3 font-medium">Denumire</th>
+              <th class="px-4 py-3 font-medium">Tip</th>
+              <th class="px-4 py-3 font-medium">Stare</th>
+              <th class="px-4 py-3 font-medium text-right">Acțiuni</th>
+            </tr>
+          </thead>
+          <tbody>
+            {accounts.map((a) => (
+              <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors"
+                data-id={a.id} data-code={a.code} data-name={a.name} data-type={a.type} data-active={a.isActive ? '1' : '0'}>
+                <td class="px-4 py-3 font-mono font-semibold text-[#0A0A0A]">{a.code}</td>
+                <td class="px-4 py-3 text-[#3D3D3A]">{a.name}</td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded-lg text-[12px] font-medium bg-[#F0F0EC] text-[#6B6B68]">{TYPE_LABELS[a.type] || a.type}</span></td>
+                <td class="px-4 py-3">
+                  {a.isActive
+                    ? <span class="text-[13px] text-[#15803D] font-medium">Activ</span>
+                    : <span class="text-[13px] text-[#8A8A85] font-medium">Inactiv</span>}
+                </td>
+                <td class="px-4 py-3 text-right whitespace-nowrap">
+                  <a href={`/app/contabilitate/fisa?cont=${a.code}`} class="inline-block px-3 h-9 leading-9 rounded-lg border border-[#E0E0DA] text-[13px] font-semibold hover:border-[#0A0A0A] mr-1.5">Fișă</a>
+                  <button class="edit-btn inline-block px-3 h-9 rounded-lg border border-[#E0E0DA] text-[13px] font-semibold hover:border-[#0A0A0A]">Editează</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <script>
+    const card = document.getElementById('form-card');
+    const title = document.getElementById('form-title');
+    const fId = document.getElementById('f-id') as HTMLInputElement;
+    const fCode = document.getElementById('f-code') as HTMLInputElement;
+    const fName = document.getElementById('f-name') as HTMLInputElement;
+    const fType = document.getElementById('f-type') as HTMLSelectElement;
+    const fError = document.getElementById('f-error');
+    const fSave = document.getElementById('f-save') as HTMLButtonElement;
+
+    function showError(m: string) { if (fError) { fError.textContent = m; fError.classList.remove('hidden'); } }
+    function clearError() { fError?.classList.add('hidden'); }
+
+    function openForm(mode: 'add' | 'edit', data?: { id: string; code: string; name: string; type: string }) {
+      clearError();
+      card?.classList.remove('hidden');
+      if (mode === 'add') {
+        if (title) title.textContent = 'Cont nou';
+        fId.value = ''; fCode.value = ''; fName.value = ''; fType.value = 'A';
+        fCode.disabled = false;
+      } else if (data) {
+        if (title) title.textContent = `Editează ${data.code}`;
+        fId.value = data.id; fCode.value = data.code; fName.value = data.name; fType.value = data.type;
+        fCode.disabled = true; // code is immutable once created
+      }
+      card?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      fName.focus();
+    }
+    function closeForm() { card?.classList.add('hidden'); }
+
+    document.getElementById('add-btn')?.addEventListener('click', () => openForm('add'));
+    document.getElementById('form-close')?.addEventListener('click', closeForm);
+    document.getElementById('f-cancel')?.addEventListener('click', closeForm);
+
+    document.querySelectorAll('.edit-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('tr');
+        if (!row) return;
+        openForm('edit', {
+          id: row.getAttribute('data-id') || '',
+          code: row.getAttribute('data-code') || '',
+          name: row.getAttribute('data-name') || '',
+          type: row.getAttribute('data-type') || 'A',
+        });
+      });
+    });
+
+    fSave?.addEventListener('click', async () => {
+      clearError();
+      const code = fCode.value.trim();
+      const name = fName.value.trim();
+      const type = fType.value;
+      if (!name) { showError('Denumirea este obligatorie.'); return; }
+      if (!fId.value && !code) { showError('Codul este obligatoriu.'); return; }
+      fSave.disabled = true; fSave.textContent = 'Se salvează...';
+      try {
+        const isEdit = !!fId.value;
+        const res = await fetch('/api/contabilitate/accounts', {
+          method: isEdit ? 'PATCH' : 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(isEdit ? { id: fId.value, name, type } : { code, name, type }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { showError(data.error || 'Eroare la salvare.'); fSave.disabled = false; fSave.textContent = 'Salvează'; return; }
+        window.location.reload();
+      } catch {
+        showError('Eroare de conexiune.'); fSave.disabled = false; fSave.textContent = 'Salvează';
+      }
+    });
+  </script>
+</AppLayout>

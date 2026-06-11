@@ -1,0 +1,43 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ReceiptScanner from '../../../components/cheltuieli-plus/ReceiptScanner';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+
+// Surface whether OCR is configured so we can set expectations up front.
+const ocrEnabled = !!process.env.ANTHROPIC_API_KEY;
+---
+
+<AppLayout title="Scanează bon / factură — facturamea" activeTab="cheltuieli">
+  <div class="max-w-3xl mx-auto">
+    <div class="mb-6 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">Scanează bon sau factură</h1>
+        <p class="text-[15px] text-[#6B6B68] mt-1">Fotografiază documentul, iar noi citim datele și creăm cheltuiala.</p>
+      </div>
+      <a href="/app/cheltuieli" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] text-[14px] font-semibold rounded-xl transition-colors">
+        Toate cheltuielile
+      </a>
+    </div>
+
+    {!ocrEnabled && (
+      <div class="mb-4 flex flex-wrap items-center gap-2.5 px-4 py-3 bg-[#FFF7E6] border border-[#B45309]/25 rounded-xl">
+        <span class="w-2 h-2 rounded-full bg-[#B45309]"></span>
+        <p class="text-[14px] text-[#0A0A0A]">Citirea automată nu este activă acum. Poți încărca documentul și completa datele manual.</p>
+      </div>
+    )}
+
+    <ReceiptScanner client:load />
+
+    <div class="mt-6 bg-white border border-[#E8E8E4] rounded-2xl p-5">
+      <h2 class="text-[15px] font-semibold text-[#0A0A0A] mb-2.5">Cum funcționează</h2>
+      <ol class="space-y-2 text-[14px] text-[#6B6B68] leading-relaxed list-decimal pl-5">
+        <li>Apeși „Fă o poză" sau „Încarcă fișier" și alegi bonul ori factura.</li>
+        <li>Citim furnizorul, numărul, data și sumele (net, TVA, total).</li>
+        <li>Verifici datele și corectezi dacă e nevoie, apoi salvezi.</li>
+        <li>Cheltuiala apare imediat în lista ta de cheltuieli.</li>
+      </ol>
+    </div>
+  </div>
+</AppLayout>

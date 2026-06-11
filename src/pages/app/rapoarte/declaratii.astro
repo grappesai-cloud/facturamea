@@ -93,6 +93,19 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
         <span class="decl-label">Descarcă</span>
       </button>
     </div>
+
+    <!-- D390 (VIES) -->
+    <div class="bg-white border border-[#E8E8E4] rounded-xl p-5 flex flex-col">
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-[10px] uppercase tracking-wider text-[#8A8A85] font-mono">D390</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-[#FAFAF8] border border-[#E8E8E4] text-[#6B6B68]">XML</span>
+      </div>
+      <h3 class="text-base font-bold text-[#0A0A0A]">Declarația 390 (VIES)</h3>
+      <p class="text-sm text-[#6B6B68] mt-1 flex-1">Declarația recapitulativă a operațiunilor intracomunitare (livrări și achiziții), grupate pe codul de TVA al partenerului din UE.</p>
+      <button type="button" data-decl="d390" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl bg-[#0A0A0A] text-white text-sm font-medium hover:opacity-90 disabled:opacity-50">
+        <span class="decl-label">Descarcă</span>
+      </button>
+    </div>
   </div>
 
   <p id="decl-error" class="text-sm text-[#B91C1C] mt-4 hidden"></p>
@@ -118,6 +131,7 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
         case 'd300': return '/api/invoicing/reports/d300?month=' + month + '&year=' + year;
         case 'd300-csv': return '/api/invoicing/reports/d300?month=' + month + '&year=' + year + '&format=csv';
         case 'd406': return '/api/invoicing/reports/saft-d406?from=' + from + '&to=' + to + '&type=L';
+        case 'd390': return '/api/invoicing/reports/d390?month=' + month + '&year=' + year;
         default: return null;
       }
     }

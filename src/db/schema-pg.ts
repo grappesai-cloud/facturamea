@@ -119,6 +119,10 @@ export const companies = pgTable('companies', {
   tvaAtCollection: boolean('tva_at_collection').default(false),
   // e-Factura: when true, every issued invoice is auto-submitted to ANAF SPV on creation.
   efacturaAutoSend: boolean('efactura_auto_send').default(false),
+  // Automated payment reminders (dunning) to clients.
+  dunningEnabled: boolean('dunning_enabled').default(false),
+  // Inventory cost method: cmp (weighted avg) | fifo | lifo.
+  costMethod: varchar('cost_method', { length: 8 }).default('cmp'),
   // Payment-behavior engine — rolled up from invoice scadență vs. paidAt.
   // paymentScore 0..100 ("Payment Reliability Score"); recomputed by the daily
   // cron + after every chitanță. avgDaysToPay = mean delay (issue→paid),
@@ -2604,4 +2608,207 @@ export const shipments = pgTable('shipments', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [
   index('idx_shipments_company').on(table.companyId),
+]);
+
+// ═══════════════════════════════════════════════════════════════════════
+// facturamea — round 4: double-entry accounting, fixed assets, orders,
+// advanced inventory (counts/lots), payment reminders (dunning).
+// ═══════════════════════════════════════════════════════════════════════
+
+// Chart of accounts (plan de conturi RO). type: A(active)|P(pasive)|B(bifunctional)|V(venituri)|C(cheltuieli).
+export const ledgerAccounts = pgTable('ledger_accounts', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  code: varchar('code', { length: 12 }).notNull(),  // 4111, 707, 4427, ...
+  name: varchar('name', { length: 200 }).notNull(),
+  type: varchar('type', { length: 2 }).notNull().default('B'),
+  parentCode: varchar('parent_code', { length: 12 }),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('uq_ledger_accounts_code').on(table.companyId, table.code),
+  index('idx_ledger_accounts_company').on(table.companyId),
+]);
+
+// Journal entries (note contabile) + balanced lines (debit/credit).
+export const journalEntries = pgTable('journal_entries', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  entryNumber: varchar('entry_number', { length: 32 }),
+  entryDate: date('entry_date', { mode: 'string' }),
+  description: text('description'),
+  source: varchar('source', { length: 24 }).default('manual'), // manual | invoice | expense | payment | bank | depreciation
+  refType: varchar('ref_type', { length: 24 }),
+  refId: text('ref_id'),
+  totalDebitCents: integer('total_debit_cents').notNull().default(0),
+  totalCreditCents: integer('total_credit_cents').notNull().default(0),
+  posted: boolean('posted').notNull().default(true),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_journal_entries_company').on(table.companyId),
+  index('idx_journal_entries_date').on(table.companyId, table.entryDate),
+  index('idx_journal_entries_ref').on(table.refType, table.refId),
+]);
+
+export const journalLines = pgTable('journal_lines', {
+  id: text('id').primaryKey(),
+  entryId: text('entry_id').notNull().references(() => journalEntries.id, { onDelete: 'cascade' }),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  accountCode: varchar('account_code', { length: 12 }).notNull(),
+  debitCents: integer('debit_cents').notNull().default(0),
+  creditCents: integer('credit_cents').notNull().default(0),
+  note: varchar('note', { length: 200 }),
+}, (table) => [
+  index('idx_journal_lines_entry').on(table.entryId),
+  index('idx_journal_lines_account').on(table.companyId, table.accountCode),
+]);
+
+// Fixed assets (mijloace fixe) + depreciation schedule.
+export const fixedAssets = pgTable('fixed_assets', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 200 }).notNull(),
+  inventoryNumber: varchar('inventory_number', { length: 40 }),
+  category: varchar('category', { length: 80 }),
+  acquisitionDate: date('acquisition_date', { mode: 'string' }),
+  valueCents: integer('value_cents').notNull().default(0),
+  usefulLifeMonths: integer('useful_life_months').notNull().default(12),
+  method: varchar('method', { length: 16 }).default('liniara'), // liniara | degresiva | accelerata
+  accumulatedCents: integer('accumulated_cents').notNull().default(0),
+  status: varchar('status', { length: 16 }).notNull().default('active'), // active | disposed
+  disposedAt: date('disposed_at', { mode: 'string' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_fixed_assets_company').on(table.companyId),
+]);
+
+export const depreciationEntries = pgTable('depreciation_entries', {
+  id: text('id').primaryKey(),
+  assetId: text('asset_id').notNull().references(() => fixedAssets.id, { onDelete: 'cascade' }),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  period: varchar('period', { length: 7 }).notNull(), // YYYY-MM
+  amountCents: integer('amount_cents').notNull().default(0),
+  postedJournalId: text('posted_journal_id'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('uq_depreciation_period').on(table.assetId, table.period),
+  index('idx_depreciation_company').on(table.companyId),
+]);
+
+// Purchase & sales orders (comenzi furnizori / clienți).
+export const purchaseOrders = pgTable('purchase_orders', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  number: varchar('number', { length: 40 }).notNull(),
+  supplierId: text('supplier_id').references(() => suppliers.id, { onDelete: 'set null' }),
+  supplierNameSnap: varchar('supplier_name_snap', { length: 200 }),
+  orderDate: date('order_date', { mode: 'string' }),
+  expectedDate: date('expected_date', { mode: 'string' }),
+  currency: varchar('currency', { length: 5 }).default('RON'),
+  totalCents: integer('total_cents').notNull().default(0),
+  status: varchar('status', { length: 16 }).notNull().default('draft'), // draft | sent | received | closed | canceled
+  notes: text('notes'),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_purchase_orders_company').on(table.companyId),
+]);
+
+export const purchaseOrderLines = pgTable('purchase_order_lines', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => purchaseOrders.id, { onDelete: 'cascade' }),
+  productId: text('product_id').references(() => invoiceProducts.id, { onDelete: 'set null' }),
+  name: varchar('name', { length: 300 }).notNull(),
+  quantity: doublePrecision('quantity').notNull().default(1),
+  unitPriceCents: integer('unit_price_cents').notNull().default(0),
+  vatRate: doublePrecision('vat_rate').default(21),
+  lineTotalCents: integer('line_total_cents').notNull().default(0),
+}, (table) => [
+  index('idx_po_lines_order').on(table.orderId),
+]);
+
+export const salesOrders = pgTable('sales_orders', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  number: varchar('number', { length: 40 }).notNull(),
+  clientExternalId: text('client_external_id').references(() => invoiceClients.id, { onDelete: 'set null' }),
+  clientNameSnap: varchar('client_name_snap', { length: 200 }),
+  orderDate: date('order_date', { mode: 'string' }),
+  currency: varchar('currency', { length: 5 }).default('RON'),
+  totalCents: integer('total_cents').notNull().default(0),
+  status: varchar('status', { length: 16 }).notNull().default('draft'), // draft | confirmed | invoiced | delivered | canceled
+  invoiceId: text('invoice_id').references(() => transportInvoices.id, { onDelete: 'set null' }),
+  notes: text('notes'),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_sales_orders_company').on(table.companyId),
+]);
+
+export const salesOrderLines = pgTable('sales_order_lines', {
+  id: text('id').primaryKey(),
+  orderId: text('order_id').notNull().references(() => salesOrders.id, { onDelete: 'cascade' }),
+  productId: text('product_id').references(() => invoiceProducts.id, { onDelete: 'set null' }),
+  name: varchar('name', { length: 300 }).notNull(),
+  quantity: doublePrecision('quantity').notNull().default(1),
+  unitPriceCents: integer('unit_price_cents').notNull().default(0),
+  vatRate: doublePrecision('vat_rate').default(21),
+  lineTotalCents: integer('line_total_cents').notNull().default(0),
+}, (table) => [
+  index('idx_so_lines_order').on(table.orderId),
+]);
+
+// Advanced inventory: physical counts (inventariere) + lots/expiry.
+export const stockCounts = pgTable('stock_counts', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  warehouseId: text('warehouse_id').notNull().references(() => warehouses.id, { onDelete: 'cascade' }),
+  number: varchar('number', { length: 40 }),
+  countDate: date('count_date', { mode: 'string' }),
+  status: varchar('status', { length: 16 }).notNull().default('draft'), // draft | finalized
+  notes: text('notes'),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_stock_counts_company').on(table.companyId),
+]);
+
+export const stockCountLines = pgTable('stock_count_lines', {
+  id: text('id').primaryKey(),
+  countId: text('count_id').notNull().references(() => stockCounts.id, { onDelete: 'cascade' }),
+  productId: text('product_id').notNull().references(() => invoiceProducts.id, { onDelete: 'cascade' }),
+  systemQty: doublePrecision('system_qty').notNull().default(0),
+  countedQty: doublePrecision('counted_qty').notNull().default(0),
+  diffQty: doublePrecision('diff_qty').notNull().default(0),
+}, (table) => [
+  index('idx_stock_count_lines_count').on(table.countId),
+]);
+
+export const stockLots = pgTable('stock_lots', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  warehouseId: text('warehouse_id').references(() => warehouses.id, { onDelete: 'cascade' }),
+  productId: text('product_id').notNull().references(() => invoiceProducts.id, { onDelete: 'cascade' }),
+  lotCode: varchar('lot_code', { length: 64 }).notNull(),
+  expiryDate: date('expiry_date', { mode: 'string' }),
+  quantity: doublePrecision('quantity').notNull().default(0),
+  unitCostCents: integer('unit_cost_cents').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_stock_lots_company').on(table.companyId),
+  index('idx_stock_lots_product').on(table.productId),
+]);
+
+// Automated payment reminders (dunning) log.
+export const invoiceReminders = pgTable('invoice_reminders', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  invoiceId: text('invoice_id').notNull().references(() => transportInvoices.id, { onDelete: 'cascade' }),
+  kind: varchar('kind', { length: 16 }).notNull(), // before | due | after
+  sentTo: varchar('sent_to', { length: 200 }),
+  sentAt: timestamp('sent_at').defaultNow(),
+}, (table) => [
+  index('idx_invoice_reminders_company').on(table.companyId),
+  uniqueIndex('uq_invoice_reminder').on(table.invoiceId, table.kind),
 ]);

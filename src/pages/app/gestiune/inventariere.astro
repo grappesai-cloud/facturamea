@@ -1,0 +1,81 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import StockCountForm from '../../../components/gestiune-plus/StockCountForm';
+import { db } from '../../../db';
+import { stockCounts, warehouses } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select({
+      id: stockCounts.id,
+      number: stockCounts.number,
+      warehouseName: warehouses.name,
+      countDate: stockCounts.countDate,
+      status: stockCounts.status,
+    })
+    .from(stockCounts)
+    .leftJoin(warehouses, eq(stockCounts.warehouseId, warehouses.id))
+    .where(eq(stockCounts.companyId, companyId))
+    .orderBy(desc(stockCounts.createdAt))
+    .limit(100);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+const statusBadge: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'În lucru', cls: 'bg-[#F0F0EC] text-[#6B6B68]' },
+  finalized: { label: 'Finalizat', cls: 'bg-[#E7F7EC] text-[#15803D]' },
+};
+---
+
+<AppLayout title="Inventariere" activeTab="stocuri">
+  <div class="mb-4">
+    <a href="/app/gestiune" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la stocuri</a>
+  </div>
+  <h1 class="text-2xl font-bold text-[#0A0A0A] mb-1">Inventariere</h1>
+  <p class="text-sm text-[#6B6B68] mb-6">Numără faptic stocul dintr-o gestiune. La finalizare, diferențele față de stocul scriptic se ajustează automat.</p>
+
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden mb-8">
+    <div class="px-5 py-3.5 border-b border-[#F0F0EC]">
+      <h2 class="text-[14px] font-semibold text-[#0A0A0A]">Inventare recente</h2>
+    </div>
+    {rows.length === 0 ? (
+      <div class="px-5 py-10 text-center text-sm text-[#6B6B68]">Niciun inventar încă.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+              <th class="px-5 py-2.5 font-medium">Număr</th>
+              <th class="px-5 py-2.5 font-medium">Gestiune</th>
+              <th class="px-5 py-2.5 font-medium">Data</th>
+              <th class="px-5 py-2.5 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const st = statusBadge[r.status] || statusBadge.draft;
+              return (
+                <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors">
+                  <td class="px-5 py-3 font-mono font-medium text-[#0A0A0A]">{r.number || '·'}</td>
+                  <td class="px-5 py-3 text-[#3D3D3A]">{r.warehouseName || '·'}</td>
+                  <td class="px-5 py-3 text-[#6B6B68]">{r.countDate || '·'}</td>
+                  <td class="px-5 py-3"><span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${st.cls}`}>{st.label}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <h2 class="text-lg font-bold text-[#0A0A0A] mb-3">Inventar nou</h2>
+  <StockCountForm client:load />
+</AppLayout>

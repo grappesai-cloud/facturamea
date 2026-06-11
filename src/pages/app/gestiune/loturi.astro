@@ -1,0 +1,141 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import LotForm from '../../../components/gestiune-plus/LotForm';
+import { db } from '../../../db';
+import { stockLots, invoiceProducts, warehouses } from '../../../db/schema';
+import { eq, asc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+const qty = (n: number) =>
+  new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 3 }).format(n || 0);
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select({
+      id: stockLots.id,
+      productName: invoiceProducts.name,
+      productCode: invoiceProducts.code,
+      um: invoiceProducts.defaultUm,
+      warehouseName: warehouses.name,
+      lotCode: stockLots.lotCode,
+      expiryDate: stockLots.expiryDate,
+      quantity: stockLots.quantity,
+      unitCostCents: stockLots.unitCostCents,
+    })
+    .from(stockLots)
+    .leftJoin(invoiceProducts, eq(stockLots.productId, invoiceProducts.id))
+    .leftJoin(warehouses, eq(stockLots.warehouseId, warehouses.id))
+    .where(eq(stockLots.companyId, companyId))
+    .orderBy(asc(stockLots.expiryDate))
+    .limit(500);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+// Precompute expiry flags in frontmatter (red if past, orange if < 30 days).
+const today = new Date(); today.setHours(0, 0, 0, 0);
+const MS_DAY = 24 * 60 * 60 * 1000;
+const display = rows.map((r) => {
+  let expCls = 'text-[#6B6B68]';
+  let expBadge: { label: string; cls: string } | null = null;
+  if (r.expiryDate) {
+    const exp = new Date(r.expiryDate); exp.setHours(0, 0, 0, 0);
+    const days = Math.round((exp.getTime() - today.getTime()) / MS_DAY);
+    if (days < 0) {
+      expCls = 'text-[#B91C1C] font-semibold';
+      expBadge = { label: 'Expirat', cls: 'bg-[#FDECEC] text-[#B91C1C]' };
+    } else if (days < 30) {
+      expCls = 'text-[#C2410C] font-semibold';
+      expBadge = { label: `Expiră în ${days} zile`, cls: 'bg-[#FFF3E9] text-[#C2410C]' };
+    }
+  }
+  return { ...r, expCls, expBadge };
+});
+const expiringCount = display.filter((r) => r.expBadge).length;
+---
+
+<AppLayout title="Loturi și expirare" activeTab="stocuri">
+  <div class="mb-4">
+    <a href="/app/gestiune" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la stocuri</a>
+  </div>
+  <h1 class="text-2xl font-bold text-[#0A0A0A] mb-1">Loturi și expirare</h1>
+  <p class="text-sm text-[#6B6B68] mb-6">Urmărește loturile și termenele de valabilitate. Loturile expirate sunt marcate cu roșu, cele care expiră în mai puțin de 30 de zile cu portocaliu.</p>
+
+  {expiringCount > 0 && (
+    <div class="mb-4 flex flex-wrap items-center gap-3 px-4 py-3 bg-[#FFF3E9] border border-[#FF5C00]/25 rounded-xl">
+      <span class="w-2 h-2 rounded-full bg-[#FF5C00]"></span>
+      <p class="text-[14px] text-[#0A0A0A]"><strong>{expiringCount}</strong> {expiringCount === 1 ? 'lot necesită' : 'loturi necesită'} atenție (expirate sau aproape de expirare).</p>
+    </div>
+  )}
+
+  <h2 class="text-lg font-bold text-[#0A0A0A] mb-3">Lot nou</h2>
+  <LotForm client:load />
+
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden mt-8">
+    <div class="px-5 py-3.5 border-b border-[#F0F0EC]">
+      <h2 class="text-[14px] font-semibold text-[#0A0A0A]">Loturi</h2>
+    </div>
+    {display.length === 0 ? (
+      <div class="px-5 py-10 text-center text-sm text-[#6B6B68]">Niciun lot înregistrat încă.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+              <th class="px-5 py-2.5 font-medium">Produs</th>
+              <th class="px-5 py-2.5 font-medium">Cod lot</th>
+              <th class="px-5 py-2.5 font-medium">Gestiune</th>
+              <th class="px-5 py-2.5 font-medium">Expiră</th>
+              <th class="px-5 py-2.5 font-medium text-right">Cantitate</th>
+              <th class="px-5 py-2.5 font-medium text-right">Cost unitar</th>
+              <th class="px-5 py-2.5 font-medium text-right">Acțiune</th>
+            </tr>
+          </thead>
+          <tbody>
+            {display.map((r) => (
+              <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors" data-lot-row data-id={r.id}>
+                <td class="px-5 py-3 text-[#3D3D3A]">{r.productName || '·'} {r.productCode ? <span class="text-[#A8A8A4]">({r.productCode})</span> : null}</td>
+                <td class="px-5 py-3 font-mono font-medium text-[#0A0A0A]">{r.lotCode}</td>
+                <td class="px-5 py-3 text-[#6B6B68]">{r.warehouseName || '·'}</td>
+                <td class="px-5 py-3">
+                  <span class={r.expCls}>{r.expiryDate || '·'}</span>
+                  {r.expBadge && <span class={`ml-2 inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${r.expBadge.cls}`}>{r.expBadge.label}</span>}
+                </td>
+                <td class="px-5 py-3 text-right font-semibold text-[#0A0A0A]">{qty(r.quantity)} {r.um || ''}</td>
+                <td class="px-5 py-3 text-right text-[#6B6B68]">{ron(r.unitCostCents)}</td>
+                <td class="px-5 py-3 text-right">
+                  <button class="lot-delete px-3 h-9 rounded-lg bg-white border border-[#E0E0DA] hover:border-[#B91C1C] text-[13px] font-semibold text-[#6B6B68]" data-id={r.id}>Șterge</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('.lot-delete').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id || !confirm('Ștergi acest lot?')) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/api/gestiune/lots/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            btn.closest('[data-lot-row]')?.remove();
+          } else {
+            btn.disabled = false;
+            alert('Nu s-a putut șterge lotul.');
+          }
+        } catch { btn.disabled = false; alert('Eroare de rețea.'); }
+      });
+    });
+  </script>
+</AppLayout>

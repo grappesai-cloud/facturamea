@@ -1,0 +1,163 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { ledgerAccounts, journalEntries } from '../../../db/schema';
+import { eq, sql } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let hasChart = false;
+let kpis = { entries: 0, turnover: 0, accounts: 0 };
+
+if (companyId) {
+  try {
+    const [aRow] = await db
+      .select({ n: sql<number>`COUNT(*)` })
+      .from(ledgerAccounts)
+      .where(eq(ledgerAccounts.companyId, companyId));
+    kpis.accounts = Number(aRow?.n ?? 0);
+    hasChart = kpis.accounts > 0;
+
+    const [eRow] = await db
+      .select({
+        n: sql<number>`COUNT(*)`,
+        turnover: sql<number>`COALESCE(SUM(${journalEntries.totalDebitCents}), 0)`,
+      })
+      .from(journalEntries)
+      .where(eq(journalEntries.companyId, companyId));
+    kpis.entries = Number(eRow?.n ?? 0);
+    kpis.turnover = Number(eRow?.turnover ?? 0);
+  } catch (e) {
+    // DB not provisioned — render setup state.
+  }
+}
+
+const cards = [
+  { label: 'Note contabile', value: String(kpis.entries), accent: 'text-[#0A0A0A]' },
+  { label: 'Rulaj total', value: ron(kpis.turnover), accent: 'text-[#0A0A0A]' },
+  { label: 'Conturi în plan', value: String(kpis.accounts), accent: 'text-[#0A0A0A]' },
+];
+
+const links = [
+  { label: 'Note contabile', desc: 'Înregistrări manuale și automate', href: '/app/contabilitate/note',
+    icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l2.25 2.25L15 12m-6.75 5.25h7.5M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z' },
+  { label: 'Registru jurnal', desc: 'Toate operațiunile, cronologic', href: '/app/contabilitate/jurnal',
+    icon: 'M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25' },
+  { label: 'Balanță de verificare', desc: 'Solduri pe conturi, pe perioadă', href: '/app/contabilitate/balanta',
+    icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' },
+  { label: 'Plan de conturi', desc: 'Conturile firmei tale', href: '/app/contabilitate/plan',
+    icon: 'M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h7.5c.621 0 1.125-.504 1.125-1.125m-9.75 0V5.625m0 12.75v-1.5c0-.621.504-1.125 1.125-1.125m18.375 2.625V5.625m0 12.75c0 .621-.504 1.125-1.125 1.125m1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125m0 3.75h-7.5A1.125 1.125 0 0112 18.375m9.75-12.75c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125m19.5 0v1.5c0 .621-.504 1.125-1.125 1.125M2.25 5.625v1.5c0 .621.504 1.125 1.125 1.125m0 0h17.25m-17.25 0h7.5c.621 0 1.125.504 1.125 1.125M3.375 8.25c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125m17.25-3.75h-7.5c-.621 0-1.125.504-1.125 1.125m8.625-1.125c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125M12 10.875v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 10.875c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125M13.125 12h7.5m-7.5 0c-.621 0-1.125.504-1.125 1.125M20.625 12c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125m-17.25 0h7.5M12 14.625v-1.5m0 1.5c0 .621-.504 1.125-1.125 1.125M12 14.625c0 .621.504 1.125 1.125 1.125m-2.25 0c.621 0 1.125.504 1.125 1.125m0 1.5v-1.5m0 0c0-.621.504-1.125 1.125-1.125m0 0h7.5' },
+];
+---
+
+<AppLayout title="Contabilitate" activeTab="contabilitate">
+  <div class="mb-6">
+    <h1 class="text-[24px] sm:text-[26px] font-bold tracking-[-0.02em] text-[#0A0A0A]">Contabilitate</h1>
+    <p class="text-[15px] text-[#6B6B68] mt-1">Partidă dublă: note contabile, registru jurnal, balanță și plan de conturi.</p>
+  </div>
+
+  {!hasChart ? (
+    <div class="bg-white border border-[#E8E8E4] rounded-2xl p-6 sm:p-8 text-center">
+      <div class="w-14 h-14 rounded-2xl bg-[#FFF3E9] text-[#FF5C00] flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+      </div>
+      <h2 class="text-[19px] font-bold text-[#0A0A0A]">Pornește contabilitatea</h2>
+      <p class="text-[15px] text-[#6B6B68] mt-1.5 max-w-[460px] mx-auto">Adăugăm planul de conturi românesc (conturi uzuale pentru vânzări, cheltuieli, TVA și trezorerie). Îl poți ajusta oricând.</p>
+      <button id="setup-btn" class="mt-5 inline-flex items-center gap-2 px-5 h-11 rounded-xl bg-[#0A0A0A] text-white text-[15px] font-semibold hover:bg-[#1a1a1a] transition-colors">
+        Inițializează planul de conturi
+      </button>
+      <p id="setup-msg" class="text-[14px] text-[#B91C1C] mt-3 hidden"></p>
+    </div>
+  ) : (
+    <>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        {cards.map((c) => (
+          <div class="bg-white border border-[#E8E8E4] rounded-2xl p-4 sm:p-5">
+            <p class="text-[13px] text-[#6B6B68] font-medium">{c.label}</p>
+            <p class={`text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] mt-1.5 ${c.accent}`}>{c.value}</p>
+          </div>
+        ))}
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3 mb-6 px-5 py-4 bg-white border border-[#E8E8E4] rounded-2xl">
+        <div class="flex-1 min-w-[220px]">
+          <p class="text-[16px] font-semibold text-[#0A0A0A]">Generează note din facturi și cheltuieli</p>
+          <p class="text-[14px] text-[#6B6B68] mt-0.5">Creează automat note contabile pentru facturile emise, cheltuieli și încasări care nu au fost încă înregistrate.</p>
+        </div>
+        <button id="autopost-btn" class="px-4 h-11 rounded-xl bg-[#FF5C00] text-white text-[15px] font-semibold hover:bg-[#e85400] transition-colors shrink-0">
+          Generează note
+        </button>
+      </div>
+      <p id="autopost-msg" class="text-[14px] mb-4 hidden"></p>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        {links.map((m) => (
+          <a href={m.href} class="group flex items-start gap-3 p-5 rounded-2xl bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] hover:-translate-y-0.5 transition-all">
+            <span class="shrink-0 w-12 h-12 rounded-xl bg-[#FFF3E9] text-[#FF5C00] flex items-center justify-center">
+              <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
+            </span>
+            <span class="min-w-0">
+              <span class="block text-[17px] font-semibold leading-tight text-[#0A0A0A]">{m.label}</span>
+              <span class="block text-[14px] text-[#6B6B68] mt-1">{m.desc}</span>
+            </span>
+          </a>
+        ))}
+      </div>
+    </>
+  )}
+
+  <script>
+    const setupBtn = document.getElementById('setup-btn');
+    setupBtn?.addEventListener('click', async () => {
+      const msg = document.getElementById('setup-msg');
+      (setupBtn as HTMLButtonElement).disabled = true;
+      setupBtn.textContent = 'Se inițializează...';
+      try {
+        const res = await fetch('/api/contabilitate/setup', { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) { window.location.reload(); return; }
+        if (msg) { msg.textContent = data.error || 'Eroare la inițializare.'; msg.classList.remove('hidden'); }
+        setupBtn.textContent = 'Inițializează planul de conturi';
+        (setupBtn as HTMLButtonElement).disabled = false;
+      } catch {
+        if (msg) { msg.textContent = 'Eroare de conexiune.'; msg.classList.remove('hidden'); }
+        setupBtn.textContent = 'Inițializează planul de conturi';
+        (setupBtn as HTMLButtonElement).disabled = false;
+      }
+    });
+
+    const autopostBtn = document.getElementById('autopost-btn');
+    autopostBtn?.addEventListener('click', async () => {
+      const msg = document.getElementById('autopost-msg');
+      (autopostBtn as HTMLButtonElement).disabled = true;
+      autopostBtn.textContent = 'Se generează...';
+      try {
+        const res = await fetch('/api/contabilitate/auto-post', { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          if (msg) {
+            const total = (data.invoices || 0) + (data.expenses || 0) + (data.payments || 0);
+            msg.textContent = total > 0
+              ? `Am generat ${total} note (${data.invoices} facturi, ${data.expenses} cheltuieli, ${data.payments} încasări). Se reîncarcă...`
+              : 'Toate documentele erau deja înregistrate.';
+            msg.className = 'text-[14px] mb-4 text-[#15803D]';
+          }
+          setTimeout(() => window.location.reload(), 900);
+          return;
+        }
+        if (msg) { msg.textContent = data.error || 'Eroare la generare.'; msg.className = 'text-[14px] mb-4 text-[#B91C1C]'; }
+        autopostBtn.textContent = 'Generează note';
+        (autopostBtn as HTMLButtonElement).disabled = false;
+      } catch {
+        if (msg) { msg.textContent = 'Eroare de conexiune.'; msg.className = 'text-[14px] mb-4 text-[#B91C1C]'; }
+        autopostBtn.textContent = 'Generează note';
+        (autopostBtn as HTMLButtonElement).disabled = false;
+      }
+    });
+  </script>
+</AppLayout>

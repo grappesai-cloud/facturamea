@@ -1,0 +1,80 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import TransferForm from '../../../components/gestiune-plus/TransferForm';
+import { db } from '../../../db';
+import { stockMovements, invoiceProducts, warehouses } from '../../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const qty = (n: number) =>
+  new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 3 }).format(n || 0);
+
+// Recent transfer ledger rows (refType='transfer'). We show the OUT leg as the
+// canonical record of each transfer.
+let rows: any[] = [];
+try {
+  rows = await db
+    .select({
+      id: stockMovements.id,
+      warehouseName: warehouses.name,
+      productName: invoiceProducts.name,
+      kind: stockMovements.kind,
+      quantity: stockMovements.quantity,
+      reason: stockMovements.reason,
+      createdAt: stockMovements.createdAt,
+    })
+    .from(stockMovements)
+    .leftJoin(invoiceProducts, eq(stockMovements.productId, invoiceProducts.id))
+    .leftJoin(warehouses, eq(stockMovements.warehouseId, warehouses.id))
+    .where(and(eq(stockMovements.companyId, companyId), eq(stockMovements.refType, 'transfer'), eq(stockMovements.kind, 'out')))
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(50);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+---
+
+<AppLayout title="Transfer între gestiuni" activeTab="stocuri">
+  <div class="mb-4">
+    <a href="/app/gestiune" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la stocuri</a>
+  </div>
+  <h1 class="text-2xl font-bold text-[#0A0A0A] mb-1">Transfer între gestiuni</h1>
+  <p class="text-sm text-[#6B6B68] mb-6">Mută stoc dintr-o gestiune în alta. Costul mediu urmează marfa.</p>
+
+  <TransferForm client:load />
+
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden mt-8">
+    <div class="px-5 py-3.5 border-b border-[#F0F0EC]">
+      <h2 class="text-[14px] font-semibold text-[#0A0A0A]">Transferuri recente</h2>
+    </div>
+    {rows.length === 0 ? (
+      <div class="px-5 py-10 text-center text-sm text-[#6B6B68]">Niciun transfer încă.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+              <th class="px-5 py-2.5 font-medium">Produs</th>
+              <th class="px-5 py-2.5 font-medium">Din gestiune</th>
+              <th class="px-5 py-2.5 font-medium text-right">Cantitate</th>
+              <th class="px-5 py-2.5 font-medium">Data</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors">
+                <td class="px-5 py-3 text-[#3D3D3A]">{r.productName || '·'}</td>
+                <td class="px-5 py-3 text-[#6B6B68]">{r.warehouseName || '·'}</td>
+                <td class="px-5 py-3 text-right font-semibold text-[#0A0A0A]">{qty(r.quantity)}</td>
+                <td class="px-5 py-3 text-[#6B6B68]">{r.createdAt ? new Date(r.createdAt).toLocaleDateString('ro-RO') : '·'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</AppLayout>

@@ -1,0 +1,90 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { journalRegister } from '../../../lib/accounting';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+const SOURCE_LABELS: Record<string, string> = {
+  manual: 'Manuală', invoice: 'Factură', expense: 'Cheltuială',
+  payment: 'Încasare', bank: 'Bancă', depreciation: 'Amortizare',
+};
+
+// Default period: current year.
+const now = new Date();
+const yearStart = `${now.getFullYear()}-01-01`;
+const yearEnd = `${now.getFullYear()}-12-31`;
+const from = Astro.url.searchParams.get('from') || yearStart;
+const to = Astro.url.searchParams.get('to') || yearEnd;
+
+const entries = await journalRegister(companyId, from, to).catch(() => []);
+const totalDebit = entries.reduce((s, e) => s + (e.totalDebitCents || 0), 0);
+const totalCredit = entries.reduce((s, e) => s + (e.totalCreditCents || 0), 0);
+---
+
+<AppLayout title="Registru jurnal" activeTab="contabilitate">
+  <div class="mb-6">
+    <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">Registru jurnal</h1>
+    <p class="text-[15px] text-[#6B6B68] mt-1">Toate operațiunile înregistrate, în ordine cronologică.</p>
+  </div>
+
+  <form method="GET" class="flex flex-wrap items-end gap-3 mb-6 px-5 py-4 bg-white border border-[#E8E8E4] rounded-2xl">
+    <div>
+      <label class="block text-[13px] font-medium text-[#6B6B68] mb-1.5">De la</label>
+      <input type="date" name="from" value={from} class="h-11 px-3 rounded-xl border border-[#E0E0DA] bg-white text-[15px] focus:outline-none focus:border-[#FF5C00]" />
+    </div>
+    <div>
+      <label class="block text-[13px] font-medium text-[#6B6B68] mb-1.5">Până la</label>
+      <input type="date" name="to" value={to} class="h-11 px-3 rounded-xl border border-[#E0E0DA] bg-white text-[15px] focus:outline-none focus:border-[#FF5C00]" />
+    </div>
+    <button type="submit" class="px-5 h-11 rounded-xl bg-[#0A0A0A] text-white text-[15px] font-semibold hover:bg-[#1a1a1a] transition-colors">Filtrează</button>
+  </form>
+
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
+    {entries.length === 0 ? (
+      <div class="px-5 py-14 text-center text-[15px] text-[#6B6B68]">Nicio operațiune în perioada selectată.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[14px]">
+          <thead>
+            <tr class="text-left text-[12px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC] bg-[#FAFAF8]">
+              <th class="px-4 py-3 font-medium">Nr.</th>
+              <th class="px-4 py-3 font-medium">Data</th>
+              <th class="px-4 py-3 font-medium">Explicație</th>
+              <th class="px-4 py-3 font-medium">Cont D</th>
+              <th class="px-4 py-3 font-medium">Cont C</th>
+              <th class="px-4 py-3 font-medium text-right">Debit</th>
+              <th class="px-4 py-3 font-medium text-right">Credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e) => (
+              e.lines.map((l, idx) => (
+                <tr class={`border-b border-[#F6F6F2] ${idx === 0 ? 'border-t-2 border-t-[#F0F0EC]' : ''}`}>
+                  <td class="px-4 py-2.5 font-mono font-semibold text-[#0A0A0A]">{idx === 0 ? e.entryNumber : ''}</td>
+                  <td class="px-4 py-2.5 tabular-nums text-[#6B6B68]">{idx === 0 ? e.entryDate : ''}</td>
+                  <td class="px-4 py-2.5 text-[#3D3D3A] max-w-[280px] truncate">{idx === 0 ? (e.description || SOURCE_LABELS[e.source || 'manual'] || '') : (l.note || '')}</td>
+                  <td class="px-4 py-2.5 font-mono">{l.debitCents ? l.accountCode : ''}</td>
+                  <td class="px-4 py-2.5 font-mono">{l.creditCents ? l.accountCode : ''}</td>
+                  <td class="px-4 py-2.5 text-right tabular-nums">{l.debitCents ? ron(l.debitCents) : ''}</td>
+                  <td class="px-4 py-2.5 text-right tabular-nums">{l.creditCents ? ron(l.creditCents) : ''}</td>
+                </tr>
+              ))
+            ))}
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-[#E8E8E4] font-bold bg-[#FAFAF8]">
+              <td class="px-4 py-3" colspan="5">Total perioadă</td>
+              <td class="px-4 py-3 text-right tabular-nums">{ron(totalDebit)}</td>
+              <td class="px-4 py-3 text-right tabular-nums">{ron(totalCredit)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    )}
+  </div>
+</AppLayout>
