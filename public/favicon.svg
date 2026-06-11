@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="28" fill="#FF5C00"/>
+  <!-- stylised invoice / receipt -->
+  <path d="M40 26h40a8 8 0 0 1 8 8v62l-12-7-11 7-11-7-12 7-10-7V34a8 8 0 0 1 8-8Z" fill="#fff"/>
+  <rect x="48" y="44" width="32" height="7" rx="3.5" fill="#FF5C00"/>
+  <rect x="48" y="60" width="32" height="7" rx="3.5" fill="#FF5C00"/>
+  <rect x="48" y="76" width="20" height="7" rx="3.5" fill="#FF5C00"/>
+</svg>

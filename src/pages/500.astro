@@ -1,0 +1,24 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import { tFn } from '../lib/i18n';
+
+const t = tFn(Astro.locals.locale);
+---
+
+<PublicLayout title="500 · Eroare server">
+  <div class="min-h-[60vh] flex items-center justify-center px-4">
+    <div class="max-w-md w-full text-center">
+      <div class="text-[120px] leading-none font-bold text-[#E8E8E4] select-none">500</div>
+      <h1 class="text-2xl font-bold text-[#0A0A0A] mt-4">{t('app.errors.500_title')}</h1>
+      <p class="text-[#6B6B68] mt-2">{t('app.errors.500_description')}</p>
+      <div class="flex gap-3 justify-center mt-6">
+        <button onclick="window.location.reload()" class="px-5 py-2.5 rounded-xl bg-[#E04E00] text-white text-sm font-semibold hover:bg-[#E04E00] transition-colors">
+          {t('app.errors.retry')}
+        </button>
+        <a href="/" class="px-5 py-2.5 rounded-xl border border-[#E8E8E4] text-[#0A0A0A] text-sm font-semibold hover:bg-[#FAFAF8] transition-colors">
+          {t('app.errors.back_home')}
+        </a>
+      </div>
+    </div>
+  </div>
+</PublicLayout>

@@ -1,0 +1,56 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+Astro.response.headers.set('Vary', 'Cookie');
+---
+
+<PublicLayout
+  title="Despre"
+  description="facturamea, facturare completă pentru firme din România, cu o singură plată și licență pe viață."
+>
+  <article class="max-w-none">
+    <p class="text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Despre noi</p>
+    <h1 class="text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-6">Facturare făcută pentru firmele din România</h1>
+
+    <p class="text-lg text-[#3D3D3A] leading-relaxed mb-8">
+      facturamea a pornit dintr-o frustrare simplă: programele de facturare cer abonamente lunare la nesfârșit, iar funcțiile importante stau ascunse după planuri scumpe. Am construit alternativa: toate funcțiile incluse, o singură plată, licență pe viață.
+    </p>
+
+    <div class="grid md:grid-cols-3 gap-6 my-10">
+      <div class="bg-white rounded-2xl p-6 border border-[#E8E8E4]">
+        <div class="w-12 h-12 bg-[#FFF1E6] text-[#FF5C00] rounded-xl flex items-center justify-center mb-3 text-2xl">🧾</div>
+        <h3 class="font-bold text-[#0A0A0A] text-lg tracking-[-0.02em] mb-2">Pentru firme mici</h3>
+        <p class="text-sm text-[#6B6B68] leading-relaxed">SRL-uri și PFA-uri care vor să emită facturi rapid, conform ANAF, fără un cost lunar care crește în timp.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-[#E8E8E4]">
+        <div class="w-12 h-12 bg-[#FFF1E6] text-[#FF5C00] rounded-xl flex items-center justify-center mb-3 text-2xl">📊</div>
+        <h3 class="font-bold text-[#0A0A0A] text-lg tracking-[-0.02em] mb-2">Pentru contabili</h3>
+        <p class="text-sm text-[#6B6B68] leading-relaxed">Rapoarte clare, SAF-T D406 generat automat și exporturi care fac munca lunară mai ușoară.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-6 border border-[#E8E8E4]">
+        <div class="w-12 h-12 bg-[#FFF1E6] text-[#FF5C00] rounded-xl flex items-center justify-center mb-3 text-2xl">🛒</div>
+        <h3 class="font-bold text-[#0A0A0A] text-lg tracking-[-0.02em] mb-2">Pentru comerț</h3>
+        <p class="text-sm text-[#6B6B68] leading-relaxed">Gestiune stocuri, NIR, POS și casă de marcat, legate direct de facturile pe care le emiți.</p>
+      </div>
+    </div>
+
+    <h2 class="text-2xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-10 mb-4">Misiunea noastră</h2>
+    <p class="text-[#3D3D3A] leading-relaxed mb-6">
+      Vrem ca facturarea conformă cu ANAF, e-Factura, e-Transport și SAF-T să fie la îndemâna oricărei firme din România, fără bariere de preț și fără un abonament care te leagă pe termen nelimitat. Plătești o singură dată, primești tot, și te concentrezi pe afacerea ta.
+    </p>
+
+    <h2 class="text-2xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-10 mb-4">Cum lucrăm</h2>
+    <p class="text-[#3D3D3A] leading-relaxed">
+      Construim un singur produs, complet, pe care îl actualizăm continuu odată cu cerințele fiscale. Funcționează în web și în aplicațiile native iOS și Android, cu același cont și aceleași date, sincronizate în timp real.
+    </p>
+
+    <div class="bg-[#FFF1E6] border border-[#FFE0CC] rounded-2xl p-8 mt-12 text-center">
+      <h3 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-2">Începe astăzi, gratuit</h3>
+      <p class="text-[#3D3D3A] mb-5 text-sm">Creează-ți contul și emite prima factură în câteva minute.</p>
+      <a href="/auth/register" class="inline-block px-6 py-3 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl shadow-md shadow-[#FF5C00]/20 transition">
+        Începe gratuit
+      </a>
+    </div>
+  </article>
+</PublicLayout>

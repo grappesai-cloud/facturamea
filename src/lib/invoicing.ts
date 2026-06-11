@@ -1,0 +1,82 @@
+import { db } from '../db';
+import { invoiceSeries } from '../db/schema';
+import { and, eq, sql } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+
+export type InvoiceKind = 'factura' | 'proforma' | 'storno' | 'chitanta';
+
+export const INVOICE_KIND_LABELS: Record<InvoiceKind, string> = {
+  factura: 'Factură',
+  proforma: 'Proformă',
+  storno: 'Factură storno',
+  chitanta: 'Chitanță',
+};
+
+// How a series prefix + sequence number are rendered into a full document
+// number. Default keeps the legacy `PREFIX-N` (used by order numbering); the
+// invoicing flow passes INVOICE_NUMBER_FORMAT for Oblio-style `PREFIX 0001`.
+export interface NumberFormat { separator?: string; pad?: number }
+export const INVOICE_NUMBER_FORMAT: NumberFormat = { separator: ' ', pad: 4 };
+
+export function formatSeriesNumber(prefix: string, n: number, fmt: NumberFormat = {}): string {
+  const sep = fmt.separator ?? '-';
+  const pad = fmt.pad ?? 0;
+  return `${prefix}${sep}${String(n).padStart(pad, '0')}`;
+}
+
+// Atomically reserve the next sequence number on a given series. Uses an UPDATE
+// ... RETURNING to avoid races between concurrent issuers on the same series.
+export async function nextSeriesNumber(seriesId: string, fmt: NumberFormat = {}): Promise<{ prefix: string; number: number; fullNumber: string }> {
+  const [row] = await db
+    .update(invoiceSeries)
+    .set({ nextNumber: sql`${invoiceSeries.nextNumber} + 1` })
+    .where(eq(invoiceSeries.id, seriesId))
+    .returning({ prefix: invoiceSeries.prefix, nextNumber: invoiceSeries.nextNumber });
+  if (!row) throw new Error('Series not found');
+  // After increment, the *previous* value is what we just reserved.
+  const reserved = row.nextNumber - 1;
+  return { prefix: row.prefix, number: reserved, fullNumber: formatSeriesNumber(row.prefix, reserved, fmt) };
+}
+
+// Fetches the default series for a company+kind, creating a sensible default
+// if none exists yet (first-time invoicing experience).
+export async function ensureDefaultSeries(
+  companyId: string,
+  kind: InvoiceKind,
+  scope?: 'platform' | 'external' | null,
+): Promise<{ id: string; prefix: string }> {
+  // Two concurrent series per kind are supported (one for platform/TH orders,
+  // one for external clients). Prefer the default whose scope matches; else any
+  // default for the kind (scope null = applies to both).
+  const defaultRows = await db
+    .select({ id: invoiceSeries.id, prefix: invoiceSeries.prefix, scope: invoiceSeries.scope })
+    .from(invoiceSeries)
+    .where(and(
+      eq(invoiceSeries.companyId, companyId),
+      eq(invoiceSeries.kind, kind),
+      eq(invoiceSeries.isDefault, true),
+    ));
+  if (defaultRows.length) {
+    const scoped = scope ? defaultRows.find((s) => s.scope === scope) : null;
+    const pick = scoped || defaultRows.find((s) => !s.scope) || defaultRows[0];
+    return { id: pick.id, prefix: pick.prefix };
+  }
+
+  const defaults: Record<InvoiceKind, { name: string; prefix: string }> = {
+    factura: { name: 'Serie facturi', prefix: 'TH' },
+    proforma: { name: 'Serie proforme', prefix: 'PF' },
+    storno: { name: 'Serie storno', prefix: 'ST' },
+    chitanta: { name: 'Serie chitanțe', prefix: 'CH' },
+  };
+  const id = nanoid();
+  await db.insert(invoiceSeries).values({
+    id,
+    companyId,
+    name: defaults[kind].name,
+    prefix: defaults[kind].prefix,
+    kind,
+    nextNumber: 1,
+    isDefault: true,
+  });
+  return { id, prefix: defaults[kind].prefix };
+}

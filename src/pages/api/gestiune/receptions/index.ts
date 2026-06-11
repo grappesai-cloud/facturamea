@@ -1,0 +1,132 @@
+// Receptions (NIR — Notă de Intrare Recepție): list + create.
+//
+// On create we insert the reception header + lines, then for each line that
+// references a product we record an 'in' stock movement and upsert the
+// stockLevels (weighted-average cost) via applyStockIn.
+import type { APIRoute } from 'astro';
+import { db } from '../../../../db';
+import { receptions, receptionLines, suppliers } from '../../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
+import { applyStockIn } from '../../../../lib/stock';
+
+export const GET: APIRoute = async ({ locals }) => {
+  if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const cid = locals.user.companyId;
+  if (!cid) return new Response(JSON.stringify({ results: [] }), { headers: { 'Content-Type': 'application/json' } });
+
+  let results: any[] = [];
+  try {
+    results = await db
+      .select({
+        id: receptions.id,
+        warehouseId: receptions.warehouseId,
+        supplierId: receptions.supplierId,
+        supplierName: suppliers.name,
+        nirNumber: receptions.nirNumber,
+        supplierInvoiceNumber: receptions.supplierInvoiceNumber,
+        receptionDate: receptions.receptionDate,
+        netCents: receptions.netCents,
+        vatCents: receptions.vatCents,
+        totalCents: receptions.totalCents,
+        status: receptions.status,
+        createdAt: receptions.createdAt,
+      })
+      .from(receptions)
+      .leftJoin(suppliers, eq(receptions.supplierId, suppliers.id))
+      .where(eq(receptions.companyId, cid))
+      .orderBy(desc(receptions.createdAt))
+      .limit(200);
+  } catch {
+    results = [];
+  }
+  return new Response(JSON.stringify({ results }), { headers: { 'Content-Type': 'application/json' } });
+};
+
+export const POST: APIRoute = async ({ request, locals }) => {
+  if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const cid = locals.user.companyId;
+  if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
+
+  const body = await request.json().catch(() => ({})) as any;
+  const warehouseId = String(body.warehouseId || '').trim();
+  const nirNumber = String(body.nirNumber || '').trim();
+  if (!warehouseId) return new Response(JSON.stringify({ error: 'Alege o gestiune' }), { status: 400 });
+  if (!nirNumber) return new Response(JSON.stringify({ error: 'Numărul NIR e obligatoriu' }), { status: 400 });
+
+  const rawLines: any[] = Array.isArray(body.lines) ? body.lines : [];
+  const lines = rawLines
+    .map((l) => {
+      const quantity = Number(l.quantity) || 0;
+      const unitCostCents = Math.max(0, Math.round(Number(l.unitCostCents) || 0));
+      const vatRate = l.vatRate != null ? Number(l.vatRate) : 21;
+      const net = Math.round(quantity * unitCostCents);
+      const vat = Math.round(net * (vatRate / 100));
+      return {
+        productId: l.productId ? String(l.productId) : null,
+        name: String(l.name || '').trim(),
+        um: (l.um || 'buc').toString().slice(0, 16),
+        quantity,
+        unitCostCents,
+        vatRate,
+        netCents: net,
+        vatCents: vat,
+        lineTotalCents: net + vat,
+      };
+    })
+    .filter((l) => l.name && l.quantity > 0);
+
+  if (lines.length === 0) return new Response(JSON.stringify({ error: 'Adaugă cel puțin o linie validă' }), { status: 400 });
+
+  const netCents = lines.reduce((s, l) => s + l.netCents, 0);
+  const vatCents = lines.reduce((s, l) => s + l.vatCents, 0);
+  const totalCents = netCents + vatCents;
+  const status = body.status === 'draft' ? 'draft' : 'posted';
+
+  const receptionId = nanoid();
+  try {
+    await db.insert(receptions).values({
+      id: receptionId,
+      companyId: cid,
+      warehouseId,
+      supplierId: body.supplierId ? String(body.supplierId) : null,
+      nirNumber,
+      supplierInvoiceNumber: body.supplierInvoiceNumber?.trim() || null,
+      receptionDate: body.receptionDate || new Date().toISOString().slice(0, 10),
+      netCents,
+      vatCents,
+      totalCents,
+      status,
+      notes: body.notes?.trim() || null,
+      createdByUserId: locals.user.id,
+    } as any);
+
+    for (const l of lines) {
+      await db.insert(receptionLines).values({
+        id: nanoid(),
+        receptionId,
+        productId: l.productId,
+        name: l.name,
+        um: l.um,
+        quantity: l.quantity,
+        unitCostCents: l.unitCostCents,
+        vatRate: l.vatRate,
+        lineTotalCents: l.lineTotalCents,
+      } as any);
+
+      // Only post to stock when posted + product is known (stock references products).
+      if (status === 'posted' && l.productId) {
+        await applyStockIn(cid, warehouseId, l.productId, l.quantity, l.unitCostCents, {
+          reason: `NIR ${nirNumber}`,
+          refType: 'nir',
+          refId: receptionId,
+          userId: locals.user.id,
+        });
+      }
+    }
+  } catch {
+    return new Response(JSON.stringify({ error: 'Eroare la salvarea recepției' }), { status: 500 });
+  }
+
+  return new Response(JSON.stringify({ id: receptionId }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+};

@@ -1,0 +1,112 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import MegaFooter from '../components/MegaFooter.astro';
+import { LOCALES } from '../lib/i18n';
+
+interface Props {
+  title: string;
+  description?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article' | 'profile';
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+}
+
+const { title, description, ogImage, ogType, publishedTime, modifiedTime, author, structuredData } = Astro.props;
+const path = Astro.url.pathname;
+const isActive = (p: string) => path === p || path.startsWith(p + '/');
+const locale = Astro.locals.locale;
+const otherLocale = LOCALES.find((l) => l.code !== locale)!;
+const user = Astro.locals.user;
+const homeHref = user ? '/app' : '/';
+
+const navLinks = [
+  { href: '/#functii', label: 'Funcții', match: '/#functii' },
+  { href: '/preturi', label: 'Prețuri', match: '/preturi' },
+  { href: '/faq', label: 'Întrebări', match: '/faq' },
+  { href: '/contact', label: 'Contact', match: '/contact' },
+];
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  ogImage={ogImage}
+  ogType={ogType}
+  publishedTime={publishedTime}
+  modifiedTime={modifiedTime}
+  author={author}
+  structuredData={structuredData}
+>
+  <div class="min-h-screen flex flex-col bg-[#FAFAF8] text-[#0A0A0A]">
+    <!-- Utility bar -->
+    <div class="bg-[#0A0A0A] text-[#A8A8A4] text-xs">
+      <div class="max-w-[1400px] mx-auto px-4 lg:px-6 h-9 flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <a href="/despre" class="hover:text-white transition-colors">Despre</a>
+          <a href="/faq" class="hover:text-white transition-colors">Întrebări</a>
+          <a href="/asistenta" class="hover:text-white transition-colors">Suport</a>
+          <a href="/contact" class="hover:text-white transition-colors">Contact</a>
+        </div>
+        <div class="flex items-center gap-4">
+          <a href={`/api/locale?l=${otherLocale.code}&to=${encodeURIComponent(path)}`} class="hover:text-white transition-colors flex items-center gap-1" title={otherLocale.label}>
+            <span>{otherLocale.flag}</span>
+            <span class="uppercase">{otherLocale.code}</span>
+          </a>
+          <span class="hidden sm:inline">Aplicații web · iOS · Android</span>
+          {user ? (
+            <a href="/app" class="hover:text-white transition-colors font-semibold">Dashboard</a>
+          ) : (
+            <a href="/auth/login" class="hover:text-white transition-colors">Autentificare</a>
+          )}
+        </div>
+      </div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#E8E8E4]/70">
+      <div class="max-w-[1400px] mx-auto px-4 lg:px-6">
+        <div class="flex items-center justify-between h-16">
+          <a href={homeHref} class="flex items-center gap-2.5 group shrink-0">
+            <div class="w-9 h-9 bg-[#FF5C00] rounded-xl flex items-center justify-center shadow-md shadow-[#FF5C00]/20 transition-transform group-hover:scale-105">
+              <span class="text-white font-bold text-sm">f</span>
+            </div>
+            <span class="text-lg font-bold text-[#0A0A0A] tracking-[-0.02em]">factura<span class="text-[#FF5C00]">mea</span></span>
+          </a>
+
+          <nav class="hidden lg:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <a href={link.href} class:list={[
+                'px-4 py-2 rounded-xl text-sm font-medium transition',
+                isActive(link.match) ? 'bg-[#0A0A0A] text-white' : 'text-[#3D3D3A] hover:bg-[#F0F0EC]'
+              ]}>{link.label}</a>
+            ))}
+          </nav>
+
+          <div class="flex items-center gap-3">
+            {user ? (
+              <a href="/app" class="px-4 py-2 bg-[#FF5C00] hover:bg-[#E04E00] text-white text-sm font-semibold rounded-xl transition shadow-md shadow-[#FF5C00]/20">
+                Înapoi la cont
+              </a>
+            ) : (
+              <>
+                <a href="/auth/login" class="hidden sm:inline text-[#0A0A0A] hover:text-[#FF5C00] text-sm font-medium px-3 py-2 transition-colors">Autentificare</a>
+                <a href="/auth/register" class="px-4 py-2 bg-[#FF5C00] hover:bg-[#E04E00] text-white text-sm font-semibold rounded-xl transition shadow-md shadow-[#FF5C00]/20">
+                  Începe gratuit
+                </a>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="flex-1 max-w-[1100px] w-full mx-auto px-4 lg:px-6 py-12">
+      <slot />
+    </main>
+
+    <MegaFooter />
+  </div>
+</BaseLayout>

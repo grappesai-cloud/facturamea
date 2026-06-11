@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+Sitemap: https://facturamea.com/sitemap.xml

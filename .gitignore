@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.vercel/
+local.db
+.env
+.astro/
+.vercel
+.env*.local
+
+# env backups / secrets
+*.inherited.bak
+*.bak
+
+# Capacitor native projects (generated via `npx cap add`)
+/ios/
+/android/
+
+# macOS
+.DS_Store
+**/.DS_Store

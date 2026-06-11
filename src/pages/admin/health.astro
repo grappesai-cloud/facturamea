@@ -1,0 +1,130 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../db';
+import { sql } from 'drizzle-orm';
+
+interface Check { name: string; ok: boolean; latencyMs?: number; detail?: string; }
+
+async function timed<T>(fn: () => Promise<T>, ms = 5000): Promise<{ value?: T; error?: string; latencyMs: number }> {
+  const t0 = Date.now();
+  try {
+    const value = await Promise.race<T>([
+      fn(),
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('timeout')), ms)),
+    ]);
+    return { value, latencyMs: Date.now() - t0 };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e), latencyMs: Date.now() - t0 };
+  }
+}
+
+const checks: Check[] = [];
+
+// 1. DB ping
+{
+  const r = await timed(async () => {
+    await db.execute(sql`SELECT 1 AS ok`);
+    return true;
+  });
+  checks.push({ name: 'PostgreSQL (Neon)', ok: !!r.value, latencyMs: r.latencyMs, detail: r.error });
+}
+
+// 2. ARR registry (xlsx download)
+{
+  const r = await timed(async () => {
+    const res = await fetch('https://www.arr.ro/Files/uploads/608-Operatori%20transport%20rutier%20de%20marfa.xlsx', { method: 'HEAD' });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    return true;
+  });
+  checks.push({ name: 'ARR registry (.xlsx)', ok: !!r.value, latencyMs: r.latencyMs, detail: r.error });
+}
+
+// 3. ANAF (only if token configured)
+{
+  const tokenSet = !!(import.meta.env.ANAF_OAUTH_TOKEN || process.env.ANAF_OAUTH_TOKEN);
+  if (!tokenSet) {
+    checks.push({ name: 'ANAF webservice', ok: false, detail: 'ANAF_OAUTH_TOKEN not set' });
+  } else {
+    const r = await timed(async () => {
+      const res = await fetch('https://webservicesp.anaf.ro/api/PlatitorTvaRest/v9/tva', { method: 'HEAD' });
+      return res.status < 500;
+    });
+    checks.push({ name: 'ANAF webservice', ok: !!r.value, latencyMs: r.latencyMs, detail: r.error });
+  }
+}
+
+// 4. Resend
+{
+  const keySet = !!(import.meta.env.RESEND_API_KEY || process.env.RESEND_API_KEY);
+  if (!keySet) {
+    checks.push({ name: 'Resend (email)', ok: false, detail: 'RESEND_API_KEY not set' });
+  } else {
+    const r = await timed(async () => {
+      const res = await fetch('https://api.resend.com/domains', {
+        headers: { Authorization: `Bearer ${import.meta.env.RESEND_API_KEY || process.env.RESEND_API_KEY}` },
+      });
+      return res.ok;
+    });
+    checks.push({ name: 'Resend (email)', ok: !!r.value, latencyMs: r.latencyMs, detail: r.error });
+  }
+}
+
+// 5. ORS (distance)
+{
+  const keySet = !!(import.meta.env.ORS_API_KEY || process.env.ORS_API_KEY);
+  if (!keySet) {
+    checks.push({ name: 'OpenRouteService (distance)', ok: false, detail: 'ORS_API_KEY not set — fallback haversine' });
+  } else {
+    const r = await timed(async () => {
+      const res = await fetch('https://api.openrouteservice.org/health');
+      return res.ok;
+    });
+    checks.push({ name: 'OpenRouteService (distance)', ok: !!r.value, latencyMs: r.latencyMs, detail: r.error });
+  }
+}
+
+// 6. Stripe (placeholder — when configured)
+{
+  const keySet = !!(import.meta.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY);
+  checks.push({ name: 'Stripe (plăţi)', ok: keySet, detail: keySet ? 'configured' : 'STRIPE_SECRET_KEY not set' });
+}
+
+// 7. Sentry
+{
+  const dsnSet = !!(import.meta.env.SENTRY_DSN || process.env.SENTRY_DSN);
+  checks.push({ name: 'Sentry (errors)', ok: dsnSet, detail: dsnSet ? 'configured' : 'SENTRY_DSN not set — local-only logs' });
+}
+
+const total = checks.length;
+const okCount = checks.filter((c) => c.ok).length;
+---
+
+<AdminLayout title="System health" activeTab="health">
+  <div class="mb-6 flex items-end justify-between">
+    <div>
+      <h2 class="text-[22px] font-bold tracking-[-0.02em]">System health</h2>
+      <p class="text-[13px] text-[#6B6B68] mt-1">Verificare live a integrărilor critice. {okCount}/{total} OK.</p>
+    </div>
+    <button onclick="window.location.reload()" class="px-4 py-2 bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[13px] font-medium rounded-xl transition-colors">↻ Re-rulează</button>
+  </div>
+
+  <div class="bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
+    <div class="divide-y divide-[#E8E8E4]">
+      {checks.map((c) => (
+        <div class="px-5 py-3 flex items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0">
+            <span class:list={['w-2 h-2 rounded-full shrink-0', c.ok ? 'bg-[#15803D]' : 'bg-[#B91C1C]']}></span>
+            <div class="min-w-0">
+              <p class="text-[13px] font-medium">{c.name}</p>
+              {c.detail && <p class="text-[11px] text-[#6B6B68] truncate">{c.detail}</p>}
+            </div>
+          </div>
+          <div class="text-right shrink-0">
+            {c.latencyMs != null && <p class="text-[12px] tabular-nums text-[#6B6B68]">{c.latencyMs} ms</p>}
+            <p class:list={['text-[10px] uppercase tracking-wider font-semibold', c.ok ? 'text-[#15803D]' : 'text-[#B91C1C]']}>{c.ok ? 'OK' : 'DOWN'}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</AdminLayout>

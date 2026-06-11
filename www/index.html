@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>facturamea</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #FAFAF8; font-family: -apple-system, system-ui, sans-serif; }
+      .wrap { display: flex; align-items: center; justify-content: center; height: 100%; flex-direction: column; gap: 14px; color: #0A0A0A; }
+      .logo { font-weight: 700; font-size: 22px; letter-spacing: -0.02em; }
+      .logo span { color: #FF5C00; }
+      .sp { width: 22px; height: 22px; border: 2px solid #E8E8E4; border-top-color: #FF5C00; border-radius: 50%; animation: s 0.8s linear infinite; }
+      @keyframes s { to { transform: rotate(360deg); } }
+    </style>
+  </head>
+  <body>
+    <!-- Fallback shell shown only if the hosted app (server.url) is unreachable. -->
+    <div class="wrap">
+      <div class="logo">factura<span>mea</span></div>
+      <div class="sp"></div>
+    </div>
+  </body>
+</html>

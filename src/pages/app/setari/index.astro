@@ -1,0 +1,177 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+
+const user = Astro.locals.user!;
+
+const userTypeLabels: Record<string, string> = {
+  transportator: 'Transportator',
+  intermediar: 'Business',
+  client_direct: 'Business',
+  partener: 'Partener',
+};
+
+const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E8E8E4] rounded-xl text-[14px] text-[#0A0A0A] placeholder:text-[#A8A8A4] focus:border-[#0A0A0A] focus:outline-none transition-colors';
+const inputDisabledCls = 'w-full px-4 py-2.5 bg-[#FAFAF8] border border-[#E8E8E4] rounded-xl text-[14px] text-[#6B6B68]';
+const labelCls = 'block text-[12px] font-medium text-[#0A0A0A] mb-1.5';
+
+---
+
+<AppLayout title="Setări — facturamea" activeTab="setari">
+  <div class="max-w-3xl">
+    <PageHeader tagline="Cont" title="Setări" subtitle="Profil, companie, notificări, abonament." />
+
+    <!-- Profile -->
+    <section class="mb-10">
+      <h2 class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium mb-4">Profilul tău</h2>
+
+      <form id="profile-form" class="space-y-4">
+        <div id="profile-success" class="hidden flex items-start gap-2 px-4 py-3 bg-white border border-[#15803D]/30 rounded-xl">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#15803D] mt-1.5 shrink-0"></span>
+          <p class="text-[13px] text-[#0A0A0A]">Profil actualizat.</p>
+        </div>
+        <div id="profile-error" class="hidden flex items-start gap-2 px-4 py-3 bg-white border border-[#B91C1C]/30 rounded-xl">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#B91C1C] mt-1.5 shrink-0"></span>
+          <p id="profile-error-text" class="text-[13px] text-[#B91C1C]"></p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class={labelCls}>Nume</label>
+            <input type="text" name="name" value={user.name} required class={inputCls} />
+          </div>
+          <div>
+            <label class={labelCls}>Email</label>
+            <input type="email" value={user.email} disabled class={inputDisabledCls} />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class={labelCls}>Telefon</label>
+            <input type="tel" name="phone" value={user.phone || ''} placeholder="+40 700 000 000" class={inputCls} />
+          </div>
+          <div>
+            <label class={labelCls}>Tip cont</label>
+            <input type="text" value={userTypeLabels[user.userType]} disabled class={inputDisabledCls} />
+          </div>
+        </div>
+
+        <p class="text-[11px] text-[#6B6B68]">
+          ID platformă <span class="font-mono text-[#0A0A0A] font-semibold ml-1">{user.platformId}</span>
+        </p>
+
+        <div class="pt-2">
+          <button
+            type="submit"
+            class="px-6 py-2.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl text-[13px] transition-colors"
+          >
+            Salvează modificările
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Afișare: font scale -->
+    <section class="mb-10">
+      <h2 class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium mb-4">Afișare</h2>
+      <div class="bg-white border border-[#E8E8E4] rounded-xl p-5">
+        <div class="mb-3">
+          <p class="text-[13px] font-medium text-[#0A0A0A]">Mărimea fontului</p>
+          <p class="text-[12px] text-[#6B6B68] mt-0.5">Aplicat pe toate paginile — se salvează local pe dispozitivul tău.</p>
+        </div>
+        <div class="inline-flex items-stretch rounded-xl border border-[#E8E8E4] overflow-hidden" role="group" aria-label="Mărimea fontului">
+          <button type="button" data-font-scale="75"  class="th-fs-btn px-4 py-2 text-[11px] font-semibold text-[#0A0A0A] bg-white hover:bg-[#FAFAF8] border-r border-[#E8E8E4]">A · 75%</button>
+          <button type="button" data-font-scale="100" class="th-fs-btn px-4 py-2 text-[13px] font-semibold text-[#0A0A0A] bg-white hover:bg-[#FAFAF8] border-r border-[#E8E8E4]">A · 100%</button>
+          <button type="button" data-font-scale="125" class="th-fs-btn px-4 py-2 text-[15px] font-semibold text-[#0A0A0A] bg-white hover:bg-[#FAFAF8]">A · 125%</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Account & company settings — links to the existing sub-pages so the
+         sections promised in the page subtitle are actually reachable here. -->
+    <section class="mb-10">
+      <h2 class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium mb-4">Cont & companie</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a href="/app/setari/companie" class="block bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] rounded-xl p-4 transition-colors">
+          <p class="text-[13px] font-semibold text-[#0A0A0A]">Companie</p>
+          <p class="text-[12px] text-[#6B6B68] mt-0.5">Date firmă, CUI, contact, logo</p>
+        </a>
+        <a href="/app/setari/notifications" class="block bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] rounded-xl p-4 transition-colors">
+          <p class="text-[13px] font-semibold text-[#0A0A0A]">Notificări</p>
+          <p class="text-[12px] text-[#6B6B68] mt-0.5">Preferințe email & in-app</p>
+        </a>
+        <a href="/app/setari/subscription" class="block bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] rounded-xl p-4 transition-colors">
+          <p class="text-[13px] font-semibold text-[#0A0A0A]">Abonament</p>
+          <p class="text-[12px] text-[#6B6B68] mt-0.5">Plan curent & facturare</p>
+        </a>
+        <a href="/app/setari/securitate" class="block bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] rounded-xl p-4 transition-colors">
+          <p class="text-[13px] font-semibold text-[#0A0A0A]">Securitate</p>
+          <p class="text-[12px] text-[#6B6B68] mt-0.5">Parolă & autentificare în doi pași</p>
+        </a>
+      </div>
+    </section>
+
+  </div>
+
+  <style is:global>
+    .th-fs-btn[data-active="true"] { background-color: #0A0A0A !important; color: #fff !important; }
+    html.th-dark .th-fs-btn[data-active="true"] { background-color: #F4F0E6 !important; color: #0E0F12 !important; }
+  </style>
+
+  <script>
+    // Font scale buttons
+    (function(){
+      const FS_KEY = 'th-font-scale';
+      const btns = document.querySelectorAll<HTMLButtonElement>('.th-fs-btn');
+      function current(): string {
+        const raw = localStorage.getItem(FS_KEY);
+        return raw === '75' || raw === '125' ? raw : '100';
+      }
+      function apply(s: string) {
+        if (s === '100') document.documentElement.removeAttribute('data-fs');
+        else document.documentElement.setAttribute('data-fs', s);
+        btns.forEach((b) => b.setAttribute('data-active', b.dataset.fontScale === s ? 'true' : 'false'));
+      }
+      apply(current());
+      btns.forEach((b) => b.addEventListener('click', () => {
+        const v = b.dataset.fontScale!;
+        localStorage.setItem(FS_KEY, v);
+        apply(v);
+      }));
+    })();
+  </script>
+
+  <script>
+    document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const successEl = document.getElementById('profile-success')!;
+      const errorEl = document.getElementById('profile-error')!;
+      const errorTextEl = document.getElementById('profile-error-text')!;
+      const data = Object.fromEntries(new FormData(form));
+
+      successEl.classList.add('hidden');
+      errorEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/settings/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (res.ok) {
+          successEl.classList.remove('hidden');
+        } else {
+          const result = await res.json();
+          errorTextEl.textContent = result.error || 'Eroare';
+          errorEl.classList.remove('hidden');
+        }
+      } catch {
+        errorTextEl.textContent = 'Eroare de conectare';
+        errorEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</AppLayout>

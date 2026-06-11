@@ -1,0 +1,49 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { notifications } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+let items: any[] = [];
+try {
+  items = await db
+    .select()
+    .from(notifications)
+    .where(eq(notifications.userId, user.id))
+    .orderBy(desc(notifications.createdAt))
+    .limit(50);
+} catch { /* DB not ready */ }
+
+const fmt = (d: any) => {
+  if (!d) return '';
+  try { return new Intl.DateTimeFormat('ro-RO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(d)); }
+  catch { return ''; }
+};
+---
+
+<AppLayout title="Notificări" activeTab="notificari">
+  <div class="mb-6">
+    <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">Notificări</h1>
+    <p class="text-[13px] text-[#6B6B68] mt-1">Activitatea contului tău: facturi, încasări, e-Factura, sistem.</p>
+  </div>
+
+  {items.length === 0 ? (
+    <div class="bg-white border border-[#E8E8E4] rounded-2xl px-5 py-12 text-center">
+      <p class="text-[14px] text-[#6B6B68]">Nicio notificare deocamdată.</p>
+    </div>
+  ) : (
+    <div class="bg-white border border-[#E8E8E4] rounded-2xl divide-y divide-[#F0F0EC]">
+      {items.map((n) => (
+        <a href={n.linkUrl || '#'} class={`flex items-start gap-3 px-5 py-3.5 hover:bg-[#FAFAF8] transition-colors ${n.readAt ? '' : 'bg-[#FFF9F4]'}`}>
+          <span class={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.readAt ? 'bg-[#D4D4CE]' : 'bg-[#FF5C00]'}`}></span>
+          <div class="min-w-0 flex-1">
+            <p class="text-[13.5px] font-medium text-[#0A0A0A]">{n.title}</p>
+            {n.body && <p class="text-[12.5px] text-[#6B6B68] mt-0.5">{n.body}</p>}
+          </div>
+          <span class="text-[11px] text-[#A8A8A4] shrink-0">{fmt(n.createdAt)}</span>
+        </a>
+      ))}
+    </div>
+  )}
+</AppLayout>

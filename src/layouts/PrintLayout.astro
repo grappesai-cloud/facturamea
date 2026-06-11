@@ -1,0 +1,101 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+const locale = Astro.locals?.locale ?? 'ro';
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>{title} | facturamea</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="bg-[#FAFAF8] print:bg-white">
+    <div class="no-print bg-white border-b border-[#E8E8E4] sticky top-0 z-10 print:hidden">
+      <div class="max-w-[210mm] mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div class="text-[13px] text-[#6B6B68] truncate">{title}</div>
+        <div class="flex gap-2 shrink-0">
+          <button id="download-pdf-btn" class="px-4 py-2 rounded-xl bg-[#FF5C00] hover:bg-[#E04E00] text-white text-[13px] font-semibold transition-colors">
+            Descarcă PDF
+          </button>
+          <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] text-[13px] font-medium transition-colors">
+            Tipăreşte
+          </button>
+          <button onclick="window.close() || history.back()" class="px-4 py-2 rounded-xl bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] text-[13px] font-medium transition-colors">
+            Închide
+          </button>
+        </div>
+      </div>
+    </div>
+    <main class="print-doc">
+      <slot />
+    </main>
+
+    <script>
+      // Real PDF download using html2canvas + jsPDF (browser-side).
+      // Uses dynamic imports so the libraries don't ship in the page bundle
+      // until the user actually clicks the button — keeps cold loads fast.
+      const btn = document.getElementById('download-pdf-btn') as HTMLButtonElement | null;
+      btn?.addEventListener('click', async () => {
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Se generează...';
+        try {
+          const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+            import('html2canvas'),
+            import('jspdf'),
+          ]);
+          const target = document.querySelector('.doc-shell') as HTMLElement | null
+                       ?? document.querySelector('.print-doc > *') as HTMLElement | null
+                       ?? document.querySelector('main') as HTMLElement | null;
+          if (!target) { alert('Nu am găsit conţinut de exportat'); return; }
+
+          const canvas = await html2canvas(target, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+          });
+          const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+          // A4 portrait: 210 × 297 mm
+          const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+          const pageW = 210, pageH = 297, margin = 8;
+          const usableW = pageW - margin * 2;
+          const imgH = (canvas.height * usableW) / canvas.width;
+
+          // If the image is taller than one page, slice it across multiple pages.
+          let heightLeft = imgH;
+          let position = margin;
+          pdf.addImage(imgData, 'JPEG', margin, position, usableW, imgH);
+          heightLeft -= (pageH - margin * 2);
+          while (heightLeft > 0) {
+            position = margin - (imgH - heightLeft);
+            pdf.addPage();
+            pdf.addImage(imgData, 'JPEG', margin, position, usableW, imgH);
+            heightLeft -= (pageH - margin * 2);
+          }
+
+          const filename = (document.title || 'document').replace(/[^A-Za-z0-9._-]+/g, '_') + '.pdf';
+          pdf.save(filename);
+        } catch (err) {
+          console.error('PDF export failed:', err);
+          alert('Generare PDF eşuată. Foloseşte butonul Tipăreşte → Salvează ca PDF.');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = original ?? 'Descarcă PDF';
+        }
+      });
+    </script>
+  </body>
+</html>

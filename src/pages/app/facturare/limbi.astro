@@ -1,0 +1,34 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+
+// Languages available for the issued PDF document. Chosen per-invoice in the
+// emit form (câmpul "Limbă"); the document template translates labels.
+const LANGS = [
+  { code: 'ro', name: 'Română', note: 'Limbă implicită', sample: 'Factură · Cumpărător · Total de plată' },
+  { code: 'en', name: 'English', note: 'Pentru clienți externi', sample: 'Invoice · Buyer · Amount due' },
+];
+---
+
+<AppLayout title="Limbi" activeTab="facturare">
+  <div class="mb-4">
+    <a href="/app/facturare/setari" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la setări facturare</a>
+  </div>
+  <h1 class="text-2xl font-bold text-[#0A0A0A] mb-1">Limbi</h1>
+  <p class="text-sm text-[#6B6B68] mb-6">Limba documentului PDF se alege la emitere, în câmpul „Limbă”. Etichetele facturii se traduc automat.</p>
+
+  <div class="max-w-3xl space-y-3">
+    {LANGS.map((l) => (
+      <div class="bg-white border border-[#E8E8E4] rounded-xl p-4 flex items-center gap-4">
+        <span class="font-mono text-xs px-2 py-1 bg-[#FAFAF8] rounded-lg uppercase">{l.code}</span>
+        <div class="flex-1">
+          <p class="text-sm font-semibold text-[#0A0A0A]">{l.name}</p>
+          <p class="text-xs text-[#6B6B68]">{l.sample}</p>
+        </div>
+        <span class="text-[11px] text-[#8A8A85]">{l.note}</span>
+      </div>
+    ))}
+  </div>
+</AppLayout>

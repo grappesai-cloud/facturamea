@@ -1,0 +1,61 @@
+name: Security checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Daily at 04:00 UTC — catches new CVEs in pinned deps
+    - cron: '0 4 * * *'
+
+jobs:
+  audit:
+    name: npm audit (production deps)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - run: npm ci --no-audit
+      - name: Audit production dependencies
+        # Fail only on high+critical. Moderate is reported but not blocking.
+        run: npm audit --omit=dev --audit-level=high
+
+  typecheck:
+    name: TypeScript / Astro check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - run: npm ci --no-audit
+      - run: npx astro check --minimumSeverity error
+
+  test:
+    name: Unit tests (vitest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - run: npm ci --no-audit
+      - run: npm test
+
+  lint:
+    name: Biome lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - run: npm ci --no-audit
+      - run: npm run lint

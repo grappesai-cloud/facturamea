@@ -1,0 +1,11 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "astro",
+  "buildCommand": "astro build",
+  "installCommand": "npm install",
+  "regions": ["fra1"],
+  "crons": [
+    { "path": "/api/cron/daily", "schedule": "0 6 * * *" },
+    { "path": "/api/cron/recurring-invoices", "schedule": "0 7 * * *" }
+  ]
+}

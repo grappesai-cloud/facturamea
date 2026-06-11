@@ -1,0 +1,44 @@
+---
+// Public, read-only view of a shared invoice. Reached via the "Share" action
+// which mints a random shareToken. No auth — the token IS the capability.
+import PrintLayout from '../../layouts/PrintLayout.astro';
+import InvoiceDocument from '../../components/invoicing/InvoiceDocument.astro';
+import { db } from '../../db';
+import { transportInvoices, transportInvoiceLines, companies, invoiceModels, orders, freight } from '../../db/schema';
+import { eq, asc } from 'drizzle-orm';
+import QRCode from 'qrcode';
+
+const token = Astro.params.token!;
+const [invRow] = token ? await db.select().from(transportInvoices).where(eq(transportInvoices.shareToken, token)).limit(1) : [null];
+
+if (!invRow) {
+  return new Response('Document inexistent sau link revocat.', { status: 404 });
+}
+
+let shippingText: string | null = null;
+if (invRow.orderId) {
+  const [o] = await db.select().from(orders).where(eq(orders.id, invRow.orderId)).limit(1);
+  if (o) {
+    const [f] = o.freightId ? await db.select().from(freight).where(eq(freight.id, o.freightId)).limit(1) : [null];
+    const route = f ? `${f.loadingCityName ?? ''}${f.loadingCountry ? ', ' + f.loadingCountry : ''} → ${f.unloadingCityName ?? ''}${f.unloadingCountry ? ', ' + f.unloadingCountry : ''}` : '';
+    shippingText = [route, o.vehiclePlate ? `Auto: ${o.vehiclePlate}` : ''].filter(Boolean).join(' · ') || null;
+  }
+}
+const inv = { ...invRow, shippingText };
+
+const lines = await db.select().from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, inv.id)).orderBy(asc(transportInvoiceLines.position));
+const [issuer] = await db.select().from(companies).where(eq(companies.id, inv.companyId)).limit(1);
+const [model] = inv.modelId ? await db.select().from(invoiceModels).where(eq(invoiceModels.id, inv.modelId)).limit(1) : [null];
+
+const kindLabel: Record<string, string> = { factura: 'Factură', proforma: 'Proformă', storno: 'Storno', chitanta: 'Chitanță' };
+
+let qrDataUrl: string | null = null;
+if (model?.showQr) {
+  const baseUrl = import.meta.env.PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || 'https://facturamea.com';
+  qrDataUrl = await QRCode.toDataURL(`${baseUrl}/factura/${token}`, { margin: 1, width: 192 }).catch(() => null);
+}
+---
+
+<PrintLayout title={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber}`}>
+  <InvoiceDocument inv={inv} lines={lines} issuer={issuer} model={model} qrDataUrl={qrDataUrl} />
+</PrintLayout>

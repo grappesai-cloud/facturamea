@@ -1,0 +1,39 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import TeamManager from '../../../components/admin/TeamManager.tsx';
+import { ROLE_LABELS, ROLE_DESCRIPTIONS, COMPANY_ROLES } from '../../../lib/permissions-roles';
+
+const user = Astro.locals.user!;
+const company = Astro.locals.company;
+
+// Owner (or platform admin) can manage the team; everyone else sees a read-only roster.
+const canManage = company?.role === 'owner' || user.isAdmin;
+---
+
+<AppLayout title="Echipă — facturamea" activeTab="setari" breadcrumbTitle="Echipă">
+  <div class="max-w-3xl">
+    <PageHeader
+      tagline="Setări"
+      title="Echipă și roluri"
+      subtitle={canManage
+        ? 'Invită membri în firmă și stabilește ce poate face fiecare.'
+        : 'Membrii firmei și rolurile lor. Doar administratorul poate face modificări.'}
+    />
+
+    <TeamManager client:load canManage={canManage} />
+
+    <!-- Role legend -->
+    <div class="bg-white border border-[#E8E8E4] rounded-2xl p-5 mt-6">
+      <h3 class="text-[13px] font-semibold text-[#0A0A0A] mb-3">Ce poate face fiecare rol</h3>
+      <div class="space-y-2.5">
+        {COMPANY_ROLES.map((r) => (
+          <div class="flex gap-3">
+            <span class="shrink-0 w-[110px] text-[12px] font-medium text-[#0A0A0A]">{ROLE_LABELS[r]}</span>
+            <span class="text-[12px] text-[#6B6B68]">{ROLE_DESCRIPTIONS[r]}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+</AppLayout>

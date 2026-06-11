@@ -1,0 +1,10 @@
+---
+import AuthLayout from '../../layouts/AuthLayout.astro';
+import LoginForm from '../../components/auth/LoginForm';
+import { tFn } from '../../lib/i18n';
+const t = tFn(Astro.locals.locale);
+---
+
+<AuthLayout title={t('pages.auth.login_page_title')} tagline={t('pages.auth.login_tagline')}>
+  <LoginForm client:load locale={Astro.locals.locale} />
+</AuthLayout>

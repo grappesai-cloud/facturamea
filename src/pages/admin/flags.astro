@@ -1,0 +1,98 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../db';
+import { featureFlags } from '../../db/schema';
+
+let flags: typeof featureFlags.$inferSelect[] = [];
+try { flags = await db.select().from(featureFlags); } catch {}
+
+const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E8E8E4] rounded-xl text-[13px] focus:border-[#0A0A0A] focus:outline-none transition-colors';
+---
+
+<AdminLayout title="Feature flags" activeTab="flags">
+  <div class="mb-6">
+    <h2 class="text-[22px] font-bold tracking-[-0.02em]">Feature flags</h2>
+    <p class="text-[13px] text-[#6B6B68] mt-1">Toggle-uri pentru funcţii noi. Rollout-percent permite lansare gradată.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <form id="new-flag" class="space-y-3 p-5 bg-white border border-[#E8E8E4] rounded-xl">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Adaugă flag nou</p>
+      <input name="key" required placeholder="key (ex. show_new_pricing)" class={inputCls + ' font-mono'} />
+      <textarea name="description" rows="2" placeholder="Descriere scurtă (opţional)" class={inputCls + ' resize-y'}></textarea>
+      <label class="flex items-center gap-2 text-[13px]">
+        <input type="checkbox" name="enabled" class="w-4 h-4 accent-[#FF5C00]" />
+        <span>Activ</span>
+      </label>
+      <div>
+        <label class="block text-[11px] text-[#6B6B68] mb-1">Rollout %</label>
+        <input type="number" name="rolloutPercent" min="0" max="100" value="100" class={inputCls} />
+      </div>
+      <button type="submit" class="w-full px-5 py-2.5 bg-[#0A0A0A] hover:bg-[#1A1A1A] text-white font-semibold rounded-xl text-[13px] transition-colors">Adaugă</button>
+    </form>
+
+    <div class="lg:col-span-2 bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
+      <div class="px-5 py-3 border-b border-[#E8E8E4]"><p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Flag-uri existente ({flags.length})</p></div>
+      <div class="divide-y divide-[#E8E8E4]">
+        {flags.length === 0 ? (
+          <div class="px-5 py-8 text-center text-[12px] text-[#6B6B68]">Niciun flag definit încă.</div>
+        ) : flags.map((f) => (
+          <div class="px-5 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[13px] font-mono font-semibold">{f.key}</p>
+              {f.description && <p class="text-[11px] text-[#6B6B68] mt-0.5 truncate">{f.description}</p>}
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <span class:list={['px-2 py-0.5 text-[10px] uppercase tracking-wider font-semibold rounded-full', f.enabled ? 'bg-[#15803D] text-white' : 'bg-[#E8E8E4] text-[#6B6B68]']}>
+                {f.enabled ? 'On' : 'Off'}
+              </span>
+              <span class="text-[12px] tabular-nums text-[#6B6B68]">{f.rolloutPercent}%</span>
+              <button data-toggle={f.key} data-current={f.enabled} class="text-[12px] text-[#0A0A0A] hover:text-[#FF5C00] font-medium transition-colors">{f.enabled ? 'Dezactivează' : 'Activează'}</button>
+              <button data-delete={f.key} class="text-[12px] text-[#B91C1C] hover:underline">Şterge</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('new-flag')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(e.target as HTMLFormElement);
+      await fetch('/api/admin/flags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          key: fd.get('key'),
+          description: fd.get('description'),
+          enabled: fd.get('enabled') === 'on',
+          rolloutPercent: parseInt(String(fd.get('rolloutPercent') || '100'), 10),
+        }),
+      });
+      window.location.reload();
+    });
+
+    document.querySelectorAll('[data-toggle]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const key = btn.getAttribute('data-toggle');
+        const current = btn.getAttribute('data-current') === 'true';
+        await fetch(`/api/admin/flags/${key}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: !current }),
+        });
+        window.location.reload();
+      });
+    });
+
+    document.querySelectorAll('[data-delete]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const key = btn.getAttribute('data-delete');
+        if (!confirm(`Şterg flag-ul "${key}"?`)) return;
+        await fetch(`/api/admin/flags/${key}`, { method: 'DELETE' });
+        window.location.reload();
+      });
+    });
+  </script>
+</AdminLayout>

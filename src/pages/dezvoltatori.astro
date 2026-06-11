@@ -1,0 +1,336 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+Astro.response.headers.set('Vary', 'Cookie');
+
+const BASE = 'https://facturamea.com/api/v1';
+
+type Param = { name: string; type: string; req: boolean; desc: string };
+type Endpoint = {
+  id: string;
+  method: 'GET' | 'POST' | 'PATCH' | 'DELETE';
+  path: string;
+  title: string;
+  desc: string;
+  params?: Param[];
+  curl: string;
+};
+
+const methodCls: Record<string, string> = {
+  GET: 'bg-[#E7F7EC] text-[#15803D]',
+  POST: 'bg-[#EAF2FF] text-[#1D4ED8]',
+  PATCH: 'bg-[#FFF7E6] text-[#B45309]',
+  DELETE: 'bg-[#FDECEC] text-[#B91C1C]',
+};
+
+const groups: { label: string; endpoints: Endpoint[] }[] = [
+  {
+    label: 'Autentificare',
+    endpoints: [
+      {
+        id: 'ping',
+        method: 'GET',
+        path: '/ping',
+        title: 'Test conexiune',
+        desc: 'Verifică dacă cheia API este validă. Întoarce firma asociată cheii.',
+        curl: `curl ${BASE}/ping \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+    ],
+  },
+  {
+    label: 'Facturi',
+    endpoints: [
+      {
+        id: 'invoices-list',
+        method: 'GET',
+        path: '/invoices',
+        title: 'Listează facturile',
+        desc: 'Întoarce facturile firmei, cele mai recente primele.',
+        params: [
+          { name: 'limit', type: 'număr', req: false, desc: 'Câte rezultate (implicit 50, maxim 200).' },
+          { name: 'offset', type: 'număr', req: false, desc: 'De la al câtelea rezultat (paginare).' },
+          { name: 'kind', type: 'text', req: false, desc: 'factura · proforma · storno · chitanta.' },
+          { name: 'status', type: 'text', req: false, desc: 'ex. draft, issued, paid, overdue.' },
+        ],
+        curl: `curl "${BASE}/invoices?limit=20&kind=factura" \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+      {
+        id: 'invoices-create',
+        method: 'POST',
+        path: '/invoices',
+        title: 'Creează o factură',
+        desc: 'Emite o factură. Totalurile sunt calculate pe server din liniile trimise. Sumele se trimit în bani (întreg), nu în lei.',
+        params: [
+          { name: 'client', type: 'obiect', req: false, desc: 'Client nou inline: { name, taxId, address }. Obligatoriu dacă lipsește clientId.' },
+          { name: 'clientId', type: 'text', req: false, desc: 'ID-ul unui client existent. Alternativă la client.' },
+          { name: 'lines', type: 'listă', req: true, desc: 'Linii: { name, quantity, unitPriceCents, vatRate }.' },
+          { name: 'currency', type: 'text', req: false, desc: 'Implicit RON.' },
+          { name: 'kind', type: 'text', req: false, desc: 'Implicit factura.' },
+          { name: 'seriesId', type: 'text', req: false, desc: 'Serie anume. Implicit seria firmei pentru tipul documentului.' },
+          { name: 'dueDate', type: 'dată', req: false, desc: 'Termen de plată (ISO). Implicit +30 zile.' },
+        ],
+        curl: `curl -X POST ${BASE}/invoices \\
+  -H "Authorization: Bearer fm_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "client": { "name": "Firma Client SRL", "taxId": "RO12345678", "address": "Str. Exemplu 1, București" },
+    "currency": "RON",
+    "lines": [
+      { "name": "Servicii consultanță", "quantity": 1, "unitPriceCents": 100000, "vatRate": 21 }
+    ]
+  }'`,
+      },
+      {
+        id: 'invoices-get',
+        method: 'GET',
+        path: '/invoices/{id}',
+        title: 'Detalii factură',
+        desc: 'Întoarce o factură cu liniile ei.',
+        curl: `curl ${BASE}/invoices/INV_ID \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+    ],
+  },
+  {
+    label: 'Clienți',
+    endpoints: [
+      {
+        id: 'clients-list',
+        method: 'GET',
+        path: '/clients',
+        title: 'Listează clienții',
+        desc: 'Clienții externi ai firmei.',
+        params: [
+          { name: 'limit', type: 'număr', req: false, desc: 'Implicit 50, maxim 200.' },
+          { name: 'offset', type: 'număr', req: false, desc: 'Paginare.' },
+        ],
+        curl: `curl ${BASE}/clients \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+      {
+        id: 'clients-create',
+        method: 'POST',
+        path: '/clients',
+        title: 'Creează un client',
+        desc: 'Adaugă un client extern.',
+        params: [
+          { name: 'name', type: 'text', req: true, desc: 'Denumirea clientului.' },
+          { name: 'taxId', type: 'text', req: false, desc: 'CUI / cod TVA.' },
+          { name: 'address, city, county, country', type: 'text', req: false, desc: 'Date de adresă.' },
+          { name: 'email, phone, iban, bank', type: 'text', req: false, desc: 'Date de contact și bancare.' },
+        ],
+        curl: `curl -X POST ${BASE}/clients \\
+  -H "Authorization: Bearer fm_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "Firma Client SRL", "taxId": "RO12345678", "city": "Cluj-Napoca" }'`,
+      },
+      {
+        id: 'clients-get',
+        method: 'GET',
+        path: '/clients/{id}',
+        title: 'Detalii client',
+        desc: 'Întoarce un client după ID.',
+        curl: `curl ${BASE}/clients/CLIENT_ID \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+      {
+        id: 'clients-update',
+        method: 'PATCH',
+        path: '/clients/{id}',
+        title: 'Actualizează un client',
+        desc: 'Modifică doar câmpurile trimise.',
+        curl: `curl -X PATCH ${BASE}/clients/CLIENT_ID \\
+  -H "Authorization: Bearer fm_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{ "phone": "+40 700 000 000" }'`,
+      },
+      {
+        id: 'clients-delete',
+        method: 'DELETE',
+        path: '/clients/{id}',
+        title: 'Șterge un client',
+        desc: 'Elimină definitiv un client extern.',
+        curl: `curl -X DELETE ${BASE}/clients/CLIENT_ID \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+    ],
+  },
+  {
+    label: 'Produse & servicii',
+    endpoints: [
+      {
+        id: 'products-list',
+        method: 'GET',
+        path: '/products',
+        title: 'Listează produsele',
+        desc: 'Catalogul de produse și servicii al firmei.',
+        params: [
+          { name: 'limit', type: 'număr', req: false, desc: 'Implicit 50, maxim 200.' },
+          { name: 'offset', type: 'număr', req: false, desc: 'Paginare.' },
+        ],
+        curl: `curl ${BASE}/products \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+      {
+        id: 'products-create',
+        method: 'POST',
+        path: '/products',
+        title: 'Creează un produs',
+        desc: 'Adaugă un produs sau serviciu în catalog.',
+        params: [
+          { name: 'name', type: 'text', req: true, desc: 'Denumirea produsului.' },
+          { name: 'code', type: 'text', req: false, desc: 'Cod intern.' },
+          { name: 'defaultUnitPriceCents', type: 'număr', req: false, desc: 'Preț unitar în bani (întreg).' },
+          { name: 'defaultUm', type: 'text', req: false, desc: 'Unitate de măsură (implicit buc).' },
+          { name: 'defaultVatRate', type: 'număr', req: false, desc: 'Cotă TVA implicită (ex. 21).' },
+        ],
+        curl: `curl -X POST ${BASE}/products \\
+  -H "Authorization: Bearer fm_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{ "name": "Abonament lunar", "defaultUnitPriceCents": 9900, "defaultVatRate": 21 }'`,
+      },
+      {
+        id: 'products-get',
+        method: 'GET',
+        path: '/products/{id}',
+        title: 'Detalii produs',
+        desc: 'Întoarce un produs după ID.',
+        curl: `curl ${BASE}/products/PRODUCT_ID \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+      {
+        id: 'products-update',
+        method: 'PATCH',
+        path: '/products/{id}',
+        title: 'Actualizează un produs',
+        desc: 'Modifică doar câmpurile trimise.',
+        curl: `curl -X PATCH ${BASE}/products/PRODUCT_ID \\
+  -H "Authorization: Bearer fm_live_..." \\
+  -H "Content-Type: application/json" \\
+  -d '{ "defaultUnitPriceCents": 12900 }'`,
+      },
+      {
+        id: 'products-delete',
+        method: 'DELETE',
+        path: '/products/{id}',
+        title: 'Șterge un produs',
+        desc: 'Elimină definitiv un produs din catalog.',
+        curl: `curl -X DELETE ${BASE}/products/PRODUCT_ID \\
+  -H "Authorization: Bearer fm_live_..."`,
+      },
+    ],
+  },
+];
+
+const cardCls = 'bg-white border border-[#E8E8E4] rounded-2xl';
+const codeCls = 'bg-[#0A0A0A] text-[#E8E8E4] text-xs rounded-xl p-4 overflow-x-auto font-mono';
+---
+
+<PublicLayout
+  title="API pentru dezvoltatori — facturamea"
+  description="Documentația API-ului public facturamea (v1): autentificare cu cheie API și endpoint-uri pentru facturi, clienți și produse."
+>
+  <!-- Hero -->
+  <header class="mb-12">
+    <p class="text-[11px] uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-2">Dezvoltatori</p>
+    <h1 class="text-[36px] md:text-[44px] font-bold tracking-[-0.03em] text-[#0A0A0A] leading-[1.05]">API facturamea</h1>
+    <p class="text-[15px] text-[#3D3D3A] mt-4 max-w-2xl">
+      Conectează facturamea la propriile aplicații. Creează facturi, gestionează clienți și produse direct din codul tău, cu un API REST simplu, în JSON.
+    </p>
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+      <span class="text-[12px] text-[#6B6B68]">URL de bază</span>
+      <code class="px-3 py-1.5 bg-[#0A0A0A] text-[#E8E8E4] text-xs rounded-xl font-mono">{BASE}</code>
+    </div>
+  </header>
+
+  <!-- Auth -->
+  <section class="mb-12">
+    <h2 class="text-[22px] font-bold tracking-[-0.02em] text-[#0A0A0A] mb-4">Autentificare</h2>
+    <div class={`${cardCls} p-6 space-y-4`}>
+      <p class="text-[14px] text-[#3D3D3A]">
+        Fiecare cerere are nevoie de o cheie API trimisă în header-ul
+        <code class="font-mono text-[#0A0A0A] bg-[#F0F0EC] px-1.5 py-0.5 rounded">Authorization</code>.
+        Generezi cheile din cont, la
+        <a href="/app/setari/api" class="text-[#FF5C00] font-semibold hover:underline">Setări → API & integrări</a>.
+        Cheia se afișează o singură dată, la creare. Păstreaz-o în siguranță și nu o include în cod public.
+      </p>
+      <pre class={codeCls}><code>Authorization: Bearer fm_live_...</code></pre>
+      <p class="text-[13px] text-[#6B6B68]">
+        Cheile încep cu <code class="font-mono text-[#0A0A0A]">fm_live_</code> (producție) sau
+        <code class="font-mono text-[#0A0A0A]">fm_test_</code> (test). O cerere fără cheie validă întoarce
+        <code class="font-mono text-[#0A0A0A]">401</code>.
+      </p>
+    </div>
+  </section>
+
+  <!-- Conventions -->
+  <section class="mb-12">
+    <h2 class="text-[22px] font-bold tracking-[-0.02em] text-[#0A0A0A] mb-4">Convenții</h2>
+    <div class={`${cardCls} p-6`}>
+      <ul class="space-y-2.5 text-[14px] text-[#3D3D3A]">
+        <li class="flex gap-2"><span class="text-[#FF5C00] font-bold">·</span> Sumele de bani se trimit și se întorc în <strong>bani (întreg)</strong>. 100,00 lei = <code class="font-mono text-[#0A0A0A]">10000</code>.</li>
+        <li class="flex gap-2"><span class="text-[#FF5C00] font-bold">·</span> Toate cererile și răspunsurile sunt în <strong>JSON</strong>.</li>
+        <li class="flex gap-2"><span class="text-[#FF5C00] font-bold">·</span> Listele acceptă <code class="font-mono text-[#0A0A0A]">limit</code> și <code class="font-mono text-[#0A0A0A]">offset</code> pentru paginare.</li>
+        <li class="flex gap-2"><span class="text-[#FF5C00] font-bold">·</span> Erorile au forma <code class="font-mono text-[#0A0A0A]">{`{ "error": "bad_request", "message": "..." }`}</code> cu cod HTTP 400, 401 sau 404.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Endpoints -->
+  {groups.map((group) => (
+    <section class="mb-12">
+      <h2 class="text-[22px] font-bold tracking-[-0.02em] text-[#0A0A0A] mb-4">{group.label}</h2>
+      <div class="space-y-4">
+        {group.endpoints.map((ep) => (
+          <div id={ep.id} class={`${cardCls} overflow-hidden`}>
+            <div class="px-5 py-4 border-b border-[#F0F0EC]">
+              <div class="flex items-center gap-3 flex-wrap">
+                <span class={`inline-block px-2.5 py-1 rounded-lg text-[11px] font-bold font-mono ${methodCls[ep.method]}`}>{ep.method}</span>
+                <code class="font-mono text-[14px] text-[#0A0A0A] font-semibold">/api/v1{ep.path}</code>
+              </div>
+              <p class="text-[14px] font-semibold text-[#0A0A0A] mt-3">{ep.title}</p>
+              <p class="text-[13px] text-[#6B6B68] mt-1">{ep.desc}</p>
+            </div>
+
+            {ep.params && ep.params.length > 0 && (
+              <div class="px-5 py-4 border-b border-[#F0F0EC]">
+                <p class="text-[11px] uppercase tracking-[0.12em] text-[#8A8A85] font-medium mb-3">Parametri</p>
+                <div class="space-y-2.5">
+                  {ep.params.map((p) => (
+                    <div class="flex flex-wrap items-baseline gap-2 text-[13px]">
+                      <code class="font-mono text-[#0A0A0A] font-semibold">{p.name}</code>
+                      <span class="text-[11px] text-[#8A8A85]">{p.type}</span>
+                      {p.req
+                        ? <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#FDECEC] text-[#B91C1C] font-semibold">obligatoriu</span>
+                        : <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#F0F0EC] text-[#6B6B68] font-semibold">opțional</span>}
+                      <span class="text-[#6B6B68] basis-full sm:basis-auto">{p.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div class="px-5 py-4">
+              <p class="text-[11px] uppercase tracking-[0.12em] text-[#8A8A85] font-medium mb-3">Exemplu</p>
+              <pre class={codeCls}><code>{ep.curl}</code></pre>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  ))}
+
+  <!-- CTA -->
+  <section class="mt-16 mb-4">
+    <div class="bg-[#0A0A0A] rounded-2xl p-8 text-center">
+      <h2 class="text-[22px] font-bold tracking-[-0.02em] text-white">Gata să integrezi?</h2>
+      <p class="text-[14px] text-[#A8A8A4] mt-2 max-w-md mx-auto">Generează prima cheie API din cont și pornește în câteva minute.</p>
+      <a href="/app/setari/api" class="inline-block mt-5 px-6 py-3 bg-[#FF5C00] hover:bg-[#E04E00] text-white text-[14px] font-semibold rounded-xl transition-colors">
+        Generează cheie API →
+      </a>
+    </div>
+  </section>
+</PublicLayout>

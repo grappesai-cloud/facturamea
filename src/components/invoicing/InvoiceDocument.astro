@@ -1,0 +1,167 @@
+---
+// Shared, self-contained invoice document body. Rendered inside both the
+// authenticated print view (/app/facturare/[id]/print) and the public share
+// view (/factura/[token]). Respects per-model display toggles.
+interface Props {
+  inv: any;
+  lines: any[];
+  issuer: any;
+  model?: any;
+  qrDataUrl?: string | null;
+}
+const { inv, lines, issuer, model = null, qrDataUrl = null } = Astro.props;
+
+const isEn = inv.language === 'en';
+const t = (ro: string, en: string) => (isEn ? en : ro);
+const prec = Number.isInteger(inv.precision) ? inv.precision : 2;
+const fmt = (cents: number) => (cents / 100).toLocaleString(isEn ? 'en-US' : 'ro-RO', { minimumFractionDigits: prec, maximumFractionDigits: prec });
+
+const kindLabel: Record<string, string> = {
+  factura: t('Factură fiscală', 'Invoice'),
+  proforma: t('Factură proformă', 'Proforma invoice'),
+  storno: t('Factură storno', 'Credit note'),
+  chitanta: t('Chitanță', 'Receipt'),
+};
+
+const layoutKey = model?.layoutKey ?? 'classic';
+const brandColor = model?.brandColor ?? '#0A0A0A';
+const logoUrl = issuer?.invoiceLogoUrl ?? model?.logoUrl ?? null;
+const stampUrl = issuer?.invoiceStampUrl ?? null;
+const signatureUrl = issuer?.invoiceSignatureUrl ?? null;
+const footerText = issuer?.invoiceFooterText ?? model?.footerText ?? '';
+const showShipping = model?.showShipping !== false && !!inv.shippingText;
+const showEmittedWith = !!model?.showEmittedWith;
+const showQr = !!model?.showQr && !!qrDataUrl;
+---
+
+<div class="doc-shell mx-auto bg-white p-10" style={`max-width: 210mm; min-height: 297mm; ${layoutKey === 'accent' ? `border-top: 8px solid ${brandColor};` : ''}`}>
+  <div class="flex items-start justify-between gap-6 pb-6 border-b" style={`border-color: ${layoutKey === 'accent' ? brandColor + '33' : '#E8E8E4'}`}>
+    <div>
+      {logoUrl && <img src={logoUrl} alt={issuer?.name ?? ''} style="max-height: 60px; margin-bottom: 12px;" />}
+      <p class="text-[10px] uppercase tracking-wider text-[#8A8A85]">{t('Furnizor', 'Supplier')}</p>
+      <p class="font-bold text-[#0A0A0A] mt-1 text-lg">{issuer?.name ?? '—'}</p>
+      {issuer?.cui && <p class="text-xs text-[#6B6B68] mt-0.5">CUI: {issuer.cui}</p>}
+      {issuer?.regCom && <p class="text-xs text-[#6B6B68] mt-0.5">Reg. com.: {issuer.regCom}</p>}
+      {issuer?.address && <p class="text-xs text-[#6B6B68] mt-0.5">{issuer.address}</p>}
+      {issuer?.iban && <p class="text-xs text-[#6B6B68] mt-0.5">IBAN: {issuer.iban}</p>}
+    </div>
+    <div class="text-right">
+      <p class="text-[10px] uppercase tracking-wider" style={`color: ${brandColor}`}>{kindLabel[inv.kind] ?? 'Document'}</p>
+      <p class="text-3xl font-bold mt-1 font-mono tabular-nums" style={`color: ${brandColor}`}>{inv.fullNumber}</p>
+      <p class="text-xs text-[#6B6B68] mt-2">{t('Data emitere', 'Issue date')}: {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString(isEn ? 'en-GB' : 'ro-RO') : '—'}</p>
+      {inv.dueAt && <p class="text-xs text-[#6B6B68] mt-0.5">{t('Scadență', 'Due date')}: {new Date(inv.dueAt).toLocaleDateString(isEn ? 'en-GB' : 'ro-RO')}</p>}
+    </div>
+  </div>
+
+  <div class="py-6 border-b border-[#E8E8E4]">
+    <p class="text-[10px] uppercase tracking-wider text-[#8A8A85]">{t('Cumpărător', 'Buyer')}</p>
+    <p class="font-bold text-[#0A0A0A] mt-1 text-lg">{inv.clientNameSnap}</p>
+    {inv.clientTaxIdSnap && <p class="text-xs text-[#6B6B68] mt-0.5">CUI: {inv.clientTaxIdSnap}</p>}
+    {inv.clientAddressSnap && <p class="text-xs text-[#6B6B68] mt-0.5">{inv.clientAddressSnap}</p>}
+  </div>
+
+  <div class="py-6">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="text-left text-[10px] uppercase tracking-wider text-white" style={`background: ${brandColor}`}>
+          <th class="py-2 px-3">#</th>
+          <th class="py-2 pr-3">{t('Descriere', 'Description')}</th>
+          <th class="py-2 px-2 text-right w-16">{t('Cant.', 'Qty')}</th>
+          <th class="py-2 px-2 w-12">{t('UM', 'UoM')}</th>
+          <th class="py-2 px-2 text-right w-24">{t('Preț unit.', 'Unit price')}</th>
+          <th class="py-2 px-2 text-right w-16">{t('TVA', 'VAT')}</th>
+          <th class="py-2 px-3 text-right w-28">{t('Total', 'Total')}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((l: any, i: number) => (
+          <tr class="border-b border-[#F0F0EC]">
+            <td class="py-3 px-3 text-[#6B6B68]">{i + 1}</td>
+            <td class="py-3 pr-3 text-[#0A0A0A]">{l.code && <span class="text-[#8A8A85] font-mono text-xs mr-1">{l.code}</span>}{l.description}</td>
+            <td class="py-3 px-2 text-right tabular-nums">{l.quantity}</td>
+            <td class="py-3 px-2 text-[#6B6B68]">{l.unit}</td>
+            <td class="py-3 px-2 text-right tabular-nums">{fmt(l.unitPriceCents)}</td>
+            <td class="py-3 px-2 text-right tabular-nums">{l.vatRate}%</td>
+            <td class="py-3 px-3 text-right tabular-nums font-semibold">{fmt(l.lineTotalCents)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-end pt-4">
+    <div class="w-1/2 space-y-1 text-sm">
+      <div class="flex justify-between"><span class="text-[#6B6B68]">{t('Subtotal', 'Subtotal')}</span><span class="tabular-nums">{fmt(inv.subtotalCents)} {inv.currency}</span></div>
+      <div class="flex justify-between"><span class="text-[#6B6B68]">{t('TVA', 'VAT')} ({inv.vatRegime ?? 'standard'})</span><span class="tabular-nums">{fmt(inv.vatCents)} {inv.currency}</span></div>
+      <div class="flex justify-between text-base font-bold border-t border-[#E8E8E4] pt-2 mt-2" style={`color: ${brandColor}`}>
+        <span>{t('Total de plată', 'Amount due')}</span>
+        <span class="tabular-nums">{fmt(inv.totalCents)} {inv.currency}</span>
+      </div>
+      {inv.paidCents > 0 && (
+        <div class="flex justify-between text-xs text-[#16A34A]"><span>{t('Încasat', 'Paid')}</span><span class="tabular-nums">{fmt(inv.paidCents)} {inv.currency}</span></div>
+      )}
+    </div>
+  </div>
+
+  {inv.bnrRate && inv.bnrRateDate && (inv.currency ?? 'RON') !== 'RON' && (
+    <div class="mt-4 text-xs text-[#6B6B68] flex justify-end">
+      <span>{t('Curs BNR', 'NBR rate')} {inv.bnrRateDate}: 1 {inv.currency} = {inv.bnrRate.toFixed(4)} RON
+        {' · '}{t('Echivalent total', 'Total equiv.')}: <strong class="text-[#0A0A0A]">{(inv.totalCents * inv.bnrRate / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON</strong>
+      </span>
+    </div>
+  )}
+
+  {inv.vatAtCollection && (
+    <div class="mt-4 text-[11px] italic text-[#B45309] px-3 py-2 bg-[#FEF3C7] rounded">
+      {t('TVA la încasare — exigibilitatea TVA intervine la data încasării contravalorii facturii (art. 282 Cod fiscal).',
+         'VAT on collection — VAT becomes chargeable upon receipt of payment (art. 282 Fiscal Code).')}
+    </div>
+  )}
+
+  {showShipping && (
+    <div class="mt-6 px-3 py-2 border border-[#E8E8E4] rounded">
+      <p class="text-[10px] uppercase tracking-wider text-[#8A8A85] mb-1">{t('Date privind expediția', 'Shipping details')}</p>
+      <p class="text-sm text-[#3D3D3A] whitespace-pre-wrap">{inv.shippingText}</p>
+    </div>
+  )}
+
+  {inv.notes && (
+    <div class="mt-8 pt-6 border-t border-[#E8E8E4]">
+      <p class="text-[10px] uppercase tracking-wider text-[#8A8A85] mb-1">{t('Mențiuni', 'Notes')}</p>
+      <p class="text-sm text-[#3D3D3A] whitespace-pre-wrap">{inv.notes}</p>
+    </div>
+  )}
+
+  <div class="mt-12 flex justify-between items-end gap-8">
+    {showQr ? (
+      <div class="text-center">
+        <img src={qrDataUrl} alt="QR" style="width: 96px; height: 96px;" />
+        <p class="text-[9px] text-[#8A8A85] mt-1">{t('Scanează pentru verificare', 'Scan to verify')}</p>
+      </div>
+    ) : <div></div>}
+    {(stampUrl || signatureUrl) && (
+      <div class="flex justify-end gap-8 items-end">
+        {signatureUrl && (
+          <div class="text-center">
+            <img src={signatureUrl} alt="Semnătură" style="max-height: 60px; max-width: 180px;" />
+            <p class="text-[10px] text-[#8A8A85] mt-1 border-t border-[#E8E8E4] pt-1">{t('Semnătură emitent', 'Issuer signature')}</p>
+          </div>
+        )}
+        {stampUrl && (
+          <div class="text-center">
+            <img src={stampUrl} alt="Ștampilă" style="max-height: 90px; max-width: 150px; opacity: 0.85;" />
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+
+  {footerText && (
+    <div class="mt-12 pt-4 border-t border-[#E8E8E4]">
+      <p class="text-[10px] text-[#8A8A85] whitespace-pre-wrap text-center">{footerText}</p>
+    </div>
+  )}
+  {showEmittedWith && (
+    <p class="mt-4 text-[9px] text-[#B8B8B3] text-center">{t('Emis cu', 'Issued with')} facturamea · facturamea.com</p>
+  )}
+</div>

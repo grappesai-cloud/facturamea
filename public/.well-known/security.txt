@@ -1,0 +1,20 @@
+Contact: mailto:security@transporthub.ro
+Contact: https://www.transporthub.ro/contact
+Expires: 2027-05-03T00:00:00.000Z
+Preferred-Languages: ro, en
+Canonical: https://www.transporthub.ro/.well-known/security.txt
+Policy: https://www.transporthub.ro/confidentialitate
+
+# Responsible disclosure
+# We welcome security research. Please do not:
+#   - Test on real production data of other users
+#   - Run automated scanners against /api/* (will trigger our rate-limit)
+#   - Disclose findings publicly before we have had 90 days to fix
+# We commit to:
+#   - Acknowledge your report within 72 hours
+#   - Fix critical issues within 7 days
+#   - Credit you (with consent) once the fix is live
+
+# Out of scope: missing security headers on static assets, missing SPF/DKIM
+# on transactional email, third-party CDN issues we don't control, denial
+# of service attempts.

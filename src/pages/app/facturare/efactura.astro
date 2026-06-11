@@ -1,0 +1,90 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { transportInvoices } from '../../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select()
+    .from(transportInvoices)
+    .where(and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura')))
+    .orderBy(desc(transportInvoices.createdAt))
+    .limit(150);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+// Map efacturaStatus (null/'pending'/'sent'/'validated'/'error') to a badge.
+function efBadge(status: string | null) {
+  switch (status) {
+    case 'sent': return { label: 'Trimisă', cls: 'bg-[#EAF2FF] text-[#1D4ED8]' };
+    case 'validated': return { label: 'Validată', cls: 'bg-[#E7F7EC] text-[#15803D]' };
+    case 'error': return { label: 'Eroare', cls: 'bg-[#FDECEC] text-[#B91C1C]' };
+    case 'pending':
+    case null:
+    case undefined:
+    default: return { label: 'Netrimisă', cls: 'bg-[#F0F0EC] text-[#6B6B68]' };
+  }
+}
+---
+
+<AppLayout title="e-Factura" activeTab="efactura">
+  <div class="mb-6">
+    <h1 class="text-[24px] font-bold tracking-[-0.02em] text-[#0A0A0A]">e-Factura (ANAF)</h1>
+    <p class="text-[13px] text-[#6B6B68] mt-1">Statusul transmiterii facturilor în sistemul național RO e-Factura.</p>
+  </div>
+
+  <div class="mb-5 flex flex-wrap items-center gap-3 px-4 py-3 bg-white border border-[#E8E8E4] rounded-xl">
+    <span class="w-2 h-2 rounded-full bg-[#FF5C00]"></span>
+    <p class="text-[13px] text-[#0A0A0A]">
+      Conectarea la ANAF se face din <strong>Setări → Integrare ANAF</strong>. După conectare, facturile pot fi transmise automat în SPV.
+    </p>
+    <a href="/app/setari/integrari-anaf" class="text-[12px] font-semibold text-[#FF5C00] hover:underline ml-auto">Configurează →</a>
+  </div>
+
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
+    {rows.length === 0 ? (
+      <div class="px-5 py-12 text-center text-sm text-[#6B6B68]">Nicio factură de transmis.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+              <th class="px-5 py-2.5 font-medium">Număr</th>
+              <th class="px-5 py-2.5 font-medium">Client</th>
+              <th class="px-5 py-2.5 font-medium text-right">Total</th>
+              <th class="px-5 py-2.5 font-medium">Status e-Factura</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((inv) => {
+              const ef = efBadge(inv.efacturaStatus);
+              return (
+                <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors">
+                  <td class="px-5 py-3"><a href={`/app/facturare/${inv.id}`} class="font-mono font-medium text-[#0A0A0A] hover:text-[#FF5C00]">{inv.fullNumber}</a></td>
+                  <td class="px-5 py-3 text-[#3D3D3A] truncate max-w-[220px]">{inv.clientNameSnap}</td>
+                  <td class="px-5 py-3 text-right font-semibold text-[#0A0A0A]">{ron(inv.totalCents)}</td>
+                  <td class="px-5 py-3">
+                    <span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${ef.cls}`}>{ef.label}</span>
+                    {inv.efacturaStatus === 'error' && inv.efacturaError && (
+                      <span class="block text-[11px] text-[#B91C1C] mt-1 truncate max-w-[260px]">{inv.efacturaError}</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</AppLayout>

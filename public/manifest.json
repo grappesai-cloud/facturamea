@@ -1,0 +1,37 @@
+{
+  "id": "/",
+  "name": "TransportHub — Bursă de transport",
+  "short_name": "TransportHub",
+  "description": "Bursă de transport modernă pentru profesioniști din Europa",
+  "start_url": "/app",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "background_color": "#f0f4f8",
+  "theme_color": "#0a1929",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["business", "productivity", "transport"],
+  "lang": "ro",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    { "name": "Marfă", "short_name": "Marfă", "url": "/app/marfa", "description": "Caută marfă disponibilă" },
+    { "name": "Camioane", "short_name": "Camioane", "url": "/app/camioane", "description": "Caută camioane libere" },
+    { "name": "Licitații", "short_name": "Licitații", "url": "/app/licitatii", "description": "Licitații transport active" },
+    { "name": "Comenzi", "short_name": "Comenzi", "url": "/app/comenzi", "description": "Comenzile mele" }
+  ]
+}

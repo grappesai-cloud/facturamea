@@ -1,0 +1,90 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ReceptionForm from '../../../components/gestiune/ReceptionForm';
+import { db } from '../../../db';
+import { receptions, suppliers } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select({
+      id: receptions.id,
+      nirNumber: receptions.nirNumber,
+      supplierInvoiceNumber: receptions.supplierInvoiceNumber,
+      supplierName: suppliers.name,
+      receptionDate: receptions.receptionDate,
+      totalCents: receptions.totalCents,
+      status: receptions.status,
+    })
+    .from(receptions)
+    .leftJoin(suppliers, eq(receptions.supplierId, suppliers.id))
+    .where(eq(receptions.companyId, companyId))
+    .orderBy(desc(receptions.createdAt))
+    .limit(100);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+const statusBadge: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Ciornă', cls: 'bg-[#F0F0EC] text-[#6B6B68]' },
+  posted: { label: 'Înregistrată', cls: 'bg-[#E7F7EC] text-[#15803D]' },
+};
+---
+
+<AppLayout title="Recepții (NIR)" activeTab="stocuri">
+  <div class="mb-4">
+    <a href="/app/gestiune" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la stocuri</a>
+  </div>
+  <h1 class="text-2xl font-bold text-[#0A0A0A] mb-1">Recepții (NIR)</h1>
+  <p class="text-sm text-[#6B6B68] mb-6">Notele de intrare recepție. La înregistrare, produsele intră automat pe stoc cu cost mediu ponderat.</p>
+
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden mb-8">
+    <div class="px-5 py-3.5 border-b border-[#F0F0EC]">
+      <h2 class="text-[14px] font-semibold text-[#0A0A0A]">Recepții recente</h2>
+    </div>
+    {rows.length === 0 ? (
+      <div class="px-5 py-10 text-center text-sm text-[#6B6B68]">Nicio recepție înregistrată încă.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+              <th class="px-5 py-2.5 font-medium">Nr. NIR</th>
+              <th class="px-5 py-2.5 font-medium">Furnizor</th>
+              <th class="px-5 py-2.5 font-medium">Factură furnizor</th>
+              <th class="px-5 py-2.5 font-medium">Data</th>
+              <th class="px-5 py-2.5 font-medium text-right">Total</th>
+              <th class="px-5 py-2.5 font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const st = statusBadge[r.status] || statusBadge.draft;
+              return (
+                <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors">
+                  <td class="px-5 py-3 font-mono font-medium text-[#0A0A0A]">{r.nirNumber}</td>
+                  <td class="px-5 py-3 text-[#3D3D3A]">{r.supplierName || '—'}</td>
+                  <td class="px-5 py-3 text-[#6B6B68]">{r.supplierInvoiceNumber || '—'}</td>
+                  <td class="px-5 py-3 text-[#6B6B68]">{r.receptionDate || '—'}</td>
+                  <td class="px-5 py-3 text-right font-semibold text-[#0A0A0A]">{ron(r.totalCents)}</td>
+                  <td class="px-5 py-3"><span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${st.cls}`}>{st.label}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <h2 class="text-lg font-bold text-[#0A0A0A] mb-3">Recepție nouă</h2>
+  <ReceptionForm client:load />
+</AppLayout>

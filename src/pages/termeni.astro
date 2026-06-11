@@ -1,0 +1,64 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+Astro.response.headers.set('Vary', 'Cookie');
+---
+
+<PublicLayout title="Termeni și condiții" description="Termenii de utilizare ai aplicației de facturare facturamea.">
+  <article class="max-w-none">
+    <h1 class="text-3xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-2">Termeni și condiții</h1>
+    <p class="text-sm text-[#6B6B68] mb-8">Ultima actualizare: 11 iunie 2026</p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">1. Definiții</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      <strong>"Aplicația"</strong> se referă la facturamea, accesibilă la <code>facturamea.com</code>, subdomeniile asociate și aplicațiile mobile iOS și Android.
+      <strong>"Utilizator"</strong> este orice persoană fizică sau juridică ce folosește Aplicația.
+      <strong>"Conținut"</strong> include facturile, proformele, avizele, chitanțele, datele de companie, produsele, clienții și orice alt material introdus de Utilizatori.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">2. Eligibilitate</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Aplicația este destinată firmelor și persoanelor autorizate care emit documente fiscale în România. La înregistrare, Utilizatorul declară pe propria răspundere că datele furnizate sunt corecte și că deține autoritatea legală pentru a reprezenta entitatea pentru care emite documente.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">3. Cont și securitate</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Utilizatorul este responsabil pentru păstrarea confidențialității credențialelor de acces. Orice activitate efectuată prin contul său este considerată autorizată. Suspectarea unei breșe trebuie raportată imediat la <a href="mailto:support@facturamea.com" class="text-[#FF5C00] hover:underline">support@facturamea.com</a>.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">4. Licență și plată</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      facturamea se oferă cu o licență pe viață, contra unei plăți unice de 700 RON. Plata se efectuează din interiorul aplicației și acordă acces la funcțiile incluse, fără abonament recurent. Plata unică nu este, de regulă, rambursabilă după activarea licenței, cu excepția cazurilor prevăzute de lege.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">5. Documente fiscale și conformitate</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Aplicația oferă instrumente pentru emiterea facturilor și transmiterea acestora către ANAF prin e-Factura, e-Transport și generarea SAF-T D406. Utilizatorul rămâne responsabil pentru corectitudinea datelor introduse, pentru respectarea termenelor fiscale și pentru conformitatea documentelor emise cu legislația aplicabilă.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">6. Conținut și utilizare</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Utilizatorul garantează că folosește Aplicația în scopuri legale și că datele introduse nu încalcă drepturi ale terților. facturamea își rezervă dreptul de a suspenda conturi cu activitate frauduloasă, abuzivă sau care pune în pericol integritatea serviciului.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">7. Limitarea răspunderii</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Aplicația este oferită "ca atare". facturamea nu răspunde pentru pierderi indirecte, întreruperi temporare ale serviciului, indisponibilitatea sistemelor ANAF sau prejudicii rezultate din date introduse greșit de Utilizator. Răspunderea totală a facturamea se limitează la suma plătită de Utilizator pentru licență.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">8. Modificări</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      facturamea poate modifica acești Termeni oricând. Utilizatorii vor fi notificați cu cel puțin 7 zile înainte de modificările materiale. Continuarea utilizării după acea dată constituie acceptarea modificărilor.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">9. Legea aplicabilă</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Termenii sunt guvernați de legea română. Litigiile vor fi soluționate amiabil sau, în lipsa unui acord, de instanțele competente din România.
+    </p>
+
+    <p class="text-sm text-[#6B6B68] mt-10 italic">
+      Pentru întrebări despre acești termeni, contactează-ne la <a href="mailto:contact@facturamea.com" class="text-[#FF5C00] hover:underline">contact@facturamea.com</a>.
+    </p>
+  </article>
+</PublicLayout>

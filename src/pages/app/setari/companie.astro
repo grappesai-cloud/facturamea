@@ -1,0 +1,45 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import { db } from '../../../db';
+import { companies } from '../../../db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+let company: any = null;
+if (user.companyId) {
+  [company] = await db.select().from(companies).where(eq(companies.id, user.companyId)).limit(1);
+}
+
+const labelCls = 'block text-[12px] font-medium text-[#0A0A0A] mb-1.5';
+const inputDisabledCls = 'w-full px-4 py-2.5 bg-[#FAFAF8] border border-[#E8E8E4] rounded-xl text-[14px] text-[#6B6B68]';
+---
+
+<AppLayout title="Setări companie — facturamea" activeTab="setari" breadcrumbTitle="Companie">
+  <div class="max-w-3xl">
+    <PageHeader tagline="Cont" title="Companie" subtitle="Datele companiei tale." />
+
+    {!company ? (
+      <p class="text-[13px] text-[#6B6B68]">Niciun cont de companie asociat.</p>
+    ) : (
+      <section class="mb-10 space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div><label class={labelCls}>Denumire</label><input type="text" value={company.name ?? ''} disabled class={inputDisabledCls} /></div>
+          <div><label class={labelCls}>CUI</label><input type="text" value={company.cui ?? '—'} disabled class={inputDisabledCls} /></div>
+          <div><label class={labelCls}>Țară</label><input type="text" value={company.country ?? '—'} disabled class={inputDisabledCls} /></div>
+          <div><label class={labelCls}>Oraș</label><input type="text" value={company.city ?? '—'} disabled class={inputDisabledCls} /></div>
+          <div><label class={labelCls}>Telefon</label><input type="text" value={company.phone ?? '—'} disabled class={inputDisabledCls} /></div>
+        </div>
+
+        <p class="text-[12px] text-[#6B6B68]">
+          Datele legale (denumire, CUI) sunt fixate la înregistrare. Pentru corecții, contactează suportul.
+        </p>
+
+        <div class="flex flex-wrap gap-2 pt-2">
+          <a href="/app/setari/branding" class="px-4 py-2.5 bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] font-medium rounded-xl text-[13px] transition-colors">Logo & branding</a>
+          <a href="/app/depozite" class="px-4 py-2.5 bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] font-medium rounded-xl text-[13px] transition-colors">Locații & depozite</a>
+        </div>
+      </section>
+    )}
+  </div>
+</AppLayout>

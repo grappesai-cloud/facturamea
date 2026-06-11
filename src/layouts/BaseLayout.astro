@@ -1,0 +1,397 @@
+---
+import '../styles/global.css';
+import CookieBanner from '../components/CookieBanner.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  noindex?: boolean;
+  ogImage?: string;
+  ogType?: 'website' | 'article' | 'profile';
+  publishedTime?: string;
+  modifiedTime?: string;
+  author?: string;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
+  themeColor?: string;
+}
+
+const {
+  title,
+  description = 'facturamea, facturare completă pentru firme din România. e-Factura, e-Transport, SAF-T, gestiune. O singură plată, licență pe viață.',
+  noindex = false,
+  ogImage,
+  ogType = 'website',
+  publishedTime,
+  modifiedTime,
+  author,
+  structuredData,
+  themeColor = '#0a1929',
+} = Astro.props;
+const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://facturamea.com').toString();
+const fullTitle = `${title} | facturamea`;
+const locale = Astro.locals?.locale ?? 'ro';
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script is:inline>
+      // Apply font-scale + dark mode before paint to avoid FOUC.
+      (function(){
+        try {
+          var fs = localStorage.getItem('th-font-scale');
+          if (fs === '75' || fs === '125') document.documentElement.setAttribute('data-fs', fs);
+          var ff = localStorage.getItem('th-font');
+          if (ff === 'system' || ff === 'serif' || ff === 'mono') document.documentElement.setAttribute('data-font', ff);
+          var dm = localStorage.getItem('th-dark') === '1';
+          if (dm) document.documentElement.classList.add('th-dark');
+        } catch(e){}
+      })();
+    </script>
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <link rel="canonical" href={canonicalUrl} />
+
+    {/* Favicons + manifest */}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content={themeColor} />
+
+    {/* Open Graph */}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="facturamea" />
+    <meta property="og:image" content={ogImage ?? new URL('/images/og-default.png', Astro.site ?? 'https://facturamea.com').toString()} />
+    <meta property="og:locale" content={locale === 'en' ? 'en_GB' : 'ro_RO'} />
+    {publishedTime && <meta property="article:published_time" content={publishedTime} />}
+    {modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+    {author && <meta property="article:author" content={author} />}
+
+    {/* Twitter Card */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage ?? new URL('/images/og-default.png', Astro.site ?? 'https://facturamea.com').toString()} />
+
+    {/* Structured data (JSON-LD) */}
+    {structuredData && (
+      <script type="application/ld+json" set:html={JSON.stringify(structuredData)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')} />
+    )}
+
+    {/* Fonts */}
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <style is:global>
+      /* Font scale — applies on top of every page. Tailwind text-* sizes are rem-based, so font-size on <html> rescales everything cleanly. */
+      :root { font-size: 16px; }
+      html[data-fs="75"] { font-size: 13px; }
+      html[data-fs="125"] { font-size: 18px; }
+
+      /* ────────────────────────────────────────────────────────────────
+         Dark mode. Black-near base, properly themed surfaces, brand
+         orange/yellow/red/green intact. Applies on every page because
+         this <style> is is:global.
+         ──────────────────────────────────────────────────────────────── */
+
+      /* Root + body baseline. `color-scheme: dark` tells the browser to
+         also style native scrollbars, form controls, etc. as dark. */
+      html.th-dark { background-color: #07080A; color-scheme: dark; }
+      html.th-dark body { background-color: #07080A !important; color: #E8E4D7; }
+
+      /* Universal element fallbacks — catches inline styles, third-party
+         components, and elements without Tailwind ground-color classes.
+         Specific Tailwind class overrides below win because they use
+         !important. */
+      html.th-dark main,
+      html.th-dark section,
+      html.th-dark article,
+      html.th-dark aside,
+      html.th-dark header,
+      html.th-dark footer,
+      html.th-dark nav,
+      html.th-dark dialog { color: inherit; }
+
+      /* ── Backgrounds: papers / panels ── */
+      html.th-dark .bg-white                { background-color: #111317 !important; }
+      html.th-dark .bg-\[\#FFFFFF\]         { background-color: #111317 !important; }
+      html.th-dark .bg-\[\#FAFAF8\]         { background-color: #0B0C0F !important; }
+      html.th-dark .bg-\[\#FAFAF8\]\/30     { background-color: rgba(11,12,15,0.4) !important; }
+      html.th-dark .bg-\[\#FAFAF8\]\/40     { background-color: rgba(11,12,15,0.5) !important; }
+      html.th-dark .bg-\[\#FAFAF8\]\/50     { background-color: rgba(11,12,15,0.6) !important; }
+      html.th-dark .bg-\[\#FAFAF8\]\/60     { background-color: rgba(11,12,15,0.7) !important; }
+      html.th-dark .bg-\[\#FAFAF8\]\/70     { background-color: rgba(11,12,15,0.8) !important; }
+      html.th-dark .bg-\[\#FAFAF8\]\/80     { background-color: rgba(11,12,15,0.85) !important; }
+      html.th-dark .hover\:bg-\[\#FAFAF8\]\/50:hover { background-color: rgba(11,12,15,0.6) !important; }
+      html.th-dark .hover\:bg-\[\#FAFAF8\]\/40:hover { background-color: rgba(11,12,15,0.5) !important; }
+      html.th-dark .bg-\[\#F0F0EC\]         { background-color: #1A1D22 !important; }
+      html.th-dark .bg-\[\#ECEBE5\]         { background-color: #0E1014 !important; }
+      html.th-dark .bg-\[\#E5E4DD\]         { background-color: #15171C !important; }
+      html.th-dark .bg-\[\#DEDDD6\]         { background-color: #1B1E24 !important; }
+      html.th-dark .bg-\[\#DBDAD3\]         { background-color: #1F222A !important; }
+      html.th-dark .bg-\[\#E8E8E4\]         { background-color: #1F222A !important; }
+      html.th-dark .bg-\[\#F5F5F1\]         { background-color: #111317 !important; }
+      html.th-dark .bg-\[\#FFF1E6\]         { background-color: #261B12 !important; }
+      html.th-dark .bg-\[\#FEF3C7\]         { background-color: #261F0E !important; }
+      html.th-dark .bg-\[\#0A0A0A\]         { background-color: #F4F0E6 !important; color: #0E0F12 !important; }
+      html.th-dark .bg-\[\#1A1A1A\]         { background-color: #E6E2D5 !important; color: #0E0F12 !important; }
+      html.th-dark .bg-\[\#2E2E2C\]         { background-color: #D5D1C5 !important; color: #0E0F12 !important; }
+      html.th-dark .bg-gray-50              { background-color: #0B0C0F !important; }
+      html.th-dark .bg-gray-100             { background-color: #15171C !important; }
+      html.th-dark .bg-gray-200             { background-color: #1F222A !important; }
+      html.th-dark .bg-black                { background-color: #F4F0E6 !important; color: #0E0F12 !important; }
+      html.th-dark .bg-black\/40            { background-color: rgba(0,0,0,0.6) !important; }
+      html.th-dark .bg-black\/60            { background-color: rgba(0,0,0,0.7) !important; }
+
+      /* ── Borders ── */
+      html.th-dark .border-\[\#E8E8E4\]     { border-color: #232730 !important; }
+      html.th-dark .border-\[\#DBDAD3\]     { border-color: #232730 !important; }
+      html.th-dark .border-\[\#ECEBE5\]     { border-color: #232730 !important; }
+      html.th-dark .border-\[\#A8A8A4\]     { border-color: #3D414B !important; }
+      html.th-dark .border-\[\#0A0A0A\]     { border-color: #F4F0E6 !important; }
+      html.th-dark .border-[#E8E8E4]         { border-color: #232730 !important; }
+      html.th-dark .border-[#E8E8E4]         { border-color: #2A2E37 !important; }
+      html.th-dark .divide-\[\#E8E8E4\] > * { border-color: #232730 !important; }
+
+      /* ── Text ── */
+      html.th-dark .text-\[\#0A0A0A\]       { color: #F4F0E6 !important; }
+      html.th-dark .text-\[\#1A1A1A\]       { color: #F4F0E6 !important; }
+      html.th-dark .text-\[\#2E2E2C\]       { color: #E6E2D5 !important; }
+      html.th-dark .text-\[\#3D3D3A\]       { color: #C8C4B8 !important; }
+      html.th-dark .text-\[\#5C5C58\]       { color: #A4A097 !important; }
+      html.th-dark .text-\[\#6B6B68\]       { color: #9B978D !important; }
+      html.th-dark .text-\[\#8A8A85\]       { color: #7C7972 !important; }
+      html.th-dark .text-\[\#A8A8A4\]       { color: #6F6C66 !important; }
+      html.th-dark .text-\[\#E8E8E4\]       { color: #5C5F66 !important; }
+      html.th-dark .text-black              { color: #F4F0E6 !important; }
+      html.th-dark .text-gray-400           { color: #7C7972 !important; }
+      html.th-dark .text-gray-500           { color: #9B978D !important; }
+      html.th-dark .text-gray-600           { color: #B5B1A6 !important; }
+      html.th-dark .text-gray-700           { color: #C8C4B8 !important; }
+      html.th-dark .text-gray-800           { color: #E6E2D5 !important; }
+      html.th-dark .text-gray-900           { color: #F4F0E6 !important; }
+      /* white text stays white */
+
+      /* ── Hover variants ── */
+      html.th-dark .hover\:bg-\[\#FAFAF8\]:hover { background-color: #15171C !important; }
+      html.th-dark .hover\:bg-\[\#F0F0EC\]:hover { background-color: #1F222A !important; }
+      html.th-dark .hover\:bg-\[\#DEDDD6\]:hover { background-color: #1F222A !important; }
+      html.th-dark .hover\:bg-\[\#E5E4DD\]:hover { background-color: #1A1D22 !important; }
+      html.th-dark .hover\:bg-\[\#1A1A1A\]:hover { background-color: #D5D1C5 !important; color: #0E0F12 !important; }
+      html.th-dark .hover\:bg-gray-50:hover      { background-color: #111317 !important; }
+      html.th-dark .hover\:bg-gray-100:hover     { background-color: #1A1D22 !important; }
+      html.th-dark .hover\:text-\[\#0A0A0A\]:hover { color: #F4F0E6 !important; }
+
+      /* ── Native form fields ── */
+      html.th-dark input, html.th-dark textarea, html.th-dark select {
+        background-color: #15171C; color: #F4F0E6; border-color: #232730;
+      }
+      html.th-dark input::placeholder, html.th-dark textarea::placeholder { color: #6F6C66; }
+
+      /* ── Last-resort fallback: any element whose inline style hardcodes
+         a near-white background gets darkened. Targets [style*='#fff'],
+         [style*='#FFF'], [style*='white']. ── */
+      html.th-dark [style*="background:#fff" i],
+      html.th-dark [style*="background-color:#fff" i],
+      html.th-dark [style*="background: #fff" i],
+      html.th-dark [style*="background-color: #fff" i],
+      html.th-dark [style*="background:white" i],
+      html.th-dark [style*="background: white" i] {
+        background-color: #111317 !important;
+      }
+
+      /* ────────────────────────────────────────────────────────────────
+         CUSTOM .th-* CLASSES (defined in styles/global.css with
+         hard-coded colors that don't go through Tailwind). These power
+         most of the dashboard / list pages / cards, so dark mode is
+         not real without overriding them.
+         ──────────────────────────────────────────────────────────────── */
+
+      /* Cards */
+      html.th-dark .th-card {
+        background: #111317 !important;
+        border-color: #232730 !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6) !important;
+      }
+      html.th-dark .th-card-hover:hover {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 28px 64px -24px rgba(0,0,0,0.8) !important;
+      }
+      /* Pastel variants — darkened, color-preserving */
+      html.th-dark .th-card-yellow { background: #3A2F12 !important; border-color: rgba(255,255,255,0.06) !important; }
+      html.th-dark .th-card-blue   { background: #1B2230 !important; border-color: rgba(255,255,255,0.06) !important; }
+      html.th-dark .th-card-pink   { background: #2E1F23 !important; border-color: rgba(255,255,255,0.06) !important; }
+      html.th-dark .th-card-mint   { background: #1E2418 !important; border-color: rgba(255,255,255,0.06) !important; }
+      html.th-dark .th-card-lilac  { background: #1E2230 !important; border-color: rgba(255,255,255,0.06) !important; }
+      html.th-dark .th-card-cream  { background: #1F1D17 !important; border-color: rgba(255,255,255,0.06) !important; }
+      html.th-dark .th-card-ink    { background: #F4F0E6 !important; color: #0E0F12 !important; border-color: #F4F0E6 !important; }
+
+      /* Headings + eyebrow + chips */
+      html.th-dark .th-h1      { color: #F4F0E6 !important; }
+      html.th-dark .th-h2      { color: #F4F0E6 !important; }
+      html.th-dark .th-h3      { color: #F4F0E6 !important; }
+      html.th-dark .th-eyebrow { color: #9B978D !important; }
+      html.th-dark .th-chip    {
+        background: rgba(20,22,26,0.7) !important;
+        color: #F4F0E6 !important;
+        border-color: rgba(255,255,255,0.08) !important;
+      }
+
+      /* Stat tile (same shadow tweak as cards) */
+      html.th-dark .th-stat {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 32px -16px rgba(0,0,0,0.6) !important;
+      }
+      html.th-dark .th-stat:hover {
+        box-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 28px 64px -24px rgba(0,0,0,0.8) !important;
+      }
+
+      /* Stat tile pastel backgrounds (when th-stat is paired with a th-card-* class
+         they already get the dark bg above; but th-stat is sometimes used standalone
+         with inline pastel colors via component props — those use Tailwind classes
+         already covered. The text inside should read on dark pastel:) */
+      html.th-dark .th-card-yellow, html.th-dark .th-card-yellow * { color: #F4F0E6 !important; }
+      html.th-dark .th-card-blue,   html.th-dark .th-card-blue *   { color: #F4F0E6 !important; }
+      html.th-dark .th-card-pink,   html.th-dark .th-card-pink *   { color: #F4F0E6 !important; }
+      html.th-dark .th-card-mint,   html.th-dark .th-card-mint *   { color: #F4F0E6 !important; }
+      html.th-dark .th-card-lilac,  html.th-dark .th-card-lilac *  { color: #F4F0E6 !important; }
+      html.th-dark .th-card-cream,  html.th-dark .th-card-cream *  { color: #F4F0E6 !important; }
+      /* Re-allow brand orange on dark pastel cards */
+      html.th-dark .th-card-yellow .text-\[\#FF5C00\],
+      html.th-dark .th-card-blue   .text-\[\#FF5C00\],
+      html.th-dark .th-card-pink   .text-\[\#FF5C00\],
+      html.th-dark .th-card-mint   .text-\[\#FF5C00\],
+      html.th-dark .th-card-lilac  .text-\[\#FF5C00\],
+      html.th-dark .th-card-cream  .text-\[\#FF5C00\] { color: #FF5C00 !important; }
+
+      /* Breadcrumb (Acasă / Contracte etc.) */
+      html.th-dark nav[aria-label="Breadcrumb"] a,
+      html.th-dark nav[aria-label="Breadcrumb"] span { color: #C8C4B8 !important; }
+      html.th-dark nav[aria-label="Breadcrumb"] a:hover { color: #F4F0E6 !important; }
+
+      /* PageHeader subtitle + tagline (uses inline grey) — covered by .text-[#6B6B68] above */
+
+      /* ────────────────────────────────────────────────────────────────
+         ROW HIGHLIGHTS + STATUS PILLS (cream/oat/peach/lt-blue/lt-green/
+         lt-red) — these are used as warm highlight rows for "Încărcată",
+         "În tranzit", "Livrată", "Activă", etc. statuses. The previous
+         dark mode left them light; text inside became unreadable.
+         ──────────────────────────────────────────────────────────────── */
+
+      /* Cream / oat / warm row backgrounds */
+      html.th-dark .bg-\[\#FFF1E6\]    { background-color: #2A1F18 !important; }
+      html.th-dark .bg-\[\#FEF3C7\]    { background-color: #2A2418 !important; }
+      html.th-dark .bg-\[\#FFF3E6\]    { background-color: #2A1F18 !important; }
+      html.th-dark .bg-\[\#FCFCFA\]    { background-color: #111317 !important; }
+      html.th-dark .bg-\[\#FFF5F5\]    { background-color: #2A1518 !important; }
+      html.th-dark .bg-\[\#F4F4F0\]    { background-color: #15171C !important; }
+      html.th-dark .bg-\[\#E8DCBC\]    { background-color: #2A241A !important; }
+      html.th-dark .bg-\[\#E5E2DA\]    { background-color: #1A1C22 !important; }
+      html.th-dark .bg-\[\#E5E5E5\]    { background-color: #1F222A !important; }
+      html.th-dark .bg-\[\#D8D4CB\]    { background-color: #20222A !important; }
+      html.th-dark .bg-\[\#D4D4CE\]    { background-color: #20222A !important; }
+      html.th-dark .bg-\[\#D9C18C\]    { background-color: #2F2818 !important; }
+      html.th-dark .bg-\[\#D7DEE6\]    { background-color: #1B1F28 !important; }
+      html.th-dark .bg-\[\#FED7AA\]    { background-color: #2F2018 !important; }
+      html.th-dark .bg-\[\#E2C5B7\]    { background-color: #2A1F1B !important; }
+      /* mint pastels (Livrată row, delivered hover) — match dashboard delivery semafor */
+      html.th-dark .bg-\[\#CDD2BB\]    { background-color: #1E2418 !important; }  /* Livrată row */
+      html.th-dark .bg-\[\#B5BC9C\]    { background-color: #232B1B !important; }  /* Livrată hover */
+      html.th-dark .bg-\[\#CFA391\]    { background-color: #2E1F1B !important; }  /* Restant hover */
+      html.th-dark .hover\:bg-\[\#B5BC9C\]:hover { background-color: #232B1B !important; }
+      html.th-dark .hover\:bg-\[\#CFA391\]:hover { background-color: #2E1F1B !important; }
+      html.th-dark .hover\:bg-\[\#D9C18C\]:hover { background-color: #2F2818 !important; }
+
+      /* Status pill backgrounds (Tailwind soft-color pills) */
+      html.th-dark .bg-\[\#D1FAE5\]    { background-color: #0F2A1E !important; }  /* delivered / success */
+      html.th-dark .bg-\[\#DBEAFE\]    { background-color: #142233 !important; }  /* info / accepted */
+      html.th-dark .bg-\[\#FEE2E2\]    { background-color: #2A1416 !important; }  /* error / overdue */
+
+      /* Status pill text colors */
+      html.th-dark .text-\[\#15803D\]  { color: #6EE7B7 !important; }
+      html.th-dark .text-\[\#16A34A\]  { color: #6EE7B7 !important; }
+      html.th-dark .text-\[\#065F46\]  { color: #A7F3D0 !important; }
+      html.th-dark .text-\[\#1E40AF\]  { color: #93C5FD !important; }
+      html.th-dark .text-\[\#1D4ED8\]  { color: #93C5FD !important; }
+      html.th-dark .text-\[\#B91C1C\]  { color: #FCA5A5 !important; }
+      html.th-dark .text-\[\#B45309\]  { color: #FCD34D !important; }
+      html.th-dark .text-\[\#92400E\]  { color: #FCD34D !important; }
+
+      /* ────────────────────────────────────────────────────────────────
+         Tailwind opacity variants on white/black — used in many places
+         (sub-rows on colored cards, semi-transparent inputs, hover
+         states). Tailwind escapes "/" as "\/" in the class name.
+         ──────────────────────────────────────────────────────────────── */
+      html.th-dark .bg-white\/95 { background-color: rgba(17,19,23,0.95) !important; }
+      html.th-dark .bg-white\/90 { background-color: rgba(17,19,23,0.9)  !important; }
+      html.th-dark .bg-white\/80 { background-color: rgba(17,19,23,0.85) !important; }
+      html.th-dark .bg-white\/70 { background-color: rgba(17,19,23,0.7)  !important; }
+      html.th-dark .bg-white\/60 { background-color: rgba(17,19,23,0.6)  !important; }
+      html.th-dark .bg-white\/50 { background-color: rgba(17,19,23,0.5)  !important; }
+      html.th-dark .bg-white\/40 { background-color: rgba(17,19,23,0.4)  !important; }
+      html.th-dark .bg-white\/30 { background-color: rgba(17,19,23,0.3)  !important; }
+      html.th-dark .bg-white\/20 { background-color: rgba(17,19,23,0.2)  !important; }
+      html.th-dark .bg-white\/10 { background-color: rgba(17,19,23,0.1)  !important; }
+      /* Borders made of solid white-ish also need to be reborn (used in input chrome). */
+      html.th-dark .border-white { border-color: #232730 !important; }
+
+      /* hover:bg-white opacity variants */
+      html.th-dark .hover\:bg-white\/95:hover { background-color: rgba(31,34,42,0.95) !important; }
+      html.th-dark .hover\:bg-white:hover     { background-color: #1A1D22 !important; }
+
+      /* Opacity variants on top hex backgrounds (Tailwind /N) */
+      html.th-dark .bg-\[\#FAFAF8\]\/50          { background-color: rgba(11,12,15,0.55) !important; }
+      html.th-dark .hover\:bg-\[\#FAFAF8\]\/50:hover { background-color: rgba(11,12,15,0.55) !important; }
+      html.th-dark .bg-\[\#F0F0EC\]\/80          { background-color: rgba(26,29,34,0.85) !important; }
+      html.th-dark .bg-\[\#F0F0EC\]\/60          { background-color: rgba(26,29,34,0.65) !important; }
+      html.th-dark .bg-\[\#F0F0EC\]\/40          { background-color: rgba(26,29,34,0.45) !important; }
+      html.th-dark .bg-\[\#ECEBE5\]\/80          { background-color: rgba(14,16,20,0.85) !important; }
+      html.th-dark .bg-\[\#FFF1E6\]\/60          { background-color: rgba(42,31,24,0.65) !important; }
+
+      /* ────────────────────────────────────────────────────────────────
+         Force text-white to flip OFF dark-flipped surfaces. When we
+         re-color a button from bg-[#0A0A0A] → cream, text-white on it
+         must become dark or it disappears.
+         ──────────────────────────────────────────────────────────────── */
+      html.th-dark .bg-\[\#0A0A0A\] .text-white,
+      html.th-dark .bg-\[\#0A0A0A\].text-white,
+      html.th-dark .bg-\[\#1A1A1A\] .text-white,
+      html.th-dark .bg-\[\#1A1A1A\].text-white,
+      html.th-dark .bg-\[\#2E2E2C\] .text-white,
+      html.th-dark .bg-\[\#2E2E2C\].text-white,
+      html.th-dark .bg-black       .text-white,
+      html.th-dark .bg-black.text-white {
+        color: #0E0F12 !important;
+      }
+
+      /* ────────────────────────────────────────────────────────────────
+         iOS-style toggles (.th-toggle) used in the Personalizează modal.
+         Off bg uses Tailwind class (already covered). On bg sets
+         background:#0A0A0A directly — so we override with a specific
+         selector for dark mode + force the knob to stay white.
+         ──────────────────────────────────────────────────────────────── */
+      html.th-dark .th-toggle                          { background-color: #2A2D34 !important; }
+      html.th-dark .th-toggle[aria-pressed='true']     { background-color: #FF5C00 !important; }
+      html.th-dark .th-toggle .th-toggle-knob          { background-color: #F4F0E6 !important; }
+
+      /* Brand orange / yellow / red / green left untouched. */
+    </style>
+  </head>
+  <body>
+    <slot />
+    <CookieBanner />
+    <script is:inline>
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,16 @@
+# Pre-commit hooks. Install once: npx lefthook install
+# Skip for a single commit: LEFTHOOK=0 git commit ...
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: biome
+      glob: "*.{ts,tsx,js,mjs,json}"
+      # Only run linter rules — formatter mismatches don't block commits;
+      # run `npm run format` to auto-fix when you want.
+      run: npx biome lint --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+
+pre-push:
+  jobs:
+    - name: tests
+      run: npm test

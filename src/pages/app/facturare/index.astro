@@ -1,0 +1,305 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { transportInvoices, transportInvoicePayments } from '../../../db/schema';
+import { eq, sql, and, desc, lt, gte, isNull, ne } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+const companyId = user.companyId;
+
+async function safe<T>(p: Promise<T>, fb: T): Promise<T> { try { return await p; } catch { return fb; } }
+
+const now = new Date();
+const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+const yearStart = new Date(now.getFullYear(), 0, 1);
+
+// KPI rollups — issued total this month, due-but-unpaid, overdue, paid this month.
+const [issuedRow, openRow, overdueRow, paidRow] = companyId ? await Promise.all([
+  safe(db.select({
+    sum: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}), 0)`,
+    cnt: sql<number>`COUNT(*)`,
+  }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId),
+    eq(transportInvoices.kind, 'factura'),
+    sql`${transportInvoices.issuedAt} >= ${monthStart}`,
+    ne(transportInvoices.status, 'voided'),
+  )), [{ sum: 0, cnt: 0 }]),
+  safe(db.select({
+    sum: sql<number>`COALESCE(SUM(${transportInvoices.totalCents} - ${transportInvoices.paidCents}), 0)`,
+    cnt: sql<number>`COUNT(*)`,
+  }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId),
+    eq(transportInvoices.kind, 'factura'),
+    sql`${transportInvoices.status} IN ('issued','sent','partial')`,
+  )), [{ sum: 0, cnt: 0 }]),
+  safe(db.select({
+    sum: sql<number>`COALESCE(SUM(${transportInvoices.totalCents} - ${transportInvoices.paidCents}), 0)`,
+    cnt: sql<number>`COUNT(*)`,
+  }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId),
+    eq(transportInvoices.kind, 'factura'),
+    sql`${transportInvoices.status} IN ('issued','sent','partial')`,
+    lt(transportInvoices.dueAt, now),
+  )), [{ sum: 0, cnt: 0 }]),
+  safe(db.select({
+    sum: sql<number>`COALESCE(SUM(${transportInvoices.paidCents}), 0)`,
+    cnt: sql<number>`COUNT(*)`,
+  }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId),
+    eq(transportInvoices.kind, 'factura'),
+    sql`${transportInvoices.paidAt} >= ${monthStart}`,
+  )), [{ sum: 0, cnt: 0 }]),
+]) : [[{ sum: 0, cnt: 0 }], [{ sum: 0, cnt: 0 }], [{ sum: 0, cnt: 0 }], [{ sum: 0, cnt: 0 }]];
+
+const recent = companyId ? await safe(
+  db.select({
+    id: transportInvoices.id,
+    fullNumber: transportInvoices.fullNumber,
+    kind: transportInvoices.kind,
+    clientNameSnap: transportInvoices.clientNameSnap,
+    totalCents: transportInvoices.totalCents,
+    paidCents: transportInvoices.paidCents,
+    currency: transportInvoices.currency,
+    status: transportInvoices.status,
+    issuedAt: transportInvoices.issuedAt,
+    dueAt: transportInvoices.dueAt,
+  })
+    .from(transportInvoices)
+    .where(eq(transportInvoices.companyId, companyId))
+    .orderBy(desc(transportInvoices.createdAt))
+    .limit(10),
+  [] as any[],
+) : [];
+
+// Extra KPIs: facturat azi, e-Factura netrimise/erori, aging buckets, chart.
+const [todayRow, efNetrimise, efErori, agingRows, chartInv, chartPay] = companyId ? await Promise.all([
+  safe(db.select({ sum: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}),0)`, cnt: sql<number>`COUNT(*)` })
+    .from(transportInvoices).where(and(
+      eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
+      gte(transportInvoices.issuedAt, todayStart), ne(transportInvoices.status, 'voided'),
+    )), [{ sum: 0, cnt: 0 }]),
+  safe(db.select({ cnt: sql<number>`COUNT(*)` }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
+    ne(transportInvoices.status, 'draft'), ne(transportInvoices.status, 'voided'),
+    isNull(transportInvoices.efacturaStatus),
+  )), [{ cnt: 0 }]),
+  safe(db.select({ cnt: sql<number>`COUNT(*)` }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId),
+    sql`(${transportInvoices.efacturaStatus} = 'rejected' OR ${transportInvoices.efacturaError} IS NOT NULL)`,
+  )), [{ cnt: 0 }]),
+  // Aging buckets for overdue receivables (1-15 / 16-30 / 30+ zile).
+  safe(db.select({
+    b1: sql<number>`COALESCE(SUM(CASE WHEN ${transportInvoices.dueAt} >= ${new Date(now.getTime() - 15 * 86400000)} THEN ${transportInvoices.totalCents} - ${transportInvoices.paidCents} ELSE 0 END),0)`,
+    b2: sql<number>`COALESCE(SUM(CASE WHEN ${transportInvoices.dueAt} < ${new Date(now.getTime() - 15 * 86400000)} AND ${transportInvoices.dueAt} >= ${new Date(now.getTime() - 30 * 86400000)} THEN ${transportInvoices.totalCents} - ${transportInvoices.paidCents} ELSE 0 END),0)`,
+    b3: sql<number>`COALESCE(SUM(CASE WHEN ${transportInvoices.dueAt} < ${new Date(now.getTime() - 30 * 86400000)} THEN ${transportInvoices.totalCents} - ${transportInvoices.paidCents} ELSE 0 END),0)`,
+  }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
+    sql`${transportInvoices.status} IN ('issued','sent','partial')`, lt(transportInvoices.dueAt, now),
+  )), [{ b1: 0, b2: 0, b3: 0 }]),
+  // Monthly facturat (current year).
+  safe(db.select({
+    m: sql<number>`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})`,
+    sum: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}),0)`,
+  }).from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
+    gte(transportInvoices.issuedAt, yearStart), ne(transportInvoices.status, 'voided'),
+  )).groupBy(sql`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})`), [] as any[]),
+  // Monthly încasat (current year).
+  safe(db.select({
+    m: sql<number>`EXTRACT(MONTH FROM ${transportInvoicePayments.receivedAt})`,
+    sum: sql<number>`COALESCE(SUM(${transportInvoicePayments.amountCents}),0)`,
+  }).from(transportInvoicePayments)
+    .innerJoin(transportInvoices, eq(transportInvoices.id, transportInvoicePayments.invoiceId))
+    .where(and(eq(transportInvoices.companyId, companyId), gte(transportInvoicePayments.receivedAt, yearStart)))
+    .groupBy(sql`EXTRACT(MONTH FROM ${transportInvoicePayments.receivedAt})`), [] as any[]),
+]) : [[{ sum: 0, cnt: 0 }], [{ cnt: 0 }], [{ cnt: 0 }], [{ b1: 0, b2: 0, b3: 0 }], [], []];
+
+// Build 12-month chart series.
+const MONTHS = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
+const invByMonth = new Map<number, number>(chartInv.map((r: any) => [Number(r.m), Number(r.sum)]));
+const payByMonth = new Map<number, number>(chartPay.map((r: any) => [Number(r.m), Number(r.sum)]));
+const chartData = MONTHS.map((label, i) => ({ label, fact: invByMonth.get(i + 1) || 0, inc: payByMonth.get(i + 1) || 0 }));
+const chartMax = Math.max(1, ...chartData.map((d) => Math.max(d.fact, d.inc)));
+const hasChartData = chartData.some((d) => d.fact > 0 || d.inc > 0);
+const efNetrimiseCnt = efNetrimise[0]?.cnt ?? 0;
+const efEroriCnt = efErori[0]?.cnt ?? 0;
+const aging = agingRows[0] ?? { b1: 0, b2: 0, b3: 0 };
+
+function fmtMoney(cents: number, currency: string) {
+  return `${(cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+}
+
+const kindLabel: Record<string, string> = {
+  factura: 'Factură',
+  proforma: 'Proformă',
+  storno: 'Storno',
+  chitanta: 'Chitanță',
+};
+
+const statusTone: Record<string, string> = {
+  draft: 'bg-[#F0F0EC] text-[#6B6B68]',
+  issued: 'bg-[#FEF3C7] text-[#B45309]',
+  sent: 'bg-[#DBEAFE] text-[#1E3A8A]',
+  paid: 'bg-[#D1FAE5] text-[#065F46]',
+  partial: 'bg-[#FED7AA] text-[#9A3412]',
+  overdue: 'bg-[#FEE2E2] text-[#B91C1C]',
+  disputed: 'bg-[#E5E5E5] text-[#171717]',
+  voided: 'bg-[#F0F0EC] text-[#6B6B68]',
+};
+
+// Per ASET feedback (modul facturare): each status gets a colored dot prefix
+// so the status is parseable at a glance even before reading the label.
+const statusLabel: Record<string, string> = {
+  draft: '⚪ Ciornă',
+  issued: '🟡 Emisă',
+  sent: '🔵 Trimisă',
+  paid: '🟢 Plătită',
+  partial: '🟠 Plătită parțial',
+  overdue: '🔴 Întârziată',
+  disputed: '⚫ Dispută',
+  voided: '⚪ Anulată',
+};
+---
+
+<AppLayout title="Facturare" activeTab="facturare">
+  <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
+    <div>
+      <p class="th-eyebrow">Financiar</p>
+      <h1 class="th-h1 mt-1">Facturare</h1>
+      <p class="text-[13px] text-[#3D3D3A] mt-1 max-w-2xl">Emite facturi, proforme, storno și chitanțe. Auto-completare client din ANAF, e-Factura SPV integrată.</p>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="/app/facturare/emite?kind=factura" class="px-4 py-2.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl text-[13px] transition-colors">+ Factură</a>
+      <a href="/app/facturare/emite?kind=proforma" class="px-4 py-2.5 bg-white border border-[#E8E8E4] hover:bg-[#FAFAF8] text-[#0A0A0A] font-semibold rounded-xl text-[13px] transition-colors">Proformă</a>
+      <a href="/app/facturare/emite?kind=chitanta" class="px-4 py-2.5 bg-white border border-[#E8E8E4] hover:bg-[#FAFAF8] text-[#0A0A0A] font-semibold rounded-xl text-[13px] transition-colors">Chitanță</a>
+      <a href="/app/facturare/emite?kind=storno" class="px-4 py-2.5 bg-white border border-[#E8E8E4] hover:bg-[#FAFAF8] text-[#0A0A0A] font-semibold rounded-xl text-[13px] transition-colors">Storno</a>
+    </div>
+  </div>
+
+  {!companyId && (
+    <div class="th-card th-card-yellow mb-6">
+      <p class="text-[13px] text-[#3D3D3A]">Ai nevoie de o companie validată pentru a emite facturi. <a href="/app/setari" class="font-semibold underline">Completează profilul →</a></p>
+    </div>
+  )}
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="th-stat th-card-yellow">
+      <span class="lbl">Facturat luna asta</span>
+      <span class="num">{fmtMoney(issuedRow[0]?.sum ?? 0, 'RON')}</span>
+      <span class="text-[11px] text-[#3D3D3A]/70">{issuedRow[0]?.cnt ?? 0} {(issuedRow[0]?.cnt ?? 0) === 1 ? 'factură' : 'facturi'}</span>
+    </div>
+    <div class="th-stat th-card-mint">
+      <span class="lbl">Încasat luna asta</span>
+      <span class="num">{fmtMoney(paidRow[0]?.sum ?? 0, 'RON')}</span>
+      <span class="text-[11px] text-[#3D3D3A]/70">{paidRow[0]?.cnt ?? 0} chitanțe</span>
+    </div>
+    <div class="th-stat th-card-blue">
+      <span class="lbl">De încasat</span>
+      <span class="num">{fmtMoney(openRow[0]?.sum ?? 0, 'RON')}</span>
+      <span class="text-[11px] text-[#3D3D3A]/70">{openRow[0]?.cnt ?? 0} {(openRow[0]?.cnt ?? 0) === 1 ? 'factură deschisă' : 'facturi deschise'}</span>
+    </div>
+    <a href="/app/facturare?status=overdue" class="th-stat th-card-pink">
+      <span class="lbl">Întârziate</span>
+      <span class="num">{fmtMoney(overdueRow[0]?.sum ?? 0, 'RON')}</span>
+      <span class="text-[11px] text-[#3D3D3A]/70">{overdueRow[0]?.cnt ?? 0} peste scadenţă</span>
+    </a>
+  </div>
+
+  <!-- Aging buckets + facturat azi + e-Factura status -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+    <div class="th-card">
+      <p class="text-[10px] uppercase tracking-wider text-[#6B6B68] mb-2">Facturi cu termen depășit</p>
+      <div class="grid grid-cols-3 gap-2">
+        <div><p class="text-[15px] font-bold text-[#0A0A0A] tabular-nums">{fmtMoney(Number(aging.b1), 'RON')}</p><p class="text-[10px] text-[#8A8A85] mt-0.5">1-15 zile</p></div>
+        <div><p class="text-[15px] font-bold text-[#B45309] tabular-nums">{fmtMoney(Number(aging.b2), 'RON')}</p><p class="text-[10px] text-[#8A8A85] mt-0.5">16-30 zile</p></div>
+        <div><p class="text-[15px] font-bold text-[#B91C1C] tabular-nums">{fmtMoney(Number(aging.b3), 'RON')}</p><p class="text-[10px] text-[#8A8A85] mt-0.5">peste 30 zile</p></div>
+      </div>
+    </div>
+    <div class="th-card">
+      <p class="text-[10px] uppercase tracking-wider text-[#6B6B68] mb-2">Facturat azi</p>
+      <p class="text-xl font-bold text-[#0A0A0A] tabular-nums">{fmtMoney(todayRow[0]?.sum ?? 0, 'RON')}</p>
+      <p class="text-[11px] text-[#3D3D3A]/70 mt-0.5">{todayRow[0]?.cnt ?? 0} {(todayRow[0]?.cnt ?? 0) === 1 ? 'factură' : 'facturi'}</p>
+    </div>
+    <a href="/app/facturare/rapoarte?tab=spv" class="th-card hover:bg-[#FAFAF8] transition-colors">
+      <p class="text-[10px] uppercase tracking-wider text-[#6B6B68] mb-2">e-Factura SPV</p>
+      <div class="flex gap-6">
+        <div><p class="text-xl font-bold text-[#0A0A0A] tabular-nums">{efNetrimiseCnt}</p><p class="text-[11px] text-[#3D3D3A]/70 mt-0.5">netrimise</p></div>
+        <div><p class={`text-xl font-bold tabular-nums ${efEroriCnt > 0 ? 'text-[#B91C1C]' : 'text-[#0A0A0A]'}`}>{efEroriCnt}</p><p class="text-[11px] text-[#3D3D3A]/70 mt-0.5">cu erori</p></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Chart: facturat vs încasat (anul curent) -->
+  {hasChartData && (
+    <div class="th-card mb-6">
+      <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <h2 class="th-h2">Facturi și încasări · {now.getFullYear()}</h2>
+        <div class="flex gap-4 text-[11px] text-[#6B6B68]">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-[#FF5C00] inline-block"></span> Facturat</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-sm bg-[#16A34A] inline-block"></span> Încasat</span>
+        </div>
+      </div>
+      <div class="flex items-end gap-1.5 h-44">
+        {chartData.map((d) => (
+          <div class="flex-1 flex flex-col items-center justify-end gap-1">
+            <div class="w-full flex items-end justify-center gap-0.5 h-36">
+              <div class="w-1/2 bg-[#FF5C00] rounded-t" style={`height: ${Math.max(1, (d.fact / chartMax) * 100)}%`} title={`Facturat: ${fmtMoney(d.fact, 'RON')}`}></div>
+              <div class="w-1/2 bg-[#16A34A] rounded-t" style={`height: ${Math.max(1, (d.inc / chartMax) * 100)}%`} title={`Încasat: ${fmtMoney(d.inc, 'RON')}`}></div>
+            </div>
+            <span class="text-[9px] text-[#8A8A85]">{d.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+
+  <div class="th-card th-card-lg overflow-hidden">
+    <div class="flex items-center justify-between mb-4 gap-4 flex-wrap">
+      <div>
+        <p class="th-eyebrow">Activitate</p>
+        <h2 class="th-h2 mt-1">Facturile recente</h2>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap text-[12px]">
+        <a href="/app/facturare/produse" class="text-[#6B6B68] hover:text-[#0A0A0A] transition-colors">Produse</a>
+        <span class="text-[#E8E8E4]">·</span>
+        <a href="/app/facturare/recurente" class="text-[#6B6B68] hover:text-[#0A0A0A] transition-colors">Recurente</a>
+        <span class="text-[#E8E8E4]">·</span>
+        <a href="/app/facturare/rapoarte/aging" class="text-[#6B6B68] hover:text-[#0A0A0A] transition-colors">Aging</a>
+        <span class="text-[#E8E8E4]">·</span>
+        <a href="/app/facturare/rapoarte" class="text-[#6B6B68] hover:text-[#0A0A0A] transition-colors">Rapoarte</a>
+        <span class="text-[#E8E8E4]">·</span>
+        <a href="/app/facturare/setari" class="text-[#6B6B68] hover:text-[#0A0A0A] transition-colors">Setări</a>
+      </div>
+    </div>
+    {recent.length === 0 ? (
+      <div class="text-center py-10 text-[13px] text-[#6B6B68]">
+        Încă n-ai emis nicio factură. Începe cu butoanele de sus.
+      </div>
+    ) : (
+      <ul class="divide-y divide-[#E8E8E4]">
+        {recent.map((inv) => {
+          const due = inv.dueAt ? new Date(inv.dueAt) : null;
+          const overdue = inv.status !== 'paid' && due && due < now;
+          const effectiveStatus = overdue ? 'overdue' : inv.status;
+          return (
+            <li>
+              <a href={`/app/facturare/${inv.id}`} class="flex items-center gap-4 py-3 hover:bg-[#FAFAF8] -mx-2 px-2 rounded-xl transition-colors">
+                <span class="text-[12px] font-mono text-[#3D3D3A] tabular-nums w-[110px] truncate">{inv.fullNumber}</span>
+                <span class={`shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide ${statusTone[effectiveStatus] ?? statusTone.draft}`}>
+                  {statusLabel[effectiveStatus] ?? effectiveStatus}
+                </span>
+                <span class="text-[11px] text-[#6B6B68] uppercase tracking-wide w-[70px] shrink-0">{kindLabel[inv.kind] ?? inv.kind}</span>
+                <span class="text-[13px] text-[#0A0A0A] flex-1 min-w-0 truncate font-medium">{inv.clientNameSnap}</span>
+                <span class="text-[13px] text-[#0A0A0A] tabular-nums shrink-0 font-semibold">{fmtMoney(inv.totalCents, inv.currency)}</span>
+                <span class="text-[10px] text-[#8A8A85] shrink-0 hidden md:inline">
+                  {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO') : '—'}
+                </span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </div>
+</AppLayout>

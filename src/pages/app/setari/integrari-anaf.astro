@@ -1,0 +1,337 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import PageHeader from '../../../components/PageHeader.astro';
+import { listConnections } from '../../../lib/anaf/tokens';
+import { isConfigured } from '../../../lib/anaf/config';
+import { db } from '../../../db';
+import { companies } from '../../../db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+
+const configured = isConfigured();
+const connections = configured ? await listConnections(user.companyId) : [];
+const byScope = Object.fromEntries(connections.map((c) => [c.scope, c]));
+
+// Default CIF used for SPV inbox + e-Transport listing. Prefer the CIF returned
+// by ANAF on the authenticated certificate; fall back to the company CUI.
+const [companyRow] = await db.select({ cui: companies.cui }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
+const defaultCif = (byScope['e-factura']?.cif || byScope['e-transport']?.cif || companyRow?.cui || '').replace(/^RO/i, '').replace(/\D/g, '');
+
+const efacturaConnected = !!(byScope['e-factura'] && new Date(byScope['e-factura'].refreshExpiresAt).getTime() > Date.now());
+const etransportConnected = !!(byScope['e-transport'] && new Date(byScope['e-transport'].refreshExpiresAt).getTime() > Date.now());
+
+const url = Astro.url;
+const justConnected = url.searchParams.get('anaf_connected');
+const errMsg = url.searchParams.get('anaf_error');
+const justCif = url.searchParams.get('cif');
+const tab = (url.searchParams.get('tab') as 'conexiuni' | 'inbox' | 'etransport' | 'saft') || 'conexiuni';
+
+const scopes = [
+  {
+    id: 'e-factura',
+    title: 'e-Factura',
+    desc: 'Trimite facturi B2B în SPV automat la finalizarea comenzii. Citește mesaje primite de la parteneri.',
+    docsUrl: 'https://mfinante.gov.ro/web/efactura',
+  },
+  {
+    id: 'e-transport',
+    title: 'e-Transport',
+    desc: 'Generează UIT automat pentru curse când transportatorul acceptă comanda. Obligatoriu pentru transport intern de bunuri cu risc fiscal sau international.',
+    docsUrl: 'https://mfinante.gov.ro/web/efactura/etransport',
+  },
+] as const;
+
+function fmt(d: Date | null | undefined): string {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// Default SAF-T range: previous calendar month
+const todayD = new Date();
+const lastMonth = new Date(todayD.getFullYear(), todayD.getMonth() - 1, 1);
+const lastMonthEnd = new Date(todayD.getFullYear(), todayD.getMonth(), 0);
+const saftFrom = lastMonth.toISOString().slice(0, 10);
+const saftTo = lastMonthEnd.toISOString().slice(0, 10);
+
+const tabs = [
+  { id: 'conexiuni',  label: 'Conexiuni' },
+  { id: 'inbox',      label: 'Inbox e-Factura' },
+  { id: 'etransport', label: 'Declarații e-Transport' },
+  { id: 'saft',       label: 'SAF-T D406' },
+] as const;
+---
+
+<AppLayout title="Integrări ANAF — facturamea" activeTab="setari">
+  <div class="max-w-4xl">
+    <PageHeader tagline="Setări → Financiar" title="Integrări ANAF" subtitle="Conexiuni SPV, inbox mesaje, declarații e-Transport și raport SAF-T D406." />
+
+    {!configured && (
+      <div class="mb-6 px-4 py-3 bg-[#FEF3C7] border border-[#F59E0B]/40 rounded-xl">
+        <p class="text-[13px] text-[#92400E]">
+          OAuth ANAF nu este configurat încă pe server. Administratorul trebuie să seteze
+          <code class="font-mono">ANAF_CLIENT_ID</code>, <code class="font-mono">ANAF_CLIENT_SECRET</code>
+          şi <code class="font-mono">ANAF_ENCRYPTION_KEY</code>.
+        </p>
+      </div>
+    )}
+
+    {justConnected && (
+      <div class="mb-6 px-4 py-3 bg-white border border-[#15803D]/30 rounded-xl">
+        <p class="text-[13px] text-[#0A0A0A]">Conectat cu succes la <strong>{justConnected}</strong>{justCif ? ` (CIF ${justCif})` : ''}.</p>
+      </div>
+    )}
+    {errMsg && (
+      <div class="mb-6 px-4 py-3 bg-white border border-[#B91C1C]/30 rounded-xl">
+        <p class="text-[13px] text-[#B91C1C]">{errMsg}</p>
+      </div>
+    )}
+
+    {/* ─── Tab navigation ─── */}
+    <div class="flex gap-1 mb-5 border-b border-[#E8E8E4] overflow-x-auto">
+      {tabs.map((t) => (
+        <a
+          href={`/app/setari/integrari-anaf?tab=${t.id}`}
+          class:list={[
+            'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap',
+            tab === t.id ? 'text-[#0A0A0A] border-[#FF5C00]' : 'text-[#6B6B68] hover:text-[#0A0A0A] border-transparent'
+          ]}
+        >{t.label}</a>
+      ))}
+    </div>
+
+    {tab === 'conexiuni' && (
+      <div class="space-y-4">
+        {scopes.map((s) => {
+          const conn = byScope[s.id];
+          const expired = conn && new Date(conn.refreshExpiresAt).getTime() < Date.now();
+          return (
+            <article class="p-5 bg-white border border-[#E8E8E4] rounded-xl">
+              <div class="flex items-start justify-between gap-4 mb-3">
+                <div>
+                  <h3 class="text-[15px] font-medium text-[#0A0A0A]">{s.title}</h3>
+                  <p class="text-[13px] text-[#6B6B68] mt-1 leading-relaxed">{s.desc}</p>
+                </div>
+                <span class={`shrink-0 inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full ${conn && !expired ? 'bg-[#15803D]/10 text-[#15803D]' : 'bg-[#FAFAF8] text-[#6B6B68]'}`}>
+                  {conn && !expired ? 'Conectat' : 'Neconectat'}
+                </span>
+              </div>
+
+              {conn && (
+                <dl class="grid grid-cols-2 gap-2 text-[12px] mb-4 p-3 bg-[#FAFAF8] rounded">
+                  <div><dt class="text-[#6B6B68]">CIF</dt><dd class="font-mono">{conn.cif || '—'}</dd></div>
+                  <div><dt class="text-[#6B6B68]">Conectat</dt><dd>{fmt(conn.connectedAt)}</dd></div>
+                  <div><dt class="text-[#6B6B68]">Token expiră</dt><dd>{fmt(conn.accessExpiresAt)}</dd></div>
+                  <div><dt class="text-[#6B6B68]">Refresh expiră</dt><dd>{fmt(conn.refreshExpiresAt)}</dd></div>
+                </dl>
+              )}
+
+              <div class="flex items-center gap-3">
+                {conn && !expired ? (
+                  <button data-disconnect={s.id} type="button" class="px-3 py-2 text-[12px] font-medium border border-[#E8E8E4] rounded hover:bg-[#FAFAF8] transition">
+                    Deconectează
+                  </button>
+                ) : (
+                  <a href={`/api/anaf/authorize?scope=${s.id}`} class={`px-3 py-2 text-[12px] font-medium rounded transition ${configured ? 'bg-[#0A0A0A] text-white hover:bg-[#1F1F1F]' : 'bg-[#E8E8E4] text-[#6B6B68] cursor-not-allowed pointer-events-none'}`}>
+                    Conectează cu certificat digital
+                  </a>
+                )}
+                <a href={s.docsUrl} target="_blank" rel="noopener" class="text-[12px] text-[#6B6B68] hover:text-[#0A0A0A] underline">Documentaţie ANAF</a>
+              </div>
+            </article>
+          );
+        })}
+
+        <p class="mt-2 text-[12px] text-[#6B6B68] leading-relaxed">
+          Conectarea folosește certificatul digital calificat al firmei. ANAF îți va cere să autentifici certificatul când apeși „Conectează".
+          Token-urile sunt criptate AES-256-GCM şi reîmprospătate automat înainte de expirare.
+        </p>
+      </div>
+    )}
+
+    {tab === 'inbox' && (
+      <section class="bg-white border border-[#E8E8E4] rounded-xl p-5">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-[15px] font-medium text-[#0A0A0A]">Inbox e-Factura (SPV)</h3>
+            <p class="text-[13px] text-[#6B6B68] mt-1">Mesaje primite de la parteneri prin SPV — facturi B2B, anulări, erori. Sursa: API ANAF <code class="font-mono">listaMesajeFactura</code>.</p>
+          </div>
+          {!efacturaConnected && (
+            <span class="shrink-0 inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-[#FEF3C7] text-[#92400E]">Necesită conexiune e-Factura</span>
+          )}
+        </div>
+
+        <form id="inbox-form" class="flex flex-wrap items-end gap-3 mb-4 p-3 bg-[#FAFAF8] rounded">
+          <div>
+            <label class="block text-[11px] text-[#6B6B68] mb-1">CIF firmă</label>
+            <input id="inbox-cif" type="text" value={defaultCif} class="px-3 py-2 text-[13px] border border-[#E8E8E4] rounded font-mono w-[140px]" required />
+          </div>
+          <div>
+            <label class="block text-[11px] text-[#6B6B68] mb-1">Zile înapoi (max 60)</label>
+            <input id="inbox-days" type="number" value="30" min="1" max="60" class="px-3 py-2 text-[13px] border border-[#E8E8E4] rounded w-[100px]" />
+          </div>
+          <button type="submit" class="px-4 py-2 text-[13px] font-medium bg-[#0A0A0A] text-white rounded hover:bg-[#1F1F1F] transition">Caută</button>
+        </form>
+
+        <div id="inbox-result" class="text-[13px] text-[#6B6B68]">Apasă „Caută" ca să descarci mesajele din ultimele N zile.</div>
+      </section>
+    )}
+
+    {tab === 'etransport' && (
+      <section class="bg-white border border-[#E8E8E4] rounded-xl p-5">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-[15px] font-medium text-[#0A0A0A]">Declarații e-Transport (UIT)</h3>
+            <p class="text-[13px] text-[#6B6B68] mt-1">Lista UIT-urilor declarate către ANAF în ultimele N zile. Util pentru audit + verificare status fiscal.</p>
+          </div>
+          {!etransportConnected && (
+            <span class="shrink-0 inline-flex items-center px-2 py-0.5 text-[11px] font-medium rounded-full bg-[#FEF3C7] text-[#92400E]">Necesită conexiune e-Transport</span>
+          )}
+        </div>
+
+        <form id="etr-form" class="flex flex-wrap items-end gap-3 mb-4 p-3 bg-[#FAFAF8] rounded">
+          <div>
+            <label class="block text-[11px] text-[#6B6B68] mb-1">CIF firmă</label>
+            <input id="etr-cif" type="text" value={defaultCif} class="px-3 py-2 text-[13px] border border-[#E8E8E4] rounded font-mono w-[140px]" required />
+          </div>
+          <div>
+            <label class="block text-[11px] text-[#6B6B68] mb-1">Zile înapoi (max 60)</label>
+            <input id="etr-days" type="number" value="30" min="1" max="60" class="px-3 py-2 text-[13px] border border-[#E8E8E4] rounded w-[100px]" />
+          </div>
+          <button type="submit" class="px-4 py-2 text-[13px] font-medium bg-[#0A0A0A] text-white rounded hover:bg-[#1F1F1F] transition">Caută</button>
+        </form>
+
+        <div id="etr-result" class="text-[13px] text-[#6B6B68]">Apasă „Caută" ca să descarci declarațiile recente.</div>
+      </section>
+    )}
+
+    {tab === 'saft' && (
+      <section class="bg-white border border-[#E8E8E4] rounded-xl p-5">
+        <h3 class="text-[15px] font-medium text-[#0A0A0A]">Raport SAF-T D406</h3>
+        <p class="text-[13px] text-[#6B6B68] mt-1 mb-4">Generează declarația D406 SAF-T pentru o perioadă. Rezultatul e un XML pe care îl încarci în portalul ANAF.</p>
+
+        <form action="/api/invoicing/reports/saft-d406" method="GET" class="flex flex-wrap items-end gap-3 p-3 bg-[#FAFAF8] rounded">
+          <div>
+            <label class="block text-[11px] text-[#6B6B68] mb-1">De la</label>
+            <input type="date" name="from" value={saftFrom} class="px-3 py-2 text-[13px] border border-[#E8E8E4] rounded" required />
+          </div>
+          <div>
+            <label class="block text-[11px] text-[#6B6B68] mb-1">Până la</label>
+            <input type="date" name="to" value={saftTo} class="px-3 py-2 text-[13px] border border-[#E8E8E4] rounded" required />
+          </div>
+          <div>
+            <label class="block text-[11px] text-[#6B6B68] mb-1">Tip declarație</label>
+            <select name="type" class="px-3 py-2 text-[13px] border border-[#E8E8E4] rounded">
+              <option value="L">L — Lunar</option>
+              <option value="T">T — Trimestrial</option>
+              <option value="A">A — Anual</option>
+              <option value="C">C — La cerere</option>
+            </select>
+          </div>
+          <button type="submit" class="px-4 py-2 text-[13px] font-medium bg-[#0A0A0A] text-white rounded hover:bg-[#1F1F1F] transition">Descarcă XML</button>
+        </form>
+
+        <p class="mt-3 text-[11px] text-[#8A8A85]">
+          XML-ul respectă schema ANAF D406. Tipurile <strong>L/T/A</strong> sunt pentru raportări periodice; <strong>C</strong> e pentru cereri ad-hoc ale Fiscului.
+        </p>
+      </section>
+    )}
+  </div>
+</AppLayout>
+
+<script>
+  // Disconnect button (Conexiuni tab)
+  document.querySelectorAll('[data-disconnect]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const scope = (btn as HTMLElement).dataset.disconnect;
+      if (!scope) return;
+      if (!confirm(`Deconectezi integrarea ${scope}?`)) return;
+      const res = await fetch('/api/anaf/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scope }),
+      });
+      if (res.ok) location.reload();
+      else alert('Eroare: ' + (await res.text()));
+    });
+  });
+
+  // ─── Inbox e-Factura tab ──────────────────────────────────────
+  const inboxForm = document.getElementById('inbox-form') as HTMLFormElement | null;
+  inboxForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cif = (document.getElementById('inbox-cif') as HTMLInputElement).value.trim();
+    const days = (document.getElementById('inbox-days') as HTMLInputElement).value;
+    const out = document.getElementById('inbox-result')!;
+    out.innerHTML = '<p class="text-[13px] text-[#6B6B68]">Se încarcă…</p>';
+    try {
+      const res = await fetch(`/api/anaf/efactura/messages?cif=${encodeURIComponent(cif)}&days=${days}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        out.innerHTML = `<p class="text-[13px] text-[#B91C1C]">Eroare: ${escapeHtml(data.error || 'necunoscută')}</p>`;
+        return;
+      }
+      const msgs = data.data?.mesaje || data.data?.messages || [];
+      if (!Array.isArray(msgs) || msgs.length === 0) {
+        out.innerHTML = '<p class="text-[13px] text-[#6B6B68]">Niciun mesaj în perioada selectată.</p>';
+        return;
+      }
+      const rows = msgs.map((m: any) => `
+        <tr class="border-t border-[#E8E8E4]">
+          <td class="py-2 px-3 font-mono text-xs">${escapeHtml(m.id || '—')}</td>
+          <td class="py-2 px-3">${escapeHtml(m.tip || m.type || '—')}</td>
+          <td class="py-2 px-3 font-mono text-xs">${escapeHtml(m.cif_emitent || m.sender_cif || '—')}</td>
+          <td class="py-2 px-3 text-xs">${escapeHtml(m.data_creare || m.created || '—')}</td>
+          <td class="py-2 px-3 text-xs">${escapeHtml(m.detalii || m.details || '')}</td>
+          <td class="py-2 px-3"><a href="/api/anaf/efactura/download?id=${encodeURIComponent(m.id)}" class="text-[#FF5C00] hover:underline text-xs font-medium">Descarcă ZIP</a></td>
+        </tr>
+      `).join('');
+      out.innerHTML = `
+        <p class="text-[12px] text-[#6B6B68] mb-2">${msgs.length} mesaje găsite</p>
+        <div class="overflow-x-auto border border-[#E8E8E4] rounded">
+          <table class="w-full text-[13px]">
+            <thead class="bg-[#FAFAF8] text-[11px] uppercase tracking-wider text-[#6B6B68] text-left">
+              <tr><th class="py-2 px-3">ID mesaj</th><th class="py-2 px-3">Tip</th><th class="py-2 px-3">CIF emitent</th><th class="py-2 px-3">Data</th><th class="py-2 px-3">Detalii</th><th class="py-2 px-3">Acțiune</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    } catch (err) {
+      out.innerHTML = `<p class="text-[13px] text-[#B91C1C]">Eroare rețea: ${escapeHtml(String(err))}</p>`;
+    }
+  });
+
+  // ─── e-Transport list tab ─────────────────────────────────────
+  const etrForm = document.getElementById('etr-form') as HTMLFormElement | null;
+  etrForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const cif = (document.getElementById('etr-cif') as HTMLInputElement).value.trim();
+    const days = (document.getElementById('etr-days') as HTMLInputElement).value;
+    const out = document.getElementById('etr-result')!;
+    out.innerHTML = '<p class="text-[13px] text-[#6B6B68]">Se încarcă…</p>';
+    try {
+      const res = await fetch(`/api/anaf/etransport/list?cif=${encodeURIComponent(cif)}&days=${days}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        out.innerHTML = `<p class="text-[13px] text-[#B91C1C]">Eroare: ${escapeHtml(data.error || 'necunoscută')}</p>`;
+        return;
+      }
+      // ANAF e-Transport list returns XML/raw text. Show it pre-formatted.
+      const raw = data.raw || '';
+      if (!raw.trim()) {
+        out.innerHTML = '<p class="text-[13px] text-[#6B6B68]">Nicio declarație în perioada selectată.</p>';
+        return;
+      }
+      out.innerHTML = `
+        <p class="text-[12px] text-[#6B6B68] mb-2">Răspuns brut ANAF (XML):</p>
+        <pre class="text-[11px] bg-[#FAFAF8] border border-[#E8E8E4] rounded p-3 overflow-auto max-h-[400px] font-mono whitespace-pre-wrap">${escapeHtml(raw)}</pre>`;
+    } catch (err) {
+      out.innerHTML = `<p class="text-[13px] text-[#B91C1C]">Eroare rețea: ${escapeHtml(String(err))}</p>`;
+    }
+  });
+
+  function escapeHtml(s: string): string {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  }
+</script>

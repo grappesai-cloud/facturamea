@@ -1,0 +1,62 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import InvoiceEmitForm from '../../../components/invoicing/InvoiceEmitForm';
+import { db } from '../../../db';
+import { transportDossiers, orders, freight } from '../../../db/schema';
+import { eq, and } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+
+const kindParam = Astro.url.searchParams.get('kind') || 'factura';
+const validKinds = ['factura', 'proforma', 'storno', 'chitanta'] as const;
+type Kind = (typeof validKinds)[number];
+const kind: Kind = (validKinds as readonly string[]).includes(kindParam) ? (kindParam as Kind) : 'factura';
+
+const orderId = Astro.url.searchParams.get('order') || undefined;
+const fromId = Astro.url.searchParams.get('from') || undefined;
+
+// Prefill from a dossier: route + client price feed into the first invoice
+// line so the expeditor doesn't retype the same data.
+const dossierIdParam = Astro.url.searchParams.get('dossier');
+let dossierPrefill: { displayId: string; route: string; priceTotal: number | null; currency?: string } | undefined;
+if (dossierIdParam) {
+  const [d] = await db.select().from(transportDossiers)
+    .where(and(eq(transportDossiers.id, dossierIdParam), eq(transportDossiers.companyId, user.companyId)))
+    .limit(1);
+  if (d) {
+    const route = `${d.loadingCity ?? ''}${d.loadingCountry ? ', ' + d.loadingCountry : ''} → ${d.unloadingCity ?? ''}${d.unloadingCountry ? ', ' + d.unloadingCountry : ''}`;
+    dossierPrefill = {
+      displayId: d.displayId,
+      route,
+      priceTotal: d.clientPriceCents != null ? d.clientPriceCents / 100 : null,
+    };
+  }
+}
+
+// Prefill from an order (emit invoice directly from "Comenzile mele"): route +
+// freight price feed into the first line. The ?order= param was previously
+// passed but ignored for prefill.
+if (!dossierPrefill && orderId) {
+  const [o] = await db.select().from(orders).where(eq(orders.id, orderId)).limit(1);
+  if (o && (o.clientCompanyId === user.companyId || o.carrierCompanyId === user.companyId)) {
+    const [f] = o.freightId ? await db.select().from(freight).where(eq(freight.id, o.freightId)).limit(1) : [undefined as any];
+    const route = f ? `${f.loadingCityName ?? ''}${f.loadingCountry ? ', ' + f.loadingCountry : ''} → ${f.unloadingCityName ?? ''}${f.unloadingCountry ? ', ' + f.unloadingCountry : ''}` : '';
+    dossierPrefill = {
+      displayId: o.orderNumber,
+      route,
+      priceTotal: f?.priceTotal ?? null,
+      currency: f?.currency ?? undefined,
+    };
+  }
+}
+---
+
+<AppLayout title="Emitere document" activeTab="facturare">
+  <div class="mb-4">
+    <a href="/app/facturare" class="text-sm text-[#6B6B68] hover:text-[#0A0A0A]">← Înapoi la facturare</a>
+  </div>
+  <div class="max-w-5xl">
+    <InvoiceEmitForm kind={kind} orderId={orderId} fromId={fromId} dossierPrefill={dossierPrefill} client:load />
+  </div>
+</AppLayout>

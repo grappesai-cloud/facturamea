@@ -1,0 +1,320 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+import FeatureCard from '../components/landing/FeatureCard.astro';
+
+const homeJsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'facturamea',
+    url: 'https://facturamea.com',
+    logo: 'https://facturamea.com/favicon.svg',
+    sameAs: [],
+    contactPoint: [{ '@type': 'ContactPoint', contactType: 'customer support', email: 'contact@facturamea.com', areaServed: 'RO', availableLanguage: ['Romanian', 'English'] }],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'facturamea',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web, iOS, Android',
+    offers: { '@type': 'Offer', price: '700', priceCurrency: 'RON', description: 'Licență pe viață, o singură plată' },
+  },
+];
+
+// Iconuri SVG inline (stroke currentColor)
+const ic = {
+  invoice: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>',
+  anaf: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>',
+  stock: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.3 7 8.7 5 8.7-5M12 22V12"/></svg>',
+  expense: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
+  pos: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 6h6M9 10h6M9 14h3"/></svg>',
+  recurring: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>',
+  saft: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M10 12h4M9 16h6"/></svg>',
+  reports: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m7 15 3-4 3 3 4-6"/></svg>',
+  users: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  mobile: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2.5"/><path d="M12 18h.01"/></svg>',
+};
+
+const features = [
+  { icon: ic.invoice, title: 'Facturi & proforme', text: 'Facturi, proforme, avize de însoțire și chitanțe, emise în câteva secunde, cu serii și numerotare automată.' },
+  { icon: ic.anaf, title: 'e-Factura ANAF', text: 'Trimitere directă în SPV, cu validare XML și descărcarea răspunsului oficial. Conform cu cerințele ANAF 2026.' },
+  { icon: ic.stock, title: 'Gestiune stocuri & NIR', text: 'Intrări, ieșiri, NIR și stoc în timp real, legate automat de facturile pe care le emiți.' },
+  { icon: ic.expense, title: 'Cheltuieli', text: 'Înregistrează facturi de la furnizori, urmărește deductibilitatea și ține totul pregătit pentru contabil.' },
+  { icon: ic.pos, title: 'POS & casă de marcat', text: 'Bonuri, încasări în numerar și legătură cu casa de marcat, pentru vânzarea cu amănuntul.' },
+  { icon: ic.recurring, title: 'Facturi recurente', text: 'Abonamente și contracte facturate automat, lună de lună, fără să intervii manual.' },
+  { icon: ic.saft, title: 'SAF-T D406', text: 'Generare automată a declarației D406 în formatul cerut de ANAF, gata de depus.' },
+  { icon: ic.reports, title: 'Rapoarte', text: 'Vânzări, TVA, încasări și solduri clienți, în rapoarte clare pe care le exporți oricând.' },
+  { icon: ic.users, title: 'Multi-utilizator & roluri', text: 'Lucrează în echipă cu permisiuni pe roluri: contabil, vânzări, administrator.' },
+  { icon: ic.mobile, title: 'Aplicații iOS & Android', text: 'Emite facturi din birou sau de pe teren, din web și din aplicațiile native mobile.' },
+];
+---
+
+<PublicLayout
+  title="Facturare completă pentru firme din România"
+  description="facturamea: facturi, e-Factura ANAF, e-Transport, SAF-T, gestiune stocuri și rapoarte. O singură plată, 700 RON, licență pe viață. Web, iOS și Android."
+  structuredData={homeJsonLd}
+>
+  <!-- override container width to full-bleed sections -->
+  <div class="-mx-4 lg:-mx-6 -my-12">
+
+    <!-- ═══ HERO ═══ -->
+    <section class="relative overflow-hidden px-4 lg:px-6">
+      <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <div class="absolute -top-24 -right-24 w-[480px] h-[480px] rounded-full bg-[#FF5C00]/10 blur-3xl"></div>
+        <div class="absolute top-40 -left-32 w-[420px] h-[420px] rounded-full bg-[#FF5C00]/5 blur-3xl"></div>
+      </div>
+      <div class="relative max-w-[1100px] mx-auto pt-20 pb-16 lg:pt-28 lg:pb-24 text-center">
+        <div class="reveal inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E8E8E4] text-xs font-medium text-[#3D3D3A] mb-6 shadow-sm">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#FF5C00]"></span>
+          Conform ANAF e-Factura 2026
+        </div>
+        <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl font-bold text-[#0A0A0A] tracking-[-0.03em] leading-[1.05] max-w-3xl mx-auto">
+          Facturează ca la carte, fără abonament lunar.
+        </h1>
+        <p class="reveal text-lg text-[#3D3D3A] leading-relaxed max-w-2xl mx-auto mt-6">
+          e-Factura, e-Transport, gestiune și rapoarte într-un singur loc. O singură plată de <strong class="text-[#0A0A0A] font-semibold">700 RON</strong>, licență pe viață, fără costuri lunare ascunse.
+        </p>
+        <div class="reveal flex flex-col sm:flex-row items-center justify-center gap-3 mt-9">
+          <a href="/auth/register" class="w-full sm:w-auto px-7 py-3.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl shadow-lg shadow-[#FF5C00]/25 transition-all hover:-translate-y-0.5">
+            Începe gratuit
+          </a>
+          <a href="/preturi" class="w-full sm:w-auto px-7 py-3.5 bg-white text-[#0A0A0A] font-semibold rounded-xl border border-[#E8E8E4] hover:border-[#0A0A0A]/30 transition-colors">
+            Vezi prețul
+          </a>
+        </div>
+        <p class="reveal text-sm text-[#6B6B68] mt-5">Login cu Google · Apple · email</p>
+      </div>
+    </section>
+
+    <!-- ═══ TRUST STRIP ═══ -->
+    <section class="border-y border-[#E8E8E4] bg-white">
+      <div class="max-w-[1100px] mx-auto px-4 lg:px-6 py-6">
+        <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-4 text-sm font-medium text-[#6B6B68]">
+          <span class="text-xs uppercase tracking-[0.18em] text-[#A8A8A4]">Conform cu</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#FF5C00]"></span>ANAF e-Factura 2026</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#FF5C00]"></span>SAF-T D406</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#FF5C00]"></span>e-Transport</span>
+          <span class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#FF5C00]"></span>SPV ANAF</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FUNCȚII ═══ -->
+    <section id="functii" class="px-4 lg:px-6 py-20 lg:py-28 scroll-mt-24">
+      <div class="max-w-[1100px] mx-auto">
+        <div class="max-w-2xl mb-12">
+          <p class="reveal text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Tot ce-ți trebuie</p>
+          <h2 class="reveal text-3xl lg:text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] leading-tight">
+            Funcții la nivelul planurilor maxime, incluse de la prima zi.
+          </h2>
+          <p class="reveal text-[#6B6B68] leading-relaxed mt-4">
+            Fără pachete decupate și fără upgrade-uri. Plătești o dată și folosești tot.
+          </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {features.map((f) => (
+            <FeatureCard icon={f.icon} title={f.title} text={f.text} />
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ e-FACTURA SPOTLIGHT ═══ -->
+    <section id="e-factura" class="px-4 lg:px-6 py-20 lg:py-24 bg-[#0A0A0A] text-[#FAFAF8] scroll-mt-24">
+      <div class="max-w-[1100px] mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="reveal text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">e-Factura ANAF</p>
+          <h2 class="reveal text-3xl lg:text-4xl font-bold tracking-[-0.02em] leading-tight">
+            Trimite în SPV direct din aplicație.
+          </h2>
+          <p class="reveal text-[#A8A8A4] leading-relaxed mt-4">
+            Generăm XML-ul în formatul cerut, validăm și trimitem factura în Spațiul Privat Virtual ANAF. Primești înapoi confirmarea oficială, fără pași manuali și fără portaluri separate.
+          </p>
+          <a href="/auth/register" class="reveal inline-flex items-center gap-2 mt-7 px-6 py-3 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl transition-colors">
+            Începe gratuit
+          </a>
+        </div>
+        <div class="reveal space-y-3">
+          {[
+            'Validare automată a XML-ului înainte de trimitere',
+            'Trimitere și descărcare răspuns oficial din SPV',
+            'e-Transport pentru bunurile cu risc fiscal ridicat',
+            'SAF-T D406 generat automat, gata de depus',
+          ].map((line) => (
+            <div class="flex items-start gap-3 p-4 rounded-xl bg-white/5 border border-white/10">
+              <span class="shrink-0 w-6 h-6 rounded-full bg-[#FF5C00] text-white flex items-center justify-center text-xs font-bold mt-0.5">✓</span>
+              <span class="text-sm text-[#FAFAF8] leading-relaxed">{line}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CUM FUNCȚIONEAZĂ ═══ -->
+    <section class="px-4 lg:px-6 py-20 lg:py-28">
+      <div class="max-w-[1100px] mx-auto">
+        <div class="text-center max-w-2xl mx-auto mb-14">
+          <p class="reveal text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Cum funcționează</p>
+          <h2 class="reveal text-3xl lg:text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] leading-tight">
+            De la cont nou la prima factură în SPV, în trei pași.
+          </h2>
+        </div>
+        <div class="grid md:grid-cols-3 gap-6 relative">
+          {[
+            { n: '01', t: 'Creează contul', d: 'Înregistrare gratuită cu Google, Apple sau email. Completezi datele firmei o singură dată.' },
+            { n: '02', t: 'Emite factura', d: 'Adaugi clientul și produsele, iar facturamea calculează TVA, serii și numerotarea automat.' },
+            { n: '03', t: 'Trimite în SPV', d: 'Un singur click: factura ajunge la ANAF prin e-Factura, cu confirmare oficială salvată.' },
+          ].map((step) => (
+            <div class="reveal bg-white border border-[#E8E8E4] rounded-2xl p-7">
+              <div class="text-3xl font-bold text-[#FF5C00] tracking-[-0.02em] mb-4">{step.n}</div>
+              <h3 class="text-lg font-bold text-[#0A0A0A] tracking-[-0.02em] mb-2">{step.t}</h3>
+              <p class="text-sm text-[#6B6B68] leading-relaxed">{step.d}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ PRICING TEASER ═══ -->
+    <section class="px-4 lg:px-6 py-20 lg:py-24 bg-white border-y border-[#E8E8E4]">
+      <div class="max-w-[1100px] mx-auto grid lg:grid-cols-2 gap-12 items-center">
+        <div>
+          <p class="reveal text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Un singur preț</p>
+          <h2 class="reveal text-3xl lg:text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] leading-tight">
+            O singură plată, nu lunar.
+          </h2>
+          <p class="reveal text-[#6B6B68] leading-relaxed mt-4">
+            Concurența îți cere abonament în fiecare lună, la nesfârșit. La facturamea plătești o dată și folosești aplicația cât timp exiști firmă, fără reînnoiri și fără surprize.
+          </p>
+          <ul class="reveal space-y-2.5 mt-6 text-sm text-[#0A0A0A]">
+            <li class="flex items-center gap-2.5"><span class="text-[#FF5C00] font-bold">✓</span> Fără abonament lunar sau anual</li>
+            <li class="flex items-center gap-2.5"><span class="text-[#FF5C00] font-bold">✓</span> Actualizări fiscale incluse</li>
+            <li class="flex items-center gap-2.5"><span class="text-[#FF5C00] font-bold">✓</span> Toate funcțiile, fără pachete decupate</li>
+          </ul>
+        </div>
+
+        <div class="reveal bg-[#FAFAF8] border-2 border-[#FF5C00]/40 rounded-2xl p-8 shadow-[0_20px_50px_-20px_rgba(255,92,0,0.3)]">
+          <p class="text-xs uppercase tracking-[0.18em] text-[#6B6B68] font-medium">Licență pe viață</p>
+          <div class="flex items-baseline gap-2 mt-2 mb-1">
+            <span class="text-5xl font-bold text-[#0A0A0A] tracking-[-0.03em]">700 RON</span>
+          </div>
+          <p class="text-sm text-[#6B6B68] mb-6">o singură plată, pentru totdeauna</p>
+          <ul class="space-y-2.5 text-sm text-[#0A0A0A] mb-7">
+            {['Facturi, proforme, avize, chitanțe', 'e-Factura ANAF + e-Transport', 'SAF-T D406 & rapoarte', 'Gestiune stocuri, NIR, cheltuieli', 'POS, facturi recurente, multi-utilizator', 'Aplicații web, iOS și Android'].map((item) => (
+              <li class="flex items-start gap-2.5"><span class="text-[#FF5C00] font-bold mt-0.5">✓</span> {item}</li>
+            ))}
+          </ul>
+          <a href="/auth/register" class="block text-center w-full px-6 py-3.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl shadow-lg shadow-[#FF5C00]/25 transition-all hover:-translate-y-0.5">
+            Începe gratuit
+          </a>
+          <p class="text-center text-xs text-[#6B6B68] mt-3">Plata o faci din aplicație, când ești gata.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ APLICAȚII MOBILE ═══ -->
+    <section id="aplicatii" class="px-4 lg:px-6 py-20 lg:py-24 scroll-mt-24">
+      <div class="max-w-[1100px] mx-auto text-center">
+        <p class="reveal text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Pe orice dispozitiv</p>
+        <h2 class="reveal text-3xl lg:text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] leading-tight max-w-2xl mx-auto">
+          Web, iOS și Android, cu același cont.
+        </h2>
+        <p class="reveal text-[#6B6B68] leading-relaxed max-w-xl mx-auto mt-4">
+          Emite o factură de la birou, verifică încasările din mers și ține stocul la zi de oriunde. Datele se sincronizează în timp real.
+        </p>
+        <div class="reveal flex flex-wrap items-center justify-center gap-3 mt-8">
+          <span class="px-5 py-2.5 rounded-xl bg-white border border-[#E8E8E4] text-sm font-medium text-[#0A0A0A]">Aplicație web</span>
+          <span class="px-5 py-2.5 rounded-xl bg-white border border-[#E8E8E4] text-sm font-medium text-[#0A0A0A]">iOS</span>
+          <span class="px-5 py-2.5 rounded-xl bg-white border border-[#E8E8E4] text-sm font-medium text-[#0A0A0A]">Android</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ FAQ TEASER ═══ -->
+    <section class="px-4 lg:px-6 py-20 lg:py-24 bg-white border-t border-[#E8E8E4]">
+      <div class="max-w-[860px] mx-auto">
+        <div class="text-center mb-12">
+          <p class="reveal text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Întrebări frecvente</p>
+          <h2 class="reveal text-3xl lg:text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] leading-tight">
+            Răspunsuri scurte la ce ne întrebați des.
+          </h2>
+        </div>
+        <div class="space-y-3">
+          {[
+            { q: 'Chiar e o singură plată, fără abonament?', a: 'Da. Plătești 700 RON o singură dată și primești licență pe viață, fără costuri lunare sau anuale.' },
+            { q: 'e-Factura este inclusă?', a: 'Da. Trimitem facturile direct în SPV ANAF, conform cerințelor 2026, inclusiv e-Transport și SAF-T D406.' },
+            { q: 'Pot lucra cu echipa și contabilul?', a: 'Da. Adaugi mai mulți utilizatori cu roluri și permisiuni, iar contabilul are acces la rapoarte și exporturi.' },
+            { q: 'Funcționează și pe telefon?', a: 'Da. Ai aplicație web plus aplicații native iOS și Android, sincronizate cu același cont.' },
+          ].map((item) => (
+            <details class="reveal bg-[#FAFAF8] rounded-xl border border-[#E8E8E4] group">
+              <summary class="cursor-pointer px-5 py-4 font-medium text-[#0A0A0A] flex items-center justify-between gap-4 hover:bg-white rounded-xl transition-colors">
+                {item.q}
+                <span class="text-[#FF5C00] group-open:rotate-180 transition-transform shrink-0">▾</span>
+              </summary>
+              <div class="px-5 pb-4 text-sm text-[#6B6B68] leading-relaxed">{item.a}</div>
+            </details>
+          ))}
+        </div>
+        <div class="text-center mt-8">
+          <a href="/faq" class="text-sm font-medium text-[#FF5C00] hover:underline">Vezi toate întrebările →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ CTA FINAL ═══ -->
+    <section class="px-4 lg:px-6 py-20 lg:py-28">
+      <div class="max-w-[1100px] mx-auto">
+        <div class="reveal relative overflow-hidden rounded-3xl bg-[#0A0A0A] text-center px-6 py-16 lg:py-20">
+          <div class="absolute inset-0 pointer-events-none" aria-hidden="true">
+            <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#FF5C00]/20 blur-3xl"></div>
+          </div>
+          <div class="relative">
+            <h2 class="text-3xl lg:text-5xl font-bold text-white tracking-[-0.02em] leading-tight max-w-2xl mx-auto">
+              Treci pe facturare fără abonament.
+            </h2>
+            <p class="text-[#A8A8A4] leading-relaxed max-w-xl mx-auto mt-5">
+              Creează-ți contul gratuit și emite prima factură astăzi. Plătești o singură dată, când ești convins.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3 mt-9">
+              <a href="/auth/register" class="w-full sm:w-auto px-7 py-3.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl shadow-lg shadow-[#FF5C00]/30 transition-all hover:-translate-y-0.5">
+                Începe gratuit
+              </a>
+              <a href="/preturi" class="w-full sm:w-auto px-7 py-3.5 bg-white/10 text-white font-semibold rounded-xl border border-white/15 hover:bg-white/15 transition-colors">
+                Vezi prețul
+              </a>
+            </div>
+            <p class="text-sm text-[#6B6B68] mt-5">Login cu Google · Apple · email</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <style>
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+    .reveal.visible { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    }
+  </style>
+
+  <script is:inline>
+    (function () {
+      var targets = document.querySelectorAll('.reveal');
+      if (!('IntersectionObserver' in window)) {
+        targets.forEach(function (el) { el.classList.add('visible'); });
+        return;
+      }
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+        });
+      }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+      targets.forEach(function (el) { io.observe(el); });
+      // Safety: reveal everything after a short delay in case observer misses.
+      setTimeout(function () { targets.forEach(function (el) { el.classList.add('visible'); }); }, 2500);
+    })();
+  </script>
+</PublicLayout>

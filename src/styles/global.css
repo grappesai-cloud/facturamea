@@ -1,0 +1,403 @@
+@import "tailwindcss";
+
+@theme {
+  /* Neutral - warm grays (legacy "navy" name kept; remapped to a premium
+     monochrome scale so all 64 /app/* pages inherit the minimal palette
+     without per-file edits). */
+  --color-navy-50:  #fafaf8;
+  --color-navy-100: #f0f0ec;
+  --color-navy-200: #e8e8e4;
+  --color-navy-300: #d4d4ce;
+  --color-navy-400: #a8a8a4;
+  --color-navy-500: #6b6b68;
+  --color-navy-600: #4d4d4a;
+  --color-navy-700: #2e2e2c;
+  --color-navy-800: #1a1a19;
+  --color-navy-900: #0a0a0a;
+  --color-navy-950: #050505;
+
+  /* Accent - Brand orange (matches landing #FF5C00) */
+  --color-accent-50: #fff1e6;
+  --color-accent-100: #ffe0cc;
+  --color-accent-200: #ffc299;
+  --color-accent-300: #ffa366;
+  --color-accent-400: #ff7a33;
+  --color-accent-500: #ff5c00;
+  --color-accent-600: #e04e00;
+  --color-accent-700: #b83f00;
+  --color-accent-800: #8f3000;
+  --color-accent-900: #662200;
+
+  /* Premium minimal palette (dashboard) */
+  --color-bone: #fafaf8;
+  --color-ink: #0a0a0a;
+  --color-muted: #6b6b68;
+  --color-edge: #e8e8e4;
+
+  /* Semantic */
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Animations */
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-slide-up: slide-up 0.5s ease-out;
+  --animate-slide-down: slide-down 0.3s ease-out;
+  --animate-scale-in: scale-in 0.2s ease-out;
+  --animate-float: float 6s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes slide-down {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-navy-50 text-navy-900 font-sans antialiased;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-navy-300);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-navy-400);
+}
+
+/* Glass morphism utility */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.glass-dark {
+  background: rgba(10, 25, 41, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, var(--color-accent-400), var(--color-accent-600));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Focus ring standardization */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-accent-500/40 focus:ring-offset-2;
+}
+
+/* ─── Industrial card system (B2B logistics — depth, not Easter egg) ───
+   Class names kept (yellow/blue/pink/mint/lilac/cream) but the palette is now
+   amber/steel/clay/olive/slate/stone — saturated, masculine, serious.       */
+:root {
+  --pastel-yellow:   #D9C18C;  /* amber — wheat/desert tan */
+  --pastel-yellow-2: #E8DCBC;
+  --pastel-blue:     #BFCAD6;  /* steel blue-gray */
+  --pastel-blue-2:   #D7DEE6;
+  --pastel-pink:     #CFA391;  /* clay/terracotta */
+  --pastel-pink-2:   #E2C5B7;
+  --pastel-mint:     #B5BC9C;  /* olive/military green */
+  --pastel-mint-2:   #CDD2BB;
+  --pastel-lilac:    #B5BBC4;  /* slate — cool industrial gray */
+  --pastel-lilac-2:  #CDD1D7;
+  --pastel-cream:    #D8D4CB;  /* stone — warm neutral, deeper than cream */
+  --pastel-cream-2:  #E5E2DA;
+  --shadow-card:     0 1px 2px rgba(10,10,10,0.05), 0 12px 32px -16px rgba(10,10,10,0.14);
+  --shadow-card-lg:  0 1px 2px rgba(10,10,10,0.06), 0 28px 64px -24px rgba(10,10,10,0.22);
+}
+
+/* Base card — large radius, generous padding, soft shadow */
+.th-card {
+  background: #fff;
+  border: 1px solid #ECEBE5;
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow .25s ease, transform .25s ease;
+}
+.th-card-lg { border-radius: 28px; padding: 28px; }
+.th-card-hover:hover { box-shadow: var(--shadow-card-lg); transform: translateY(-1px); }
+
+/* Pastel variants (keep dark-on-light contrast) */
+.th-card-yellow { background: var(--pastel-yellow);  border-color: rgba(0,0,0,0.04); }
+.th-card-blue   { background: var(--pastel-blue);    border-color: rgba(0,0,0,0.04); }
+.th-card-pink   { background: var(--pastel-pink);    border-color: rgba(0,0,0,0.04); }
+.th-card-mint   { background: var(--pastel-mint);    border-color: rgba(0,0,0,0.04); }
+.th-card-lilac  { background: var(--pastel-lilac);   border-color: rgba(0,0,0,0.04); }
+.th-card-cream  { background: var(--pastel-cream);   border-color: rgba(0,0,0,0.04); }
+.th-card-ink    { background: #0A0A0A; color: #FAFAF8; border-color: #0A0A0A; }
+
+/* Soft pastel chip / pill (date labels in the reference) */
+.th-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px;
+  background: rgba(255,255,255,0.7);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 999px;
+  font-size: 11px; font-weight: 500;
+  color: #0A0A0A;
+}
+
+/* Section eyebrow (small uppercase label above headings) */
+.th-eyebrow {
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: #6B6B68; font-weight: 500;
+}
+
+/* Big page heading */
+.th-h1 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #0A0A0A; }
+.th-h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #0A0A0A; }
+
+/* Stat tile — colorful, big number */
+.th-stat {
+  border-radius: 22px; padding: 22px 22px 24px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: transform .2s ease, box-shadow .2s ease;
+  box-shadow: var(--shadow-card);
+}
+.th-stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-lg); }
+.th-stat .num { font-size: 36px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; color: #0A0A0A; font-variant-numeric: tabular-nums; }
+.th-stat .lbl { font-size: 12px; color: #2E2E2C; font-weight: 500; }
+.th-card-ink .num, .th-card-ink .lbl { color: #FAFAF8; }
+
+/* ─── Global uplift for all /app pages — bumps existing cards/inputs/headings
+       without requiring per-page rewrites. Scoped to .th-app-main. ── */
+.th-app-main {
+  /* Card uplift: any white-background bordered "card" becomes a th-card */
+  .bg-white.border.border-\[\#E8E8E4\].rounded-md,
+  .bg-white.border.border-\[\#E8E8E4\].rounded-lg,
+  .bg-white.border.border-\[\#E8E8E4\].rounded-xl,
+  .bg-white.border.border-navy-200,
+  .bg-white.border.border-navy-100 {
+    border-radius: 20px !important;
+    border-color: #ECEBE5 !important;
+    box-shadow: var(--shadow-card);
+    transition: box-shadow .25s ease, transform .25s ease;
+  }
+  .bg-white.border.border-\[\#E8E8E4\].rounded-2xl {
+    border-radius: 24px !important;
+    border-color: #ECEBE5 !important;
+    box-shadow: var(--shadow-card);
+  }
+  /* Subtle hover lift on links/buttons that wrap a card */
+  a.bg-white.border:hover,
+  button.bg-white.border:hover {
+    box-shadow: var(--shadow-card-lg);
+    transform: translateY(-1px);
+  }
+
+  /* Inputs/selects/textareas — softer rounding, more breathing room */
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=range]),
+  select,
+  textarea {
+    border-radius: 12px;
+  }
+
+  /* Primary buttons (orange/black) — softer rounding */
+  button.bg-\[\#FF5C00\],
+  button.bg-\[\#0A0A0A\],
+  a.bg-\[\#FF5C00\],
+  a.bg-\[\#0A0A0A\] {
+    border-radius: 12px;
+  }
+
+  /* Page H1 uplift */
+  h1.text-2xl,
+  h1.text-\[24px\],
+  h1.text-\[28px\] {
+    font-size: clamp(26px, 3vw, 34px);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  /* Section eyebrow softening — uppercase mini labels */
+  .text-\[10px\].uppercase,
+  .text-\[11px\].uppercase {
+    letter-spacing: 0.16em;
+  }
+
+  /* Kill-switch — components React încă folosesc bg-accent-500 (portocaliu vechi).
+     În /app vrem totul pe negru/grafit, serios B2B. Override scoped. */
+  .bg-accent-500       { background-color: #0A0A0A !important; }
+  .bg-accent-600       { background-color: #2E2E2C !important; }
+  .hover\:bg-accent-500:hover { background-color: #0A0A0A !important; }
+  .hover\:bg-accent-600:hover { background-color: #2E2E2C !important; }
+  .text-accent-500     { color: #0A0A0A !important; }
+  .text-accent-600     { color: #0A0A0A !important; }
+  .text-accent-700     { color: #0A0A0A !important; }
+  .hover\:text-accent-600:hover { color: #0A0A0A !important; }
+  .bg-accent-100       { background-color: #F0F0EC !important; }
+  .bg-accent-50        { background-color: #FAFAF8 !important; }
+  .border-accent-500   { border-color: #0A0A0A !important; }
+  .ring-accent-500     { --tw-ring-color: #0A0A0A !important; }
+  .focus\:ring-accent-500:focus { --tw-ring-color: rgb(10 10 10 / 0.15) !important; }
+  .focus-visible\:ring-accent-500:focus-visible { --tw-ring-color: rgb(10 10 10 / 0.15) !important; }
+
+  /* Pastel-ifică tonurile flat folosite pe status badges în liste vechi */
+  .bg-emerald-100      { background-color: #CDD2BB !important; }
+  .bg-green-100        { background-color: #CDD2BB !important; }
+  .bg-red-100          { background-color: #E2C5B7 !important; }
+  .bg-yellow-100       { background-color: #E8DCBC !important; }
+  .bg-amber-100        { background-color: #E8DCBC !important; }
+  .bg-blue-100         { background-color: #D7DEE6 !important; }
+  .text-emerald-700,
+  .text-green-700      { color: #15803D !important; }
+  .text-red-700        { color: #B91C1C !important; }
+  .text-yellow-700,
+  .text-amber-700      { color: #B45309 !important; }
+  .text-blue-700       { color: #1E40AF !important; }
+}
+
+
+
+
+/* ─── Dark mode (basic support — flips body bg + selected surfaces) ── */
+html.dark {
+  color-scheme: dark;
+  background: var(--color-navy-950);
+}
+html.dark body {
+  background: var(--color-navy-950);
+  color: var(--color-navy-100);
+}
+html.dark .bg-white { background-color: var(--color-navy-900) !important; }
+html.dark .bg-navy-50 { background-color: var(--color-navy-900) !important; }
+html.dark .border-navy-100,
+html.dark .border-navy-200,
+html.dark .border-navy-200\/60,
+html.dark .border-gray-200 { border-color: var(--color-navy-800) !important; }
+html.dark .text-navy-900 { color: var(--color-navy-100) !important; }
+html.dark .text-navy-700 { color: var(--color-navy-200) !important; }
+html.dark .text-navy-600 { color: var(--color-navy-300) !important; }
+html.dark .text-navy-500 { color: var(--color-navy-400) !important; }
+html.dark .text-gray-500 { color: var(--color-navy-400) !important; }
+html.dark .glass {
+  background: rgba(10, 25, 41, 0.85);
+}
+html.dark .hover\:bg-navy-50:hover,
+html.dark .hover\:bg-navy-100:hover { background-color: var(--color-navy-800) !important; }
+html.dark .bg-navy-100 { background-color: var(--color-navy-800) !important; }
+html.dark input, html.dark textarea, html.dark select {
+  background-color: var(--color-navy-900);
+  color: var(--color-navy-100);
+  border-color: var(--color-navy-700);
+}
+
+/* ─── Print styles ──────────────────────────────────────── */
+@media print {
+  /* Hide chrome from app/public layouts when printing */
+  .no-print,
+  header.sticky,
+  nav,
+  footer,
+  .print-hide {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt;
+  }
+  .print-only {
+    display: block !important;
+  }
+  a {
+    color: black !important;
+    text-decoration: none !important;
+  }
+  .page-break {
+    page-break-before: always;
+  }
+  table {
+    page-break-inside: avoid;
+  }
+  /* Tighten layout on paper */
+  main, .max-w-\[1400px\], .max-w-7xl, .max-w-4xl, .max-w-3xl {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/* ─── Aspect controls: font scale (data-fs) + font family (data-font) ───
+   Set on <html> from the Aspect panel & /app/setari; initialised pre-paint in
+   BaseLayout to avoid FOUC. `zoom` scales the px-based UI proportionally;
+   --th-font feeds the app layout wrapper's font-family. */
+:root { --th-font: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+html[data-font="system"] { --th-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+html[data-font="serif"]  { --th-font: Georgia, "Times New Roman", serif; }
+html[data-font="mono"]   { --th-font: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+html[data-fs="75"]  { zoom: 0.875; }
+html[data-fs="125"] { zoom: 1.125; }
+.th-fs-btn[data-active="true"] { background: #0A0A0A; color: #fff; }
+@media print { html { zoom: 1 !important; } }
+
+/* Print document base — used by /app/comenzi/[id]/cmr|proforma|contract */
+.print-doc {
+  background: white;
+  color: #111;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11pt;
+  line-height: 1.4;
+}
+.print-doc h1 { font-size: 16pt; font-weight: 700; margin-bottom: 4mm; }
+.print-doc h2 { font-size: 13pt; font-weight: 600; margin-bottom: 3mm; }
+.print-doc table { width: 100%; border-collapse: collapse; }
+.print-doc table.bordered td,
+.print-doc table.bordered th {
+  border: 1px solid #999;
+  padding: 6px 8px;
+  vertical-align: top;
+}
+.print-doc table.bordered th {
+  background: #f3f4f6;
+  text-align: left;
+  font-weight: 600;
+}
+.print-doc .doc-shell {
+  padding: 15mm 12mm;
+  max-width: 210mm;
+  margin: 0 auto;
+}
+@page { size: A4; margin: 12mm; }
