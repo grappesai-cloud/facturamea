@@ -144,6 +144,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     !pathname.startsWith('/api/webhooks/') &&
     !pathname.startsWith('/api/v1/') &&
     !pathname.startsWith('/api/auth/apple/callback') &&
+    !pathname.startsWith('/api/auth/token') &&
     !hasBearer &&
     MUTATING_METHODS.has(method)
   ) {
