@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { appleExchange, appOrigin } from '../../../../lib/oauth';
 import { findOrCreateOAuthUser, setSessionCookie } from '../../../../lib/auth';
 import { logAction } from '../../../../lib/audit';
+import { isAllowedFeRedirect } from '../../../../lib/fe-origins';
 
 function readCookie(header: string | null, name: string): string | null {
   if (!header) return null;
@@ -35,6 +36,14 @@ export const POST: APIRoute = async ({ request }) => {
     const finalEmail = email || `${sub}@privaterelay.appleid.com`;
     const { sessionId, userId, companyId } = await findOrCreateOAuthUser({ email: finalEmail, name, provider: 'apple' });
     try { await logAction({ userId, companyId, action: 'auth.oauth_apple', request }); } catch {}
+    const feRaw = readCookie(request.headers.get('cookie'), 'fm_oauth_fe');
+    const feRedirect = feRaw ? decodeURIComponent(feRaw) : null;
+    if (feRedirect && isAllowedFeRedirect(feRedirect)) {
+      const headers = new Headers({ Location: `${feRedirect}#token=${sessionId}` });
+      headers.append('Set-Cookie', 'fm_a_state=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');
+      headers.append('Set-Cookie', 'fm_oauth_fe=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');
+      return new Response(null, { status: 302, headers });
+    }
     const headers = new Headers({ Location: '/app' });
     headers.append('Set-Cookie', setSessionCookie(sessionId));
     headers.append('Set-Cookie', 'fm_a_state=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');

@@ -8,20 +8,16 @@ import { rateLimitAsync, getClientIp } from './lib/security';
 import { captureError } from './lib/observability';
 import { licenseState } from './lib/license';
 import { isAnafConnected } from './lib/anaf/tokens';
+import { isAllowedFeOrigin } from './lib/fe-origins';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
 // ─── CORS for the decoupled frontend (token Bearer auth) ────────────────
-// Allowed FE origins come from FRONTEND_ORIGINS (comma-separated) + localhost
-// dev ports. Token-auth requests are not cookie-based, so CORS is safe.
-const FE_ORIGINS = ((import.meta as any).env?.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGINS || '')
-  .split(',').map((s: string) => s.trim()).filter(Boolean);
-const DEV_ORIGINS = ['http://localhost:4321', 'http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:4321'];
-
+// Token-auth requests are not cookie-based, so CORS is safe. Allowlist lives
+// in lib/fe-origins (shared with the OAuth token-handoff routes).
 function corsHeadersFor(origin: string | null): Record<string, string> | null {
   if (!origin) return null;
-  const ok = FE_ORIGINS.includes('*') || FE_ORIGINS.includes(origin) || DEV_ORIGINS.includes(origin);
-  if (!ok) return null;
+  if (!isAllowedFeOrigin(origin)) return null;
   return {
     'Access-Control-Allow-Origin': origin,
     'Vary': 'Origin',
