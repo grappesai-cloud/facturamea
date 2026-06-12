@@ -68,32 +68,41 @@ export async function createSession(userId: string): Promise<string> {
   return sessionId;
 }
 
+// Resolve a session by its raw id (used by both cookie and Bearer-token auth).
+export async function getSessionById(sessionId: string | null | undefined) {
+  if (!sessionId) return null;
+  const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId));
+  if (!session) return null;
+  if (session.expiresAt < Math.floor(Date.now() / 1000)) {
+    await db.delete(sessions).where(eq(sessions.id, sessionId));
+    return null;
+  }
+  const [user] = await db.select().from(users).where(eq(users.id, session.userId));
+  if (!user) return null;
+  return { session, user };
+}
+
 export async function getSession(cookieHeader: string | null) {
   if (!cookieHeader) return null;
-
   const cookies = Object.fromEntries(
     cookieHeader.split(';').map((c) => {
       const [key, ...val] = c.trim().split('=');
       return [key, val.join('=')];
     })
   );
+  return getSessionById(cookies[SESSION_COOKIE]);
+}
 
-  const sessionId = cookies[SESSION_COOKIE];
-  if (!sessionId) return null;
-
-  const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId));
-  if (!session) return null;
-
-  // Check expiration
-  if (session.expiresAt < Math.floor(Date.now() / 1000)) {
-    await db.delete(sessions).where(eq(sessions.id, sessionId));
-    return null;
+// Resolve a session from EITHER an `Authorization: Bearer <token>` header
+// (used by the decoupled frontend) OR the session cookie. Token wins.
+export async function getSessionFromRequest(request: Request) {
+  const auth = request.headers.get('authorization') || '';
+  const m = /^Bearer\s+(.+)$/i.exec(auth.trim());
+  if (m?.[1]) {
+    const bySession = await getSessionById(m[1].trim());
+    if (bySession) return bySession;
   }
-
-  const [user] = await db.select().from(users).where(eq(users.id, session.userId));
-  if (!user) return null;
-
-  return { session, user };
+  return getSession(request.headers.get('cookie'));
 }
 
 export function setSessionCookie(sessionId: string): string {

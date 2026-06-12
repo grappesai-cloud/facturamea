@@ -1,5 +1,5 @@
 import { defineMiddleware } from 'astro:middleware';
-import { getSession } from './lib/auth';
+import { getSession, getSessionFromRequest } from './lib/auth';
 import { db } from './db';
 import { companies } from './db/schema';
 import { eq } from 'drizzle-orm';
@@ -10,6 +10,32 @@ import { licenseState } from './lib/license';
 import { isAnafConnected } from './lib/anaf/tokens';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
+
+// ─── CORS for the decoupled frontend (token Bearer auth) ────────────────
+// Allowed FE origins come from FRONTEND_ORIGINS (comma-separated) + localhost
+// dev ports. Token-auth requests are not cookie-based, so CORS is safe.
+const FE_ORIGINS = ((import.meta as any).env?.FRONTEND_ORIGINS || process.env.FRONTEND_ORIGINS || '')
+  .split(',').map((s: string) => s.trim()).filter(Boolean);
+const DEV_ORIGINS = ['http://localhost:4321', 'http://localhost:3000', 'http://localhost:5173', 'http://127.0.0.1:4321'];
+
+function corsHeadersFor(origin: string | null): Record<string, string> | null {
+  if (!origin) return null;
+  const ok = FE_ORIGINS.includes('*') || FE_ORIGINS.includes(origin) || DEV_ORIGINS.includes(origin);
+  if (!ok) return null;
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Vary': 'Origin',
+    'Access-Control-Allow-Methods': 'GET,POST,PATCH,PUT,DELETE,OPTIONS',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Max-Age': '86400',
+  };
+}
+function withCors(res: Response, cors: Record<string, string> | null): Response {
+  if (!cors) return res;
+  const headers = new Headers(res.headers);
+  for (const [k, v] of Object.entries(cors)) headers.set(k, v);
+  return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
 
 function isCrossOrigin(request: Request, host: string | null): boolean {
   const origin = request.headers.get('origin');
@@ -102,6 +128,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
   // i18n: read locale from cookie (default 'ro'), available everywhere via Astro.locals.locale
   context.locals.locale = getLocaleFromCookie(context.request.headers.get('cookie'));
 
+  // CORS for the decoupled frontend. Preflight is answered immediately; actual
+  // /api responses get CORS headers appended at the end.
+  const origin = context.request.headers.get('origin');
+  const cors = pathname.startsWith('/api/') ? corsHeadersFor(origin) : null;
+  const hasBearer = /^Bearer\s+/i.test(context.request.headers.get('authorization') || '');
+  if (method === 'OPTIONS' && pathname.startsWith('/api/')) {
+    return new Response(null, { status: 204, headers: cors || {} });
+  }
+
   // CSRF: reject cross-origin mutating requests on /api/* (skip cron — Vercel cron has Bearer)
   if (
     pathname.startsWith('/api/') &&
@@ -109,13 +144,14 @@ export const onRequest = defineMiddleware(async (context, next) => {
     !pathname.startsWith('/api/webhooks/') &&
     !pathname.startsWith('/api/v1/') &&
     !pathname.startsWith('/api/auth/apple/callback') &&
+    !hasBearer &&
     MUTATING_METHODS.has(method)
   ) {
     const host = context.request.headers.get('host');
     if (isCrossOrigin(context.request, host)) {
       return new Response(JSON.stringify({ error: 'Cerere refuzată (cross-origin)' }), {
         status: 403,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(cors || {}) },
       });
     }
   }
@@ -139,6 +175,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         headers: {
           'Content-Type': 'application/json',
           'Retry-After': String(Math.ceil(rl.resetIn / 1000)),
+          ...(cors || {}),
         },
       });
     }
@@ -174,8 +211,8 @@ export const onRequest = defineMiddleware(async (context, next) => {
     // routes remain accessible to anonymous users.
     try {
       const cookieHeader = context.request.headers.get('cookie');
-      if (cookieHeader && cookieHeader.includes('session=')) {
-        const result = await getSession(cookieHeader);
+      if (hasBearer || (cookieHeader && cookieHeader.includes('session='))) {
+        const result = await getSessionFromRequest(context.request);
         if (result) {
           const { user } = result;
           const isAdmin = (user as any).isAdmin === true || user.userType === 'admin';
@@ -209,20 +246,19 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // ignore — route stays public
     }
     const res = await next();
-    return applyRequestId(applySecurityHeaders(res, pathname), requestId);
+    return withCors(applyRequestId(applySecurityHeaders(res, pathname), requestId), cors);
   }
 
   // Protected routes — validate session
   if (pathname.startsWith('/app') || pathname.startsWith('/api/') || pathname.startsWith('/admin')) {
     try {
-      const cookieHeader = context.request.headers.get('cookie');
-      const result = await getSession(cookieHeader);
+      const result = await getSessionFromRequest(context.request);
 
       if (!result) {
         if (pathname.startsWith('/api/')) {
           return new Response(JSON.stringify({ error: 'Neautorizat' }), {
             status: 401,
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', ...(cors || {}) },
           });
         }
         return context.redirect('/auth/login');
@@ -282,7 +318,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
           if (pathname.startsWith('/api/admin')) {
             return new Response(JSON.stringify({ error: 'Acces interzis' }), {
               status: 403,
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...(cors || {}) },
             });
           }
           return context.redirect('/app');
@@ -293,7 +329,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
       if (pathname.startsWith('/api/')) {
         return new Response(JSON.stringify({ error: 'Eroare de autentificare' }), {
           status: 500,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...(cors || {}) },
         });
       }
       return context.redirect('/auth/login');
@@ -302,7 +338,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   try {
     const res = await next();
-    return applyRequestId(applySecurityHeaders(res, pathname), requestId);
+    return withCors(applyRequestId(applySecurityHeaders(res, pathname), requestId), cors);
   } catch (err) {
     await captureError(err, { route: pathname, method, userId: context.locals.user?.id });
     throw err;
