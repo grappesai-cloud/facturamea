@@ -98,6 +98,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
+    "@astrojs/node": "^10.1.4",
     "@biomejs/biome": "^2.4.15",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.13",

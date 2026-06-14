@@ -4,6 +4,12 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwindcss from '@tailwindcss/vite';
 import vercel from '@astrojs/vercel';
+import node from '@astrojs/node';
+
+// DEPLOY_TARGET=node → standalone Node server (Hetzner/Docker). Default = Vercel.
+const adapter = process.env.DEPLOY_TARGET === 'node'
+  ? node({ mode: 'standalone' })
+  : vercel({ maxDuration: 60 });
 
 // https://astro.build/config
 export default defineConfig({
@@ -34,11 +40,5 @@ export default defineConfig({
     },
   },
 
-  adapter: vercel({
-    // Server-side Puppeteer (PDF rendering) needs the Chromium binary at
-    // /tmp; @sparticuz/chromium pulls a slim build (~50 MB). Externalize so
-    // it isn't bundled by Vite. The PDF endpoint also needs a higher
-    // memory ceiling and a longer max duration than the default.
-    maxDuration: 60,
-  }),
+  adapter,
 });
