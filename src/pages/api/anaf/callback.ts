@@ -4,11 +4,11 @@
 // saves the per-company connection (encrypted), then redirects back
 // to the page that initiated the flow.
 import type { APIRoute } from 'astro';
-import { db, anafOauthStates } from '../../../db';
 import { eq } from 'drizzle-orm';
+import { anafOauthStates, companies, db } from '../../../db';
+import { isConfigured } from '../../../lib/anaf/config';
 import { exchangeCodeForTokens, extractCifFromJwt, isValidScope } from '../../../lib/anaf/oauth';
 import { saveConnection } from '../../../lib/anaf/tokens';
-import { isConfigured } from '../../../lib/anaf/config';
 
 function errorPage(msg: string, redirectTo = '/app/setari/integrari-anaf'): Response {
   const url = `${redirectTo}?anaf_error=${encodeURIComponent(msg)}`;
@@ -38,7 +38,16 @@ export const GET: APIRoute = async ({ url }) => {
     return errorPage(e instanceof Error ? e.message : 'Eroare schimb cod→token');
   }
 
-  const cif = extractCifFromJwt(tokens.accessToken);
+  // The ANAF access token does not reliably carry the CIF (the cert can
+  // represent several companies), so prefer the company's own registered
+  // fiscal code and only fall back to the JWT claim.
+  const [company] = await db
+    .select({ cui: companies.cui })
+    .from(companies)
+    .where(eq(companies.id, stateRow.companyId))
+    .limit(1);
+  const companyCif = (company?.cui || '').replace(/^RO/i, '').replace(/\D/g, '') || null;
+  const cif = companyCif || extractCifFromJwt(tokens.accessToken);
 
   try {
     await saveConnection({
