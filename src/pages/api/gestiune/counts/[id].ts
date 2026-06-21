@@ -7,6 +7,7 @@ import { db } from '../../../../db';
 import { stockCounts, stockCountLines, invoiceProducts, stockLevels } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { applyStockIn, applyStockOut } from '../../../../lib/stock';
+import { requireRole } from '../../../../lib/require-role';
 
 async function loadCount(cid: string, id: string) {
   const [count] = await db.select().from(stockCounts)
@@ -48,6 +49,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
 // to persist the user's entered counted quantities before posting adjustments.
 export const POST: APIRoute = async ({ request, params, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'stock.manage');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   const id = params.id;
   if (!cid || !id) return new Response(JSON.stringify({ error: 'Date lipsă' }), { status: 400 });
@@ -98,7 +101,7 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
       let avgCost = 0;
       try {
         const [lvl] = await db.select({ avg: stockLevels.avgCostCents }).from(stockLevels)
-          .where(and(eq(stockLevels.warehouseId, count.warehouseId), eq(stockLevels.productId, line.productId))).limit(1);
+          .where(and(eq(stockLevels.companyId, cid), eq(stockLevels.warehouseId, count.warehouseId), eq(stockLevels.productId, line.productId))).limit(1);
         avgCost = Number(lvl?.avg) || 0;
       } catch { /* keep 0 */ }
 

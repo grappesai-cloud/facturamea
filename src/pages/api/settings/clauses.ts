@@ -3,15 +3,13 @@ import { db } from '../../../db';
 import { transportClauses } from '../../../db/schema';
 import { eq, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { requireRole } from '../../../lib/require-role';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user?.companyId) {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
-
-  if (locals.user.userType !== 'intermediar' && locals.user.userType !== 'client_direct') {
-    return new Response(JSON.stringify({ error: 'Nu ai permisiuni' }), { status: 403 });
-  }
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
 
   try {
     const body = await request.json();
@@ -41,6 +39,7 @@ export const DELETE: APIRoute = async ({ url, locals }) => {
   if (!locals.user?.companyId) {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
 
   const id = url.searchParams.get('id');
   if (!id) {

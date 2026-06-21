@@ -11,6 +11,7 @@ import { db } from '../../../../../db';
 import { transportInvoices } from '../../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getStripe, isStripeConfigured } from '../../../../../lib/stripe';
+import { captureError } from '../../../../../lib/observability';
 
 function resolveOrigin(requestUrl: string): string {
   const configured = process.env.PUBLIC_BASE_URL || process.env.PUBLIC_APP_URL;
@@ -76,7 +77,14 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
       cancel_url: `${origin}/app/facturare/${invoiceId}?plata=anulata`,
     });
   } catch (err) {
-    return json({ error: `Nu am putut crea linkul de plată: ${err instanceof Error ? err.message : 'eroare Stripe'}` }, 502);
+    await captureError(err, {
+      userId: locals.user.id,
+      companyId: cid,
+      route: '/api/invoicing/invoices/[id]/payment-link',
+      method: 'POST',
+      extra: { invoiceId },
+    });
+    return json({ error: 'Nu am putut crea linkul de plată. Încearcă din nou mai târziu.' }, 502);
   }
 
   if (!session.url) {

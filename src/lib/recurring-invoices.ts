@@ -91,10 +91,6 @@ async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: 
   });
   const totalCents = subtotalCents + vatCents;
 
-  // Reserve series number.
-  const series = r.seriesId ? { id: r.seriesId } : await ensureDefaultSeries(r.companyId, 'factura');
-  const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, INVOICE_NUMBER_FORMAT);
-
   // BNR snapshot if non-RON.
   const currency = (r.currency || 'RON').toUpperCase().slice(0, 5);
   const bnr = await captureBnrSnapshot(today, currency).catch(() => null);
@@ -106,42 +102,53 @@ async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: 
   const issuedAt = new Date();
   const dueAt = r.paymentTermDays ? new Date(issuedAt.getTime() + r.paymentTermDays * 24 * 60 * 60 * 1000) : null;
 
-  await db.insert(transportInvoices).values({
-    id: invoiceId,
-    companyId: r.companyId,
-    issuedByUserId: r.createdByUserId,
-    seriesId: series.id,
-    sequenceNumber, fullNumber, kind: 'factura',
-    clientCompanyId: r.clientCompanyId,
-    clientExternalId: r.clientExternalId,
-    clientNameSnap: clientName,
-    clientTaxIdSnap: clientTaxId,
-    clientAddressSnap: clientAddress,
-    currency, vatRegime: r.vatRegime || 'standard',
-    subtotalCents, vatCents, totalCents, paidCents: 0,
-    status: 'issued', issuedAt, dueAt,
-    bnrRate: bnr?.rate ?? null,
-    bnrRateDate: bnr?.rateDate ?? null,
-    vatAtCollection: issuer?.tva ?? false,
-    notes: `Generată automat din abonamentul "${r.name}"`,
-  });
-
-  if (computed.length) {
-    await db.insert(transportInvoiceLines).values(computed.map((l) => ({ ...l, invoiceId })));
-  }
-
   const nextRun = advanceDate(r.nextRunAt, r.frequency as RecurringFrequency);
   const totalRunsNew = (r.totalRuns || 0) + 1;
   const shouldDeactivate =
     (r.maxRuns != null && totalRunsNew >= r.maxRuns) ||
     (r.endAt != null && nextRun > r.endAt);
 
-  await db.update(invoiceRecurring).set({
-    lastRunAt: today, nextRunAt: nextRun,
-    totalRuns: totalRunsNew,
-    isActive: shouldDeactivate ? false : r.isActive,
-    updatedAt: new Date(),
-  }).where(eq(invoiceRecurring.id, r.id));
+  // Reserve the number, insert the invoice + lines, and advance the schedule
+  // (nextRunAt) atomically. If anything fails the consumed number rolls back
+  // AND the schedule is not advanced — so a re-run retries this period instead
+  // of skipping it, and a successful run never re-emits the same period.
+  const reserved = await db.transaction(async (tx) => {
+    const series = r.seriesId ? { id: r.seriesId } : await ensureDefaultSeries(r.companyId, 'factura', null, tx);
+    const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, INVOICE_NUMBER_FORMAT, tx);
 
-  return { invoiceId, fullNumber };
+    await tx.insert(transportInvoices).values({
+      id: invoiceId,
+      companyId: r.companyId,
+      issuedByUserId: r.createdByUserId,
+      seriesId: series.id,
+      sequenceNumber, fullNumber, kind: 'factura',
+      clientCompanyId: r.clientCompanyId,
+      clientExternalId: r.clientExternalId,
+      clientNameSnap: clientName,
+      clientTaxIdSnap: clientTaxId,
+      clientAddressSnap: clientAddress,
+      currency, vatRegime: r.vatRegime || 'standard',
+      subtotalCents, vatCents, totalCents, paidCents: 0,
+      status: 'issued', issuedAt, dueAt,
+      bnrRate: bnr?.rate ?? null,
+      bnrRateDate: bnr?.rateDate ?? null,
+      vatAtCollection: issuer?.tva ?? false,
+      notes: `Generată automat din abonamentul "${r.name}"`,
+    });
+
+    if (computed.length) {
+      await tx.insert(transportInvoiceLines).values(computed.map((l) => ({ ...l, invoiceId })));
+    }
+
+    await tx.update(invoiceRecurring).set({
+      lastRunAt: today, nextRunAt: nextRun,
+      totalRuns: totalRunsNew,
+      isActive: shouldDeactivate ? false : r.isActive,
+      updatedAt: new Date(),
+    }).where(eq(invoiceRecurring.id, r.id));
+
+    return { fullNumber };
+  });
+
+  return { invoiceId, fullNumber: reserved.fullNumber };
 }

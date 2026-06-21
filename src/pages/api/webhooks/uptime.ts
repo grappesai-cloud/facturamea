@@ -1,12 +1,24 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 import { db } from '../../../db';
 import { siteBanner, auditLog } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+// Constant-time string compare; false when either side is empty.
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
+
 // UptimeRobot webhook receiver. Configure in UptimeRobot dashboard:
 //   Alert Contacts → Add → Webhook
-//   POST URL: https://www.facturamea.com/api/webhooks/uptime?secret=<UPTIME_WEBHOOK_SECRET>
+//   POST URL: https://www.facturamea.com/api/webhooks/uptime
+//   Header: X-Webhook-Secret: <UPTIME_WEBHOOK_SECRET>  (preferred)
+//   (legacy ?secret=<UPTIME_WEBHOOK_SECRET> still accepted during rollout)
 //   Send as: JSON
 //   Body template:
 //     {
@@ -22,9 +34,12 @@ import { nanoid } from 'nanoid';
 // On Down: creates a critical site banner. On Up: clears it.
 // Always logs to audit_log for forensic.
 export const POST: APIRoute = async ({ url, request }) => {
-  const secret = url.searchParams.get('secret') || '';
-  const expected = process.env.UPTIME_WEBHOOK_SECRET;
-  if (!expected || secret !== expected) {
+  // Auth: shared secret in the `X-Webhook-Secret` header (preferred), with the
+  // legacy `?secret=` query accepted for backward-compat. Constant-time compare.
+  // Fails closed when the env var is unset.
+  const provided = request.headers.get('x-webhook-secret') || url.searchParams.get('secret') || '';
+  const expected = process.env.UPTIME_WEBHOOK_SECRET || '';
+  if (!expected || !safeEqual(provided, expected)) {
     return new Response('Forbidden', { status: 403 });
   }
 

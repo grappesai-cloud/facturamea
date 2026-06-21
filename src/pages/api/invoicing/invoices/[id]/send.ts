@@ -3,6 +3,10 @@ import { db } from '../../../../../db';
 import { transportInvoices, invoiceClients, users } from '../../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { sendEmail, notify } from '../../../../../lib/notifications';
+import { requireRole } from '../../../../../lib/require-role';
+
+// Escape user-controlled values before interpolating into the email HTML.
+const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // Mark the invoice as `sent` and email a link to the recipient. We don't
 // attach the PDF (PDF generation is rendered as a print view); we send a
@@ -10,6 +14,8 @@ import { sendEmail, notify } from '../../../../../lib/notifications';
 // receive the doc via in-app messaging in a future iteration.
 export const POST: APIRoute = async ({ params, locals, request }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'invoice.create');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   const invoiceId = params.id as string;
   if (!cid || !invoiceId) return new Response(JSON.stringify({ error: 'Date lipsă' }), { status: 400 });
@@ -32,7 +38,7 @@ export const POST: APIRoute = async ({ params, locals, request }) => {
     const baseUrl = process.env.PUBLIC_BASE_URL || 'https://facturamea.com';
     const pdfLink = `${baseUrl}/api/invoicing/invoices/${inv.id}/pdf`;
     const text = `Documentul ${inv.fullNumber} în valoare de ${(inv.totalCents / 100).toFixed(2)} ${inv.currency}. Descarcă PDF: ${pdfLink}`;
-    const html = `<p>Bună ziua,</p><p>Vă transmitem documentul <strong>${inv.fullNumber}</strong> în valoare de <strong>${(inv.totalCents / 100).toFixed(2)} ${inv.currency}</strong>.</p><p><a href="${pdfLink}">Descarcă PDF</a> sau <a href="${baseUrl}/app/facturare/${inv.id}">vezi în platformă</a></p><p>Mulțumim,<br/>${locals.user.name || 'facturamea'}</p>`;
+    const html = `<p>Bună ziua,</p><p>Vă transmitem documentul <strong>${esc(inv.fullNumber)}</strong> în valoare de <strong>${(inv.totalCents / 100).toFixed(2)} ${esc(inv.currency)}</strong>.</p><p><a href="${pdfLink}">Descarcă PDF</a> sau <a href="${baseUrl}/app/facturare/${inv.id}">vezi în platformă</a></p><p>Mulțumim,<br/>${esc(locals.user.name || 'facturamea')}</p>`;
     await sendEmail(recipient, subject, text, html);
   } catch (e) {
     return new Response(JSON.stringify({ error: 'Eroare trimitere email' }), { status: 502 });

@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { creditBalances, creditTransactions, servicesCatalog } from '../db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, gte, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 // Drizzle (node-postgres) exposes .transaction(); these helpers wrap
@@ -13,10 +13,12 @@ export async function getBalance(companyId: string): Promise<number> {
 }
 
 export async function ensureBalance(companyId: string): Promise<void> {
-  const [existing] = await db.select().from(creditBalances).where(eq(creditBalances.companyId, companyId));
-  if (!existing) {
-    await db.insert(creditBalances).values({ companyId, balance: 0, totalPurchased: 0, totalConsumed: 0 });
-  }
+  // Upsert: a single INSERT … ON CONFLICT DO NOTHING removes the read-then-insert
+  // window where two concurrent callers both see "no row" and both insert.
+  await db
+    .insert(creditBalances)
+    .values({ companyId, balance: 0, totalPurchased: 0, totalConsumed: 0 })
+    .onConflictDoNothing({ target: creditBalances.companyId });
 }
 
 export async function addCredits(params: {
@@ -30,17 +32,18 @@ export async function addCredits(params: {
   await ensureBalance(params.companyId);
   const txId = nanoid();
   const newBalance = await db.transaction(async (tx) => {
-    // Lock the row for update so concurrent purchases serialise.
-    const [row] = await tx.execute(
-      sql`SELECT balance FROM credit_balances WHERE company_id = ${params.companyId} FOR UPDATE`,
-    ) as any;
-    const current = Number((row?.balance ?? row?.rows?.[0]?.balance ?? 0));
-    const next = current + params.amountCrb;
-    await tx.update(creditBalances).set({
-      balance: next,
-      totalPurchased: sql`${creditBalances.totalPurchased} + ${params.type === 'purchase' ? params.amountCrb : 0}`,
-      updatedAt: new Date(),
-    }).where(eq(creditBalances.companyId, params.companyId));
+    // Atomic increment + RETURNING — no read-then-set race. The DB computes the
+    // new balance in one statement; we read the authoritative result back.
+    const [updated] = await tx
+      .update(creditBalances)
+      .set({
+        balance: sql`${creditBalances.balance} + ${params.amountCrb}`,
+        totalPurchased: sql`${creditBalances.totalPurchased} + ${params.type === 'purchase' ? params.amountCrb : 0}`,
+        updatedAt: new Date(),
+      })
+      .where(eq(creditBalances.companyId, params.companyId))
+      .returning({ balance: creditBalances.balance });
+    const next = Number(updated?.balance ?? 0);
     await tx.insert(creditTransactions).values({
       id: txId,
       companyId: params.companyId,
@@ -74,22 +77,24 @@ export async function consumeCredits(params: {
   const txId = nanoid();
   try {
     const result = await db.transaction(async (tx) => {
-      // SELECT … FOR UPDATE prevents two concurrent consume calls from
-      // both reading the same balance and double-spending it.
-      const lockRes: any = await tx.execute(
-        sql`SELECT balance FROM credit_balances WHERE company_id = ${params.companyId} FOR UPDATE`,
-      );
-      const rows = lockRes.rows ?? lockRes;
-      const currentBalance = Number(rows?.[0]?.balance ?? 0);
-      if (currentBalance < cost) {
-        return { ok: false as const, balance: currentBalance };
+      // Single guarded atomic UPDATE: subtract only if the balance can cover it.
+      // The `balance >= cost` predicate makes the check-and-debit one indivisible
+      // statement, closing the double-spend window without a SELECT … FOR UPDATE.
+      const debited = await tx
+        .update(creditBalances)
+        .set({
+          balance: sql`${creditBalances.balance} - ${cost}`,
+          totalConsumed: sql`${creditBalances.totalConsumed} + ${cost}`,
+          updatedAt: new Date(),
+        })
+        .where(and(eq(creditBalances.companyId, params.companyId), gte(creditBalances.balance, cost)))
+        .returning({ balance: creditBalances.balance });
+      if (debited.length === 0) {
+        // 0 rows → insufficient funds (or no balance row). Read current for the message.
+        const [cur] = await tx.select({ balance: creditBalances.balance }).from(creditBalances).where(eq(creditBalances.companyId, params.companyId));
+        return { ok: false as const, balance: Number(cur?.balance ?? 0) };
       }
-      const newBalance = currentBalance - cost;
-      await tx.update(creditBalances).set({
-        balance: newBalance,
-        totalConsumed: sql`${creditBalances.totalConsumed} + ${cost}`,
-        updatedAt: new Date(),
-      }).where(eq(creditBalances.companyId, params.companyId));
+      const newBalance = Number(debited[0].balance ?? 0);
       await tx.insert(creditTransactions).values({
         id: txId,
         companyId: params.companyId,

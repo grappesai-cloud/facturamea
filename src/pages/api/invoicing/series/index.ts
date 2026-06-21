@@ -5,6 +5,7 @@ import { db } from '../../../../db';
 import { invoiceSeries, transportInvoices } from '../../../../db/schema';
 import { and, eq, sql, isNull } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { requireRole } from '../../../../lib/require-role';
 
 const VALID_KINDS = ['factura', 'proforma', 'storno', 'chitanta', 'comanda'];
 
@@ -18,12 +19,17 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'settings.manage');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const body = await request.json().catch(() => ({}));
   if (!VALID_KINDS.includes(body.kind)) return new Response(JSON.stringify({ error: 'kind invalid' }), { status: 400 });
   if (!body.prefix?.trim()) return new Response(JSON.stringify({ error: 'prefix obligatoriu' }), { status: 400 });
   if (!body.name?.trim()) return new Response(JSON.stringify({ error: 'nume obligatoriu' }), { status: 400 });
+  if (body.nextNumber !== undefined && (!Number.isFinite(Number(body.nextNumber)) || Number(body.nextNumber) < 1)) {
+    return new Response(JSON.stringify({ error: 'Numărul de start trebuie să fie cel puțin 1' }), { status: 400 });
+  }
 
   const id = nanoid();
   const isDefault = !!body.isDefault;
@@ -55,6 +61,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 export const PATCH: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'settings.manage');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const body = await request.json().catch(() => ({}));
@@ -67,7 +75,20 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
   if (typeof body.name === 'string' && body.name.trim()) update.name = body.name.trim();
   if (typeof body.prefix === 'string' && body.prefix.trim()) update.prefix = body.prefix.trim().toUpperCase().slice(0, 16);
   if (typeof body.scope === 'string' || body.scope === null) update.scope = body.scope || null;
-  if (typeof body.nextNumber === 'number') update.nextNumber = Math.round(body.nextNumber);
+  if (typeof body.nextNumber === 'number') {
+    const requested = Math.round(body.nextNumber);
+    if (requested < 1) return new Response(JSON.stringify({ error: 'Numărul de start trebuie să fie cel puțin 1' }), { status: 400 });
+    // Reject any nextNumber that would reuse an already-issued legal number.
+    const [maxRow] = await db
+      .select({ m: sql<number>`COALESCE(MAX(${transportInvoices.sequenceNumber}), 0)` })
+      .from(transportInvoices)
+      .where(eq(transportInvoices.seriesId, body.id));
+    const issuedMax = Number(maxRow?.m ?? 0);
+    if (requested <= issuedMax) {
+      return new Response(JSON.stringify({ error: `Numărul ${requested} ar reutiliza un număr deja emis (maxim emis: ${issuedMax}). Folosește cel puțin ${issuedMax + 1}.` }), { status: 400 });
+    }
+    update.nextNumber = requested;
+  }
   if (typeof body.isDefault === 'boolean') {
     if (body.isDefault) {
       // Demote the current default for this kind + scope only.
@@ -88,6 +109,8 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
 
 export const DELETE: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'settings.manage');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const url = new URL(request.url);

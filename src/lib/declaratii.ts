@@ -107,7 +107,13 @@ export async function collectDeclaratieData(companyId: string, period: Declarati
   const fromDate = new Date(period.from + 'T00:00:00Z');
   const toDate = new Date(period.to + 'T23:59:59Z');
 
-  // ── Livrări: issued sales invoices (kind factura + storno), excluding voided.
+  // ── Livrări: issued sales invoices (kind factura + storno).
+  // Excludes only 'draft' (not yet a fiscal document) and 'voided' (a draft
+  // that was discarded before issue). A stornoed original keeps status
+  // 'reversed' and MUST stay included: the original (+) and its storno (−)
+  // net to zero within the period, so the declaration neither over- nor
+  // under-reports. Were the original excluded while the storno is counted,
+  // the negative line would push the period below the true figure.
   const livrariMap = new Map<string, PartnerLine>();
   const livrariTotals = emptyTotals();
   try {

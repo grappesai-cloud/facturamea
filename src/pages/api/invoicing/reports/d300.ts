@@ -5,6 +5,7 @@
 
 import type { APIRoute } from 'astro';
 import { resolvePeriod, collectDeclaratieData, generateD300Xml, generateD300Csv } from '../../../../lib/declaratii';
+import { captureError } from '../../../../lib/observability';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
@@ -31,7 +32,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
       ext = 'xml';
     }
   } catch (err) {
-    return new Response(JSON.stringify({ error: `Eroare la generarea D300: ${err instanceof Error ? err.message : 'necunoscută'}` }), { status: 500 });
+    await captureError(err, {
+      userId: locals.user.id,
+      companyId: locals.user.companyId,
+      route: '/api/invoicing/reports/d300',
+      method: 'GET',
+      extra: { period },
+    });
+    return new Response(JSON.stringify({ error: 'Eroare la generarea D300. Încearcă din nou.' }), { status: 500 });
   }
 
   const filename = `D300_${period.year}_${String(period.month).padStart(2, '0')}.${ext}`;

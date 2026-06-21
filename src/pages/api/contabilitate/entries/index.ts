@@ -3,6 +3,7 @@ import { db } from '../../../../db';
 import { journalEntries, journalLines } from '../../../../db/schema';
 import { and, eq, gte, lte, desc } from 'drizzle-orm';
 import { postEntry } from '../../../../lib/accounting';
+import { requireRole } from '../../../../lib/require-role';
 
 // GET — list journal entries (note contabile) for the current company, with
 // their lines. Optional ?from=&to= period filter.
@@ -48,6 +49,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
 // POST — add a manual nota contabilă. Body: { entryDate, description, lines: [{accountCode, debitCents, creditCents, note?}] }.
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'settings.manage');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 

@@ -5,6 +5,7 @@
 
 import type { APIRoute } from 'astro';
 import { resolvePeriod, collectDeclaratieData, generateD394Xml } from '../../../../lib/declaratii';
+import { captureError } from '../../../../lib/observability';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
@@ -19,7 +20,14 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const data = await collectDeclaratieData(locals.user.companyId, period);
     xml = generateD394Xml(data);
   } catch (err) {
-    return new Response(JSON.stringify({ error: `Eroare la generarea D394: ${err instanceof Error ? err.message : 'necunoscută'}` }), { status: 500 });
+    await captureError(err, {
+      userId: locals.user.id,
+      companyId: locals.user.companyId,
+      route: '/api/invoicing/reports/d394',
+      method: 'GET',
+      extra: { period },
+    });
+    return new Response(JSON.stringify({ error: 'Eroare la generarea D394. Încearcă din nou.' }), { status: 500 });
   }
 
   const filename = `D394_${period.year}_${String(period.month).padStart(2, '0')}.xml`;

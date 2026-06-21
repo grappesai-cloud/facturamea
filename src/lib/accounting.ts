@@ -269,43 +269,62 @@ export async function postEntry(companyId: string, input: PostEntryInput): Promi
       }
     }
 
-    // Sequential entry number per company.
-    const [cnt] = await db
-      .select({ n: sql<number>`COUNT(*)` })
-      .from(journalEntries)
-      .where(eq(journalEntries.companyId, companyId));
-    const seq = Number(cnt?.n ?? 0) + 1;
-    const entryNumber = `NC-${String(seq).padStart(5, '0')}`;
-
+    // Sequential entry number per company. COUNT(*)+1 races under concurrency
+    // (two posters read the same count and mint the same NC-xxxxx). We instead
+    // derive the next number from the current MAX suffix and retry on a unique
+    // (company_id, entry_number) violation. This requires the unique constraint
+    // `journal_entries_company_entry_number_uq` on (company_id, entry_number)
+    // — the schema agent adds it; the retry loop is correct with or without it
+    // (without it, the loop still narrows the window dramatically).
     const entryId = nanoid();
-    await db.insert(journalEntries).values({
-      id: entryId,
-      companyId,
-      entryNumber,
-      entryDate: input.entryDate || todayISO(),
-      description: input.description?.toString().trim() || null,
-      source: input.source || 'manual',
-      refType: input.refType || null,
-      refId: input.refId || null,
-      totalDebitCents: totalDebit,
-      totalCreditCents: totalCredit,
-      posted: true,
-      createdByUserId: input.createdByUserId || null,
-    });
+    const MAX_ATTEMPTS = 8;
+    let lastErr: any = null;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      // Highest existing NC suffix for this company.
+      const [maxRow] = await db
+        .select({ m: sql<number>`COALESCE(MAX(CAST(NULLIF(REGEXP_REPLACE(${journalEntries.entryNumber}, '\\D', '', 'g'), '') AS INTEGER)), 0)` })
+        .from(journalEntries)
+        .where(eq(journalEntries.companyId, companyId));
+      const seq = Number(maxRow?.m ?? 0) + 1 + attempt;
+      const entryNumber = `NC-${String(seq).padStart(5, '0')}`;
 
-    await db.insert(journalLines).values(
-      lines.map((l) => ({
-        id: nanoid(),
-        entryId,
-        companyId,
-        accountCode: l.accountCode,
-        debitCents: l.debitCents,
-        creditCents: l.creditCents,
-        note: l.note,
-      })),
-    );
-
-    return { ok: true, entryId, entryNumber };
+      try {
+        await db.transaction(async (tx) => {
+          await tx.insert(journalEntries).values({
+            id: entryId,
+            companyId,
+            entryNumber,
+            entryDate: input.entryDate || todayISO(),
+            description: input.description?.toString().trim() || null,
+            source: input.source || 'manual',
+            refType: input.refType || null,
+            refId: input.refId || null,
+            totalDebitCents: totalDebit,
+            totalCreditCents: totalCredit,
+            posted: true,
+            createdByUserId: input.createdByUserId || null,
+          });
+          await tx.insert(journalLines).values(
+            lines.map((l) => ({
+              id: nanoid(),
+              entryId,
+              companyId,
+              accountCode: l.accountCode,
+              debitCents: l.debitCents,
+              creditCents: l.creditCents,
+              note: l.note,
+            })),
+          );
+        });
+        return { ok: true, entryId, entryNumber };
+      } catch (err: any) {
+        lastErr = err;
+        // 23505 = unique_violation → number was taken concurrently; retry with next.
+        if (err?.code === '23505') continue;
+        throw err;
+      }
+    }
+    return { ok: false, error: lastErr?.message || 'Nu am putut aloca un număr de notă contabilă (conflict de numerotare).' };
   } catch (e: any) {
     return { ok: false, error: e?.message || 'Eroare la salvarea notei contabile.' };
   }
@@ -339,7 +358,16 @@ export async function postInvoice(invoiceId: string, createdByUserId?: string | 
       { accountCode: revenueAccount, debitCents: 0, creditCents: net, note: 'Venit net' },
     ];
     if (vat > 0) {
-      lines.push({ accountCode: '4427', debitCents: 0, creditCents: vat, note: 'TVA colectată' });
+      // TVA la încasare: at issue the VAT is not yet chargeable, so it credits
+      // 4428 (TVA neexigibilă) instead of 4427 (TVA colectată). It is reclassed
+      // to 4427 proportionally as the invoice gets paid (see postPayment).
+      const cashVat = !!inv.vatAtCollection || inv.vatRegime === 'tva_la_incasare';
+      lines.push({
+        accountCode: cashVat ? '4428' : '4427',
+        debitCents: 0,
+        creditCents: vat,
+        note: cashVat ? 'TVA neexigibilă (la încasare)' : 'TVA colectată',
+      });
     }
 
     return await postEntry(inv.companyId, {
@@ -423,6 +451,26 @@ export async function postPayment(paymentId: string, createdByUserId?: string | 
       { accountCode: cashAccount, debitCents: amount, creditCents: 0, note: cashAccount === '5311' ? 'Casa' : 'Bancă' },
       { accountCode: '4111', debitCents: 0, creditCents: amount, note: 'Stingere creanță client' },
     ];
+
+    // TVA la încasare: as the invoice is collected, the VAT portion of THIS
+    // payment becomes chargeable → reclass it from 4428 (neexigibilă) to 4427
+    // (colectată). This is an extra balanced pair (debit 4428 / credit 4427),
+    // independent of the cash/411 stinging above, so the entry stays balanced.
+    const cashVat = !!inv.vatAtCollection || inv.vatRegime === 'tva_la_incasare';
+    const total = centsOf(inv.totalCents);
+    const vat = centsOf(inv.vatCents);
+    if (cashVat && vat > 0 && total > 0) {
+      // Proportional VAT in this payment, capped so cumulative reclass never
+      // exceeds the invoice VAT (handles rounding on the final payment).
+      const paidBefore = centsOf((inv as any).paidCents) - amount;
+      const reclassedBefore = Math.round((Math.max(0, paidBefore) * vat) / total);
+      const reclassedToDate = Math.min(vat, Math.round((Math.max(0, paidBefore) + amount) * vat / total));
+      const vatPortion = Math.max(0, reclassedToDate - reclassedBefore);
+      if (vatPortion > 0) {
+        lines.push({ accountCode: '4428', debitCents: vatPortion, creditCents: 0, note: 'TVA devenită exigibilă' });
+        lines.push({ accountCode: '4427', debitCents: 0, creditCents: vatPortion, note: 'TVA colectată (la încasare)' });
+      }
+    }
 
     return await postEntry(inv.companyId, {
       entryDate: pay.receivedAt ? new Date(pay.receivedAt).toISOString().slice(0, 10) : todayISO(),

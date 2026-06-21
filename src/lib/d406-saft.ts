@@ -14,7 +14,7 @@
 
 import { db } from '../db';
 import { transportInvoices, transportInvoiceLines, transportInvoicePayments, companies, billingAddresses, invoiceClients } from '../db/schema';
-import { and, eq, gte, lte, ne, asc } from 'drizzle-orm';
+import { and, eq, gte, lte, ne, asc, inArray } from 'drizzle-orm';
 
 interface D406Args {
   companyId: string;
@@ -38,10 +38,13 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
   if (!issuer) throw new Error('Issuer company not found');
   const [billing] = await db.select().from(billingAddresses).where(eq(billingAddresses.companyId, companyId));
 
-  // Pull invoices in window, excluding voided.
+  // Pull invoices in window. Include both facturi and storno credit notes so a
+  // cancellation appears in SAF-T (the storno carries negative amounts and nets
+  // the original to zero). Exclude only 'voided' (discarded drafts); a stornoed
+  // original keeps status 'reversed' and must remain in the file.
   const invoices = await db.select().from(transportInvoices).where(and(
     eq(transportInvoices.companyId, companyId),
-    eq(transportInvoices.kind, 'factura'),
+    inArray(transportInvoices.kind, ['factura', 'storno']),
     ne(transportInvoices.status, 'voided'),
     gte(transportInvoices.issuedAt, new Date(from + 'T00:00:00Z')),
     lte(transportInvoices.issuedAt, new Date(to + 'T23:59:59Z')),

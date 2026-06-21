@@ -1,9 +1,16 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import { db } from '../db';
 import { users, sessions, companies } from '../db/schema';
 import { eq, or } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { generatePlatformId } from './platform-id';
+
+// Session tokens are stored hashed at rest: the cookie/Bearer carries the raw
+// token, but sessions.id holds only its SHA-256 so a DB leak can't be replayed.
+function hashSession(raw: string): string {
+  return crypto.createHash('sha256').update(raw).digest('hex');
+}
 
 const SESSION_COOKIE = 'th_session';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -55,30 +62,41 @@ export async function revokeAllSessionsForUser(userId: string): Promise<void> {
   await db.delete(sessions).where(eq(sessions.userId, userId));
 }
 
+// Delete a single session given the RAW token (from cookie/Bearer). Sessions
+// are stored hashed, so the raw token must be hashed before the lookup.
+export async function deleteSessionByRawToken(rawToken: string): Promise<void> {
+  if (!rawToken) return;
+  await db.delete(sessions).where(eq(sessions.id, hashSession(rawToken)));
+}
+
 export async function createSession(userId: string): Promise<string> {
-  const sessionId = nanoid(32);
+  // The raw token goes to the cookie/Bearer; only its hash is persisted.
+  const rawToken = nanoid(32);
   const expiresAt = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE;
 
   await db.insert(sessions).values({
-    id: sessionId,
+    id: hashSession(rawToken),
     userId,
     expiresAt,
   });
 
-  return sessionId;
+  return rawToken;
 }
 
-// Resolve a session by its raw id (used by both cookie and Bearer-token auth).
+// Resolve a session by its raw token (used by both cookie and Bearer-token auth).
 export async function getSessionById(sessionId: string | null | undefined) {
   if (!sessionId) return null;
-  const [session] = await db.select().from(sessions).where(eq(sessions.id, sessionId));
+  const hashed = hashSession(sessionId);
+  const [session] = await db.select().from(sessions).where(eq(sessions.id, hashed));
   if (!session) return null;
   if (session.expiresAt < Math.floor(Date.now() / 1000)) {
-    await db.delete(sessions).where(eq(sessions.id, sessionId));
+    await db.delete(sessions).where(eq(sessions.id, hashed));
     return null;
   }
   const [user] = await db.select().from(users).where(eq(users.id, session.userId));
   if (!user) return null;
+  // Deactivated / soft-deleted users can never resolve a session.
+  if (user.isActive === false || user.deletedAt) return null;
   return { session, user };
 }
 
@@ -221,15 +239,30 @@ export async function findOrCreateOAuthUser(data: {
   const [existing] = await db.select().from(users).where(eq(users.email, email));
 
   if (existing) {
-    // Mark verified (provider vouches for the address) + backfill avatar/name.
+    // Deactivated / soft-deleted accounts cannot be taken over via OAuth.
+    if (existing.isActive === false || existing.deletedAt) {
+      throw new Error('account_unavailable');
+    }
+    // Account-linking safety: only auto-login into an EXISTING account when it
+    // has already verified its email. Otherwise an attacker who controls an
+    // OAuth identity for an unverified, password-registered address could
+    // silently seize the account. Require it to be verified first.
+    if (!existing.emailVerified) {
+      throw new Error('account_unverified');
+    }
+    // Backfill avatar/name (email already verified, provider re-vouches).
     const patch: Record<string, unknown> = {};
-    if (!existing.emailVerified) patch.emailVerified = true;
     if (data.avatarUrl && !existing.avatarUrl) patch.avatarUrl = data.avatarUrl;
     if (Object.keys(patch).length) {
       try { await db.update(users).set(patch as any).where(eq(users.id, existing.id)); } catch {}
     }
-    const sessionId = await createSession(existing.id);
-    return { userId: existing.id, sessionId, companyId: existing.companyId, created: false };
+    // Surface totpEnabled so the caller can gate session creation behind 2FA.
+    return {
+      userId: existing.id,
+      companyId: existing.companyId,
+      created: false,
+      totpEnabled: !!(existing as any).totpEnabled,
+    };
   }
 
   // Create a company + owner user.
@@ -262,13 +295,17 @@ export async function findOrCreateOAuthUser(data: {
     referralCode,
   } as any);
 
-  const sessionId = await createSession(userId);
-  return { userId, platformId, sessionId, companyId, created: true };
+  return { userId, platformId, companyId, created: true, totpEnabled: false };
 }
 
 export async function loginUser(email: string, password: string) {
   const [user] = await db.select().from(users).where(eq(users.email, email));
   if (!user) {
+    throw new Error('Email sau parolă incorectă');
+  }
+  // Deactivated / soft-deleted accounts cannot log in. Use the same generic
+  // message so we don't leak account state.
+  if (user.isActive === false || user.deletedAt) {
     throw new Error('Email sau parolă incorectă');
   }
 

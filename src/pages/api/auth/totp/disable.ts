@@ -3,7 +3,7 @@ import { db } from '../../../../db';
 import { users } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyTotp } from '../../../../lib/totp';
-import { verifyPassword } from '../../../../lib/auth';
+import { verifyPassword, revokeAllSessionsForUser } from '../../../../lib/auth';
 import { logAction } from '../../../../lib/audit';
 
 // Disabling 2FA requires either the current TOTP code OR the user's password.
@@ -44,6 +44,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       totpEnrolledAt: null,
     })
     .where(eq(users.id, locals.user.id));
+
+  // Disabling 2FA is an account-security change: invalidate all existing
+  // sessions so the user must re-authenticate.
+  await revokeAllSessionsForUser(locals.user.id);
 
   await logAction({
     userId: locals.user.id, companyId: locals.user.companyId,

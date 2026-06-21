@@ -7,7 +7,7 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../db';
 import { pushSubscriptions } from '../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -28,31 +28,50 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const { endpoint, keys } = parsed.data;
   const ua = request.headers.get('user-agent') || null;
 
+  // endpoint is the primary key. An endpoint belongs to exactly one user; only
+  // ever scope writes to the current user. If THIS user already has this
+  // endpoint, refresh its keys; otherwise insert fresh. We never blind-update a
+  // row we didn't confirm belongs to the caller, so we can't re-own someone
+  // else's endpoint without an explicit (PK-conflicting) insert.
   const [existing] = await db
     .select({ endpoint: pushSubscriptions.endpoint })
     .from(pushSubscriptions)
-    .where(eq(pushSubscriptions.endpoint, endpoint));
+    .where(and(eq(pushSubscriptions.endpoint, endpoint), eq(pushSubscriptions.userId, locals.user.id)));
 
   if (existing) {
     await db
       .update(pushSubscriptions)
       .set({
-        userId: locals.user.id,
         p256dh: keys.p256dh,
         authKey: keys.auth,
         userAgent: ua,
         consecutiveFailures: 0,
         lastError: null,
       })
-      .where(eq(pushSubscriptions.endpoint, endpoint));
+      .where(and(eq(pushSubscriptions.endpoint, endpoint), eq(pushSubscriptions.userId, locals.user.id)));
   } else {
-    await db.insert(pushSubscriptions).values({
-      endpoint,
-      userId: locals.user.id,
-      p256dh: keys.p256dh,
-      authKey: keys.auth,
-      userAgent: ua,
-    });
+    // New endpoint for this user, or a re-subscribe of the same browser under a
+    // different account (shared device): take ownership on conflict.
+    await db
+      .insert(pushSubscriptions)
+      .values({
+        endpoint,
+        userId: locals.user.id,
+        p256dh: keys.p256dh,
+        authKey: keys.auth,
+        userAgent: ua,
+      })
+      .onConflictDoUpdate({
+        target: pushSubscriptions.endpoint,
+        set: {
+          userId: locals.user.id,
+          p256dh: keys.p256dh,
+          authKey: keys.auth,
+          userAgent: ua,
+          consecutiveFailures: 0,
+          lastError: null,
+        },
+      });
   }
   return new Response(JSON.stringify({ ok: true }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 };
@@ -65,6 +84,6 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
   }
   const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : null;
   if (!endpoint) return new Response(JSON.stringify({ error: 'endpoint lipsește' }), { status: 400 });
-  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
+  await db.delete(pushSubscriptions).where(and(eq(pushSubscriptions.endpoint, endpoint), eq(pushSubscriptions.userId, locals.user.id)));
   return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
 };

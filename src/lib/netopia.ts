@@ -5,9 +5,15 @@
 // result instead of throwing. Endpoints surface a 503 in that state.
 //
 // Env (all optional, read at call time so the module never crashes on import):
-//   NETOPIA_SIGNATURE  — POS signature (string, identifies the merchant point of sale)
-//   NETOPIA_API_KEY    — API key, sent as the Authorization header
-//   NETOPIA_SANDBOX    — '1' to target the sandbox host, anything else = production
+//   NETOPIA_SIGNATURE   — POS signature (string, identifies the merchant point of sale)
+//   NETOPIA_API_KEY     — API key, sent as the Authorization header
+//   NETOPIA_SANDBOX     — '1' to target the sandbox host, anything else = production
+//   NETOPIA_PUBLIC_KEY  — Netopia's RSA PUBLIC key (PEM) used to verify the IPN
+//                         signature. REQUIRED to accept real money in production:
+//                         Netopia signs each IPN with a JWT in the
+//                         `Verification-token` header (alg RS512/RS256), signed
+//                         with Netopia's private key. We verify it against this
+//                         public key. Without it, IPNs are rejected in prod.
 //
 // We use the Netopia v2 REST API ("Start payment"):
 //   POST {base}/payment/card/start
@@ -15,6 +21,8 @@
 //   body: { config, payment, order }
 // The hosted-page / redirect URL comes back under payment.paymentURL (the API
 // shape has shifted across versions, so we read it defensively from a few keys).
+
+import crypto from 'node:crypto';
 
 const SANDBOX_BASE = 'https://secure.sandbox.netopia-payments.com';
 const PROD_BASE = 'https://secure.netopia-payments.com';
@@ -61,6 +69,15 @@ function signature(): string | undefined {
 }
 function sandboxFlag(): string | undefined {
   return (import.meta as any).env?.NETOPIA_SANDBOX ?? process.env.NETOPIA_SANDBOX;
+}
+function publicKey(): string | undefined {
+  const raw = (import.meta as any).env?.NETOPIA_PUBLIC_KEY ?? process.env.NETOPIA_PUBLIC_KEY;
+  if (!raw) return undefined;
+  // Allow the PEM to be supplied with literal "\n" escapes (common in env vars).
+  return String(raw).includes('\\n') ? String(raw).replace(/\\n/g, '\n') : String(raw);
+}
+function isProd(): boolean {
+  return Boolean((import.meta as any).env?.PROD || process.env.NODE_ENV === 'production');
 }
 
 export function isNetopiaSandbox(): boolean {
@@ -202,11 +219,55 @@ export async function createNetopiaPayment(input: NetopiaCreateInput): Promise<N
   return { ok: true, redirectUrl, ntpId: extractNtpId(data), raw: data };
 }
 
-// Best-effort parse of a Netopia IPN/return payload. The IPN posts either a
-// JSON body (v2) or a legacy env_key/data pair (v1). We normalize both into a
-// common shape and decide whether the payment is confirmed. Verification of the
-// POS signature is best-effort: we confirm the posSignature matches our own.
-export function verifyNetopiaCallback(body: any): NetopiaCallback {
+// ── IPN signature verification (RS512/RS256 JWT in the Verification-token header) ──
+// Netopia v2 signs every IPN with a JWT placed in the `Verification-token`
+// header. The JWT is signed with Netopia's PRIVATE key; we verify it with the
+// merchant's configured PUBLIC key (NETOPIA_PUBLIC_KEY). The JWT body embeds a
+// hash/digest binding to the notification payload (Netopia uses the `sub`/
+// `aud`-style claims plus the order id). We require a valid RSA signature; on
+// any failure we FAIL CLOSED. THIS GATES REAL MONEY — do not loosen.
+function b64urlToBuffer(s: string): Buffer {
+  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4));
+  return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/') + pad, 'base64');
+}
+
+// Verify the JWT signature against the public key. Returns the decoded payload
+// object on success, or null on any verification failure.
+function verifyIpnToken(token: string, pubKeyPem: string): Record<string, any> | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const [headerB64, payloadB64, sigB64] = parts;
+    const header = JSON.parse(b64urlToBuffer(headerB64).toString('utf8'));
+    const alg = String(header?.alg || '').toUpperCase();
+    // Only accept asymmetric RSA algorithms; reject 'none' and HMAC algs which
+    // an attacker could forge with public material.
+    const hash =
+      alg === 'RS512' ? 'RSA-SHA512' :
+      alg === 'RS256' ? 'RSA-SHA256' :
+      alg === 'RS384' ? 'RSA-SHA384' :
+      null;
+    if (!hash) return null;
+
+    const verifier = crypto.createVerify(hash);
+    verifier.update(`${headerB64}.${payloadB64}`);
+    verifier.end();
+    const ok = verifier.verify(pubKeyPem, b64urlToBuffer(sigB64));
+    if (!ok) return null;
+
+    return JSON.parse(b64urlToBuffer(payloadB64).toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
+// Verify and parse a Netopia IPN. `body` is the parsed JSON/form payload;
+// `verificationToken` is the raw value of the `Verification-token` header (the
+// signed JWT). Signature verification is MANDATORY and FAILS CLOSED:
+//   - missing/invalid token  -> { ok:false }  (never proceed)
+//   - public key not configured: in production -> { ok:false }; in dev we allow
+//     with a logged warning (mirrors cron-auth.ts), so local testing works.
+export function verifyNetopiaCallback(body: any, verificationToken?: string | null): NetopiaCallback {
   if (!isNetopiaConfigured()) {
     return { ok: false, error: 'Netopia neconfigurat (lipsesc cheile).' };
   }
@@ -218,13 +279,31 @@ export function verifyNetopiaCallback(body: any): NetopiaCallback {
   const order = body.order || body.data?.order || {};
   const payment = body.payment || body.data?.payment || {};
 
-  const postedSig = order.posSignature || body.posSignature;
-  const ourSig = signature();
-  // If a POS signature is present, it must match ours. When absent (some IPN
-  // variants omit it), we don't hard-fail — we still record defensively but
-  // flag it via ok:true only when amounts/ids look sane.
-  if (postedSig && ourSig && String(postedSig) !== String(ourSig)) {
-    return { ok: false, error: 'Semnătură POS Netopia necorespunzătoare.' };
+  // --- MANDATORY signature verification (gates real money) ---
+  const pub = publicKey();
+  if (!pub) {
+    if (isProd()) {
+      return { ok: false, error: 'Netopia public key neconfigurat (NETOPIA_PUBLIC_KEY) — IPN respins.' };
+    }
+    // Dev only: allow without a key but log loudly so it is never silently relied on.
+    console.warn('[netopia] NETOPIA_PUBLIC_KEY not set — accepting UNVERIFIED IPN (dev only). This is INSECURE in production.');
+  } else {
+    const token = (verificationToken || '').trim();
+    if (!token) {
+      return { ok: false, error: 'Lipsește Verification-token Netopia — IPN respins.' };
+    }
+    const decoded = verifyIpnToken(token, pub);
+    if (!decoded) {
+      return { ok: false, error: 'Semnătură IPN Netopia invalidă — respins.' };
+    }
+    // Bind the signed token to this notification's order id when the token
+    // carries it (Netopia includes the order/ntp reference in the JWT claims).
+    const claimOrder =
+      decoded.orderID || decoded.orderId || decoded.order?.orderID || decoded.sub || null;
+    const bodyOrder = order.orderID || order.orderId || body.orderID || null;
+    if (claimOrder && bodyOrder && String(claimOrder) !== String(bodyOrder)) {
+      return { ok: false, error: 'Order id din token ≠ payload — IPN respins.' };
+    }
   }
 
   const rawStatus =

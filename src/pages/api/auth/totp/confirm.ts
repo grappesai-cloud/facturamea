@@ -3,6 +3,7 @@ import { db } from '../../../../db';
 import { users } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { verifyTotp } from '../../../../lib/totp';
+import { revokeAllSessionsForUser } from '../../../../lib/auth';
 import { logAction } from '../../../../lib/audit';
 
 // Step 2 of enrollment. User scans the QR, types the 6-digit code from their
@@ -34,6 +35,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
   await db.update(users)
     .set({ totpEnabled: true, totpEnrolledAt: new Date() })
     .where(eq(users.id, locals.user.id));
+
+  // Enabling 2FA is an account-security change: invalidate all existing
+  // sessions so any pre-2FA session (incl. a possibly hijacked one) is killed.
+  await revokeAllSessionsForUser(locals.user.id);
 
   await logAction({
     userId: locals.user.id, companyId: locals.user.companyId,

@@ -6,14 +6,10 @@ import { nanoid } from 'nanoid';
 import { generatePlatformId } from '../../../../lib/platform-id';
 import { hashPassword } from '../../../../lib/auth';
 import { isValidRole, normalizeRole, ROLE_LABELS } from '../../../../lib/permissions-roles';
+import { requireRole } from '../../../../lib/require-role';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
-
-// Only a company owner (or platform admin) may manage the team.
-function isOwner(locals: App.Locals): boolean {
-  return locals.company?.role === 'owner' || !!locals.user?.isAdmin;
-}
 
 // GET — list team members of the current company.
 export const GET: APIRoute = async ({ locals }) => {
@@ -90,7 +86,7 @@ export const GET: APIRoute = async ({ locals }) => {
 // POST — add a team member (creates a sub-user + membership row).
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
-  if (!isOwner(locals)) return json({ error: 'Doar administratorul poate adăuga membri' }, 403);
+  const denied = requireRole(locals, 'team.manage'); if (denied) return denied;
 
   const companyId = locals.user.companyId;
   if (!companyId) return json({ error: 'Companie lipsă' }, 400);

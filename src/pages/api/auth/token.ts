@@ -4,8 +4,9 @@
 import type { APIRoute } from 'astro';
 import { loginUser, getSessionFromRequest } from '../../../lib/auth';
 import { db } from '../../../db';
-import { companies, sessions } from '../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { companies, sessions, userCompanyMemberships } from '../../../db/schema';
+import { and, eq } from 'drizzle-orm';
+import { normalizeRole } from '../../../lib/permissions-roles';
 
 export const POST: APIRoute = async ({ request }) => {
   let body: any = {};
@@ -20,7 +21,16 @@ export const POST: APIRoute = async ({ request }) => {
     let company: any = null;
     if (user.companyId) {
       const [c] = await db.select().from(companies).where(eq(companies.id, user.companyId));
-      if (c) company = { id: c.id, name: c.name, cui: c.cui, role: user.parentUserId ? 'operator' : 'owner' };
+      if (c) {
+        let role = user.parentUserId ? 'operator' : 'owner';
+        try {
+          const [m] = await db.select({ role: userCompanyMemberships.role })
+            .from(userCompanyMemberships)
+            .where(and(eq(userCompanyMemberships.userId, user.id), eq(userCompanyMemberships.companyId, user.companyId)));
+          if (m) role = normalizeRole(m.role);
+        } catch {}
+        company = { id: c.id, name: c.name, cui: c.cui, role };
+      }
     }
     return new Response(JSON.stringify({
       token: sessionId,

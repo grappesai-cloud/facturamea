@@ -6,10 +6,11 @@
 // line references a product.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { posSales, posSaleLines } from '../../../../db/schema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { posSales, posSaleLines, warehouses } from '../../../../db/schema';
+import { and, eq, desc, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { applyStockOut } from '../../../../lib/stock';
+import { requireRole } from '../../../../lib/require-role';
 
 const METHODS = ['cash', 'card', 'mixed'];
 
@@ -32,6 +33,8 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'pos.use');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
@@ -71,7 +74,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const changeCents = paymentMethod === 'cash' && cashReceivedCents > totalCents
     ? cashReceivedCents - totalCents
     : 0;
-  const warehouseId = body.warehouseId ? String(body.warehouseId) : null;
+  const warehouseId = body.warehouseId ? String(body.warehouseId).trim() : null;
+
+  // If a warehouse is chosen, verify it belongs to the caller's company
+  // before any stock mutation (prevents cross-tenant stock corruption).
+  if (warehouseId) {
+    const [wh] = await db.select({ id: warehouses.id }).from(warehouses)
+      .where(and(eq(warehouses.id, warehouseId), eq(warehouses.companyId, cid))).limit(1);
+    if (!wh) return new Response(JSON.stringify({ error: 'Gestiune inexistentă' }), { status: 400 });
+  }
 
   const saleId = nanoid();
   let receiptNumber = `BON-${Date.now()}`;

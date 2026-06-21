@@ -4,6 +4,7 @@ import { apiKeys } from '../../../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { generateApiKey } from '../../../../lib/api-keys';
+import { requireRole } from '../../../../lib/require-role';
 
 // GET /api/settings/api-keys — list this company's keys. Never returns keyHash.
 export const GET: APIRoute = async ({ locals }) => {
@@ -35,6 +36,7 @@ export const GET: APIRoute = async ({ locals }) => {
 // POST /api/settings/api-keys — create a key. Returns the RAW value ONCE.
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   const companyId = locals.user.companyId;
   if (!companyId) return new Response(JSON.stringify({ error: 'Configurează-ți firma înainte de a genera chei API.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
 
