@@ -144,30 +144,6 @@ export const companies = pgTable('companies', {
 
 // ─── Cities (European) ────────────────────────────────────
 
-export const cities = pgTable('cities', {
-  id: serial('id').primaryKey(),
-  name: varchar('name', { length: 500 }).notNull(),
-  nameAscii: varchar('name_ascii', { length: 500 }).notNull(),
-  alternateNames: text('alternate_names'), // comma-separated alternate names
-  postalCode: varchar('postal_code', { length: 20 }),
-  countryCode: varchar('country_code', { length: 5 }).notNull(),
-  countryName: varchar('country_name', { length: 100 }).notNull(),
-  // admin1 from GeoNames postal data = județ for RO (region/state elsewhere).
-  county: varchar('county', { length: 120 }),
-  // false = not a real populated place (e.g. German "Großempfänger" businesses
-  // & institutions that carry their own postal code). Excluded from search.
-  isPlace: boolean('is_place').notNull().default(true),
-  latitude: doublePrecision('latitude'),
-  longitude: doublePrecision('longitude'),
-}, (table) => [
-  index('idx_cities_name_ascii').on(table.nameAscii),
-  index('idx_cities_postal').on(table.postalCode),
-  index('idx_cities_country').on(table.countryCode),
-  index('idx_cities_is_place').on(table.isPlace),
-  // Idempotent seeding: same place+postal in same country shouldn't duplicate.
-  uniqueIndex('uniq_cities_country_name_postal').on(table.countryCode, table.nameAscii, table.postalCode),
-]);
-
 // ─── Truck Types ──────────────────────────────────────────
 
 export const truckTypes = pgTable('truck_types', {
@@ -256,20 +232,6 @@ export const freight = pgTable('freight', {
   index('idx_freight_deleted_at').on(table.deletedAt),
 ]);
 
-export const freightTruckTypes = pgTable('freight_truck_types', {
-  freightId: text('freight_id').notNull().references(() => freight.id, { onDelete: 'cascade' }),
-  truckTypeId: varchar('truck_type_id', { length: 50 }).notNull().references(() => truckTypes.id),
-}, (table) => [
-  primaryKey({ columns: [table.freightId, table.truckTypeId] }),
-]);
-
-export const freightEquipment = pgTable('freight_equipment', {
-  freightId: text('freight_id').notNull().references(() => freight.id, { onDelete: 'cascade' }),
-  equipment: varchar('equipment', { length: 100 }).notNull(),
-}, (table) => [
-  primaryKey({ columns: [table.freightId, table.equipment] }),
-]);
-
 // ─── Orders (Comenzi) ─────────────────────────────────────
 
 export const orders = pgTable('orders', {
@@ -353,21 +315,6 @@ export const ratings = pgTable('ratings', {
 
 // ─── Company Badges ───────────────────────────────────────
 
-export const companyBadges = pgTable('company_badges', {
-  id: text('id').primaryKey(),
-  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  // 'verified' | 'top_rated' | 'reliable_payer' | 'fast_responder' | 'active_5plus_yrs' | 'high_volume'
-  code: varchar('code', { length: 50 }).notNull(),
-  label: varchar('label', { length: 200 }).notNull(),
-  // Metadata (JSON) — e.g. computed thresholds at the time of award
-  metadata: text('metadata'),
-  awardedAt: timestamp('awarded_at').defaultNow(),
-  revokedAt: timestamp('revoked_at'),
-}, (table) => [
-  uniqueIndex('uq_company_badge').on(table.companyId, table.code),
-  index('idx_badge_company').on(table.companyId),
-]);
-
 // ─── Fleet (Trucks) ───────────────────────────────────────
 
 export const trucks = pgTable('trucks', {
@@ -392,135 +339,12 @@ export const trucks = pgTable('trucks', {
 ]);
 
 // ─── Truck documents (per-vehicle papers with expiry: ITP, RCA, CASCO, …) ──
-export const truckDocuments = pgTable('truck_documents', {
-  id: text('id').primaryKey(),
-  truckId: text('truck_id').notNull().references(() => trucks.id, { onDelete: 'cascade' }),
-  companyId: text('company_id').notNull().references(() => companies.id),
-  kind: varchar('kind', { length: 40 }).notNull(),
-  name: varchar('name', { length: 255 }).notNull(),
-  fileUrl: text('file_url').notNull(),
-  fileSize: integer('file_size'),
-  mimeType: varchar('mime_type', { length: 100 }),
-  issuedAt: date('issued_at'),
-  expiresAt: date('expires_at'),
-  notes: text('notes'),
-  uploadedByUserId: text('uploaded_by_user_id').references(() => users.id),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_truck_docs_truck').on(table.truckId),
-]);
-
 // ─── Truck live positions (latest GPS reading per fleet vehicle) ──────────
 // One row per truck, upserted by the fleet GPS sync (matched device↔truck by
 // plate). Powers the Parc auto map + live status, independent of orders.
-export const truckPositions = pgTable('truck_positions', {
-  truckId: text('truck_id').primaryKey().references(() => trucks.id, { onDelete: 'cascade' }),
-  companyId: text('company_id').notNull().references(() => companies.id),
-  lat: doublePrecision('lat').notNull(),
-  lng: doublePrecision('lng').notNull(),
-  speedKmh: doublePrecision('speed_kmh'),
-  headingDeg: doublePrecision('heading_deg'),
-  deviceId: varchar('device_id', { length: 120 }),
-  recordedAt: timestamp('recorded_at'),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_truck_positions_company').on(table.companyId),
-]);
-
 // ─── Available Trucks (Camioane disponibile) ──────────────
 
-export const availableTrucks = pgTable('available_trucks', {
-  id: text('id').primaryKey(),
-  // Public sequential ID shown in UI/URLs (10000+).
-  displayId: integer('display_id').unique(),
-  postedBy: text('posted_by').notNull().references(() => users.id),
-  companyId: text('company_id').notNull().references(() => companies.id),
-  status: varchar('status', { length: 20 }).default('active'),
-
-  // Departure point
-  departureCityId: integer('departure_city_id'),
-  departureCityName: varchar('departure_city_name', { length: 500 }).notNull(),
-  departureCountry: varchar('departure_country', { length: 10 }).notNull(),
-  departureLat: doublePrecision('departure_lat'),
-  departureLng: doublePrecision('departure_lng'),
-
-  // Destination (can be "anywhere" or specific)
-  destinationCityName: varchar('destination_city_name', { length: 500 }),
-  destinationCountry: varchar('destination_country', { length: 10 }),
-  destinationLat: doublePrecision('destination_lat'),
-  destinationLng: doublePrecision('destination_lng'),
-  destinationFlexible: boolean('destination_flexible').default(false),
-
-  // Availability dates
-  availableFrom: date('available_from', { mode: 'string' }).notNull(),
-  availableTo: varchar('available_to', { length: 20 }),
-
-  // Truck details
-  truckTypeId: varchar('truck_type_id', { length: 50 }).references(() => truckTypes.id),
-  licensePlate: varchar('license_plate', { length: 50 }),
-  maxWeight: doublePrecision('max_weight'),
-  maxVolume: doublePrecision('max_volume'),
-  isFullTruck: boolean('is_full_truck').default(true),
-
-  // Equipment
-  hasAdr: boolean('has_adr').default(false),
-  hasFrigo: boolean('has_frigo').default(false),
-  hasLift: boolean('has_lift').default(false),
-  hasWalkingFloor: boolean('has_walking_floor').default(false),
-  hasMegaTrailer: boolean('has_mega_trailer').default(false),
-  hasGondola: boolean('has_gondola').default(false),
-
-  // Pricing
-  pricePerKm: doublePrecision('price_per_km'),
-  priceTotal: doublePrecision('price_total'),
-  currency: varchar('currency', { length: 5 }).default('EUR'),
-  includesTva: boolean('includes_tva').default(false),
-
-  // Meta
-  description: text('description'),
-  // Floor length (m) - usable trailer length
-  floorLength: doublePrecision('floor_length'),
-  // Number of vehicles (for car carriers)
-  vehicleCount: integer('vehicle_count'),
-  // Permitted countries (carrier accepts loads to these countries; ISO codes)
-  permittedCountries: text('permitted_countries'), // comma-separated for simplicity
-  // Optional extra stops between departure and final destination, in order.
-  // Each stop: { cityName, country, postal?, lat?, lng?, lookingFor? }
-  // Used for multi-leg trips ("Cluj → Sibiu → Brașov → București").
-  extraStops: jsonb('extra_stops'),
-  // 'spot' | 'long_term'
-  contractType: varchar('contract_type', { length: 20 }).default('spot'),
-  // Premium "evidențiat"
-  isFeatured: boolean('is_featured').default(false),
-  expiresAt: timestamp('expires_at'),
-  viewCount: integer('view_count').default(0),
-  deletedAt: timestamp('deleted_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_avail_trucks_status').on(table.status),
-  index('idx_avail_trucks_departure').on(table.departureCountry, table.departureCityName),
-  index('idx_avail_trucks_date').on(table.availableFrom),
-  index('idx_avail_trucks_company').on(table.companyId),
-  index('idx_avail_trucks_featured').on(table.isFeatured),
-  index('idx_avail_trucks_posted_by').on(table.postedBy),
-  index('idx_avail_trucks_deleted_at').on(table.deletedAt),
-]);
-
 // ─── Saved Routes ─────────────────────────────────────────
-
-export const savedRoutes = pgTable('saved_routes', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id),
-  name: varchar('name', { length: 200 }).notNull(),
-  type: varchar('type', { length: 20 }).notNull(),
-  loadingCountry: varchar('loading_country', { length: 10 }),
-  loadingCity: varchar('loading_city', { length: 500 }),
-  unloadingCountry: varchar('unloading_country', { length: 10 }),
-  unloadingCity: varchar('unloading_city', { length: 500 }),
-  truckTypeId: varchar('truck_type_id', { length: 50 }),
-  createdAt: timestamp('created_at').defaultNow(),
-});
 
 // ─── Classifieds (Mica Publicitate) ───────────────────────
 
@@ -546,185 +370,11 @@ export const classifieds = pgTable('classifieds', {
   index('idx_classifieds_status').on(table.status),
 ]);
 
-export const classifiedImages = pgTable('classified_images', {
-  id: text('id').primaryKey(),
-  classifiedId: text('classified_id').notNull().references(() => classifieds.id, { onDelete: 'cascade' }),
-  imageUrl: text('image_url').notNull(),
-  sortOrder: integer('sort_order').default(0),
-});
-
 // ─── Forum ─────────────────────────────────────────────────
-
-export const forumThreads = pgTable('forum_threads', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id),
-  title: varchar('title', { length: 500 }).notNull(),
-  body: text('body').notNull(),
-  isPinned: boolean('is_pinned').default(false),
-  isLocked: boolean('is_locked').default(false),
-  replyCount: integer('reply_count').default(0),
-  lastReplyAt: timestamp('last_reply_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_threads_created').on(table.createdAt),
-]);
-
-export const forumReplies = pgTable('forum_replies', {
-  id: text('id').primaryKey(),
-  threadId: text('thread_id').notNull().references(() => forumThreads.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id),
-  body: text('body').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_replies_thread').on(table.threadId),
-]);
 
 // ─── Auctions (Licitații) ─────────────────────────────────
 
-export const auctions = pgTable('auctions', {
-  id: text('id').primaryKey(),
-  // Public sequential ID shown in UI/URLs (10000+).
-  displayId: integer('display_id').unique(),
-  postedBy: text('posted_by').notNull().references(() => users.id),
-  companyId: text('company_id').notNull().references(() => companies.id),
-  title: varchar('title', { length: 500 }),
-
-  // Status: active -> awarded | cancelled | expired
-  status: varchar('status', { length: 20 }).default('active'),
-
-  // Cargo / route
-  loadingCityId: integer('loading_city_id'),
-  loadingCityName: varchar('loading_city_name', { length: 500 }).notNull(),
-  loadingCountry: varchar('loading_country', { length: 10 }).notNull(),
-  loadingPostal: varchar('loading_postal', { length: 20 }),
-  loadingLat: doublePrecision('loading_lat'),
-  loadingLng: doublePrecision('loading_lng'),
-  unloadingCityId: integer('unloading_city_id'),
-  unloadingCityName: varchar('unloading_city_name', { length: 500 }).notNull(),
-  unloadingCountry: varchar('unloading_country', { length: 10 }).notNull(),
-  unloadingPostal: varchar('unloading_postal', { length: 20 }),
-  unloadingLat: doublePrecision('unloading_lat'),
-  unloadingLng: doublePrecision('unloading_lng'),
-  loadingDate: date('loading_date', { mode: 'string' }).notNull(),
-  loadingDateEnd: date('loading_date_end', { mode: 'string' }),
-  weight: doublePrecision('weight'),
-  volume: doublePrecision('volume'),
-  quantity: integer('quantity').default(1),
-  distanceKm: integer('distance_km'),
-  isFullTruck: boolean('is_full_truck').default(true),
-  description: text('description'),
-
-  // Auction params
-  startingPrice: doublePrecision('starting_price'),   // max acceptable bid (bids must be <=)
-  reservePrice: doublePrecision('reserve_price'),     // owner won't award below this
-  currency: varchar('currency', { length: 5 }).default('EUR'),
-  includesTva: boolean('includes_tva').default(false),
-  awardMode: varchar('award_mode', { length: 20 }).default('manual'), // 'manual' | 'lowest'
-  endsAt: timestamp('ends_at').notNull(),
-
-  // Resolution
-  winnerBidId: text('winner_bid_id'),
-  orderId: text('order_id'),
-  awardedAt: timestamp('awarded_at'),
-  cancelledAt: timestamp('cancelled_at'),
-
-  // Denormalized
-  bidCount: integer('bid_count').default(0),
-  viewCount: integer('view_count').default(0),
-
-  // Premium "evidențiat"
-  isFeatured: boolean('is_featured').default(false),
-
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_auctions_status').on(table.status),
-  index('idx_auctions_loading').on(table.loadingCountry, table.loadingCityName),
-  index('idx_auctions_unloading').on(table.unloadingCountry, table.unloadingCityName),
-  index('idx_auctions_ends').on(table.endsAt),
-  index('idx_auctions_company').on(table.companyId),
-  index('idx_auctions_featured').on(table.isFeatured),
-  index('idx_auctions_posted_by').on(table.postedBy),
-]);
-
-export const auctionBids = pgTable('auction_bids', {
-  id: text('id').primaryKey(),
-  auctionId: text('auction_id').notNull().references(() => auctions.id, { onDelete: 'cascade' }),
-  bidderUserId: text('bidder_user_id').notNull().references(() => users.id),
-  bidderCompanyId: text('bidder_company_id').notNull().references(() => companies.id),
-  priceTotal: doublePrecision('price_total').notNull(),
-  pricePerKm: doublePrecision('price_per_km'),
-  currency: varchar('currency', { length: 5 }).default('EUR'),
-  includesTva: boolean('includes_tva').default(false),
-  truckTypeId: varchar('truck_type_id', { length: 50 }).references(() => truckTypes.id),
-  message: text('message'),
-  validUntil: timestamp('valid_until'),
-  // Status: active -> winner | rejected | withdrawn
-  status: varchar('status', { length: 20 }).default('active'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_bids_auction').on(table.auctionId),
-  index('idx_bids_bidder').on(table.bidderCompanyId),
-  uniqueIndex('uq_bids_auction_company').on(table.auctionId, table.bidderCompanyId),
-]);
-
-export const auctionTruckTypes = pgTable('auction_truck_types', {
-  auctionId: text('auction_id').notNull().references(() => auctions.id, { onDelete: 'cascade' }),
-  truckTypeId: varchar('truck_type_id', { length: 50 }).notNull().references(() => truckTypes.id),
-}, (table) => [
-  primaryKey({ columns: [table.auctionId, table.truckTypeId] }),
-]);
-
 // ─── Conversations & Messages ─────────────────────────────
-
-export const conversations = pgTable('conversations', {
-  id: text('id').primaryKey(),
-  // Context: de unde a pornit conversația
-  contextType: varchar('context_type', { length: 30 }), // 'freight' | 'auction' | 'classified' | 'available_truck' | 'order' | 'direct'
-  contextId: text('context_id'),
-  // Strong FK when the conversation is tied to an order (carrier ↔ client
-  // chat). Set automatically by the API when context_type='order'; FK in
-  // DB (migration 0022) so order deletion clears the link instead of
-  // dropping the thread.
-  orderId: text('order_id'),
-  subject: varchar('subject', { length: 500 }),
-  lastMessageAt: timestamp('last_message_at').defaultNow(),
-  lastMessagePreview: varchar('last_message_preview', { length: 500 }),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_conv_last_msg').on(table.lastMessageAt),
-  index('idx_conv_context').on(table.contextType, table.contextId),
-  index('idx_conv_order').on(table.orderId),
-]);
-
-export const conversationParticipants = pgTable('conversation_participants', {
-  conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id),
-  companyId: text('company_id').references(() => companies.id),
-  lastReadAt: timestamp('last_read_at'),
-  isArchived: boolean('is_archived').default(false),
-  isMuted: boolean('is_muted').default(false),
-  joinedAt: timestamp('joined_at').defaultNow(),
-}, (table) => [
-  primaryKey({ columns: [table.conversationId, table.userId] }),
-  index('idx_part_user').on(table.userId),
-]);
-
-export const messages = pgTable('messages', {
-  id: text('id').primaryKey(),
-  conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
-  senderUserId: text('sender_user_id').notNull().references(() => users.id),
-  body: text('body').notNull(),
-  attachmentUrl: text('attachment_url'),
-  attachmentType: varchar('attachment_type', { length: 50 }),
-  isSystem: boolean('is_system').default(false),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_msg_conv_created').on(table.conversationId, table.createdAt),
-]);
 
 // ─── Notifications ────────────────────────────────────────
 
@@ -762,68 +412,12 @@ export const notificationPreferences = pgTable('notification_preferences', {
 });
 
 // Route-based saved-search alerts (e.g. "orice marfă București → Cluj")
-export const routeAlerts = pgTable('route_alerts', {
-  id: text('id').primaryKey(),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  name: varchar('name', { length: 200 }),
-  type: varchar('type', { length: 20 }).notNull(), // 'freight' | 'truck' | 'auction'
-  loadingCountry: varchar('loading_country', { length: 10 }),
-  loadingCity: varchar('loading_city', { length: 500 }),
-  unloadingCountry: varchar('unloading_country', { length: 10 }),
-  unloadingCity: varchar('unloading_city', { length: 500 }),
-  truckTypeId: varchar('truck_type_id', { length: 50 }),
-  isActive: boolean('is_active').default(true),
-  lastTriggeredAt: timestamp('last_triggered_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_alerts_user').on(table.userId),
-  index('idx_alerts_type_active').on(table.type, table.isActive),
-]);
-
 // ─── Order Positions (Live Tracking) ──────────────────────
-
-export const orderPositions = pgTable('order_positions', {
-  id: text('id').primaryKey(),
-  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  reportedBy: text('reported_by').references(() => users.id),
-  lat: doublePrecision('lat').notNull(),
-  lng: doublePrecision('lng').notNull(),
-  speedKmh: doublePrecision('speed_kmh'),
-  headingDeg: doublePrecision('heading_deg'),
-  accuracyM: doublePrecision('accuracy_m'),
-  source: varchar('source', { length: 30 }).default('manual'), // 'manual' | 'driver_app' | 'gps_device'
-  recordedAt: timestamp('recorded_at').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_pos_order_recorded').on(table.orderId, table.recordedAt),
-]);
 
 // ─── Order stops: per-point loading/unloading tracking ──────────────────
 // One row per loading or unloading point of an order (primary + extra stops),
 // so the carrier can mark "ajuns" / "încărcat/descărcat" at each and the
 // expeditor sees granular progress (loading 1/2/3, unloading 1/2/3).
-export const orderStops = pgTable('order_stops', {
-  id: text('id').primaryKey(),
-  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  sequence: integer('sequence').notNull().default(0), // global order across all stops
-  kind: varchar('kind', { length: 12 }).notNull(),    // 'loading' | 'unloading'
-  position: integer('position').notNull().default(1), // 1-based index within its kind (încărcarea 1/2/3)
-  cityName: varchar('city_name', { length: 200 }),
-  country: varchar('country', { length: 10 }),
-  postal: varchar('postal', { length: 20 }),
-  address: text('address'),                            // optional detail (firmă pune adresa exactă)
-  companyName: varchar('company_name', { length: 200 }), // firma de la punct
-  lat: doublePrecision('lat'),
-  lng: doublePrecision('lng'),
-  scheduledDate: varchar('scheduled_date', { length: 20 }),
-  status: varchar('status', { length: 12 }).notNull().default('pending'), // 'pending' | 'arrived' | 'done'
-  arrivedAt: timestamp('arrived_at'),
-  doneAt: timestamp('done_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_order_stops_order').on(table.orderId, table.sequence),
-]);
-
 // ─── GPS / Telematics integrations (pull providers, e.g. CargoTrack) ──
 // One row per company per provider. Credentials are stored AES-256-GCM
 // encrypted (see src/lib/crypto.ts). We poll the provider on demand (while
@@ -849,38 +443,7 @@ export const gpsIntegrations = pgTable('gps_integrations', {
   uniqueIndex('idx_gps_company_provider').on(table.companyId, table.provider),
 ]);
 
-export const orderTrackingShares = pgTable('order_tracking_shares', {
-  id: text('id').primaryKey(),
-  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  token: varchar('token', { length: 64 }).unique().notNull(),
-  createdBy: text('created_by').notNull().references(() => users.id),
-  expiresAt: timestamp('expires_at'),
-  revokedAt: timestamp('revoked_at'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_share_order').on(table.orderId),
-]);
-
 // ─── Order Documents ──────────────────────────────────────
-
-export const orderDocuments = pgTable('order_documents', {
-  id: text('id').primaryKey(),
-  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  uploadedBy: text('uploaded_by').notNull().references(() => users.id),
-  // 'cmr' | 'awb' | 'invoice' | 'proforma' | 'contract' | 'pod' | 'other'
-  type: varchar('type', { length: 30 }).notNull(),
-  title: varchar('title', { length: 500 }),
-  fileUrl: text('file_url').notNull(),
-  mimeType: varchar('mime_type', { length: 100 }),
-  sizeBytes: integer('size_bytes'),
-  // Stage of transport when document was added
-  stage: varchar('stage', { length: 20 }), // 'pre_load' | 'loaded' | 'in_transit' | 'delivered' | 'post'
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_docs_order').on(table.orderId),
-  index('idx_docs_type').on(table.type),
-]);
 
 // ─── Incidents & Claims ───────────────────────────────────
 
@@ -914,29 +477,7 @@ export const incidents = pgTable('incidents', {
   index('idx_incidents_status').on(table.status),
 ]);
 
-export const incidentReplies = pgTable('incident_replies', {
-  id: text('id').primaryKey(),
-  incidentId: text('incident_id').notNull().references(() => incidents.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id),
-  body: text('body').notNull(),
-  attachmentUrl: text('attachment_url'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_incident_replies').on(table.incidentId),
-]);
-
 // ─── Company Blacklist ────────────────────────────────────
-
-export const companyBlacklist = pgTable('company_blacklist', {
-  ownerCompanyId: text('owner_company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  blockedCompanyId: text('blocked_company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  reason: text('reason'),
-  addedBy: text('added_by').notNull().references(() => users.id),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  primaryKey({ columns: [table.ownerCompanyId, table.blockedCompanyId] }),
-  index('idx_blacklist_blocked').on(table.blockedCompanyId),
-]);
 
 // ─── Company Locations (HQ, depozite, puncte de lucru) ───
 
@@ -980,53 +521,7 @@ export const transportClauses = pgTable('transport_clauses', {
 
 // ─── Favorites ────────────────────────────────────────────
 
-export const freightFavorites = pgTable('freight_favorites', {
-  userId: text('user_id').notNull().references(() => users.id),
-  freightId: text('freight_id').notNull().references(() => freight.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  primaryKey({ columns: [table.userId, table.freightId] }),
-]);
-
-export const truckFavorites = pgTable('truck_favorites', {
-  userId: text('user_id').notNull().references(() => users.id),
-  truckId: text('truck_id').notNull().references(() => availableTrucks.id, { onDelete: 'cascade' }),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  primaryKey({ columns: [table.userId, table.truckId] }),
-]);
-
-export const companyFavorites = pgTable('company_favorites', {
-  userId: text('user_id').notNull().references(() => users.id),
-  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  primaryKey({ columns: [table.userId, table.companyId] }),
-]);
-
 // ─── Freight Bids (offers on regular freight, not auctions) ──
-
-export const freightBids = pgTable('freight_bids', {
-  id: text('id').primaryKey(),
-  freightId: text('freight_id').notNull().references(() => freight.id, { onDelete: 'cascade' }),
-  bidderUserId: text('bidder_user_id').notNull().references(() => users.id),
-  bidderCompanyId: text('bidder_company_id').notNull().references(() => companies.id),
-  priceTotal: doublePrecision('price_total').notNull(),
-  pricePerKm: doublePrecision('price_per_km'),
-  currency: varchar('currency', { length: 5 }).default('EUR'),
-  includesTva: boolean('includes_tva').default(false),
-  truckTypeId: varchar('truck_type_id', { length: 50 }).references(() => truckTypes.id),
-  message: text('message'),
-  validUntil: timestamp('valid_until'),
-  // 'active' | 'accepted' | 'rejected' | 'withdrawn'
-  status: varchar('status', { length: 20 }).default('active'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_freight_bids_freight').on(table.freightId),
-  index('idx_freight_bids_bidder').on(table.bidderCompanyId),
-]);
 
 // ─── Documents ────────────────────────────────────────────
 
@@ -1048,19 +543,6 @@ export const companyDocuments = pgTable('company_documents', {
 }, (table) => [
   index('idx_company_documents_company').on(table.companyId),
   index('idx_company_documents_expires').on(table.expiresAt),
-]);
-
-export const freightDocuments = pgTable('freight_documents', {
-  id: text('id').primaryKey(),
-  freightId: text('freight_id').notNull().references(() => freight.id, { onDelete: 'cascade' }),
-  type: varchar('type', { length: 40 }).notNull(), // 'cmr' | 'invoice' | 'photo' | 'other'
-  name: varchar('name', { length: 300 }).notNull(),
-  url: text('url').notNull(),
-  fileSize: integer('file_size'),
-  uploadedBy: text('uploaded_by').notNull().references(() => users.id),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_freight_documents_freight').on(table.freightId),
 ]);
 
 // ─── Subscriptions & Billing ──────────────────────────────
@@ -1317,32 +799,6 @@ export const creditTransactions = pgTable('credit_transactions', {
 
 // ─── Invoice Guarantees (Garanție factură transport) ──────
 
-export const invoiceGuarantees = pgTable('invoice_guarantees', {
-  id: text('id').primaryKey(),
-  buyerCompanyId: text('buyer_company_id').notNull().references(() => companies.id), // cumpără garanția
-  buyerUserId: text('buyer_user_id').notNull().references(() => users.id),
-  payerCompanyId: text('payer_company_id'), // compania care trebuie să plătească (poate fi necunoscută)
-  payerName: varchar('payer_name', { length: 200 }),
-  payerCui: varchar('payer_cui', { length: 50 }),
-  invoiceNumber: varchar('invoice_number', { length: 100 }).notNull(),
-  invoiceDate: timestamp('invoice_date').notNull(),
-  dueDate: timestamp('due_date').notNull(),
-  amount: doublePrecision('amount').notNull(),
-  currency: varchar('currency', { length: 3 }).default('RON'),
-  premiumCrb: integer('premium_crb').notNull(), // costul garanției în CRB
-  status: varchar('status', { length: 20 }).default('active'), // 'active' | 'paid' | 'claim_filed' | 'reimbursed' | 'expired' | 'cancelled'
-  description: text('description'),
-  claimedAt: timestamp('claimed_at'),
-  reimbursedAt: timestamp('reimbursed_at'),
-  reimbursedAmount: doublePrecision('reimbursed_amount'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_guarantee_buyer').on(table.buyerCompanyId),
-  index('idx_guarantee_status').on(table.status),
-  index('idx_guarantee_due').on(table.dueDate),
-]);
-
 // ─── Drivers + Driver Certificates ───────────────────────
 
 export const drivers = pgTable('drivers', {
@@ -1367,56 +823,9 @@ export const drivers = pgTable('drivers', {
   index('idx_drivers_company').on(table.companyId),
 ]);
 
-export const driverCertificates = pgTable('driver_certificates', {
-  id: text('id').primaryKey(),
-  driverId: text('driver_id').notNull().references(() => drivers.id, { onDelete: 'cascade' }),
-  type: varchar('type', { length: 30 }).notNull(), // 'leave' | 'activity' | 'medical' | 'training'
-  startDate: timestamp('start_date').notNull(),
-  endDate: timestamp('end_date'),
-  reason: text('reason'),
-  documentNumber: varchar('document_number', { length: 100 }),
-  issuedBy: text('issued_by').references(() => users.id),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_driver_cert_driver').on(table.driverId),
-  index('idx_driver_cert_type').on(table.type),
-]);
-
 // ─── Info articles (Informatii hub: reglementări/formulare/publicații) ──
 
-export const infoArticles = pgTable('info_articles', {
-  id: text('id').primaryKey(),
-  slug: varchar('slug', { length: 200 }).unique().notNull(),
-  category: varchar('category', { length: 50 }).notNull(), // 'reglementari' | 'formulare' | 'publicatii' | 'restrictii' | 'pasi-document'
-  titleRo: varchar('title_ro', { length: 500 }).notNull(),
-  titleEn: varchar('title_en', { length: 500 }),
-  bodyRo: text('body_ro').notNull(),
-  bodyEn: text('body_en'),
-  attachmentUrl: text('attachment_url'),
-  isPublished: boolean('is_published').default(true),
-  sortOrder: integer('sort_order').default(0),
-  publishedAt: timestamp('published_at').defaultNow(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_info_category').on(table.category),
-]);
-
 // ─── Verify Contact (anti-fraud lookup) ──────────────────
-
-export const flaggedContacts = pgTable('flagged_contacts', {
-  id: text('id').primaryKey(),
-  contactType: varchar('contact_type', { length: 20 }).notNull(), // 'email' | 'phone' | 'cui' | 'plate'
-  contactValue: varchar('contact_value', { length: 200 }).notNull(),
-  reason: varchar('reason', { length: 100 }),
-  reportedByCompanyId: text('reported_by_company_id'),
-  notes: text('notes'),
-  isActive: boolean('is_active').default(true),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_flagged_value').on(table.contactValue),
-  index('idx_flagged_type').on(table.contactType),
-]);
 
 // ─── Audit Log ────────────────────────────────────────────
 
@@ -1477,30 +886,6 @@ export const broadcasts = pgTable('broadcasts', {
 
 // ─── CMR digital signatures ──────────────────────────────
 
-export const cmrSignatures = pgTable('cmr_signatures', {
-  id: text('id').primaryKey(),
-  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  party: varchar('party', { length: 20 }).notNull(),
-  signedByUserId: text('signed_by_user_id').notNull().references(() => users.id),
-  signedByName: varchar('signed_by_name', { length: 255 }).notNull(),
-  signaturePng: text('signature_png').notNull(),
-  signatureHash: varchar('signature_hash', { length: 64 }).notNull(),
-  // Append-only hash chain: each new signature includes the previous
-  // signature's hash in its own hash payload, so altering any earlier
-  // row invalidates every signature that came after it. Verification
-  // logic lives in lib/cmr-chain.ts.
-  prevHash: varchar('prev_hash', { length: 64 }),
-  // Client-reported timestamp for clock-skew forensics. signedAt below
-  // is the trusted server time.
-  clientTs: timestamp('client_ts'),
-  ipAddress: varchar('ip_address', { length: 64 }),
-  userAgent: text('user_agent'),
-  signedAt: timestamp('signed_at').defaultNow(),
-}, (table) => [
-  index('idx_cmr_sig_order').on(table.orderId),
-  index('idx_cmr_sig_party').on(table.party),
-]);
-
 // ─── Web Push (VAPID) subscriptions ──────────────────────
 // One user may have many endpoints (laptop, phone, work). The endpoint
 // URL is its own primary key. Subscriptions auto-expire when the
@@ -1519,21 +904,6 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
 }, (table) => [index('idx_push_subs_user').on(table.userId)]);
 
 // ─── HOS / AETR driver hours ─────────────────────────────
-
-export const driverHours = pgTable('driver_hours', {
-  id: text('id').primaryKey(),
-  driverId: text('driver_id').notNull().references(() => drivers.id, { onDelete: 'cascade' }),
-  activity: varchar('activity', { length: 20 }).notNull(),
-  startedAt: timestamp('started_at').notNull(),
-  endedAt: timestamp('ended_at'),
-  durationMinutes: integer('duration_minutes'),
-  source: varchar('source', { length: 20 }).default('manual'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_driver_hours_driver').on(table.driverId),
-  index('idx_driver_hours_started').on(table.startedAt),
-]);
 
 // ─── ANAF OAuth connections (e-Factura, e-Transport) ────
 // Per-company OAuth tokens for ANAF SPV API. Each company connects
@@ -1600,23 +970,6 @@ export const anafSubmissions = pgTable('anaf_submissions', {
 
 // ─── Tachograph file ingest ──────────────────────────────
 
-export const tachographFiles = pgTable('tachograph_files', {
-  id: text('id').primaryKey(),
-  driverId: text('driver_id').references(() => drivers.id),
-  companyId: text('company_id').notNull().references(() => companies.id),
-  uploadedByUserId: text('uploaded_by_user_id').notNull().references(() => users.id),
-  fileUrl: text('file_url').notNull(),
-  fileName: varchar('file_name', { length: 255 }),
-  fileSizeBytes: integer('file_size_bytes'),
-  fileType: varchar('file_type', { length: 20 }),
-  parsed: boolean('parsed').notNull().default(false),
-  parseSummary: jsonb('parse_summary'),
-  uploadedAt: timestamp('uploaded_at').defaultNow(),
-}, (table) => [
-  index('idx_tacho_company').on(table.companyId),
-  index('idx_tacho_driver').on(table.driverId),
-]);
-
 // ─── Multi-currency FX ───────────────────────────────────
 
 export const fxRates = pgTable('fx_rates', {
@@ -1629,79 +982,11 @@ export const fxRates = pgTable('fx_rates', {
 
 // ─── Public tracking links ───────────────────────────────
 
-export const publicTrackingTokens = pgTable('public_tracking_tokens', {
-  token: varchar('token', { length: 64 }).primaryKey(),
-  orderId: text('order_id').notNull().references(() => orders.id, { onDelete: 'cascade' }),
-  createdByUserId: text('created_by_user_id').notNull().references(() => users.id),
-  // 'view' = public read-only tracking link (default for backward compat).
-  // 'ingest' = write-only Bearer token issued to a telematics device.
-  scope: varchar('scope', { length: 20 }).notNull().default('view'),
-  // Hint for the telematics platform that owns this token (webfleet,
-  // frotcom, geotab, manual). Not enforced — purely informational.
-  provider: varchar('provider', { length: 40 }),
-  expiresAt: timestamp('expires_at'),
-  viewsCount: integer('views_count').notNull().default(0),
-  lastViewedAt: timestamp('last_viewed_at'),
-  lastIngestAt: timestamp('last_ingest_at'),
-  ingestCount: integer('ingest_count').notNull().default(0),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_tracking_order').on(table.orderId),
-  index('idx_tracking_scope').on(table.scope),
-]);
-
 // ─── Border crossings ────────────────────────────────────
-
-export const borderCrossings = pgTable('border_crossings', {
-  id: text('id').primaryKey(),
-  code: varchar('code', { length: 40 }).unique().notNull(),
-  name: varchar('name', { length: 200 }).notNull(),
-  countryA: varchar('country_a', { length: 5 }).notNull(),
-  countryB: varchar('country_b', { length: 5 }).notNull(),
-  waitMinutesOutbound: integer('wait_minutes_outbound'),
-  waitMinutesInbound: integer('wait_minutes_inbound'),
-  measuredAt: timestamp('measured_at'),
-  source: varchar('source', { length: 40 }),
-});
 
 // ─── Factoring — early payment marketplace ───────────────
 
-export const factoringRequests = pgTable('factoring_requests', {
-  id: text('id').primaryKey(),
-  invoiceId: text('invoice_id'),
-  orderId: text('order_id'),
-  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  requestedByUserId: text('requested_by_user_id').notNull().references(() => users.id),
-  amountCents: integer('amount_cents').notNull(),
-  currency: varchar('currency', { length: 5 }).notNull().default('RON'),
-  // 'waitlist' | 'submitted' | 'approved' | 'paid' | 'rejected' | 'cancelled'
-  status: varchar('status', { length: 20 }).notNull().default('waitlist'),
-  partner: varchar('partner', { length: 50 }),
-  feePercent: doublePrecision('fee_percent'),
-  expectedPayoutAt: timestamp('expected_payout_at'),
-  paidAt: timestamp('paid_at'),
-  rejectionReason: text('rejection_reason'),
-  metadata: jsonb('metadata'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_factoring_company').on(table.companyId),
-  index('idx_factoring_status').on(table.status),
-  index('idx_factoring_created').on(table.createdAt),
-]);
-
 // ─── Marketplace click tracking ──────────────────────────
-
-export const marketplaceClicks = pgTable('marketplace_clicks', {
-  id: text('id').primaryKey(),
-  classifiedId: text('classified_id').notNull().references(() => classifieds.id, { onDelete: 'cascade' }),
-  userId: text('user_id').references(() => users.id),
-  ipAddress: varchar('ip_address', { length: 64 }),
-  clickedAt: timestamp('clicked_at').defaultNow(),
-}, (table) => [
-  index('idx_mp_clicks_classified').on(table.classifiedId),
-  index('idx_mp_clicks_clicked').on(table.clickedAt),
-]);
 
 // ─── Existing tables extensions ──────────────────────────
 // (Schema additions for invoices, orders, companies are inline above
@@ -1732,22 +1017,6 @@ export const waitlistSignups = pgTable('waitlist_signups', {
 
 // ─── Entity views (cine a vizualizat anunţul/licitaţia) ────
 // Unique per (entityType, entityId, viewerUserId) — bump view_count pe re-views.
-
-export const entityViews = pgTable('entity_views', {
-  id: text('id').primaryKey(),
-  entityType: varchar('entity_type', { length: 20 }).notNull(), // 'auction' | 'freight' | 'truck' | 'classified'
-  entityId: text('entity_id').notNull(),
-  viewerUserId: text('viewer_user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  viewerCompanyId: text('viewer_company_id').references(() => companies.id, { onDelete: 'set null' }),
-  viewCount: integer('view_count').notNull().default(1),
-  firstViewedAt: timestamp('first_viewed_at').notNull().defaultNow(),
-  lastViewedAt: timestamp('last_viewed_at').notNull().defaultNow(),
-}, (table) => [
-  uniqueIndex('uq_entity_views_unique').on(table.entityType, table.entityId, table.viewerUserId),
-  index('idx_entity_views_entity').on(table.entityType, table.entityId),
-  index('idx_entity_views_viewer').on(table.viewerUserId),
-]);
-
 
 // ─── Invoicing module (transport invoices, separate from platform-billing
 // `invoices` which is Stripe-driven). The user-facing invoicing system that
@@ -1958,83 +1227,11 @@ export const transportInvoicePayments = pgTable('transport_invoice_payments', {
 // the customer), carrier side (order to the assigned trucker), the freight
 // listing, status events, CMR, invoices. Visible only to the dossier owner;
 // the carrier sees a derived order entity from `orders`.
-export const transportDossiers = pgTable('transport_dossiers', {
-  id: text('id').primaryKey(),
-  displayId: varchar('display_id', { length: 32 }).notNull().unique(),
-  // Owner = the expeditor / intermediar / client_direct that creates the dossier
-  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-  // Client side
-  clientCompanyId: text('client_company_id').references(() => companies.id, { onDelete: 'set null' }),
-  clientExternalId: text('client_external_id').references(() => invoiceClients.id, { onDelete: 'set null' }),
-  clientOrderRef: varchar('client_order_ref', { length: 80 }), // PO number from client
-  clientPriceCents: integer('client_price_cents'),
-  clientCurrency: varchar('client_currency', { length: 5 }).default('RON'),
-  clientTaxId: varchar('client_tax_id', { length: 20 }), // CUI/CIF for ANAF VAT lookup
-  clientVatPayer: boolean('client_vat_payer'), // null = unchecked, true/false = ANAF result
-  // Carrier side
-  freightId: text('freight_id').references(() => freight.id, { onDelete: 'set null' }),
-  assignedCarrierCompanyId: text('assigned_carrier_company_id').references(() => companies.id, { onDelete: 'set null' }),
-  assignedCarrierUserId: text('assigned_carrier_user_id').references(() => users.id, { onDelete: 'set null' }),
-  carrierPriceCents: integer('carrier_price_cents'),
-  carrierCurrency: varchar('carrier_currency', { length: 5 }).default('RON'),
-  carrierOrderId: text('carrier_order_id').references(() => orders.id, { onDelete: 'set null' }),
-  // Route snapshot (denormalized for fast list rendering)
-  loadingCity: varchar('loading_city', { length: 120 }),
-  loadingCountry: varchar('loading_country', { length: 60 }),
-  loadingDate: date('loading_date', { mode: 'string' }),
-  unloadingCity: varchar('unloading_city', { length: 120 }),
-  unloadingCountry: varchar('unloading_country', { length: 60 }),
-  unloadingDate: date('unloading_date', { mode: 'string' }),
-  weight: doublePrecision('weight'),
-  volume: doublePrecision('volume'),
-  // Lifecycle
-  // 'draft' | 'published' | 'assigned' | 'pickup_scheduled' | 'loaded' | 'in_transit' | 'delivered' | 'closed' | 'cancelled'
-  status: varchar('status', { length: 24 }).notNull().default('draft'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_dossiers_company').on(table.companyId),
-  index('idx_dossiers_status').on(table.status),
-  index('idx_dossiers_freight').on(table.freightId),
-  index('idx_dossiers_carrier').on(table.assignedCarrierCompanyId),
-]);
-
 // Documents attached to a dossier (CMR, invoices in/out, client PO, carrier
 // order). The `kind` lets the UI group them in tabs.
-export const dossierDocuments = pgTable('dossier_documents', {
-  id: text('id').primaryKey(),
-  dossierId: text('dossier_id').notNull().references(() => transportDossiers.id, { onDelete: 'cascade' }),
-  // 'cmr' | 'client_po' | 'carrier_order' | 'invoice_in' | 'invoice_out' | 'pod' | 'other'
-  kind: varchar('kind', { length: 24 }).notNull(),
-  fileUrl: text('file_url').notNull(),
-  fileName: varchar('file_name', { length: 200 }),
-  uploadedByUserId: text('uploaded_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-  uploadedAt: timestamp('uploaded_at').defaultNow(),
-}, (table) => [
-  index('idx_dossier_docs_dossier').on(table.dossierId),
-]);
-
 // Tracking events on a dossier (sosit la încărcare / încărcat / sosit la
 // descărcare / descărcat / etc). Driven by carrier-side status updates; surfaced
 // to the client as live tracking.
-export const dossierEvents = pgTable('dossier_events', {
-  id: text('id').primaryKey(),
-  dossierId: text('dossier_id').notNull().references(() => transportDossiers.id, { onDelete: 'cascade' }),
-  // 'pickup_arrived' | 'loaded' | 'in_transit' | 'delivery_arrived' | 'delivered' | 'cmr_signed' | 'note'
-  kind: varchar('kind', { length: 24 }).notNull(),
-  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
-  byUserId: text('by_user_id').references(() => users.id, { onDelete: 'set null' }),
-  latitude: doublePrecision('latitude'),
-  longitude: doublePrecision('longitude'),
-  notes: text('notes'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_dossier_events_dossier').on(table.dossierId),
-  index('idx_dossier_events_kind').on(table.kind),
-]);
-
 // ─── Invoicing v2: products catalog (nomenclator) ──────────────
 //
 // Reusable services/products per company. Picker on invoice issue
@@ -2114,139 +1311,6 @@ export const bnrRatesDaily = pgTable('bnr_rates_daily', {
 // ─── e-CMR (electronic Consignment Note) ────────────────────
 // Standalone CMR documents (Convention Geneva 1956 + UNECE
 // Additional Protocol). One row per issued consignment.
-
-export const eCmrConsignments = pgTable('e_cmr_consignments', {
-  id: text('id').primaryKey(),
-  consignmentNo: varchar('consignment_no', { length: 40 }).notNull().unique(),
-  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
-  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-  orderId: text('order_id').references(() => orders.id, { onDelete: 'set null' }),
-  dossierId: text('dossier_id').references(() => transportDossiers.id, { onDelete: 'set null' }),
-  freightId: text('freight_id').references(() => freight.id, { onDelete: 'set null' }),
-  publicToken: varchar('public_token', { length: 48 }).notNull().unique(),
-
-  // Lifecycle: draft | issued | in_transit | delivered | archived | cancelled
-  status: varchar('status', { length: 20 }).notNull().default('draft'),
-  issuedAt: timestamp('issued_at'),
-  inTransitAt: timestamp('in_transit_at'),
-  deliveredAt: timestamp('delivered_at'),
-  archivedAt: timestamp('archived_at'),
-  cancelledAt: timestamp('cancelled_at'),
-
-  // 1. Sender
-  senderCompanyId: text('sender_company_id').references(() => companies.id, { onDelete: 'set null' }),
-  senderName: varchar('sender_name', { length: 255 }).notNull(),
-  senderAddress: text('sender_address'),
-  senderCity: varchar('sender_city', { length: 120 }),
-  senderCountry: varchar('sender_country', { length: 60 }),
-  senderCui: varchar('sender_cui', { length: 40 }),
-  // 2. Consignee
-  consigneeCompanyId: text('consignee_company_id').references(() => companies.id, { onDelete: 'set null' }),
-  consigneeName: varchar('consignee_name', { length: 255 }).notNull(),
-  consigneeAddress: text('consignee_address'),
-  consigneeCity: varchar('consignee_city', { length: 120 }),
-  consigneeCountry: varchar('consignee_country', { length: 60 }),
-  consigneeCui: varchar('consignee_cui', { length: 40 }),
-  // 3. Place of delivery
-  deliveryPlace: varchar('delivery_place', { length: 255 }),
-  deliveryCountry: varchar('delivery_country', { length: 60 }),
-  deliveryDatePlanned: date('delivery_date_planned', { mode: 'string' }),
-  // 4. Place + date of taking over
-  takingOverPlace: varchar('taking_over_place', { length: 255 }),
-  takingOverCountry: varchar('taking_over_country', { length: 60 }),
-  takingOverDatePlanned: date('taking_over_date_planned', { mode: 'string' }),
-  // 5. Annexed documents
-  annexedDocs: text('annexed_docs'),
-  // 6-11. Goods
-  marksNumbers: text('marks_numbers'),
-  packagesCount: integer('packages_count'),
-  packingMethod: varchar('packing_method', { length: 120 }),
-  goodsNature: text('goods_nature').notNull(),
-  statisticalNumber: varchar('statistical_number', { length: 60 }),
-  grossWeightKg: doublePrecision('gross_weight_kg'),
-  volumeM3: doublePrecision('volume_m3'),
-  // 16/17. Carrier + successive
-  carrierCompanyId: text('carrier_company_id').references(() => companies.id, { onDelete: 'set null' }),
-  carrierName: varchar('carrier_name', { length: 255 }),
-  carrierAddress: text('carrier_address'),
-  carrierCountry: varchar('carrier_country', { length: 60 }),
-  carrierCui: varchar('carrier_cui', { length: 40 }),
-  successiveCarriers: text('successive_carriers'),
-  // 13/14
-  senderInstructions: text('sender_instructions'),
-  carrierReservations: text('carrier_reservations'),
-  // 15. COD
-  codAmountCents: integer('cod_amount_cents'),
-  codCurrency: varchar('cod_currency', { length: 8 }),
-  // 19
-  specialAgreements: text('special_agreements'),
-  // 20
-  chargesPaidBy: varchar('charges_paid_by', { length: 20 }),
-  freightPriceCents: integer('freight_price_cents'),
-  freightCurrency: varchar('freight_currency', { length: 8 }),
-  // 21
-  establishedAtPlace: varchar('established_at_place', { length: 255 }),
-  establishedAtDate: date('established_at_date', { mode: 'string' }),
-
-  // Operational extras
-  vehiclePlate: varchar('vehicle_plate', { length: 20 }),
-  trailerPlate: varchar('trailer_plate', { length: 20 }),
-  driverName: varchar('driver_name', { length: 200 }),
-  driverIdDoc: varchar('driver_id_doc', { length: 80 }),
-  lastKnownLat: doublePrecision('last_known_lat'),
-  lastKnownLng: doublePrecision('last_known_lng'),
-  lastKnownAt: timestamp('last_known_at'),
-
-  recipientSignatureRequired: boolean('recipient_signature_required').notNull().default(true),
-
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-}, (table) => [
-  index('idx_ecmr_company').on(table.companyId),
-  index('idx_ecmr_status').on(table.status),
-  index('idx_ecmr_order').on(table.orderId),
-  index('idx_ecmr_dossier').on(table.dossierId),
-  index('idx_ecmr_carrier').on(table.carrierCompanyId),
-  index('idx_ecmr_consignee').on(table.consigneeCompanyId),
-  index('idx_ecmr_issued').on(table.issuedAt),
-]);
-
-export const eCmrSignatures = pgTable('e_cmr_signatures', {
-  id: text('id').primaryKey(),
-  consignmentId: text('consignment_id').notNull().references(() => eCmrConsignments.id, { onDelete: 'cascade' }),
-  // 'sender' | 'carrier' | 'recipient'
-  party: varchar('party', { length: 20 }).notNull(),
-  signedByUserId: text('signed_by_user_id').references(() => users.id, { onDelete: 'set null' }),
-  signedByName: varchar('signed_by_name', { length: 255 }).notNull(),
-  signedByRole: varchar('signed_by_role', { length: 120 }),
-  signaturePng: text('signature_png').notNull(),
-  signatureHash: varchar('signature_hash', { length: 64 }).notNull(),
-  prevHash: varchar('prev_hash', { length: 64 }),
-  clientTs: timestamp('client_ts'),
-  ipAddress: varchar('ip_address', { length: 64 }),
-  userAgent: text('user_agent'),
-  signedAt: timestamp('signed_at').defaultNow(),
-}, (table) => [
-  index('idx_ecmr_sig_consignment').on(table.consignmentId),
-  index('idx_ecmr_sig_party').on(table.party),
-]);
-
-export const eCmrEvents = pgTable('e_cmr_events', {
-  id: text('id').primaryKey(),
-  consignmentId: text('consignment_id').notNull().references(() => eCmrConsignments.id, { onDelete: 'cascade' }),
-  kind: varchar('kind', { length: 32 }).notNull(),
-  occurredAt: timestamp('occurred_at').notNull().defaultNow(),
-  byUserId: text('by_user_id').references(() => users.id, { onDelete: 'set null' }),
-  byName: varchar('by_name', { length: 255 }),
-  latitude: doublePrecision('latitude'),
-  longitude: doublePrecision('longitude'),
-  notes: text('notes'),
-  metadata: text('metadata'),
-  createdAt: timestamp('created_at').defaultNow(),
-}, (table) => [
-  index('idx_ecmr_events_consignment').on(table.consignmentId),
-  index('idx_ecmr_events_kind').on(table.kind),
-]);
 
 // ═══════════════════════════════════════════════════════════════════════
 // facturamea — licensing, inventory (gestiune), expenses (cheltuieli), POS
