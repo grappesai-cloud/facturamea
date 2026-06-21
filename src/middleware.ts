@@ -334,17 +334,31 @@ export const onRequest = defineMiddleware(async (context, next) => {
       // the "you're viewing as a user" banner + exit link.
       (context.locals as any).impersonating = /(?:^|;\s*)th_imp=/.test(context.request.headers.get('cookie') || '');
 
-      // Admin guard
-      if (pathname.startsWith('/admin')) {
+      // Admin guard (+ MANDATORY 2FA for admins). Covers both /admin pages and
+      // /api/admin endpoints (the latter don't start with /admin). stop-impersonate
+      // is exempt — it authenticates via the th_imp cookie while the live session
+      // is the impersonated (non-admin) user.
+      if ((pathname.startsWith('/admin') || pathname.startsWith('/api/admin')) && pathname !== '/api/admin/stop-impersonate') {
+        const isApi = pathname.startsWith('/api/admin');
         const isAdmin = (user as any).isAdmin || user.userType === 'admin';
         if (!isAdmin) {
-          if (pathname.startsWith('/api/admin')) {
+          if (isApi) {
             return new Response(JSON.stringify({ error: 'Acces interzis' }), {
               status: 403,
               headers: { 'Content-Type': 'application/json', ...(cors || {}) },
             });
           }
           return context.redirect('/app');
+        }
+        // Admins must have two-factor enabled before touching anything in admin.
+        if (!(user as any).totpEnabled) {
+          if (isApi) {
+            return new Response(JSON.stringify({ error: 'Activează autentificarea în doi pași (Setări → Securitate) pentru a folosi adminul.' }), {
+              status: 403,
+              headers: { 'Content-Type': 'application/json', ...(cors || {}) },
+            });
+          }
+          return context.redirect('/app/setari/securitate?2fa=admin');
         }
       }
     } catch (err) {

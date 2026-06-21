@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Locale } from '../../lib/i18n';
 
 const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E2E8EF] rounded-xl text-[14px] text-[#0A2238] placeholder:text-[#7C9AB4] focus:border-[#0A2238] focus:outline-none transition-colors';
 const labelCls = 'block text-[12px] font-medium text-[#0A2238] mb-1.5';
+
+// Cloudflare Turnstile site key (public). When unset, no widget renders and the
+// server-side anti-bot check fails open (so behaviour is unchanged).
+const TURNSTILE_KEY = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY as string | undefined;
 
 export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}) {
   const [step, setStep] = useState(1);
@@ -23,6 +27,16 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Load the Turnstile script once, only when a site key is configured.
+  useEffect(() => {
+    if (!TURNSTILE_KEY) return;
+    if (document.querySelector('script[data-turnstile]')) return;
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js';
+    s.async = true; s.defer = true; s.setAttribute('data-turnstile', '');
+    document.head.appendChild(s);
+  }, []);
 
   // ANAF public lookup on CUI blur — auto-fill firm name, city.
   const lookupCui = async () => {
@@ -52,6 +66,7 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
     if (step === 1) {
       if (!companyName.trim()) { setError('Numele firmei este obligatoriu.'); return; }
       setError(''); setStep(2); return;
@@ -59,6 +74,10 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
     if (password !== confirmPassword) { setError('Parolele nu coincid.'); return; }
     if (password.length < 8) { setError('Parola trebuie să aibă minim 8 caractere.'); return; }
     if (!termsAccepted) { setError('Trebuie să accepți Termenii și Condițiile și Politica de Confidențialitate.'); return; }
+
+    // Anti-bot: read the Turnstile token (empty when the widget isn't configured).
+    const turnstileToken = (form.querySelector('input[name="cf-turnstile-response"]') as HTMLInputElement | null)?.value || '';
+    if (TURNSTILE_KEY && !turnstileToken) { setError('Așteaptă verificarea anti-bot o secundă, apoi reîncearcă.'); (window as any).turnstile?.reset?.(); return; }
 
     setError('');
     setLoading(true);
@@ -71,6 +90,7 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
           userType: 'intermediar', // facturamea: every account is a business owner
           phone, companyName, cui, country, city, companyPhone,
           termsAccepted: true,
+          turnstileToken,
         }),
       });
       const data = await res.json();
@@ -209,6 +229,7 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
               Am citit și sunt de acord cu <a href="/termeni" target="_blank" rel="noopener" className="text-[#0A2238] font-semibold underline hover:text-[#1A759F]">Termenii și Condițiile</a> și cu <a href="/confidentialitate" target="_blank" rel="noopener" className="text-[#0A2238] font-semibold underline hover:text-[#1A759F]">Politica de Confidențialitate</a>. <span className="text-[#1A759F]">*</span>
             </span>
           </label>
+          {TURNSTILE_KEY && <div className="cf-turnstile" data-sitekey={TURNSTILE_KEY} />}
         </div>
       )}
 
