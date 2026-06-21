@@ -66,52 +66,7 @@ const journeySteps = [
       <div class="hero-visual relative flex justify-center lg:justify-end">
         <div data-hero-phone class="relative">
         <PhoneFrame shadow={false} class="w-[270px] sm:w-[300px] aspect-[300/620]">
-          <div class="absolute inset-0 flex flex-col">
-            <div class="flex items-center justify-between px-7 pt-3 text-[11px] font-semibold text-[#0A2238]">
-              <span>9:41</span>
-              <span class="flex items-center gap-1 text-[#46627A]">
-                <svg width="15" height="11" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1.5" width="3" height="10.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity="0.4"/></svg>
-                <svg width="22" height="11" viewBox="0 0 26 13" fill="none"><rect x="0.6" y="0.6" width="21" height="11.8" rx="3" stroke="currentColor" stroke-opacity="0.5"/><rect x="2" y="2" width="16" height="9" rx="1.5" fill="currentColor"/><rect x="23" y="4" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.6"/></svg>
-              </span>
-            </div>
-            <div class="flex-1 px-4 pt-3 overflow-hidden">
-              <div class="flex items-center justify-between">
-                <span class="text-base font-bold text-[#0A2238]">factura<span class="text-[#1A759F]">mea</span></span>
-                <span class="w-8 h-8 rounded-full bg-[#EDF1F5] grid place-items-center"><span class="w-2 h-2 rounded-full bg-[#1A759F]"></span></span>
-              </div>
-              <div class="mt-3 rounded-2xl bg-[#0A2238] p-4 text-white">
-                <p class="text-[11px] text-[#9FB8CC]">Încasat luna asta</p>
-                <p class="text-2xl font-extrabold tabular-nums mt-0.5">48.250 <span class="text-base text-[#E1FB15]">lei</span></p>
-                <div class="mt-3 flex items-end gap-1 h-12">
-                  {[40, 62, 48, 78, 58, 90, 70].map((h, i) => (
-                    <div class="flex-1 rounded-t" style={`height:${h}%;background:${i === 5 ? '#E1FB15' : 'rgba(255,255,255,0.22)'}`}></div>
-                  ))}
-                </div>
-              </div>
-              <div class="mt-3 grid grid-cols-2 gap-2.5">
-                <div class="rounded-2xl bg-[#E1FB15] p-3.5">
-                  <p class="text-[12px] font-bold text-[#0A2238] leading-tight">Emite<br/>factură</p>
-                  <span class="mt-4 inline-grid place-items-center w-7 h-7 rounded-full bg-[#0A2238] text-white">↗</span>
-                </div>
-                <div class="rounded-2xl bg-white ring-1 ring-black/[0.05] p-3.5">
-                  <p class="text-[12px] font-bold text-[#0A2238] leading-tight">Trimite<br/>în SPV</p>
-                  <span class="mt-4 inline-grid place-items-center w-7 h-7 rounded-full bg-[#F0F4F8] text-[#0A2238]">↗</span>
-                </div>
-              </div>
-              <div class="mt-3 flex items-center justify-between">
-                <p class="text-[12px] font-bold text-[#0A2238]">Facturi recente</p>
-                <span class="text-[11px] text-[#7C9AB4]">Vezi tot</span>
-              </div>
-              <div class="mt-2 space-y-2">
-                {[['Acme SRL', '4.998 lei', '#52B69A'], ['Delta SA', '1.200 lei', '#168AAD']].map(([n, v, c]) => (
-                  <div class="flex items-center justify-between rounded-xl bg-white ring-1 ring-black/[0.05] px-3 py-2.5">
-                    <span class="flex items-center gap-2.5 text-[12.5px] font-semibold text-[#0A2238]"><span class="w-6 h-6 rounded-lg" style={`background:${c}`}></span>{n}</span>
-                    <span class="text-[12.5px] font-bold text-[#0A2238] tabular-nums">{v}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <img src="/screens/app-facturare.jpeg" alt="Aplicația facturamea — ecranul Facturare" loading="eager" class="absolute inset-0 w-full h-full object-cover" />
         </PhoneFrame>
         </div>
 
@@ -144,7 +99,7 @@ const journeySteps = [
             <PhoneFrame class="journey-phone w-[266px] sm:w-[286px] aspect-[286/590]">
               <!-- 1 · Meniu (all actions) -->
               <div data-jscreen data-jscreen-i="0" class="jscreen is-active absolute inset-0 pt-11 px-4 pb-4">
-                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/meniu.jpg"><source src="/showcase/meniu.mp4" type="video/mp4" /></video>
+                <img class="jvid is-ready" src="/screens/app-meniu.jpeg" alt="facturamea — meniu facturare" loading="lazy" />
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">facturamea</p>
                 <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Meniu</p>
                 <div class="mt-3 grid grid-cols-3 gap-2">
@@ -158,7 +113,7 @@ const journeySteps = [
 
               <!-- 2 · Facturare -->
               <div data-jscreen data-jscreen-i="1" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
-                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/facturare.jpg"><source src="/showcase/facturare.mp4" type="video/mp4" /></video>
+                <img class="jvid is-ready" src="/screens/app-acasa.jpeg" alt="facturamea — ecranul Acasă" loading="lazy" />
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Factură nouă</p>
                 <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">FCT-2026-0127</p>
                 <div class="mt-3 rounded-2xl bg-white ring-1 ring-black/[0.04] p-3.5">
@@ -179,7 +134,7 @@ const journeySteps = [
 
               <!-- 3 · Cheltuieli -->
               <div data-jscreen data-jscreen-i="2" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
-                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/cheltuieli.jpg"><source src="/showcase/cheltuieli.mp4" type="video/mp4" /></video>
+                <img class="jvid is-ready" src="/screens/app-cheltuieli.jpeg" alt="facturamea — ecranul Cheltuieli" loading="lazy" />
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Cheltuieli</p>
                 <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Luna aceasta</p>
                 <div class="mt-3 rounded-2xl bg-[#0A2238] p-4 text-white">
@@ -198,7 +153,7 @@ const journeySteps = [
 
               <!-- 4 · Rapoarte -->
               <div data-jscreen data-jscreen-i="3" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
-                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/rapoarte.jpg"><source src="/showcase/rapoarte.mp4" type="video/mp4" /></video>
+                <img class="jvid is-ready" src="/screens/app-rapoarte.jpeg" alt="facturamea — ecranul Rapoarte" loading="lazy" />
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Rapoarte</p>
                 <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Vânzări 2026</p>
                 <div class="mt-3 rounded-2xl bg-white ring-1 ring-black/[0.04] p-3.5">
