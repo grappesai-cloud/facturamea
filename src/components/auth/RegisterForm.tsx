@@ -22,6 +22,7 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [phone, setPhone] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // ANAF public lookup on CUI blur — auto-fill firm name, city.
   const lookupCui = async () => {
@@ -57,6 +58,7 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
     }
     if (password !== confirmPassword) { setError('Parolele nu coincid.'); return; }
     if (password.length < 8) { setError('Parola trebuie să aibă minim 8 caractere.'); return; }
+    if (!termsAccepted) { setError('Trebuie să accepți Termenii și Condițiile și Politica de Confidențialitate.'); return; }
 
     setError('');
     setLoading(true);
@@ -68,6 +70,7 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
           name, email, password,
           userType: 'intermediar', // facturamea: every account is a business owner
           phone, companyName, cui, country, city, companyPhone,
+          termsAccepted: true,
         }),
       });
       const data = await res.json();
@@ -194,9 +197,18 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
               <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={8} autoComplete="new-password" className={inputCls} placeholder="repetă parola" />
             </div>
           </div>
-          <p className="text-[11px] text-[#46627A] leading-relaxed">
-            Prin crearea contului accepți <a href="/termeni" className="text-[#0A2238] underline hover:text-[#1A759F]">Termenii</a> și <a href="/confidentialitate" className="text-[#0A2238] underline hover:text-[#1A759F]">Politica de confidențialitate</a>.
-          </p>
+          <label className="flex items-start gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+              required
+              className="mt-0.5 w-4 h-4 shrink-0 accent-[#0A2238] cursor-pointer"
+            />
+            <span className="text-[12px] text-[#46627A] leading-relaxed">
+              Am citit și sunt de acord cu <a href="/termeni" target="_blank" rel="noopener" className="text-[#0A2238] font-semibold underline hover:text-[#1A759F]">Termenii și Condițiile</a> și cu <a href="/confidentialitate" target="_blank" rel="noopener" className="text-[#0A2238] font-semibold underline hover:text-[#1A759F]">Politica de Confidențialitate</a>. <span className="text-[#1A759F]">*</span>
+            </span>
+          </label>
         </div>
       )}
 

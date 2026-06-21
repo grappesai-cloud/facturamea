@@ -35,6 +35,13 @@ export const POST: APIRoute = async ({ request, url }) => {
         });
       }
 
+      // T&C acceptance is mandatory (Cap. 1.2 — bifa = semnătură electronică).
+      if (body.termsAccepted !== true) {
+        return new Response(JSON.stringify({ error: 'Trebuie să accepți Termenii și Condițiile și Politica de Confidențialitate.' }), {
+          status: 400, headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       // Invoicing platform for everyone: every account is a business owner.
       // userType is optional and defaults to 'intermediar' (full access).
       const userTypeResolved = userType === 'transportator' ? 'transportator' : 'intermediar';
@@ -78,6 +85,11 @@ export const POST: APIRoute = async ({ request, url }) => {
         companyPhone: companyPhone?.trim(),
         referralCode: referralCode?.trim() || undefined,
       });
+
+      // Record T&C acceptance as proof (timestamp + IP via the audit log).
+      try {
+        await logAction({ userId: result.userId, companyId: result.companyId, action: 'auth.terms_accepted', entityType: 'user', entityId: result.userId, metadata: { version: '1.0' }, request });
+      } catch {}
 
       // Optional depot — if user has one, persist as a companyLocation of type 'warehouse'.
       if (result.companyId && depot && typeof depot === 'object' && depot.city) {
