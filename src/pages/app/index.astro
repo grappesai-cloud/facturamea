@@ -81,36 +81,9 @@ if (companyId) {
   } catch (e) { /* DB not ready */ }
 }
 
-// Demo fallback — when the company has no real data yet, populate the chart with
-// plausible mock numbers (only up to the current month; future months stay empty)
-// so the design is reviewable. Real data always wins when present.
-const curMonth = now.getMonth(); // 0-11
+// Empty state shows REAL zeros — no mock fallback. A brand-new account sees its
+// true state (0), never fabricated numbers.
 const hasRealData = monthAgg.some((a, i) => i >= 1 && (a.issued || a.collected || a.expenses));
-if (!hasRealData) {
-  // { v: collected, d: still-to-pay, c: expenses } in RON.
-  const MOCK = [
-    { v: 9200, d: 1800, c: 6100 },  { v: 11500, d: 2400, c: 7200 },
-    { v: 8600, d: 1200, c: 5400 },  { v: 14800, d: 3600, c: 8100 },
-    { v: 12300, d: 2100, c: 9400 }, { v: 16900, d: 4200, c: 7600 },
-    { v: 13400, d: 2800, c: 8800 }, { v: 10200, d: 1500, c: 6700 },
-    { v: 15600, d: 3100, c: 9100 }, { v: 12900, d: 2600, c: 7300 },
-    { v: 17800, d: 4800, c: 9900 }, { v: 14100, d: 2200, c: 8400 },
-  ];
-  for (let i = 0; i < 12; i++) {
-    if (i <= curMonth) {
-      const m = MOCK[i];
-      monthAgg[i + 1] = { collected: m.v * 100, issued: (m.v + m.d) * 100, expenses: m.c * 100 };
-    } else {
-      monthAgg[i + 1] = { collected: 0, issued: 0, expenses: 0 };
-    }
-  }
-  // Top KPI cards: use the current month's mock so they aren't zero in the demo.
-  kpis.collectedMonth = MOCK[curMonth].v * 100;
-  kpis.expensesMonth = MOCK[curMonth].c * 100;
-  if (!counts.facturi) counts.facturi = 127;
-  if (!counts.produse) counts.produse = 48;
-  if (!counts.declaratii) counts.declaratii = 12;
-}
 
 // Build 12 monthly columns: income (collected + still-to-pay, stacked) vs expenses.
 const MONTH_ABBR = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];

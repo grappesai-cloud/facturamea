@@ -1,12 +1,13 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { users, userCompanyMemberships } from '../../../../db/schema';
+import { users, userCompanyMemberships, companies, passwordResetTokens } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { generatePlatformId } from '../../../../lib/platform-id';
 import { hashPassword } from '../../../../lib/auth';
 import { isValidRole, normalizeRole, ROLE_LABELS } from '../../../../lib/permissions-roles';
 import { requireRole } from '../../../../lib/require-role';
+import { sendEmail } from '../../../../lib/notifications';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -127,7 +128,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
       isDefault: false,
     } as any);
 
-    return json({ ok: true, userId, platformId }, 201);
+    // Send an invite email with a set-password link (reuses the reset-token
+    // flow, 7-day expiry for invites). Without this the new member has a random
+    // password and no way to get in.
+    let invited = false;
+    try {
+      const token = nanoid(48);
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await db.insert(passwordResetTokens).values({ id: nanoid(), userId, token, expiresAt } as any);
+      const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, companyId)).limit(1);
+      const companyName = co?.name || 'compania';
+      const inviter = locals.user.name || 'Administratorul';
+      const roleLabel = ROLE_LABELS[normalizeRole(role)];
+      const link = `https://facturamea.com/auth/reset-password?token=${token}`;
+      const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const subject = `Ai fost adăugat în echipa ${companyName} pe facturamea`;
+      const text = `Bună ${name},\n${inviter} te-a adăugat în echipa "${companyName}" pe facturamea, cu rolul ${roleLabel}.\nSetează-ți parola și intră în cont: ${link}\nLinkul e valabil 7 zile.`;
+      const html = `<p>Bună ${esc(name)},</p><p><strong>${esc(inviter)}</strong> te-a adăugat în echipa <strong>${esc(companyName)}</strong> pe facturamea, cu rolul <strong>${esc(roleLabel)}</strong>.</p><p><a href="${link}">Setează-ți parola și intră în cont</a> — link valabil 7 zile.</p>`;
+      await sendEmail(email, subject, text, html);
+      invited = true;
+    } catch (err) {
+      console.error('team invite email failed:', err);
+    }
+
+    return json({ ok: true, userId, platformId, invited }, 201);
   } catch (err) {
     console.error('team add member failed:', err);
     return json({ error: 'Eroare la adăugarea membrului' }, 500);
