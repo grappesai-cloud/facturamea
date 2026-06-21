@@ -39,6 +39,10 @@ if (model?.showQr) {
 }
 ---
 
-<PrintLayout title={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber}`}>
+<PrintLayout
+  title={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber}`}
+  shareUrl={`${import.meta.env.PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || 'https://facturamea.com'}/factura/${token}`}
+  shareText={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber} (${(inv.totalCents / 100).toFixed(2)} ${inv.currency})`}
+>
   <InvoiceDocument inv={inv} lines={lines} issuer={issuer} model={model} qrDataUrl={qrDataUrl} />
 </PrintLayout>

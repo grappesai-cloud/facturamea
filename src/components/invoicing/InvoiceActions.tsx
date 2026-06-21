@@ -2,7 +2,15 @@ import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat, CreditCard } from 'lucide-react';
+import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat, CreditCard, MessageCircle } from 'lucide-react';
+
+const KIND_LABEL: Record<string, string> = { factura: 'factura', proforma: 'proforma', storno: 'factura storno', chitanta: 'chitanța' };
+
+// Build the message a sender pastes into WhatsApp / native share alongside the link.
+function shareMessage(kind: string, totalCents: number, currency: string, url: string): string {
+  const amount = (totalCents / 100).toFixed(2);
+  return `Bună ziua,\nVă transmit ${KIND_LABEL[kind] || 'documentul'} în valoare de ${amount} ${currency}.\nO puteți vizualiza și descărca aici: ${url}`;
+}
 
 export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId }: {
   invoiceId: string;
@@ -181,7 +189,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       </Button>
 
       {shareUrl && (
-        <ShareModal url={shareUrl} invoiceId={invoiceId} onClose={() => setShareUrl(null)} onRevoke={() => setShareUrl(null)} />
+        <ShareModal url={shareUrl} invoiceId={invoiceId} kind={kind} totalCents={totalCents} currency={currency} onClose={() => setShareUrl(null)} onRevoke={() => setShareUrl(null)} />
       )}
       {payLinkUrl && (
         <PayLinkModal url={payLinkUrl} onClose={() => setPayLinkUrl(null)} />
@@ -264,12 +272,19 @@ function PaymentModal({ remainingCents, currency, busy, error, onClose, onSubmit
   );
 }
 
-function ShareModal({ url, invoiceId, onClose, onRevoke }: { url: string; invoiceId: string; onClose: () => void; onRevoke: () => void }) {
+function ShareModal({ url, invoiceId, kind, totalCents, currency, onClose, onRevoke }: { url: string; invoiceId: string; kind: string; totalCents: number; currency: string; onClose: () => void; onRevoke: () => void }) {
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const copy = async () => {
     try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
   };
+  const msg = shareMessage(kind, totalCents, currency, url);
+  const whatsapp = () => window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+  const nativeShare = async () => {
+    // Mobile: opens the OS share sheet (WhatsApp, SMS, email, etc.).
+    try { await (navigator as any).share?.({ title: 'Document facturamea', text: msg, url }); } catch { /* user cancelled */ }
+  };
+  const hasNativeShare = typeof navigator !== 'undefined' && !!(navigator as any).share;
   const revoke = async () => {
     setRevoking(true);
     await fetch(`/api/invoicing/invoices/${invoiceId}/share`, { method: 'DELETE' }).catch(() => {});
@@ -278,11 +293,21 @@ function ShareModal({ url, invoiceId, onClose, onRevoke }: { url: string; invoic
   return (
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-bold text-[#0A0A0A] mb-2 flex items-center gap-2"><Share2 className="w-5 h-5" /> Link public</h3>
-        <p className="text-xs text-[#6B6B68] mb-4">Oricine are acest link poate vedea documentul (doar citire). Poți revoca oricând.</p>
+        <h3 className="text-lg font-bold text-[#0A0A0A] mb-2 flex items-center gap-2"><Share2 className="w-5 h-5" /> Trimite documentul (fără email)</h3>
+        <p className="text-xs text-[#6B6B68] mb-4">Oricine are acest link poate vedea și descărca documentul (doar citire). Poți revoca oricând.</p>
         <div className="flex gap-2">
           <Input value={url} readOnly className="flex-1 font-mono text-xs" />
           <Button size="sm" onClick={copy}>{copied ? 'Copiat!' : 'Copiază'}</Button>
+        </div>
+        <div className="grid grid-cols-2 gap-2 mt-3">
+          <Button size="sm" onClick={whatsapp} className="bg-[#25D366] hover:bg-[#1FB855] text-white">
+            <MessageCircle className="w-4 h-4 mr-1.5" /> WhatsApp
+          </Button>
+          {hasNativeShare && (
+            <Button size="sm" variant="outline" onClick={nativeShare}>
+              <Share2 className="w-4 h-4 mr-1.5" /> Trimite…
+            </Button>
+          )}
         </div>
         <div className="flex justify-between gap-2 mt-5">
           <Button variant="outline" disabled={revoking} onClick={revoke} className="text-[#B91C1C] border-[#F0C9C9] hover:bg-[#FFF5F5]">
