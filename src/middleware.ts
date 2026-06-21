@@ -209,6 +209,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
     pathname.startsWith('/api/auth/') ||
     pathname.startsWith('/api/public/') ||
     pathname === '/api/locale' ||
+    pathname === '/api/demo' ||
     pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/api/webhooks/') ||
     pathname.startsWith('/api/v1/') ||
