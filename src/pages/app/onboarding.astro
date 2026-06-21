@@ -20,7 +20,9 @@ if (user.companyId) {
   try { isPaid = (await licenseState(user.companyId)).active; } catch {}
 }
 
-const companyComplete = !!(company && company.cui && company.address && company.city);
+// Complete = real fiscal identity. ANAF returns a full address (locality
+// included), so we don't require a separate city field.
+const companyComplete = !!(company && company.cui && company.address);
 
 // Already fully onboarded → straight into the app.
 if (companyComplete && isPaid) return Astro.redirect('/app');
@@ -29,20 +31,18 @@ const initial = {
   cui: company?.cui || '',
   name: company?.name || '',
   address: company?.address || '',
-  city: company?.city || '',
   country: company?.country || 'Romania',
-  phone: company?.phone || '',
 };
 ---
 
 <BaseLayout title="Activare cont" noindex={true}>
-  <main class="min-h-screen w-full flex flex-col items-center justify-center px-5 py-12">
+  <main class="min-h-screen w-full flex flex-col items-center justify-center px-5 py-12" style="background:#0A2238;">
     <div class="flex items-center gap-2 mb-8">
       <span class="text-xl font-bold text-white">factura<span class="text-[#E1FB15]">mea</span></span>
     </div>
-    <div class="w-full max-w-lg bg-white/[0.03] ring-1 ring-white/10 rounded-3xl p-7 sm:p-9">
+    <div class="w-full max-w-lg rounded-3xl p-7 sm:p-9" style="background:#0E2A44;border:1px solid rgba(255,255,255,0.1);">
       <OnboardingWizard client:load initial={initial} companyComplete={companyComplete} isPaid={isPaid} />
     </div>
-    <a href="/app/logout" class="mt-6 text-[13px] text-[#7C9AB4] hover:text-white transition-colors">Deconectează-te</a>
+    <a href="/app/logout" class="mt-6 text-[13px] text-[#8FA8BE] hover:text-white transition-colors">Deconectează-te</a>
   </main>
 </BaseLayout>

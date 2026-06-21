@@ -316,7 +316,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
             // Activation gate: a company must have a complete fiscal profile
             // (CIF + address + city) AND a paid lifetime license. Until then,
             // every /app page is funneled into the onboarding wizard. No trial.
-            const companyComplete = !!(company && company.cui && company.address && company.city);
+            const companyComplete = !!(company && company.cui && company.address);
             const exempt = pathname.startsWith('/app/onboarding')
               || pathname.startsWith('/app/setari/abonament')
               || pathname === '/app/logout';
