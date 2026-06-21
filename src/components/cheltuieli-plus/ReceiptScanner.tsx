@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Camera, Upload, Loader2, Check, FileText, RotateCcw } from 'lucide-react';
+import { Camera, Upload, Loader2, Check, FileText, RotateCcw, FileCode } from 'lucide-react';
 
 // Senior-friendly receipt scanner: big "Fă o poză / Încarcă" buttons, a single
 // editable confirmation form, then save to the existing expenses endpoint.
@@ -56,6 +56,7 @@ type Phase = 'idle' | 'scanning' | 'review' | 'saving' | 'done';
 export default function ReceiptScanner() {
   const cameraInput = useRef<HTMLInputElement>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const xmlInput = useRef<HTMLInputElement>(null);
 
   const [phase, setPhase] = useState<Phase>('idle');
   const [error, setError] = useState('');
@@ -67,41 +68,52 @@ export default function ReceiptScanner() {
     setPhase('idle'); setError(''); setNote(''); setFileName(''); setForm(null);
     if (cameraInput.current) cameraInput.current.value = '';
     if (fileInput.current) fileInput.current.value = '';
+    if (xmlInput.current) xmlInput.current.value = '';
   };
 
-  const onPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setError(''); setNote(''); setFileName(file.name); setPhase('scanning');
+  const EMPTY: OcrFields = { supplierName: null, supplierCui: null, documentNumber: null, issueDate: null, netCents: 0, vatCents: 0, totalCents: 0, currency: 'RON', category: null };
 
+  // Shared ingestion: OCR (paid, photos) and XML e-Factura (free, exact) both
+  // return { ok, fields } so the same review form handles either source.
+  const ingest = async (file: File, endpoint: string) => {
+    const isXml = endpoint.includes('import-xml');
+    setError(''); setNote(''); setFileName(file.name); setPhase('scanning');
     try {
       const body = new FormData();
       body.append('file', file);
-      const res = await fetch('/api/cheltuieli/ocr', { method: 'POST', body });
+      const res = await fetch(endpoint, { method: 'POST', body });
       const data = await res.json().catch(() => ({ ok: false, error: 'Răspuns invalid de la server.' }));
 
       if (res.status === 503) {
-        setError(data.error || 'Scanarea automată nu este disponibilă momentan. Completează manual.');
-        // Still let them fill the form by hand.
-        setForm(fieldsToForm({ supplierName: null, supplierCui: null, documentNumber: null, issueDate: null, netCents: 0, vatCents: 0, totalCents: 0, currency: 'RON', category: null }));
+        setError(data.error || 'Citirea automată nu este disponibilă momentan. Completează manual.');
+        setForm(fieldsToForm(EMPTY));
         setPhase('review');
         return;
       }
 
       if (data.ok && data.fields) {
         setForm(fieldsToForm(data.fields as OcrFields));
-        setNote('Am citit datele de pe document. Verifică-le și salvează.');
+        setNote(isXml ? 'Am citit factura din XML (e-Factura), gratuit și exact. Verifică și salvează.' : 'Am citit datele de pe document. Verifică-le și salvează.');
         setPhase('review');
       } else {
-        setError(data.error || 'Nu am putut citi documentul. Completează datele manual.');
-        setForm(fieldsToForm({ supplierName: null, supplierCui: null, documentNumber: null, issueDate: null, netCents: 0, vatCents: 0, totalCents: 0, currency: 'RON', category: null }));
+        setError(data.error || (isXml ? 'Nu am putut citi XML-ul. Completează datele manual.' : 'Nu am putut citi documentul. Completează datele manual.'));
+        setForm(fieldsToForm(EMPTY));
         setPhase('review');
       }
     } catch {
       setError('Eroare de rețea. Completează datele manual.');
-      setForm(fieldsToForm({ supplierName: null, supplierCui: null, documentNumber: null, issueDate: null, netCents: 0, vatCents: 0, totalCents: 0, currency: 'RON', category: null }));
+      setForm(fieldsToForm(EMPTY));
       setPhase('review');
     }
+  };
+
+  const onPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) ingest(file, '/api/cheltuieli/ocr');
+  };
+  const onPickXml = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) ingest(file, '/api/cheltuieli/import-xml');
   };
 
   const save = async () => {
@@ -163,6 +175,7 @@ export default function ReceiptScanner() {
     <div className="space-y-4">
       <input ref={cameraInput} type="file" accept="image/*,application/pdf" capture="environment" className="hidden" onChange={onPick} />
       <input ref={fileInput} type="file" accept="image/*,application/pdf" className="hidden" onChange={onPick} />
+      <input ref={xmlInput} type="file" accept=".xml,.zip,application/xml,text/xml,application/zip" className="hidden" onChange={onPickXml} />
 
       {/* --- UPLOAD / SCAN ---------------------------------------------------- */}
       {(phase === 'idle' || phase === 'scanning') && (
@@ -185,18 +198,21 @@ export default function ReceiptScanner() {
                   {fileName && <p className="text-[13px] text-[#8A8A85] truncate max-w-[260px]">{fileName}</p>}
                 </div>
               ) : (
-                <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center flex-wrap">
                   <Button size="xl" onClick={() => cameraInput.current?.click()} className="w-full sm:w-auto">
                     <Camera className="w-6 h-6 mr-1" /> Fă o poză
                   </Button>
                   <Button size="xl" variant="outline" onClick={() => fileInput.current?.click()} className="w-full sm:w-auto">
                     <Upload className="w-6 h-6 mr-1" /> Încarcă fișier
                   </Button>
+                  <Button size="xl" variant="outline" onClick={() => xmlInput.current?.click()} className="w-full sm:w-auto">
+                    <FileCode className="w-6 h-6 mr-1" /> Importă XML (e-Factura)
+                  </Button>
                 </div>
               )}
 
               {phase === 'idle' && (
-                <p className="text-[13px] text-[#A8A8A4] mt-4">Acceptăm poze (JPG, PNG) și PDF-uri.</p>
+                <p className="text-[13px] text-[#A8A8A4] mt-4">Poze (JPG, PNG) și PDF prin scanare · XML / ZIP e-Factura citit gratuit și exact.</p>
               )}
             </div>
           </CardContent>
