@@ -17,6 +17,14 @@ export default defineConfig({
   site: 'https://facturamea.com',
   integrations: [react()],
 
+  // Astro's built-in checkOrigin (default-on) rejects multipart/form POSTs
+  // behind the Coolify reverse proxy ("Cross-site POST form submissions are
+  // forbidden") because the proxy rewrites Host so Origin !== Host — this
+  // breaks ALL file uploads. We disable it and rely on our own CSRF in
+  // src/middleware.ts (isCrossOrigin check on cookie-based mutating /api
+  // requests; Bearer/JSON requests are token-authenticated and exempt).
+  security: { checkOrigin: false },
+
   // Aliases / corrected URLs so common-but-wrong paths don't 404.
   redirects: {
     '/app/facturi': '/app/facturare',
