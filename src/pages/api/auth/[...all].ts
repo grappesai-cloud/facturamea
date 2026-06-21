@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
-import { registerUser, loginUser, setSessionCookie, clearSessionCookie, hashPassword, verifyAndMaybeRehash, createSession, revokeAllSessionsForUser } from '../../../lib/auth';
+import { registerUser, loginUser, setSessionCookie, clearSessionCookie, hashPassword, verifyAndMaybeRehash, createSession, revokeAllSessionsForUser, deleteSessionByRawToken } from '../../../lib/auth';
 import { db } from '../../../db';
-import { sessions, users, passwordResetTokens, totpPendingLogins } from '../../../db/schema';
+import { users, passwordResetTokens, totpPendingLogins } from '../../../db/schema';
 import { nanoid } from 'nanoid';
 import { eq } from 'drizzle-orm';
 import { rateLimitAsync, getClientIp, checkLoginLockoutAsync, recordFailedLoginAsync, clearLoginAttemptsAsync, generateResetToken, sanitizeHtml } from '../../../lib/security';
@@ -9,6 +9,7 @@ import { sendEmail } from '../../../lib/notifications';
 import { verifyTurnstile } from '../../../lib/turnstile';
 import { passwordResetEmail } from '../../../lib/email-templates';
 import { logAction } from '../../../lib/audit';
+import { captureError } from '../../../lib/observability';
 
 export const POST: APIRoute = async ({ request, url }) => {
   const path = url.pathname;
@@ -152,7 +153,9 @@ export const POST: APIRoute = async ({ request, url }) => {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (err: any) {
-      return new Response(JSON.stringify({ error: err.message || 'Eroare la înregistrare' }), {
+      // Never leak internal error text/stack to the client.
+      await captureError(err, { route: path, method: 'POST' });
+      return new Response(JSON.stringify({ error: 'Înregistrarea nu a putut fi finalizată. Încearcă din nou.' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -202,6 +205,8 @@ export const POST: APIRoute = async ({ request, url }) => {
         // Manual verify so we can branch on totpEnabled before creating a session
         const [u] = await db.select().from(users).where(eq(users.email, normalizedEmail));
         if (!u) throw new Error('invalid');
+        // Deactivated / soft-deleted accounts cannot log in (generic error).
+        if (u.isActive === false || u.deletedAt) throw new Error('invalid');
         const verify = await verifyAndMaybeRehash(password, u.hashedPassword);
         if (!verify.valid) throw new Error('invalid');
         if (verify.newHash) {
@@ -277,7 +282,8 @@ export const POST: APIRoute = async ({ request, url }) => {
       );
       const sessionId = cookies['th_session'];
       if (sessionId) {
-        await db.delete(sessions).where(eq(sessions.id, sessionId));
+        // Sessions are stored hashed — delete via the raw-token helper.
+        await deleteSessionByRawToken(sessionId);
       }
     }
 

@@ -4,8 +4,31 @@
 // the mapping functions are pure and never touch the DB.
 import { db } from '../db';
 import { transportInvoices, transportInvoiceLines } from '../db/schema';
+import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { ensureDefaultSeries, nextSeriesNumber, INVOICE_NUMBER_FORMAT } from './invoicing';
+
+import crypto from 'node:crypto';
+
+// Constant-time verification of a base64 HMAC-SHA256 signature over the RAW
+// request body. Shopify (`X-Shopify-Hmac-Sha256`) and WooCommerce
+// (`X-WC-Webhook-Signature`) both send base64(HMAC-SHA256(rawBody, secret)).
+//
+// We key the HMAC with the per-connection `webhookSecret` (the only secret the
+// integration_connections schema stores). The store must be configured to sign
+// with that same value. If a dedicated app-secret column is added later, use it.
+export function verifyHmacBase64(rawBody: string, secret: string, providedHeader: string | null | undefined): boolean {
+  if (!secret || !providedHeader) return false;
+  const expected = crypto.createHmac('sha256', secret).update(rawBody, 'utf8').digest('base64');
+  const a = Buffer.from(expected);
+  const b = Buffer.from(String(providedHeader));
+  if (a.length !== b.length) return false;
+  try {
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
 
 export interface MappedLine {
   description: string;
@@ -172,6 +195,20 @@ export async function createInvoiceFromMappedOrder(
 ): Promise<{ id: string; fullNumber: string; totalCents: number } | null> {
   try {
     if (!mapped.lines.length) return null;
+
+    // Idempotency: e-commerce platforms re-deliver webhooks (retries, at-least-
+    // once delivery). The schema has no dedicated external-ref column, but each
+    // webhook builds a deterministic `note` that embeds the external order ref
+    // (e.g. "Comandă Shopify #1001"). Dedupe on (companyId, notes) so a replay
+    // of the same order never creates a duplicate invoice. If a richer order-ref
+    // column is added later, switch this lookup to it.
+    if (mapped.externalOrderRef) {
+      const [dup] = await db.select({ id: transportInvoices.id })
+        .from(transportInvoices)
+        .where(and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.notes, note)))
+        .limit(1);
+      if (dup) return null;
+    }
 
     let subtotalCents = 0;
     let vatCents = 0;

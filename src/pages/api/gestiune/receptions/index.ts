@@ -5,10 +5,11 @@
 // stockLevels (weighted-average cost) via applyStockIn.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { receptions, receptionLines, suppliers } from '../../../../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { receptions, receptionLines, suppliers, warehouses } from '../../../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { applyStockIn } from '../../../../lib/stock';
+import { requireRole } from '../../../../lib/require-role';
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
@@ -45,6 +46,8 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'stock.manage');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
@@ -53,6 +56,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const nirNumber = String(body.nirNumber || '').trim();
   if (!warehouseId) return new Response(JSON.stringify({ error: 'Alege o gestiune' }), { status: 400 });
   if (!nirNumber) return new Response(JSON.stringify({ error: 'Numărul NIR e obligatoriu' }), { status: 400 });
+
+  // Verify the warehouse belongs to the caller's company before any stock mutation.
+  const [wh] = await db.select({ id: warehouses.id }).from(warehouses)
+    .where(and(eq(warehouses.id, warehouseId), eq(warehouses.companyId, cid))).limit(1);
+  if (!wh) return new Response(JSON.stringify({ error: 'Gestiune inexistentă' }), { status: 400 });
 
   const rawLines: any[] = Array.isArray(body.lines) ? body.lines : [];
   const lines = rawLines

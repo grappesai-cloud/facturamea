@@ -9,9 +9,12 @@ import { db } from '../../../../db';
 import { warehouses, stockLevels, invoiceProducts } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { applyStockIn, applyStockOut } from '../../../../lib/stock';
+import { requireRole } from '../../../../lib/require-role';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'stock.manage');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
@@ -41,7 +44,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     // Read source level for available qty + cost.
     const [src] = await db.select({ quantity: stockLevels.quantity, avg: stockLevels.avgCostCents })
       .from(stockLevels)
-      .where(and(eq(stockLevels.warehouseId, fromWarehouseId), eq(stockLevels.productId, productId))).limit(1);
+      .where(and(eq(stockLevels.companyId, cid), eq(stockLevels.warehouseId, fromWarehouseId), eq(stockLevels.productId, productId))).limit(1);
     const available = Number(src?.quantity) || 0;
     if (available < quantity) {
       return new Response(JSON.stringify({ error: `Stoc insuficient în sursă (disponibil: ${available})` }), { status: 400 });

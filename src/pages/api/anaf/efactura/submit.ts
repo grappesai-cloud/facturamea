@@ -10,11 +10,15 @@ import type { APIRoute } from 'astro';
 import { uploadInvoice } from '../../../../lib/anaf/efactura-client';
 import { db } from '../../../../db';
 import { invoices, companies, billingAddresses } from '../../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { generateEFacturaXml } from '../../../../lib/efactura';
+import { requireRole } from '../../../../lib/require-role';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
+  const denied = requireRole(locals, 'invoice.create');
+  if (denied) return denied;
+  const companyId = locals.user.companyId;
   let body: any;
   try { body = await request.json(); } catch { return new Response(JSON.stringify({ error: 'Body invalid' }), { status: 400 }); }
 
@@ -27,11 +31,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (typeof body.xml === 'string' && body.xml.trim().startsWith('<')) {
     xml = body.xml;
     invoiceId = typeof body.refId === 'string' ? body.refId : undefined;
+    // IDOR fix: refId is attacker-controlled. If it references an invoice, that
+    // invoice MUST belong to the caller's company before we later UPDATE it.
+    if (invoiceId) {
+      const [inv] = await db.select({ companyId: invoices.companyId }).from(invoices).where(eq(invoices.id, invoiceId)).limit(1);
+      if (!inv) return new Response(JSON.stringify({ error: 'Factura nu există' }), { status: 404 });
+      if (inv.companyId !== companyId) return new Response(JSON.stringify({ error: 'Nu ai acces la factură' }), { status: 403 });
+    }
   } else if (typeof body.invoiceId === 'string') {
     invoiceId = body.invoiceId;
     const [inv] = await db.select().from(invoices).where(eq(invoices.id, invoiceId!)).limit(1);
     if (!inv) return new Response(JSON.stringify({ error: 'Factura nu există' }), { status: 404 });
-    if (inv.companyId !== locals.user.companyId) return new Response(JSON.stringify({ error: 'Nu ai acces la factură' }), { status: 403 });
+    if (inv.companyId !== companyId) return new Response(JSON.stringify({ error: 'Nu ai acces la factură' }), { status: 403 });
 
     if (inv.efacturaXml) {
       xml = inv.efacturaXml;
@@ -78,7 +89,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!xml) return new Response(JSON.stringify({ error: 'XML lipsă' }), { status: 400 });
 
   const result = await uploadInvoice({
-    companyId: locals.user.companyId, cif, xml, refId: invoiceId, userId: locals.user.id,
+    companyId, cif, xml, refId: invoiceId, userId: locals.user.id,
   });
 
   if (invoiceId && result.ok) {
@@ -88,12 +99,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       efacturaSubmittedAt: new Date(),
       efacturaAnafId: result.spvIndex || null,
       efacturaError: null,
-    }).where(eq(invoices.id, invoiceId));
+    }).where(and(eq(invoices.id, invoiceId), eq(invoices.companyId, companyId)));
   } else if (invoiceId && !result.ok) {
     await db.update(invoices).set({
       efacturaStatus: 'rejected',
       efacturaError: result.error || 'unknown',
-    }).where(eq(invoices.id, invoiceId));
+    }).where(and(eq(invoices.id, invoiceId), eq(invoices.companyId, companyId)));
   }
 
   return new Response(JSON.stringify(result), {

@@ -10,11 +10,12 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../../db';
 import { transportInvoices } from '../../../../../db/schema';
 import { eq } from 'drizzle-orm';
+import { captureError } from '../../../../../lib/observability';
 
 export const prerender = false;
 export const config = { runtime: 'nodejs', maxDuration: 60 } as const;
 
-export const GET: APIRoute = async ({ params, locals, request, cookies }) => {
+export const GET: APIRoute = async ({ params, locals, request }) => {
   if (!locals.user?.companyId) return new Response('Unauthorized', { status: 401 });
   const invoiceId = params.id as string;
 
@@ -71,8 +72,15 @@ export const GET: APIRoute = async ({ params, locals, request, cookies }) => {
         'Cache-Control': 'private, max-age=60',
       },
     });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: 'PDF generation failed', detail: err?.message || String(err) }), {
+  } catch (err) {
+    await captureError(err, {
+      userId: locals.user.id,
+      companyId: locals.user.companyId,
+      route: '/api/invoicing/invoices/[id]/pdf',
+      method: 'GET',
+      extra: { invoiceId },
+    });
+    return new Response(JSON.stringify({ error: 'Nu am putut genera PDF-ul. Încearcă din nou.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

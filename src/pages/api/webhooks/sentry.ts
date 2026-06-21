@@ -1,18 +1,33 @@
 import type { APIRoute } from 'astro';
+import crypto from 'node:crypto';
 import { db } from '../../../db';
 import { auditLog } from '../../../db/schema';
 import { nanoid } from 'nanoid';
 
+// Constant-time string compare; false when either side is empty.
+function safeEqual(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  const ab = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ab.length !== bb.length) return false;
+  return crypto.timingSafeEqual(ab, bb);
+}
+
 // Sentry webhook receiver — logs new issues to audit_log so we can see
 // production errors in /admin/audit without needing to log into Sentry.
 //
+// Auth: shared secret sent in the `X-Webhook-Secret` header (preferred). For
+// backward-compat during rollout we also accept it in the `?secret=` query
+// string. Compared in constant time. Fails closed when the env var is unset.
+//
 // Configure in Sentry: Settings → Integrations → Webhooks → Add Webhook
-//   URL: https://www.facturamea.com/api/webhooks/sentry?secret=<SENTRY_WEBHOOK_SECRET>
+//   URL: https://www.facturamea.com/api/webhooks/sentry
+//   Header: X-Webhook-Secret: <SENTRY_WEBHOOK_SECRET>
 //   Events: issue.created, issue.resolved
 export const POST: APIRoute = async ({ url, request }) => {
-  const secret = url.searchParams.get('secret') || '';
-  const expected = process.env.SENTRY_WEBHOOK_SECRET;
-  if (!expected || secret !== expected) {
+  const provided = request.headers.get('x-webhook-secret') || url.searchParams.get('secret') || '';
+  const expected = process.env.SENTRY_WEBHOOK_SECRET || '';
+  if (!expected || !safeEqual(provided, expected)) {
     return new Response('Forbidden', { status: 403 });
   }
 

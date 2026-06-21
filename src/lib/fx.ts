@@ -65,11 +65,26 @@ export async function getRates(): Promise<RateMap> {
       void persistRates(fresh);
     }
   }
-  rates = rates || { EUR: 1, RON: 4.97, USD: 1.08, GBP: 0.85 }; // baseline fallback
+  if (!rates) {
+    // LAST-RESORT hardcoded baseline — only when both the DB and ECB are
+    // unreachable. These are stale, indicative rates; never rely on them for
+    // anything fiscal. See the warning in convert().
+    console.warn('[fx] using hardcoded fallback FX rates — DB and ECB both unavailable');
+    rates = { EUR: 1, RON: 4.97, USD: 1.08, GBP: 0.85 };
+  }
   memCache = { rates, fetchedAt: Date.now() };
   return rates;
 }
 
+/**
+ * Convert an amount between currencies using ECB daily rates (indicative).
+ *
+ * IMPORTANT: this is for display/estimation only. Do NOT use it for any
+ * fiscal, VAT or invoice amount — Romanian law requires the BNR reference
+ * rate at the invoice issue date. For those, use lib/bnr-fx.ts
+ * (captureBnrSnapshot). ECB rates differ from BNR and would produce
+ * incorrect, non-compliant totals.
+ */
 export async function convert(amount: number, from: string, to: string): Promise<number> {
   if (from === to) return amount;
   const rates = await getRates();

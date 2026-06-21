@@ -7,11 +7,7 @@ import { db } from '../../../db';
 import { companies } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { runReminders } from '../../../lib/dunning';
-
-function isOwnerOrAdmin(locals: App.Locals): boolean {
-  const role = (locals.company as any)?.role || 'owner';
-  return !!locals.user?.isAdmin || role === 'owner';
-}
+import { requireRole } from '../../../lib/require-role';
 
 export const GET: APIRoute = async ({ locals }) => {
   const cid = locals.user?.companyId;
@@ -30,9 +26,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const cid = locals.user?.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
 
-  if (!isOwnerOrAdmin(locals)) {
-    return new Response(JSON.stringify({ error: 'Doar administratorul poate schimba acest setaj' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
-  }
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
 
   const body = await request.json().catch(() => ({})) as any;
 

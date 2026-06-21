@@ -3,18 +3,17 @@ import { db } from '../../../../db';
 import { users, userCompanyMemberships } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { isValidRole } from '../../../../lib/permissions-roles';
+import { requireRole } from '../../../../lib/require-role';
+import { revokeAllSessionsForUser } from '../../../../lib/auth';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-function isOwner(locals: App.Locals): boolean {
-  return locals.company?.role === 'owner' || !!locals.user?.isAdmin;
-}
-
 // PATCH — change a member's role.
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
+  const denied = requireRole(locals, 'team.manage');
+  if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
-  if (!isOwner(locals)) return json({ error: 'Doar administratorul poate schimba rolurile' }, 403);
 
   const companyId = locals.user.companyId;
   const memberId = params.id;
@@ -63,8 +62,9 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 
 // DELETE — remove a member (soft-delete the user + drop the membership).
 export const DELETE: APIRoute = async ({ params, locals }) => {
+  const denied = requireRole(locals, 'team.manage');
+  if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
-  if (!isOwner(locals)) return json({ error: 'Doar administratorul poate șterge membri' }, 403);
 
   const companyId = locals.user.companyId;
   const memberId = params.id;
@@ -86,6 +86,9 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
 
     // Soft-delete + deactivate so it disappears from the team without a hard cascade.
     await db.update(users).set({ isActive: false, deletedAt: new Date() } as any).where(eq(users.id, memberId));
+
+    // Kick out the deactivated member's existing sessions immediately.
+    await revokeAllSessionsForUser(memberId);
 
     return json({ ok: true });
   } catch (err) {

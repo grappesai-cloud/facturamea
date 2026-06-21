@@ -12,7 +12,7 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { transportInvoices, transportInvoicePayments, auditLog } from '../../../../db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { verifyNetopiaCallback, isNetopiaConfigured } from '../../../../lib/netopia';
 
@@ -53,7 +53,14 @@ export const POST: APIRoute = async ({ request, params }) => {
   if (!isNetopiaConfigured()) return ok({ received: true, configured: false });
 
   const body = await parseBody(request);
-  const cb = verifyNetopiaCallback(body);
+  // Netopia signs the IPN with a JWT in the Verification-token header. Pass it
+  // through so verifyNetopiaCallback can validate the RSA signature (fail-closed).
+  const verificationToken =
+    request.headers.get('verification-token') ||
+    request.headers.get('Verification-token') ||
+    request.headers.get('verification_token') ||
+    null;
+  const cb = verifyNetopiaCallback(body, verificationToken);
 
   // Audit every IPN hit (best-effort).
   try {
@@ -69,6 +76,13 @@ export const POST: APIRoute = async ({ request, params }) => {
   // Signature mismatch or invalid payload — acknowledge but do nothing.
   if (!cb.ok) return ok({ received: true, error: cb.error });
   if (!cb.paid) return ok({ received: true, paid: false });
+
+  // Bind the verified notification to the invoice in the URL: the payload's
+  // order id MUST equal the path invoiceId. Reject any mismatch so a valid
+  // signature for order A can never be replayed to settle invoice B.
+  if (cb.orderId != null && String(cb.orderId) !== String(invoiceId)) {
+    return ok({ received: true, error: 'order id mismatch' });
+  }
 
   // The reference we dedupe on: prefer Netopia's payment id, else the invoice.
   const reference = (cb.ntpId ? `netopia:${cb.ntpId}` : `netopia:${invoiceId}`).slice(0, 80);
@@ -112,8 +126,10 @@ export const POST: APIRoute = async ({ request, params }) => {
       notes: 'Plată online card (Netopia / mobilPay)',
     } as any);
 
+    // Atomic increment of paidCents (clamped to totalCents) so concurrent IPNs
+    // don't clobber each other's value via a read-then-write race.
     await db.update(transportInvoices).set({
-      paidCents: newPaid,
+      paidCents: sql`LEAST(${transportInvoices.totalCents}, ${transportInvoices.paidCents} + ${amountCents})`,
       status: fullyPaid ? 'paid' : 'partial',
       paidAt: fullyPaid ? new Date() : inv.paidAt,
       paymentLinkStatus: 'paid',

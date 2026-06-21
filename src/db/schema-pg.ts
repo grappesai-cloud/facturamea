@@ -1,4 +1,5 @@
-import { pgTable, text, integer, boolean, timestamp, serial, varchar, doublePrecision, primaryKey, index, uniqueIndex, jsonb, date } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, timestamp, serial, varchar, doublePrecision, primaryKey, index, uniqueIndex, jsonb, date, check } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 // ─── Users & Auth ──────────────────────────────────────────
 
@@ -11,7 +12,9 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }).notNull(),
   userType: varchar('user_type', { length: 50 }).notNull(), // transportator, intermediar, client_direct, partener, admin
   isAdmin: boolean('is_admin').default(false),
-  companyId: text('company_id'),
+  // FK to companies (nullable); SET NULL on company delete so a company removal
+  // doesn't cascade-delete its users.
+  companyId: text('company_id').references(() => companies.id, { onDelete: 'set null' }),
   parentUserId: text('parent_user_id'),
   avatarUrl: text('avatar_url'),
   phone: varchar('phone', { length: 50 }),
@@ -971,7 +974,9 @@ export const transportClauses = pgTable('transport_clauses', {
   isDefault: boolean('is_default').default(false),
   sortOrder: integer('sort_order').default(0),
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => [
+  index('idx_transport_clauses_company').on(table.companyId),
+]);
 
 // ─── Favorites ────────────────────────────────────────────
 
@@ -1116,7 +1121,9 @@ export const billingAddresses = pgTable('billing_addresses', {
   isDefault: boolean('is_default').default(false),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => [
+  index('idx_billing_addresses_company').on(table.companyId),
+]);
 
 export const paymentMethods = pgTable('payment_methods', {
   id: text('id').primaryKey(),
@@ -1133,7 +1140,9 @@ export const paymentMethods = pgTable('payment_methods', {
   provider: varchar('provider', { length: 30 }),
   isDefault: boolean('is_default').default(false),
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (table) => [
+  index('idx_payment_methods_company').on(table.companyId),
+]);
 
 export const invoices = pgTable('invoices', {
   id: text('id').primaryKey(),
@@ -1271,7 +1280,10 @@ export const creditBalances = pgTable('credit_balances', {
   totalPurchased: integer('total_purchased').default(0),
   totalConsumed: integer('total_consumed').default(0),
   updatedAt: timestamp('updated_at').defaultNow(),
-});
+}, (table) => [
+  // lib/credits.ts assumes a non-negative balance invariant — enforce it at the DB level.
+  check('chk_credit_balance_nonneg', sql`${table.balance} >= 0`),
+]);
 
 export const servicesCatalog = pgTable('services_catalog', {
   id: text('id').primaryKey(),
@@ -1410,7 +1422,8 @@ export const flaggedContacts = pgTable('flagged_contacts', {
 
 export const auditLog = pgTable('audit_log', {
   id: text('id').primaryKey(),
-  userId: text('user_id').references(() => users.id),
+  // SET NULL on user delete so GDPR hard-delete of a user is not blocked by audit rows.
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
   companyId: text('company_id'),
   action: varchar('action', { length: 80 }).notNull(),
   entityType: varchar('entity_type', { length: 50 }),
@@ -1758,7 +1771,8 @@ export const invoiceSeries = pgTable('invoice_series', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [
   index('idx_invoice_series_company').on(table.companyId),
-  // Partial unique (one default per company+kind) is enforced via raw SQL in the migration.
+  // Partial unique (one default per company+kind) IS enforced via raw SQL appended
+  // to the migration: uq_invoice_series_default ON (company_id, kind) WHERE is_default.
 ]);
 
 // External clients — companies / persons not registered on facturamea but
@@ -2649,6 +2663,8 @@ export const journalEntries = pgTable('journal_entries', {
   index('idx_journal_entries_company').on(table.companyId),
   index('idx_journal_entries_date').on(table.companyId, table.entryDate),
   index('idx_journal_entries_ref').on(table.refType, table.refId),
+  // One journal entry number per company (fiscal numbering integrity).
+  uniqueIndex('uq_journal_entries_company_number').on(table.companyId, table.entryNumber),
 ]);
 
 export const journalLines = pgTable('journal_lines', {

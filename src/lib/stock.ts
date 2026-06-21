@@ -19,11 +19,15 @@ export interface StockRef {
   userId?: string | null;
 }
 
-async function getLevel(warehouseId: string, productId: string) {
+async function getLevel(companyId: string, warehouseId: string, productId: string) {
   const [row] = await db
     .select()
     .from(stockLevels)
-    .where(and(eq(stockLevels.warehouseId, warehouseId), eq(stockLevels.productId, productId)))
+    .where(and(
+      eq(stockLevels.companyId, companyId),
+      eq(stockLevels.warehouseId, warehouseId),
+      eq(stockLevels.productId, productId),
+    ))
     .limit(1);
   return row || null;
 }
@@ -44,7 +48,7 @@ export async function applyStockIn(
   if (quantity <= 0) return;
   const cost = Math.max(0, Math.round(Number(unitCostCents) || 0));
 
-  const existing = await getLevel(warehouseId, productId);
+  const existing = await getLevel(companyId, warehouseId, productId);
   if (existing) {
     const prevQty = Number(existing.quantity) || 0;
     const prevAvg = Number(existing.avgCostCents) || 0;
@@ -56,7 +60,7 @@ export async function applyStockIn(
     await db
       .update(stockLevels)
       .set({ quantity: newQty, avgCostCents: newAvg, updatedAt: new Date() })
-      .where(eq(stockLevels.id, existing.id));
+      .where(and(eq(stockLevels.id, existing.id), eq(stockLevels.companyId, companyId)));
   } else {
     await db.insert(stockLevels).values({
       id: nanoid(),
@@ -100,7 +104,7 @@ export async function applyStockOut(
   const quantity = Number(qty) || 0;
   if (quantity <= 0) return;
 
-  const existing = await getLevel(warehouseId, productId);
+  const existing = await getLevel(companyId, warehouseId, productId);
   const cost = unitCostCents != null
     ? Math.max(0, Math.round(Number(unitCostCents) || 0))
     : (existing ? Number(existing.avgCostCents) || 0 : 0);
@@ -110,7 +114,7 @@ export async function applyStockOut(
     await db
       .update(stockLevels)
       .set({ quantity: newQty, updatedAt: new Date() })
-      .where(eq(stockLevels.id, existing.id));
+      .where(and(eq(stockLevels.id, existing.id), eq(stockLevels.companyId, companyId)));
   } else {
     // No prior level — create one going negative so the ledger reconciles.
     await db.insert(stockLevels).values({

@@ -3,6 +3,8 @@ import { db } from '../../../db';
 import { users } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 
+// Self-service: a user edits their OWN name/phone (row scoped to locals.user.id),
+// so no role guard — any authenticated user may update their own profile.
 export const PUT: APIRoute = async ({ request, locals }) => {
   if (!locals.user) {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });

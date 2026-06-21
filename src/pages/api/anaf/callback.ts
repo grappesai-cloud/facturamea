@@ -35,7 +35,8 @@ export const GET: APIRoute = async ({ url }) => {
   try {
     tokens = await exchangeCodeForTokens(code);
   } catch (e) {
-    return errorPage(e instanceof Error ? e.message : 'Eroare schimb cod→token');
+    console.error('ANAF token exchange failed:', e);
+    return errorPage('Eroare la schimbul cod→token. Încearcă din nou.');
   }
 
   // The ANAF access token does not reliably carry the CIF (the cert can
@@ -58,7 +59,8 @@ export const GET: APIRoute = async ({ url }) => {
       tokens,
     });
   } catch (e) {
-    return errorPage(e instanceof Error ? e.message : 'Eroare salvare conexiune');
+    console.error('ANAF save connection failed:', e);
+    return errorPage('Eroare la salvarea conexiunii. Încearcă din nou.');
   }
 
   const dest = `${stateRow.redirectAfter || '/app/setari/integrari-anaf'}?anaf_connected=${encodeURIComponent(stateRow.scope)}${cif ? `&cif=${encodeURIComponent(cif)}` : ''}`;

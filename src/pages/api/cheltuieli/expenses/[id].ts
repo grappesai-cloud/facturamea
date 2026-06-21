@@ -3,11 +3,13 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { expenses } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
+import { requireRole } from '../../../../lib/require-role';
 
 const STATUSES = ['unpaid', 'partial', 'paid'];
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'expense.manage'); if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const id = params.id;
@@ -56,6 +58,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'expense.manage'); if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const id = params.id;

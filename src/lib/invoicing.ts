@@ -3,6 +3,13 @@ import { invoiceSeries } from '../db/schema';
 import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+// Minimal shape shared by the global `db` handle and a transaction `tx`, so
+// number reservation / series bootstrap can run inside a caller's transaction
+// (keeping reservation + invoice insert atomic — a rolled-back insert also
+// rolls back the consumed number, avoiding gaps).
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+type DbLike = typeof db | Tx;
+
 export type InvoiceKind = 'factura' | 'proforma' | 'storno' | 'chitanta';
 
 export const INVOICE_KIND_LABELS: Record<InvoiceKind, string> = {
@@ -26,8 +33,8 @@ export function formatSeriesNumber(prefix: string, n: number, fmt: NumberFormat 
 
 // Atomically reserve the next sequence number on a given series. Uses an UPDATE
 // ... RETURNING to avoid races between concurrent issuers on the same series.
-export async function nextSeriesNumber(seriesId: string, fmt: NumberFormat = {}): Promise<{ prefix: string; number: number; fullNumber: string }> {
-  const [row] = await db
+export async function nextSeriesNumber(seriesId: string, fmt: NumberFormat = {}, executor: DbLike = db): Promise<{ prefix: string; number: number; fullNumber: string }> {
+  const [row] = await executor
     .update(invoiceSeries)
     .set({ nextNumber: sql`${invoiceSeries.nextNumber} + 1` })
     .where(eq(invoiceSeries.id, seriesId))
@@ -44,11 +51,12 @@ export async function ensureDefaultSeries(
   companyId: string,
   kind: InvoiceKind,
   scope?: 'platform' | 'external' | null,
+  executor: DbLike = db,
 ): Promise<{ id: string; prefix: string }> {
   // Two concurrent series per kind are supported (one for platform/TH orders,
   // one for external clients). Prefer the default whose scope matches; else any
   // default for the kind (scope null = applies to both).
-  const defaultRows = await db
+  const defaultRows = await executor
     .select({ id: invoiceSeries.id, prefix: invoiceSeries.prefix, scope: invoiceSeries.scope })
     .from(invoiceSeries)
     .where(and(
@@ -69,7 +77,7 @@ export async function ensureDefaultSeries(
     chitanta: { name: 'Serie chitanțe', prefix: 'CH' },
   };
   const id = nanoid();
-  await db.insert(invoiceSeries).values({
+  await executor.insert(invoiceSeries).values({
     id,
     companyId,
     name: defaults[kind].name,

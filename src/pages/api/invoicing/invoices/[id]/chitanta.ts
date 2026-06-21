@@ -11,9 +11,12 @@ import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { ensureDefaultSeries, nextSeriesNumber } from '../../../../../lib/invoicing';
 import { recomputeCompanyPaymentScore } from '../../../../../lib/payment-scoring';
+import { requireRole } from '../../../../../lib/require-role';
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
+  const denied = requireRole(locals, 'invoice.create');
+  if (denied) return denied;
   const id = params.id as string;
   if (!id) return new Response(JSON.stringify({ error: 'ID lipsă' }), { status: 400 });
 
@@ -32,72 +35,80 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   if (amountCents > remaining) return new Response(JSON.stringify({ error: `Sumă peste rest de plată (${remaining / 100})` }), { status: 400 });
 
   const now = new Date();
-
-  // 1) Record the payment on the parent invoice.
-  await db.insert(transportInvoicePayments).values({
-    id: nanoid(),
-    invoiceId: parent.id,
-    amountCents,
-    currency: parent.currency,
-    method,
-    reference,
-    receivedAt: now,
-    recordedByUserId: locals.user.id,
-  });
-  const newPaidCents = parent.paidCents + amountCents;
-  const newStatus = newPaidCents >= parent.totalCents ? 'paid' : 'partial';
-  await db.update(transportInvoices).set({
-    paidCents: newPaidCents,
-    status: newStatus,
-    paidAt: newStatus === 'paid' ? now : parent.paidAt,
-    updatedAt: now,
-  }).where(eq(transportInvoices.id, parent.id));
-
-  // 2) Emit a chitanță document.
-  const series = await ensureDefaultSeries(parent.companyId, 'chitanta');
-  const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id);
   const chitantaId = nanoid();
 
-  await db.insert(transportInvoices).values({
-    id: chitantaId,
-    companyId: parent.companyId,
-    issuedByUserId: locals.user.id,
-    seriesId: series.id,
-    sequenceNumber,
-    fullNumber,
-    kind: 'chitanta',
-    clientCompanyId: parent.clientCompanyId,
-    clientExternalId: parent.clientExternalId,
-    clientNameSnap: parent.clientNameSnap,
-    clientTaxIdSnap: parent.clientTaxIdSnap,
-    clientAddressSnap: parent.clientAddressSnap,
-    orderId: parent.orderId,
-    parentInvoiceId: parent.id,
-    chitantaForInvoiceId: parent.id,
-    modelId: parent.modelId,
-    currency: parent.currency,
-    vatRegime: 'standard',
-    subtotalCents: amountCents,
-    vatCents: 0,
-    totalCents: amountCents,
-    paidCents: amountCents,
-    status: 'paid',
-    issuedAt: now,
-    paidAt: now,
-    notes: `Chitanță pentru factura ${parent.fullNumber}${reference ? ` (ref: ${reference})` : ''}`,
-  });
+  // Record the payment, update the parent, reserve the chitanță number and
+  // emit the chitanță document — all atomically. A failure rolls back the
+  // consumed chitanță series number (no gaps).
+  const emitted = await db.transaction(async (tx) => {
+    // 1) Record the payment on the parent invoice.
+    await tx.insert(transportInvoicePayments).values({
+      id: nanoid(),
+      invoiceId: parent.id,
+      amountCents,
+      currency: parent.currency,
+      method,
+      reference,
+      receivedAt: now,
+      recordedByUserId: locals.user!.id,
+    });
+    const newPaidCents = parent.paidCents + amountCents;
+    const newStatus = newPaidCents >= parent.totalCents ? 'paid' : 'partial';
+    await tx.update(transportInvoices).set({
+      paidCents: newPaidCents,
+      status: newStatus,
+      paidAt: newStatus === 'paid' ? now : parent.paidAt,
+      updatedAt: now,
+    }).where(eq(transportInvoices.id, parent.id));
 
-  await db.insert(transportInvoiceLines).values({
-    id: nanoid(),
-    invoiceId: chitantaId,
-    position: 0,
-    description: `Încasare aferentă facturii ${parent.fullNumber}`,
-    quantity: 1,
-    unit: 'buc',
-    unitPriceCents: amountCents,
-    vatRate: 0,
-    lineTotalCents: amountCents,
+    // 2) Emit a chitanță document.
+    const series = await ensureDefaultSeries(parent.companyId, 'chitanta', null, tx);
+    const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, {}, tx);
+
+    await tx.insert(transportInvoices).values({
+      id: chitantaId,
+      companyId: parent.companyId,
+      issuedByUserId: locals.user!.id,
+      seriesId: series.id,
+      sequenceNumber,
+      fullNumber,
+      kind: 'chitanta',
+      clientCompanyId: parent.clientCompanyId,
+      clientExternalId: parent.clientExternalId,
+      clientNameSnap: parent.clientNameSnap,
+      clientTaxIdSnap: parent.clientTaxIdSnap,
+      clientAddressSnap: parent.clientAddressSnap,
+      orderId: parent.orderId,
+      parentInvoiceId: parent.id,
+      chitantaForInvoiceId: parent.id,
+      modelId: parent.modelId,
+      currency: parent.currency,
+      vatRegime: 'standard',
+      subtotalCents: amountCents,
+      vatCents: 0,
+      totalCents: amountCents,
+      paidCents: amountCents,
+      status: 'paid',
+      issuedAt: now,
+      paidAt: now,
+      notes: `Chitanță pentru factura ${parent.fullNumber}${reference ? ` (ref: ${reference})` : ''}`,
+    });
+
+    await tx.insert(transportInvoiceLines).values({
+      id: nanoid(),
+      invoiceId: chitantaId,
+      position: 0,
+      description: `Încasare aferentă facturii ${parent.fullNumber}`,
+      quantity: 1,
+      unit: 'buc',
+      unitPriceCents: amountCents,
+      vatRate: 0,
+      lineTotalCents: amountCents,
+    });
+
+    return { fullNumber };
   });
+  const { fullNumber } = emitted;
 
   // Refresh the payer's payment-behavior score (best-effort) — a timely
   // payment improves their Payment Reliability Score.

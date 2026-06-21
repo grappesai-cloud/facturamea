@@ -6,6 +6,7 @@
 // Returns { ok:true, fields } or { ok:false, error }. Never 500s on a bad image.
 import type { APIRoute } from 'astro';
 import { ocrExpense } from '../../../lib/expense-ocr';
+import { requireRole } from '../../../lib/require-role';
 
 const MAX_BYTES = 12 * 1024 * 1024; // 12 MB cap — keeps requests well under limits.
 
@@ -13,6 +14,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) {
     return new Response(JSON.stringify({ ok: false, error: 'Neautorizat' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
+  const denied = requireRole(locals, 'expense.manage'); if (denied) return denied;
   if (!locals.user.companyId) {
     return new Response(JSON.stringify({ ok: false, error: 'Companie lipsă' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }

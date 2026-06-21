@@ -8,6 +8,7 @@ import { validateBody, invoiceCreateSchema } from '../../../../lib/validation';
 import { captureBnrSnapshot } from '../../../../lib/bnr-fx';
 import { notify } from '../../../../lib/notifications';
 import { submitInvoiceToAnaf } from '../../../../lib/efactura-submit';
+import { requireRole } from '../../../../lib/require-role';
 
 const VALID_KINDS: InvoiceKind[] = ['factura', 'proforma', 'storno', 'chitanta'];
 
@@ -38,6 +39,8 @@ interface LineInput { description: string; quantity: number; unit?: string; unit
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'invoice.create');
+  if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
@@ -110,11 +113,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       .limit(1);
     if (s) series = s;
   }
-  if (!series) {
-    const seriesScope: 'platform' | 'external' | null = body.orderId ? 'platform' : (body.clientExternalId ? 'external' : null);
-    series = await ensureDefaultSeries(cid, kind, seriesScope);
-  }
-  const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, INVOICE_NUMBER_FORMAT);
+  const seriesScope: 'platform' | 'external' | null = body.orderId ? 'platform' : (body.clientExternalId ? 'external' : null);
 
   const invoiceId = nanoid();
   const now = new Date();
@@ -134,44 +133,58 @@ export const POST: APIRoute = async ({ request, locals }) => {
     vatAtCollection = !!issuerCompany?.tva;
   }
 
-  await db.insert(transportInvoices).values({
-    id: invoiceId,
-    companyId: cid,
-    issuedByUserId: locals.user.id,
-    seriesId: series.id,
-    sequenceNumber,
-    fullNumber,
-    kind,
-    clientCompanyId: body.clientCompanyId || null,
-    clientExternalId: body.clientExternalId || null,
-    clientNameSnap: clientName,
-    clientTaxIdSnap: clientTaxId || null,
-    clientAddressSnap: clientAddress || null,
-    orderId: body.orderId || null,
-    parentInvoiceId: body.parentInvoiceId || null,
-    modelId: body.modelId || null,
-    currency,
-    vatRegime: body.vatRegime || 'standard',
-    subtotalCents,
-    vatCents,
-    totalCents,
-    paidCents: 0,
-    status,
-    issuedAt,
-    dueAt,
-    bnrRate: bnr?.rate ?? null,
-    bnrRateDate: bnr?.rateDate ?? null,
-    vatAtCollection,
-    language: body.language === 'en' ? 'en' : 'ro',
-    precision: [0, 2, 3, 4].includes(Number(body.precision)) ? Number(body.precision) : 2,
-    attachmentUrl: body.attachmentUrl?.trim() || null,
-    attachmentName: body.attachmentName?.trim() || null,
-    notes: body.notes?.trim() || null,
-  });
+  // Reserve the series number and write the invoice header + lines inside a
+  // single transaction. If any insert fails, the consumed number is rolled
+  // back too — so a failed creation never burns a legal sequence number (gap).
+  const reserved = await db.transaction(async (tx) => {
+    let txSeries = series;
+    if (!txSeries) {
+      txSeries = await ensureDefaultSeries(cid, kind, seriesScope, tx);
+    }
+    const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(txSeries.id, INVOICE_NUMBER_FORMAT, tx);
 
-  if (computedLines.length) {
-    await db.insert(transportInvoiceLines).values(computedLines.map((l) => ({ ...l, invoiceId })));
-  }
+    await tx.insert(transportInvoices).values({
+      id: invoiceId,
+      companyId: cid,
+      issuedByUserId: locals.user!.id,
+      seriesId: txSeries.id,
+      sequenceNumber,
+      fullNumber,
+      kind,
+      clientCompanyId: body.clientCompanyId || null,
+      clientExternalId: body.clientExternalId || null,
+      clientNameSnap: clientName,
+      clientTaxIdSnap: clientTaxId || null,
+      clientAddressSnap: clientAddress || null,
+      orderId: body.orderId || null,
+      parentInvoiceId: body.parentInvoiceId || null,
+      modelId: body.modelId || null,
+      currency,
+      vatRegime: body.vatRegime || 'standard',
+      subtotalCents,
+      vatCents,
+      totalCents,
+      paidCents: 0,
+      status,
+      issuedAt,
+      dueAt,
+      bnrRate: bnr?.rate ?? null,
+      bnrRateDate: bnr?.rateDate ?? null,
+      vatAtCollection,
+      language: body.language === 'en' ? 'en' : 'ro',
+      precision: [0, 2, 3, 4].includes(Number(body.precision)) ? Number(body.precision) : 2,
+      attachmentUrl: body.attachmentUrl?.trim() || null,
+      attachmentName: body.attachmentName?.trim() || null,
+      notes: body.notes?.trim() || null,
+    });
+
+    if (computedLines.length) {
+      await tx.insert(transportInvoiceLines).values(computedLines.map((l) => ({ ...l, invoiceId })));
+    }
+
+    return { fullNumber };
+  });
+  const { fullNumber } = reserved;
 
   // In-app notification to a TH-registered recipient on issue (not for drafts).
   if (status === 'issued' && body.clientCompanyId && body.clientCompanyId !== cid) {

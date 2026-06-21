@@ -11,11 +11,12 @@ function getRedis(): Redis | null {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) {
-    // In production the in-memory fallback is per-instance and resets on every
-    // cold start, so rate limits / login lockouts are effectively unenforced
-    // across a serverless fleet. Loudly warn so this misconfig is caught.
+    // Deployment target is a single persistent Node server (Coolify), so the
+    // in-memory limiter IS shared across requests on that instance and remains
+    // viable — we don't hard-crash. But Upstash is still preferred (survives
+    // restarts, scales horizontally), so warn loudly when it's missing in prod.
     if (import.meta.env.PROD || process.env.NODE_ENV === 'production') {
-      console.error('[security] Upstash Redis is NOT configured in production — rate limiting & login lockout are running in-memory only and are NOT reliable. Set UPSTASH_REDIS_REST_URL/TOKEN.');
+      console.warn('[security] Upstash Redis is NOT configured in production — rate limiting & login lockout fall back to in-memory (per-instance, reset on restart). Acceptable for a single Node instance, but set UPSTASH_REDIS_REST_URL/TOKEN to harden.');
     }
     return null;
   }

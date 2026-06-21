@@ -93,6 +93,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const reqRes = await getRequisition(requisitionId);
   if (!reqRes.ok || !reqRes.data) return json({ error: reqRes.error || 'Requisition inexistent.' }, 502);
 
+  // Ownership binding: the requisition was created in connect.ts with a
+  // reference of the form `fm-<companyId>-<ts>`. Verify the reference read back
+  // from GoCardless encodes THIS caller's companyId, so a user cannot pass an
+  // arbitrary requisitionId belonging to another company and import its bank
+  // transactions. Reject 403 on any mismatch (or a missing/legacy reference).
+  const ref = String(reqRes.data.reference || '');
+  const m = ref.match(/^fm-(.+)-\d+$/);
+  if (!m || m[1] !== cid) {
+    return json({ error: 'Requisition nu aparține companiei tale.' }, 403);
+  }
+
   const status = reqRes.data.status || '';
   const accountIds = reqRes.data.accounts || [];
   if (accountIds.length === 0) {

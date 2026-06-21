@@ -1,8 +1,9 @@
 import { defineMiddleware } from 'astro:middleware';
 import { getSession, getSessionFromRequest } from './lib/auth';
 import { db } from './db';
-import { companies } from './db/schema';
-import { eq } from 'drizzle-orm';
+import { companies, userCompanyMemberships } from './db/schema';
+import { eq, and } from 'drizzle-orm';
+import { normalizeRole } from './lib/permissions-roles';
 import { getLocaleFromCookie } from './lib/i18n';
 import { rateLimitAsync, getClientIp } from './lib/security';
 import { captureError } from './lib/observability';
@@ -31,6 +32,19 @@ function withCors(res: Response, cors: Record<string, string> | null): Response 
   const headers = new Headers(res.headers);
   for (const [k, v] of Object.entries(cors)) headers.set(k, v);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+// Resolve the user's real company role from the membership table. Falls back
+// to owner (top-level user) / operator (sub-user) when no membership row exists.
+async function resolveCompanyRole(userId: string, companyId: string, parentUserId: string | null): Promise<string> {
+  try {
+    const [row] = await db
+      .select({ role: userCompanyMemberships.role })
+      .from(userCompanyMemberships)
+      .where(and(eq(userCompanyMemberships.userId, userId), eq(userCompanyMemberships.companyId, companyId)));
+    if (row) return normalizeRole(row.role);
+  } catch { /* membership table not ready — fall through to default */ }
+  return parentUserId == null ? 'owner' : 'operator';
 }
 
 function isCrossOrigin(request: Request, host: string | null): boolean {
@@ -235,6 +249,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
               id: company.id,
               name: company.name,
               subscriptionTier: company.subscriptionTier || 'free',
+              role: await resolveCompanyRole(user.id, user.companyId, user.parentUserId || null),
             } : null;
           }
         }
@@ -289,7 +304,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
           id: company.id,
           name: company.name,
           subscriptionTier: company.subscriptionTier || 'free',
-          role: user.parentUserId ? 'operator' : 'owner',
+          role: await resolveCompanyRole(user.id, user.companyId, user.parentUserId || null),
         } : null;
 
         // License / paywall gate (only for /app page navigations).

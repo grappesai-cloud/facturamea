@@ -94,9 +94,9 @@ describe('isAllowedStorageUrl', () => {
     expect(isAllowedStorageUrl('https://abc.blob.vercel-storage.com/x.png')).toBe(true);
   });
 
-  it('allows transporthub.ro', () => {
-    expect(isAllowedStorageUrl('https://transporthub.ro/uploads/file.pdf')).toBe(true);
-    expect(isAllowedStorageUrl('https://www.transporthub.ro/file.pdf')).toBe(true);
+  it('allows facturamea.com', () => {
+    expect(isAllowedStorageUrl('https://facturamea.com/uploads/file.pdf')).toBe(true);
+    expect(isAllowedStorageUrl('https://www.facturamea.com/file.pdf')).toBe(true);
   });
 
   it('rejects evil.com', () => {

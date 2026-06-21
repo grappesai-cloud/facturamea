@@ -8,11 +8,13 @@ export const FE_SUFFIXES = (env('FRONTEND_ORIGIN_SUFFIXES') || '-grappesai-2100s
 
 export function isAllowedFeOrigin(origin: string | null | undefined): boolean {
   if (!origin) return false;
-  if (FE_ORIGINS.includes('*')) return true;
+  // No allow-all short-circuit: '*' must never world-open CORS / OAuth handoff.
   if (FE_ORIGINS.includes(origin) || DEV_ORIGINS.includes(origin)) return true;
   try {
     const u = new URL(origin);
-    if ((u.protocol === 'https:' || u.protocol === 'http:') && FE_SUFFIXES.some((s: string) => u.host.endsWith(s))) return true;
+    // Dot-boundary suffix match: only an exact host or a true subdomain of the
+    // allowlisted suffix passes (blocks evil-suffix.com matching "suffix.com").
+    if ((u.protocol === 'https:' || u.protocol === 'http:') && FE_SUFFIXES.some((s: string) => u.host === s || u.host.endsWith('.' + s))) return true;
   } catch {}
   return false;
 }

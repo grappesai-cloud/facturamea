@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
+import { nanoid } from 'nanoid';
 import { appleExchange, appOrigin } from '../../../../lib/oauth';
-import { findOrCreateOAuthUser, setSessionCookie } from '../../../../lib/auth';
+import { findOrCreateOAuthUser, createSession, setSessionCookie } from '../../../../lib/auth';
+import { db } from '../../../../db';
+import { totpPendingLogins } from '../../../../db/schema';
 import { logAction } from '../../../../lib/audit';
 import { isAllowedFeRedirect } from '../../../../lib/fe-origins';
 
@@ -34,19 +37,30 @@ export const POST: APIRoute = async ({ request }) => {
     const origin = appOrigin(request.url);
     const { email, sub } = await appleExchange(origin, code);
     const finalEmail = email || `${sub}@privaterelay.appleid.com`;
-    const { sessionId, userId, companyId } = await findOrCreateOAuthUser({ email: finalEmail, name, provider: 'apple' });
-    try { await logAction({ userId, companyId, action: 'auth.oauth_apple', request }); } catch {}
+    const { userId, companyId, totpEnabled } = await findOrCreateOAuthUser({ email: finalEmail, name, provider: 'apple' });
+
     const feRaw = readCookie(request.headers.get('cookie'), 'fm_oauth_fe');
-    const feRedirect = feRaw ? decodeURIComponent(feRaw) : null;
-    if (feRedirect && isAllowedFeRedirect(feRedirect)) {
-      const headers = new Headers({ Location: `${feRedirect}#token=${sessionId}` });
+    const feRedirect = feRaw && isAllowedFeRedirect(decodeURIComponent(feRaw)) ? decodeURIComponent(feRaw) : null;
+
+    // 2FA gate: mirror the password-login path — pending handle, no full session.
+    if (totpEnabled) {
+      const handle = nanoid(32);
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      await db.insert(totpPendingLogins).values({ id: handle, userId, expiresAt } as any);
+      try { await logAction({ userId, companyId, action: 'auth.oauth_apple_totp_pending', request }); } catch {}
+      const headers = new Headers({ Location: `/auth/2fa?handle=${handle}` });
       headers.append('Set-Cookie', 'fm_a_state=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');
       headers.append('Set-Cookie', 'fm_oauth_fe=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');
       return new Response(null, { status: 302, headers });
     }
-    const headers = new Headers({ Location: '/app' });
+
+    const sessionId = await createSession(userId);
+    try { await logAction({ userId, companyId, action: 'auth.oauth_apple', request }); } catch {}
+    // Prefer a server-side session cookie over a URL-fragment token handoff.
+    const headers = new Headers({ Location: feRedirect || '/app' });
     headers.append('Set-Cookie', setSessionCookie(sessionId));
     headers.append('Set-Cookie', 'fm_a_state=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');
+    headers.append('Set-Cookie', 'fm_oauth_fe=; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=0');
     return new Response(null, { status: 302, headers });
   } catch {
     return new Response(null, { status: 302, headers: { Location: '/auth/login?error=oauth_failed' } });
