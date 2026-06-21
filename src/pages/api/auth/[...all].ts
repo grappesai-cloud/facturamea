@@ -88,7 +88,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
       // Record T&C acceptance as proof (timestamp + IP via the audit log).
       try {
-        await logAction({ userId: result.userId, companyId: result.companyId, action: 'auth.terms_accepted', entityType: 'user', entityId: result.userId, metadata: { version: '1.0' }, request });
+        await logAction({ userId: result.userId, companyId: result.companyId, action: 'auth.terms_accepted', entityType: 'user', entityId: result.userId, metadata: { version: '1.1' }, request });
       } catch {}
 
       // Optional depot — if user has one, persist as a companyLocation of type 'warehouse'.
