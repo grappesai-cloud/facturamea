@@ -94,11 +94,16 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
                 <td class="px-5 py-3 text-right font-semibold text-[#0A0A0A]">{l.plan === 'lifetime' ? ron(l.amountCents) : '-'}</td>
                 <td class="px-5 py-3 text-[#6B6B68]">{fmt(l.updatedAt)}</td>
                 <td class="px-5 py-3 text-right">
-                  {l.status === 'active' ? (
-                    <button data-company-id={l.companyId} class="revoke-btn px-3 py-1.5 text-[12px] font-medium text-[#B91C1C] hover:bg-[#FDECEC] rounded-lg transition-colors">Revocă</button>
-                  ) : (
-                    <span class="text-[12px] text-[#A8A8A4]">-</span>
-                  )}
+                  <div class="flex items-center justify-end gap-2">
+                    {l.plan === 'lifetime' && (
+                      <button data-company-id={l.companyId} class="refund-btn px-3 py-1.5 text-[12px] font-medium text-[#B45309] hover:bg-[#FEF3C7] rounded-lg transition-colors">Refund</button>
+                    )}
+                    {l.status === 'active' ? (
+                      <button data-company-id={l.companyId} class="revoke-btn px-3 py-1.5 text-[12px] font-medium text-[#B91C1C] hover:bg-[#FDECEC] rounded-lg transition-colors">Revocă</button>
+                    ) : (
+                      <span class="text-[12px] text-[#A8A8A4]">-</span>
+                    )}
+                  </div>
                 </td>
               </tr>
             );
@@ -144,6 +149,23 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
           });
           if (res.ok) window.location.reload();
           else alert('Eroare la revocare');
+        } catch { alert('Eroare de conectare'); }
+      });
+    });
+
+    document.querySelectorAll('.refund-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const companyId = (e.currentTarget as HTMLElement).dataset.companyId;
+        if (!confirm('Rambursezi plata prin Stripe și dezactivezi licența. Continui?')) return;
+        try {
+          const res = await fetch('/api/admin/refund', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyId }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) { alert(data.refunded ? 'Rambursat prin Stripe + licență dezactivată.' : 'Licență dezactivată (nicio plată Stripe de rambursat).'); window.location.reload(); }
+          else alert(data.error || 'Eroare la rambursare');
         } catch { alert('Eroare de conectare'); }
       });
     });

@@ -330,6 +330,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
         context.locals.company = null;
       }
 
+      // Impersonation flag (th_imp cookie set by /api/admin/impersonate) — powers
+      // the "you're viewing as a user" banner + exit link.
+      (context.locals as any).impersonating = /(?:^|;\s*)th_imp=/.test(context.request.headers.get('cookie') || '');
+
       // Admin guard
       if (pathname.startsWith('/admin')) {
         const isAdmin = (user as any).isAdmin || user.userType === 'admin';

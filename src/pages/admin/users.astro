@@ -105,6 +105,7 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
                   {!u.isAdmin && (
                     <button data-user-id={u.id} data-action="make-admin" class="admin-action-btn px-2.5 py-1 text-[12px] font-medium rounded-lg border border-[#B91C1C]/30 text-[#B91C1C] hover:bg-[#FDECEC] transition-colors">Fă admin</button>
                   )}
+                  <button data-imp-user-id={u.id} class="impersonate-btn px-2.5 py-1 text-[12px] font-medium rounded-lg border border-[#1A759F]/30 text-[#1A759F] hover:bg-[#1A759F]/10 transition-colors">Impersonează</button>
                 </div>
               </td>
             </tr>
@@ -141,6 +142,23 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
           });
           if (res.ok) window.location.reload();
           else alert('Eroare');
+        } catch { alert('Eroare de conectare'); }
+      });
+    });
+
+    document.querySelectorAll('.impersonate-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const el = e.currentTarget as HTMLElement;
+        const userId = el.dataset.impUserId;
+        if (!confirm('Intri în contul acestui utilizator (mod impersonare). Vei putea ieși din banner-ul de sus.')) return;
+        try {
+          const res = await fetch('/api/admin/impersonate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId }),
+          });
+          if (res.ok) window.location.href = '/app';
+          else alert('Nu am putut porni impersonarea');
         } catch { alert('Eroare de conectare'); }
       });
     });
