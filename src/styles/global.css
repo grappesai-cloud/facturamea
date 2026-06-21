@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/* theme-rev: AFP_treboR-treblA_ygroyG */
 
 @theme {
   /* Neutral - warm grays (legacy "navy" name kept; remapped to a premium
@@ -16,23 +17,42 @@
   --color-navy-900: #0a0a0a;
   --color-navy-950: #050505;
 
-  /* Accent - Brand orange (matches landing #FF5C00) */
-  --color-accent-50: #fff1e6;
-  --color-accent-100: #ffe0cc;
-  --color-accent-200: #ffc299;
-  --color-accent-300: #ffa366;
-  --color-accent-400: #ff7a33;
-  --color-accent-500: #ff5c00;
-  --color-accent-600: #e04e00;
-  --color-accent-700: #b83f00;
-  --color-accent-800: #8f3000;
-  --color-accent-900: #662200;
+  /* Accent - Brand teal (matches landing #1A759F) */
+  --color-accent-50: #e9f3f8;
+  --color-accent-100: #cfe6f0;
+  --color-accent-200: #a6d0e3;
+  --color-accent-300: #6fb3d1;
+  --color-accent-400: #3f93b6;
+  --color-accent-500: #1A759F;
+  --color-accent-600: #168AAD;
+  --color-accent-700: #145d7e;
+  --color-accent-800: #114a64;
+  --color-accent-900: #0d3a4f;
 
   /* Premium minimal palette (dashboard) */
   --color-bone: #fafaf8;
   --color-ink: #0a0a0a;
   --color-muted: #6b6b68;
   --color-edge: #e8e8e4;
+
+  /* ─── Meadow Green palette (dashboard redesign) ───
+     Full lime→teal→deep-blue ramp, light → dark. Roles:
+     deep end = text/structure · mid = interactive/brand · light end = tinted fills. */
+  --color-meadow-lime:     #D9ED92;  /* Lime Cream    */
+  --color-meadow-green:    #B5E48C;  /* Light Green   */
+  --color-meadow-willow:   #99D98C;  /* Willow Green  */
+  --color-meadow-emerald:  #76C893;  /* Emerald       */
+  --color-meadow-mist:     #52B69A;  /* Ocean Mist    */
+  --color-meadow-teal:     #34A0A4;  /* Tropical Teal */
+  --color-meadow-bondi:    #168AAD;  /* Bondi Blue    */
+  --color-meadow-cerulean: #1A759F;  /* Cerulean      */
+  --color-meadow-baltic:   #1E6091;  /* Baltic Blue   */
+  --color-meadow-yale:     #184E77;  /* Yale Blue     */
+
+  /* Dashboard surface system (light anchor) */
+  --color-canvas:  #F3F7F2;  /* anchor background — soft sage off-white */
+  --color-surface: #ffffff;  /* cards float on the canvas */
+  --color-sunken:  #ECF3EC;  /* recessed rows / hover wells */
 
   /* Semantic */
   --color-success-500: #22c55e;
@@ -45,7 +65,7 @@
   --color-info-600: #2563eb;
 
   /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
 
   /* Animations */
   --animate-fade-in: fade-in 0.5s ease-out;
@@ -235,9 +255,9 @@ body {
   }
 
   /* Primary buttons (orange/black) — softer rounding */
-  button.bg-\[\#FF5C00\],
+  button.bg-\[\#1A759F\],
   button.bg-\[\#0A0A0A\],
-  a.bg-\[\#FF5C00\],
+  a.bg-\[\#1A759F\],
   a.bg-\[\#0A0A0A\] {
     border-radius: 12px;
   }
@@ -364,7 +384,7 @@ html.dark input, html.dark textarea, html.dark select {
    Set on <html> from the Aspect panel & /app/setari; initialised pre-paint in
    BaseLayout to avoid FOUC. `zoom` scales the px-based UI proportionally;
    --th-font feeds the app layout wrapper's font-family. */
-:root { --th-font: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+:root { --th-font: 'Outfit', ui-sans-serif, system-ui, sans-serif; }
 html[data-font="system"] { --th-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
 html[data-font="serif"]  { --th-font: Georgia, "Times New Roman", serif; }
 html[data-font="mono"]   { --th-font: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
@@ -377,7 +397,7 @@ html[data-fs="125"] { zoom: 1.125; }
 .print-doc {
   background: white;
   color: #111;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Outfit', system-ui, sans-serif;
   font-size: 11pt;
   line-height: 1.4;
 }
@@ -437,3 +457,74 @@ html[data-fs="125"] { zoom: 1.125; }
 }
 html.th-dark .text-\[\#8A8A85\] { color: #9a978d !important; }
 html.th-dark .text-\[\#A8A8A4\] { color: #8a877d !important; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Custom dropdown (<Select>) + calendar (<DatePicker>) popups.
+   Triggers reuse the app's Tailwind utilities (themed via [data-app-shell]);
+   the floating popups use explicit colours so they read correctly anywhere,
+   with a light-theme override below. No borders — shadow-only separation.
+   ────────────────────────────────────────────────────────────────────────── */
+.fm-select-pop,
+.fm-cal-pop {
+  background: #1B1E26;
+  box-shadow: 0 20px 55px -14px rgba(0, 0, 0, 0.75);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.18) transparent;
+}
+.fm-select-pop::-webkit-scrollbar { width: 8px; }
+.fm-select-pop::-webkit-scrollbar-thumb { background: rgba(255,255,255,.16); border-radius: 8px; }
+
+.fm-select-opt { color: #E6EEF5; }
+.fm-select-opt:hover:not(:disabled) { background: rgba(255, 255, 255, 0.07); }
+.fm-select-opt:focus-visible { outline: none; background: rgba(255, 255, 255, 0.07); }
+.fm-select-opt.is-selected { background: rgba(225, 251, 21, 0.16); color: #fff; font-weight: 600; }
+.fm-select-opt:disabled { opacity: 0.4; cursor: default; }
+
+.fm-cal-title { color: #F2F6FA; }
+.fm-cal-dow { color: #7C9AB4; }
+.fm-cal-nav { color: #C8DAE8; }
+.fm-cal-nav:hover { background: rgba(255, 255, 255, 0.08); }
+.fm-cal-day { color: #E6EEF5; transition: background-color .12s ease, color .12s ease; }
+.fm-cal-day:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); }
+.fm-cal-day:disabled { opacity: 0.25; cursor: default; }
+.fm-cal-day.is-today { box-shadow: inset 0 0 0 1.5px rgba(225, 251, 21, 0.55); }
+.fm-cal-day.is-selected { background: #E1FB15; color: #0A2238; font-weight: 700; }
+.fm-cal-day.is-selected.is-today { box-shadow: none; }
+.fm-cal-foot { border-top: 1px solid rgba(255, 255, 255, 0.08); }
+.fm-cal-action { color: #C8DAE8; }
+.fm-cal-action:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
+
+/* Light theme */
+html.th-light .fm-select-pop,
+html.th-light .fm-cal-pop {
+  background: #FFFFFF;
+  box-shadow: 0 20px 55px -14px rgba(20, 40, 70, 0.28);
+  scrollbar-color: rgba(17,37,58,.22) transparent;
+}
+html.th-light .fm-select-pop::-webkit-scrollbar-thumb { background: rgba(17,37,58,.2); }
+html.th-light .fm-select-opt { color: #11253A; }
+html.th-light .fm-select-opt:hover:not(:disabled),
+html.th-light .fm-select-opt:focus-visible { background: rgba(17, 37, 58, 0.06); }
+html.th-light .fm-select-opt.is-selected { background: rgba(110, 160, 40, 0.18); color: #11253A; }
+html.th-light .fm-cal-title { color: #11253A; }
+html.th-light .fm-cal-dow { color: #5E7385; }
+html.th-light .fm-cal-nav { color: #3A4F63; }
+html.th-light .fm-cal-nav:hover { background: rgba(17, 37, 58, 0.06); }
+html.th-light .fm-cal-day { color: #1B3247; }
+html.th-light .fm-cal-day:hover:not(:disabled) { background: rgba(17, 37, 58, 0.06); }
+html.th-light .fm-cal-day.is-today { box-shadow: inset 0 0 0 1.5px rgba(90, 130, 30, 0.6); }
+html.th-light .fm-cal-day.is-selected { background: #5FA320; color: #fff; }
+html.th-light .fm-cal-foot { border-top: 1px solid rgba(17, 37, 58, 0.1); }
+html.th-light .fm-cal-action { color: #3A4F63; }
+html.th-light .fm-cal-action:hover { background: rgba(17, 37, 58, 0.06); color: #11253A; }
+
+/* Small content popover (e.g. "save to nomenclator") — reuses .fm-select-pop
+   surface; these just theme its text. */
+.fm-pop-title { color: #F2F6FA; }
+.fm-pop-sub { color: #9FB8CC; }
+html.th-light .fm-pop-title { color: #11253A; }
+html.th-light .fm-pop-sub { color: #5E7385; }
+
+/* Sheet grab handle — visible in both themes. */
+.fm-grab { background-color: rgba(255, 255, 255, 0.38); }
+html.th-light .fm-grab { background-color: rgba(17, 37, 58, 0.28); }

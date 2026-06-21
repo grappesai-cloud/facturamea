@@ -1,0 +1,80 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { posSales } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+const fmtDate = (d: any) => d ? new Date(d).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select()
+    .from(posSales)
+    .where(eq(posSales.companyId, companyId))
+    .orderBy(desc(posSales.createdAt))
+    .limit(100);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+const payLabel: Record<string, string> = { cash: 'Numerar', card: 'Card', mixed: 'Mixt' };
+---
+
+<AppLayout title="Istoric vânzări POS" activeTab="pos">
+
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Istoric vânzări</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Bonurile emise la casa de marcat.</p>
+  </div>
+
+  {rows.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 py-14 text-center text-[14px] text-[#9FB8CC]">Nicio vânzare înregistrată încă.</div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5">
+        {rows.slice(0, 3).map((s) => (
+          <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+            <div class="min-w-0">
+              <p class="font-mono font-bold text-white truncate">{s.receiptNumber}</p>
+              <p class="text-[13px] text-[#7C9AB4] tabular-nums mt-0.5">
+                {fmtDate(s.createdAt)} · {payLabel[s.paymentMethod] || s.paymentMethod}
+              </p>
+            </div>
+            <div class="ml-auto text-right">
+              <p class="font-bold text-white tabular-nums">{ron(s.totalCents)}</p>
+              <p class="text-[13px] text-[#7C9AB4] tabular-nums mt-0.5">TVA {ron(s.vatCents)}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {rows.length > 3 && (
+        <details class="mt-2.5">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {rows.slice(3).map((s) => (
+              <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div class="min-w-0">
+                  <p class="font-mono font-bold text-white truncate">{s.receiptNumber}</p>
+                  <p class="text-[13px] text-[#7C9AB4] tabular-nums mt-0.5">
+                    {fmtDate(s.createdAt)} · {payLabel[s.paymentMethod] || s.paymentMethod}
+                  </p>
+                </div>
+                <div class="ml-auto text-right">
+                  <p class="font-bold text-white tabular-nums">{ron(s.totalCents)}</p>
+                  <p class="text-[13px] text-[#7C9AB4] tabular-nums mt-0.5">TVA {ron(s.vatCents)}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+</AppLayout>

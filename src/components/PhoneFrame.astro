@@ -1,0 +1,24 @@
+---
+// Reusable iPhone-style bezel. Pass the screen surface (incl. its own status bar)
+// through the default slot. `class` sizes/positions the device.
+interface Props {
+  class?: string;
+  screenBg?: string;
+  shadow?: boolean;
+}
+const { class: cls = '', screenBg = '#F5F8FB', shadow = true } = Astro.props;
+---
+<div class:list={['phone relative', cls]}>
+  <div class:list={['absolute inset-0 rounded-[3.1rem] bg-[#26282D] p-[10px]', shadow && 'shadow-[0_50px_110px_-40px_rgba(16,42,67,0.55)]']}>
+    <div class="absolute inset-[3px] rounded-[2.95rem] ring-1 ring-white/10"></div>
+    <div class="relative w-full h-full rounded-[2.55rem] overflow-hidden" style={`background:${screenBg}`}>
+      <!-- dynamic island -->
+      <div class="absolute top-2.5 left-1/2 -translate-x-1/2 z-30 w-[92px] h-[26px] rounded-full bg-black"></div>
+      <slot />
+    </div>
+  </div>
+  <!-- side buttons -->
+  <span class="absolute -left-[3px] top-[120px] w-[3px] h-9 rounded-l bg-[#1b1d21]"></span>
+  <span class="absolute -left-[3px] top-[168px] w-[3px] h-12 rounded-l bg-[#1b1d21]"></span>
+  <span class="absolute -right-[3px] top-[140px] w-[3px] h-16 rounded-r bg-[#1b1d21]"></span>
+</div>

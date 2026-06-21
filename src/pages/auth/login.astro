@@ -1,0 +1,33 @@
+---
+import AuthLayout from '../../layouts/AuthLayout.astro';
+import LoginForm from '../../components/auth/LoginForm';
+
+const locale = Astro.locals.locale;
+const errorParam = Astro.url.searchParams.get('error');
+const notice = Astro.url.searchParams.get('notice');
+
+const errorMessages: Record<string, string> = {
+  oauth_state: 'Sesiune de autentificare expirată. Încearcă din nou.',
+  oauth_failed: 'Autentificarea cu furnizorul extern a eșuat. Încearcă din nou.',
+  oauth_unconfigured: 'Acest furnizor nu este configurat momentan. Folosește emailul.',
+};
+const errorMsg = errorParam ? (errorMessages[errorParam] || 'A apărut o eroare. Încearcă din nou.') : null;
+const noticeMsg = notice === 'verified' ? 'Email confirmat. Te poți autentifica.' : notice === 'reset' ? 'Parola a fost schimbată. Autentifică-te.' : null;
+---
+
+<AuthLayout title="Autentificare">
+  {errorMsg && (
+    <div class="mb-5 flex items-start gap-2.5 px-4 py-3 bg-[#FCEEEC] ring-1 ring-[#DC4B41]/20 rounded-2xl">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#DC4B41] mt-1.5 shrink-0"></span>
+      <p class="text-[13px] text-[#B23A30]">{errorMsg}</p>
+    </div>
+  )}
+  {noticeMsg && (
+    <div class="mb-5 flex items-start gap-2.5 px-4 py-3 bg-[#E1F1F5] ring-1 ring-[#168AAD]/20 rounded-2xl">
+      <span class="w-1.5 h-1.5 rounded-full bg-[#168AAD] mt-1.5 shrink-0"></span>
+      <p class="text-[13px] text-[#0F5E73]">{noticeMsg}</p>
+    </div>
+  )}
+
+  <LoginForm client:load locale={locale} />
+</AuthLayout>

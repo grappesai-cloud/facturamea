@@ -1,0 +1,36 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ApiKeysManager from '../../../components/api/ApiKeysManager.tsx';
+---
+
+<AppLayout title="API & integrări" activeTab="api">
+  <div class="max-w-3xl">
+    <div class="mb-6 sm:mb-8">
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">API & integrări</h1>
+      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">Generează chei API pentru a conecta facturamea la propriile aplicații și integrări.</p>
+    </div>
+
+    <section class="mb-10">
+      <h2 class="text-[18px] font-bold text-white mb-3">Chei API</h2>
+      <ApiKeysManager client:load />
+    </section>
+
+    <section class="mb-6">
+      <h2 class="text-[18px] font-bold text-white mb-3">Cum folosești API-ul</h2>
+      <div class="rounded-2xl p-5 bg-white/5 space-y-3">
+        <p class="text-[13px] text-[#9FB8CC]">
+          Trimite cererile către <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">https://facturamea.com/api/v1</code>
+          și autentifică-te cu cheia ta în header-ul <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">Authorization</code>.
+        </p>
+        <pre class="bg-black/30 text-[#9FB8CC] text-xs rounded-xl p-4 overflow-x-auto font-mono"><code>curl https://facturamea.com/api/v1/ping \
+  -H "Authorization: Bearer fm_live_..."</code></pre>
+        <p class="text-[13px] text-[#9FB8CC]">
+          Poți crea facturi, clienți și produse. Vezi documentația completă cu toate endpoint-urile și exemplele.
+        </p>
+        <a href="/dezvoltatori" class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#E1FB15] hover:underline">
+          Documentație dezvoltatori →
+        </a>
+      </div>
+    </section>
+  </div>
+</AppLayout>

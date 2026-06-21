@@ -1,0 +1,728 @@
+---
+// Glassmorphic app shell — floating navbar, dock, sheets and theming.
+import BaseLayout from './BaseLayout.astro';
+import CompanySwitcher from '../components/CompanySwitcher';
+import { NAV_MODULES } from '../lib/nav-modules';
+import { db } from '../db';
+import { users } from '../db/schema';
+import { eq } from 'drizzle-orm';
+
+interface Props {
+  title: string;
+  activeTab?: string;
+  hideBreadcrumbs?: boolean;
+  breadcrumbTitle?: string;
+  breadcrumbParent?: { label: string; href: string };
+  hideFooter?: boolean;
+}
+
+const { title, hideFooter } = Astro.props;
+const user = Astro.locals.user;
+const company = Astro.locals.company;
+const license = Astro.locals.license;
+const anafConnected = Astro.locals.anafConnected;
+const currentPath = Astro.url.pathname;
+const isHome = currentPath === '/app';
+const showTrialBanner = license && license.plan === 'trial' && license.status === 'active';
+
+const groups: { label: string; items: typeof NAV_MODULES }[] = [
+  { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare') },
+  { label: 'Vânzări', items: NAV_MODULES.filter((m) => m.group === 'Vanzari') },
+  { label: 'Gestiune', items: NAV_MODULES.filter((m) => m.group === 'Gestiune') },
+  { label: 'Cont', items: NAV_MODULES.filter((m) => m.group === 'Cont') },
+];
+
+// Flat solid card colours from the Meadow ramp. fg = heading text, sub = description.
+const TILE = [
+  { bg: '#D9ED92', fg: '#1C3A22', sub: '#3C5A33' },              // Lime Cream
+  { bg: '#B5E48C', fg: '#1B3A24', sub: '#395A33' },              // Light Green
+  { bg: '#99D98C', fg: '#163A26', sub: '#2F5638' },              // Willow
+  { bg: '#76C893', fg: '#0F3A28', sub: '#235340' },              // Emerald
+  { bg: '#52B69A', fg: '#06322A', sub: '#0F4A3C' },              // Ocean Mist
+  { bg: '#34A0A4', fg: '#06272B', sub: '#0C3E44' },              // Tropical Teal
+  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Bondi Blue
+  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Cerulean
+  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Baltic Blue
+];
+const tileFor = (key: string) => TILE[Math.max(0, NAV_MODULES.findIndex((m) => m.key === key)) % TILE.length];
+
+// Which modules can be pinned to the dashboard launcher (same rule as /api/me/dashboard).
+const isPinnable = (key: string, primary?: boolean) => !primary && key !== 'setari' && key !== 'import';
+
+// The user's current dashboard pins, so the overlay shows the right pin state.
+let pinnedKeys: string[] = [];
+if (user) {
+  try {
+    const [r] = await db.select({ dm: users.dashboardModules }).from(users).where(eq(users.id, user.id));
+    if (r?.dm) {
+      const a = JSON.parse(r.dm);
+      if (Array.isArray(a)) pinnedKeys = a.filter((k) => typeof k === 'string');
+    }
+  } catch { /* column may not exist yet / DB not ready */ }
+}
+const pinned = new Set(pinnedKeys);
+
+// Primary navigation — always-visible sections (desktop bar + mobile bottom nav).
+const p = currentPath;
+const navSections = [
+  { label: 'Acasă', href: '/app', mobile: true,
+    active: p === '/app',
+    icon: 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75' },
+  { label: 'Facturare', href: '/app/facturare', mobile: true,
+    active: p.startsWith('/app/facturare') && !p.startsWith('/app/facturare/rapoarte'),
+    icon: 'M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z' },
+  { label: 'Cheltuieli', href: '/app/cheltuieli', mobile: true,
+    active: p.startsWith('/app/cheltuieli'),
+    icon: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z' },
+  { label: 'Gestiune', href: '/app/gestiune', mobile: false,
+    active: p.startsWith('/app/gestiune'),
+    icon: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z' },
+  { label: 'Rapoarte', href: '/app/facturare/rapoarte', mobile: true,
+    active: p.startsWith('/app/facturare/rapoarte') || p.startsWith('/app/rapoarte'),
+    icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' },
+];
+const navMobile = navSections.filter((s) => s.mobile);
+---
+
+<BaseLayout title={title} themeColor="#0A2238">
+  <style is:global>
+    /* App shell: lock the page to the viewport width so it can never be dragged
+       sideways. `clip` (not hidden) avoids creating a scroll container, so the
+       fixed navbar and any sticky elements keep working. */
+    html, body { overflow-x: clip; max-width: 100%; }
+    /* No rubber-band / "pull past the content" overscroll. */
+    html { overscroll-behavior-y: none; }
+    body { background-color: #0A2238; overscroll-behavior-y: none; }
+
+    /* Form fields always get a visible border — fixes inputs that were styled
+       bg-white/5 with no ring (invisible on the dark shell). :where() = zero
+       specificity, so any explicit ring/border utility on the field still wins. */
+    :where([data-app-shell] input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden])),
+    :where([data-app-shell] textarea),
+    :where([data-app-shell] select) {
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+    }
+    :where(html.th-light [data-app-shell] input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden])),
+    :where(html.th-light [data-app-shell] textarea),
+    :where(html.th-light [data-app-shell] select) {
+      box-shadow: inset 0 0 0 1px rgba(16, 42, 67, 0.16);
+    }
+    /* Hide scrollbars app-wide (content still scrolls). */
+    html, body, .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+    html::-webkit-scrollbar, body::-webkit-scrollbar, .no-scrollbar::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    /* Lock the page behind an open sheet so the background can't scroll. */
+    html.sheet-lock, html.sheet-lock body { overflow: hidden !important; }
+
+    /* Dashboard pin toggle inside the Acțiuni overlay: "+" when not pinned, a
+       check when pinned. The two icons stack (grid) and crossfade with a pop. */
+    .dash-pin .pin-add, .dash-pin .pin-on {
+      grid-area: 1 / 1;
+      transition: opacity .2s ease, transform .3s cubic-bezier(.34,1.56,.64,1);
+    }
+    .dash-pin .pin-add { opacity: 1; transform: scale(1) rotate(0); }
+    .dash-pin .pin-on  { opacity: 0; transform: scale(.3) rotate(-50deg); }
+    .dash-pin[data-pinned="true"] .pin-add { opacity: 0; transform: scale(.3) rotate(50deg); }
+    .dash-pin[data-pinned="true"] .pin-on  { opacity: 1; transform: scale(1) rotate(0); }
+    .dash-pin[data-pinned="true"] { background: #102D49; }
+    .dash-pin.pin-pop { animation: pinPop .34s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes pinPop { 0% { transform: scale(1); } 42% { transform: scale(1.22); } 100% { transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) {
+      .dash-pin .pin-add, .dash-pin .pin-on { transition: none; }
+      .dash-pin.pin-pop { animation: none; }
+    }
+
+    /* Settings menu — active text-size button */
+    .th-fs-btn { transition: background-color .15s, border-color .15s, color .15s; }
+    .th-fs-btn[data-active="true"] { background: #D9ED92; border-color: #D9ED92; color: #1C3A22; }
+
+    /* Reusable sheet (settings, Acțiuni, Ajutor): backdrop fades; the card rises
+       (mobile) or scale-fades in (desktop). Drag-to-dismiss via the grab handle. */
+    .app-sheet { opacity: 0; transition: opacity .28s ease; }
+    .app-sheet.is-open { opacity: 1; }
+    .app-sheet-card { transform: translateY(100%); transition: transform .42s cubic-bezier(.22,1,.36,1); will-change: transform; overscroll-behavior: contain; scrollbar-width: none; }
+    .app-sheet-card::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    .app-sheet.is-open .app-sheet-card { transform: translateY(0); }
+    .app-sheet-card.dragging { transition: none; }
+    @media (min-width: 640px) {
+      .app-sheet-card { transform: translateY(14px) scale(.96); opacity: 0; transition: transform .32s cubic-bezier(.22,1,.36,1), opacity .28s ease; }
+      .app-sheet.is-open .app-sheet-card { transform: translateY(0) scale(1); opacity: 1; }
+    }
+    /* Opening animation — the sheet's content rises & fades in, staggered. */
+    .app-sheet .sheet-content > * { opacity: 0; transform: translateY(12px); }
+    .app-sheet.is-open .sheet-content > * { opacity: 1; transform: none; transition: opacity .45s ease, transform .5s cubic-bezier(.22,1,.36,1); }
+    .app-sheet.is-open .sheet-content > *:nth-child(1) { transition-delay: .10s; }
+    .app-sheet.is-open .sheet-content > *:nth-child(2) { transition-delay: .16s; }
+    .app-sheet.is-open .sheet-content > *:nth-child(3) { transition-delay: .22s; }
+    .app-sheet.is-open .sheet-content > *:nth-child(4) { transition-delay: .28s; }
+    .app-sheet.is-open .sheet-content > *:nth-child(n+5) { transition-delay: .33s; }
+    @media (prefers-reduced-motion: reduce) {
+      .app-sheet, .app-sheet-card { transition: none; }
+      .app-sheet .sheet-content > * { opacity: 1; transform: none; }
+    }
+
+    /* ── App theming: light ↔ darker dark, with a smooth crossfade ──────────
+       Binary: html.th-light (soft light) or html.th-app-dark (near-black).
+       Card text set via inline styles is untouched, so meadow/lime tiles stay
+       on-brand in both themes. */
+
+    /* Smooth transition of theme-driven properties only (avoids the chart SVG). */
+    [data-app-shell],
+    [data-app-shell] .text-white, [data-app-shell] .text-\[\#EAF2F8\], [data-app-shell] .text-\[\#C8DAE8\],
+    [data-app-shell] .text-\[\#9FB8CC\], [data-app-shell] .text-\[\#7C9AB4\],
+    [data-app-shell] .border-white\/10, [data-app-shell] .border-white\/20,
+    [data-app-nav] .bg-white\/10, [data-app-nav] .text-white, [data-app-nav] .text-\[\#C8DAE8\], [data-app-nav] .text-\[\#D9ED92\],
+    #settings-card, #settings-card *, #menu-card, #menu-card *, #help-card, #help-card *,
+    .dash-pin {
+      transition: background-color .35s ease, color .35s ease, border-color .35s ease;
+    }
+
+    /* ── Darker dark mode (near-black) ── */
+    html.th-app-dark [data-app-shell] { background-color: #06090F !important; }
+    /* Neutral, minimal cards: a warm charcoal (NOT washed-out blue), borderless.
+       Color is used selectively (lime CTA, lively status), never on every card. */
+    html.th-app-dark [data-app-shell] .bg-white\/5 { background-color: #15171C !important; border-color: transparent !important; }
+    html.th-app-dark [data-app-shell] .bg-white\/10 { background-color: #212430 !important; }
+    html.th-app-dark [data-app-shell] .border-white\/10 { border-color: transparent !important; }
+
+    /* Lively, intuitive semantic colors (the old green was too blue, red too dark). */
+    [data-app-shell] .text-\[\#2E9E6A\], [data-app-shell] .hover\:text-\[\#2E9E6A\]:hover { color: #5FD06A !important; }
+    [data-app-shell] .bg-\[\#2E9E6A\]\/15 { background-color: rgba(120,201,76,0.16) !important; }
+    [data-app-shell] .text-\[\#DC4B41\], [data-app-shell] .hover\:text-\[\#DC4B41\]:hover { color: #FF6B5C !important; }
+    [data-app-shell] .bg-\[\#DC4B41\]\/15 { background-color: rgba(255,107,92,0.15) !important; }
+    [data-app-shell] .text-\[\#E8A33C\] { color: #F2B33D !important; }
+    [data-app-shell] .bg-\[\#E8A33C\]\/15 { background-color: rgba(242,179,61,0.15) !important; }
+    /* Retire the washed-out teal-blue accent for a warmer lime-green. */
+    [data-app-shell] .text-\[\#34A0A4\] { color: #5FD06A !important; }
+    [data-app-shell] .bg-\[\#34A0A4\]\/15 { background-color: rgba(120,201,76,0.16) !important; }
+
+    /* Buttons: subtle hover-lift + press, matching the menu feel. */
+    [data-app-shell] .bg-\[\#E1FB15\] { transition: transform .16s cubic-bezier(.34,1.56,.64,1), background-color .16s ease, box-shadow .2s ease; }
+    [data-app-shell] .bg-\[\#E1FB15\]:hover { transform: translateY(-1px); }
+    [data-app-shell] .bg-\[\#E1FB15\]:active { transform: scale(.97); }
+    @media (prefers-reduced-motion: reduce) { [data-app-shell] .bg-\[\#E1FB15\] { transition: background-color .16s ease; } [data-app-shell] .bg-\[\#E1FB15\]:hover, [data-app-shell] .bg-\[\#E1FB15\]:active { transform: none; } }
+    html.th-app-dark #settings-card { background-color: #0C1118 !important; }
+    html.th-app-dark #menu-card     { background-color: #0A0D14 !important; }
+    html.th-app-dark #help-card     { background-color: #0E1620 !important; }
+
+    /* ── Soft light mode ── */
+    /* App shell + content */
+    html.th-light [data-app-shell] { background-color: #EEF2F6 !important; color: #11253A; }
+    html.th-light [data-app-shell] .text-white, html.th-light [data-app-shell] .text-\[\#EAF2F8\] { color: #11253A !important; }
+    html.th-light [data-app-shell] .text-\[\#C8DAE8\] { color: #3A4F63 !important; }
+    html.th-light [data-app-shell] .text-\[\#9FB8CC\] { color: #4F6478 !important; }
+    html.th-light [data-app-shell] .text-\[\#7C9AB4\] { color: #5E7385 !important; }
+    html.th-light [data-app-shell] .border-white\/10  { border-color: rgba(17,37,58,0.10) !important; }
+    html.th-light [data-app-shell] .border-white\/20  { border-color: rgba(17,37,58,0.18) !important; }
+    html.th-light [data-app-shell] .bg-white\/5 { background-color: #FFFFFF !important; border-color: transparent !important; box-shadow: 0 1px 2px rgba(16,32,56,0.05), 0 12px 32px -18px rgba(16,32,56,0.20) !important; }
+    html.th-light [data-app-shell] .bg-white\/10      { background-color: #E7ECF3 !important; }
+    html.th-light [data-app-shell] .border-white\/10  { border-color: transparent !important; }
+    /* "Adaugă o acțiune" picker (rendered inside the shell) */
+    html.th-light [data-app-shell] .bg-\[\#0A2238\]   { background-color: #FFFFFF !important; }
+    html.th-light [data-app-shell] .border-white\/15  { border-color: rgba(17,37,58,0.12) !important; }
+
+    /* Floating navbar — light glass with dark text. Kept translucent (not solid)
+       so the frosted backdrop-blur reads as glass in light mode too. */
+    html.th-light [data-app-nav] .bg-white\/10        { background-color: rgba(255,255,255,0.55) !important; }
+    html.th-light [data-app-nav] .text-white          { color: #11253A !important; }
+    html.th-light [data-app-nav] .text-\[\#C8DAE8\]   { color: #3A4F63 !important; }
+    html.th-light [data-app-nav] .text-\[\#D9ED92\]   { color: #6FA021 !important; }
+    html.th-light [data-app-nav] .text-\[\#9FB8CC\]   { color: #3A4F63 !important; }
+    html.th-light [data-app-nav] .text-\[\#E1FB15\]   { color: #5FA320 !important; }
+    html.th-light [data-app-nav] .hover\:bg-white\/15:hover { background-color: rgba(17,37,58,0.06) !important; }
+
+    /* Settings modal — light card */
+    html.th-light #settings-card { background-color: #FFFFFF !important; }
+    html.th-light #settings-card .text-white          { color: #11253A !important; }
+    html.th-light #settings-card .text-\[\#D7E5F0\]   { color: #1F3346 !important; }
+    html.th-light #settings-card .text-\[\#7E97AC\]   { color: #5E7385 !important; }
+    html.th-light #settings-card .text-\[\#8AA0B4\]   { color: #6B7E90 !important; }
+    html.th-light #settings-card .text-\[\#FF9A8F\]   { color: #D8473C !important; }
+    html.th-light #settings-card .bg-white\/10        { background-color: rgba(17,37,58,0.06) !important; }
+    html.th-light #settings-card .bg-white\/25        { background-color: rgba(17,37,58,0.20) !important; }
+    html.th-light #settings-card .border-white\/10    { border-color: rgba(17,37,58,0.10) !important; }
+    html.th-light #settings-card .hover\:bg-white\/20:hover { background-color: rgba(17,37,58,0.08) !important; }
+
+    /* Acțiuni sheet — light */
+    html.th-light #menu-card { background-color: #EEF2F6 !important; }
+    html.th-light #menu-card .text-white         { color: #11253A !important; }
+    html.th-light #menu-card .text-\[\#7C9AB4\]  { color: #5E7385 !important; }
+    html.th-light #menu-card .bg-white\/25       { background-color: rgba(17,37,58,0.18) !important; }
+
+    /* Ajutor sheet — light */
+    html.th-light #help-card { background-color: #FFFFFF !important; }
+    html.th-light #help-card .text-white        { color: #11253A !important; }
+    html.th-light #help-card .text-\[\#C8DAE8\] { color: #3A4F63 !important; }
+    html.th-light #help-card .text-\[\#7C9AB4\] { color: #5E7385 !important; }
+    html.th-light #help-card .bg-\[\#0A2238\]   { background-color: #E7ECF1 !important; }
+    html.th-light #help-card .bg-white\/25      { background-color: rgba(17,37,58,0.18) !important; }
+    html.th-light #help-card .border-white\/10  { border-color: rgba(17,37,58,0.10) !important; }
+
+    /* Pin toggle buttons (on the meadow tiles) — light */
+    html.th-light .dash-pin { background-color: rgba(255,255,255,0.92) !important; color: #1C3A22 !important; }
+    html.th-light .dash-pin:hover { background-color: #FFFFFF !important; }
+    html.th-light .dash-pin[data-pinned="true"] { background-color: #1C3A22 !important; }
+
+    /* ── Brand accent unification ──────────────────────────────────────────
+       The secondary /app pages were built with an orange accent (#1A759F). Retire
+       it across the app and use the site's meadow lime/green so everything matches.
+       Scoped to the app shell so the marketing site is untouched. */
+    html [data-app-shell] .bg-\[\#1A759F\],
+    html [data-app-shell] .bg-\[\#168AAD\] { background-color: #E1FB15 !important; color: #0A2238 !important; }
+    html [data-app-shell] .hover\:bg-\[\#1A759F\]:hover,
+    html [data-app-shell] .hover\:bg-\[\#168AAD\]:hover { background-color: #C6DE0C !important; }
+    html [data-app-shell] .text-\[\#1A759F\] { color: #2E9E6A !important; }
+    html [data-app-shell] .border-\[\#1A759F\] { border-color: #E1FB15 !important; }
+    html [data-app-shell] .ring-\[\#1A759F\] { --tw-ring-color: #E1FB15 !important; }
+    html.th-app-dark [data-app-shell] .text-\[\#1A759F\] { color: #9FE6B5 !important; }
+  </style>
+
+  <!-- ───────── Floating navbar (glass) — body-level so nothing can break `fixed` ───────── -->
+  <div data-app-nav class="fixed inset-x-0 top-0 z-50 px-4 sm:px-6 pt-3 pointer-events-none" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <div class="max-w-[1180px] mx-auto flex items-center justify-between gap-2">
+
+      <!-- Primary nav (desktop) + actions -->
+      <div class="pointer-events-auto lg:flex-1 h-14 flex items-center gap-1 px-1.5 rounded-full bg-white/10 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
+        {navSections.map((s) => (
+          <a href={s.href} class:list={['nav-pill hidden lg:inline-flex items-center gap-2 px-3.5 h-11 rounded-full text-[15px] font-semibold transition-colors', s.active ? 'bg-white/15 text-white' : 'text-[#C8DAE8] hover:bg-white/10 hover:text-white']}>
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={s.icon}/></svg>
+            <span>{s.label}</span>
+          </a>
+        ))}
+        <button id="menu-open" class="hidden lg:inline-flex items-center gap-2 px-3.5 h-11 rounded-full text-white text-[15px] font-semibold hover:bg-white/15 transition-colors">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z"/></svg>
+          <span>Toate</span>
+        </button>
+        <div class="ml-auto flex items-center gap-1">
+          <button id="help-open" class="inline-flex items-center gap-2 px-3 sm:px-4 h-11 rounded-full text-white text-[15px] font-semibold hover:bg-white/15 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+            <span>Ghid</span>
+          </button>
+          <a href="/app/notificari" aria-label="Notificări" class="relative inline-flex items-center justify-center w-11 h-11 rounded-full text-white hover:bg-white/15 transition-colors">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+            <span class="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[#E1FB15]"></span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Quick "new invoice" + settings hamburger -->
+      {user && (
+        <div class="pointer-events-auto relative shrink-0 flex items-center gap-2">
+          <a href="/app/facturare/emite" aria-label="Factură nouă" title="Factură nouă" class="w-14 h-14 rounded-full bg-[#E1FB15] text-[#0A2238] flex items-center justify-center shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] hover:bg-[#D2EA0E] transition-colors">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+          </a>
+          <button id="settings-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Setări" class="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl hover:bg-white/15 flex items-center justify-center text-white shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] transition-colors">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.397-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </button>
+
+          <div id="settings-menu" class="app-sheet hidden fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+            <div id="settings-card" class="app-sheet-card sheet-content w-full sm:max-w-[440px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#0B2741] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+
+              <!-- grab handle (mobile) — drag down to dismiss -->
+              <div id="settings-handle" class="flex justify-center pt-3.5 pb-2 touch-none select-none cursor-grab active:cursor-grabbing"><span class="w-10 h-1.5 rounded-full fm-grab"></span></div>
+
+              <!-- Brand -->
+              <a href="/app" class="flex items-center gap-2.5 px-5 pt-5 pb-1">
+                <img src="/logo.png" alt="facturamea" width="36" height="36" class="w-9 h-9" />
+                <span class="text-[18px] font-bold tracking-[-0.02em] text-white">factura<span class="text-[#34A0A4]">mea</span></span>
+              </a>
+
+              <!-- Identity + theme toggle (one row, no wasted space) -->
+              <div class="flex items-center gap-3 px-5 pt-2 pb-4">
+                <span class="w-12 h-12 rounded-full bg-[#D9ED92] text-[#1C3A22] flex items-center justify-center text-[17px] font-bold shrink-0">
+                  {(user.name || 'U').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase()}
+                </span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[17px] font-semibold leading-tight truncate text-white">{user.name}</p>
+                  <p class="text-[12.5px] text-[#7E97AC] truncate">{user.email}</p>
+                </div>
+                <button id="th-dark-btn" aria-pressed="false" title="Temă deschisă / întunecată" class="w-11 h-11 shrink-0 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
+                  <svg id="th-moon" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                  <svg id="th-sun" class="hidden w-5 h-5 text-[#D9ED92]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+                </button>
+              </div>
+
+              {company && (
+                <div class="px-3 pb-1">
+                  <CompanySwitcher client:load currentCompanyId={company.id} currentCompanyName={company.name} />
+                </div>
+              )}
+
+              <div class="h-px bg-white/10 mx-5 my-2"></div>
+
+              <!-- Navigation -->
+              <nav class="px-3 pb-1 space-y-0.5">
+                  <a href="/app/setari/sub-users" class="group flex items-center gap-3.5 px-3 py-3.5 rounded-2xl text-[16px] text-[#D7E5F0] hover:bg-white/[0.07] active:bg-white/10 hover:text-white transition-colors">
+                    <svg class="w-6 h-6 shrink-0 text-[#8AA0B4] group-hover:text-[#D9ED92] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>
+                    Echipă și roluri
+                  </a>
+                  <a href="/app/setari/integrari-anaf" class="group flex items-center gap-3.5 px-3 py-3.5 rounded-2xl text-[16px] text-[#D7E5F0] hover:bg-white/[0.07] active:bg-white/10 hover:text-white transition-colors">
+                    <svg class="w-6 h-6 shrink-0 text-[#8AA0B4] group-hover:text-[#D9ED92] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/></svg>
+                    <span class="flex-1 min-w-0 truncate">Integrare ANAF</span>
+                    {!anafConnected && <span class="shrink-0 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#E8A33C]"><span class="w-1.5 h-1.5 rounded-full bg-[#E8A33C]"></span>Neconectat</span>}
+                  </a>
+                  <a href="/app/setari/plati" class="group flex items-center gap-3.5 px-3 py-3.5 rounded-2xl text-[16px] text-[#D7E5F0] hover:bg-white/[0.07] active:bg-white/10 hover:text-white transition-colors">
+                    <svg class="w-6 h-6 shrink-0 text-[#8AA0B4] group-hover:text-[#D9ED92] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
+                    Plăți și bancă
+                  </a>
+                  <a href="/app/setari/remindere" class="group flex items-center gap-3.5 px-3 py-3.5 rounded-2xl text-[16px] text-[#D7E5F0] hover:bg-white/[0.07] active:bg-white/10 hover:text-white transition-colors">
+                    <svg class="w-6 h-6 shrink-0 text-[#8AA0B4] group-hover:text-[#D9ED92] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>
+                    Remindere de încasare
+                  </a>
+                  <a href="/app/setari" class="group flex items-center gap-3.5 px-3 py-3.5 rounded-2xl text-[16px] text-[#D7E5F0] hover:bg-white/[0.07] active:bg-white/10 hover:text-white transition-colors">
+                    <svg class="w-6 h-6 shrink-0 text-[#8AA0B4] group-hover:text-[#D9ED92] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Toate setările
+                  </a>
+                </nav>
+
+              <!-- Logout -->
+              <div class="px-3 pt-1 border-t border-white/10">
+                <form method="POST" action="/api/auth/logout">
+                  <button type="submit" class="w-full flex items-center justify-center gap-2.5 px-3 py-3.5 rounded-2xl text-[16px] font-semibold text-[#FF9A8F] hover:bg-[#FF6B5E]/12 transition-colors">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/></svg>
+                    Deconectare
+                  </button>
+                </form>
+              </div>
+
+              <!-- Info / legal -->
+              <div class="px-5 pt-3 pb-5 sm:pb-4 flex items-center justify-center gap-4 text-[12.5px] text-[#7E97AC]">
+                <button id="help-open-settings" type="button" class="hover:text-white transition-colors">Ajutor</button>
+                <span class="opacity-30">·</span>
+                <a href="/termeni" class="hover:text-white transition-colors">Termeni</a>
+                <span class="opacity-30">·</span>
+                <a href="/#contact" class="hover:text-white transition-colors">Contact</a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- ───────── Mobile bottom nav ───────── -->
+  {user && (
+    <nav data-app-nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 px-3 pb-3 pointer-events-none" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+      <div class="pointer-events-auto mx-auto max-w-md h-16 flex items-stretch justify-around gap-1 px-2 rounded-full bg-white/10 backdrop-blur-2xl shadow-[0_8px_40px_-10px_rgba(0,0,0,0.6)]">
+        {navMobile.map((s) => (
+          <a href={s.href} class:list={['flex-1 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors', s.active ? 'text-[#E1FB15]' : 'text-[#9FB8CC] active:text-white']}>
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d={s.icon}/></svg>
+            <span class="text-[10px] font-semibold tracking-tight">{s.label}</span>
+          </a>
+        ))}
+        <button id="menu-open-bottom" type="button" class="flex-1 flex flex-col items-center justify-center gap-1 rounded-xl text-[#9FB8CC] active:text-white transition-colors">
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z"/></svg>
+          <span class="text-[10px] font-semibold tracking-tight">Meniu</span>
+        </button>
+      </div>
+    </nav>
+  )}
+
+  <!-- ───────── App shell ───────── -->
+  <div data-app-shell class="min-h-screen bg-[#0A2238] text-[#EAF2F8] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <main class="flex-1 w-full">
+      <div class="max-w-[1180px] mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28 lg:pb-10">
+        {showTrialBanner && (
+          <a href="/app/setari/abonament" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#1A759F] rounded-2xl text-[15px] text-white hover:bg-[#1E6091] transition-colors">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#E1FB15]"></span>
+            <span><strong>Perioadă de probă</strong> · mai ai {license!.trialDaysLeft} {license!.trialDaysLeft === 1 ? 'zi' : 'zile'}.</span>
+            <span class="ml-auto font-semibold text-[#E1FB15]">Activează licența pe viață (700 RON) →</span>
+          </a>
+        )}
+        {!isHome && (
+          <button id="app-back" type="button" aria-label="Înapoi" class="group inline-flex items-center gap-2.5 mb-5 h-10 pl-1.5 pr-4 rounded-full text-[14px] font-semibold text-[#C8DAE8] hover:text-white transition-colors">
+            <span class="grid place-items-center w-8 h-8 rounded-full bg-white/10 group-hover:-translate-x-0.5 transition-transform">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg>
+            </span>
+            Înapoi
+          </button>
+        )}
+        <slot />
+      </div>
+    </main>
+
+    {!hideFooter && (
+      <footer class="hidden lg:block border-t border-white/10 mt-8">
+        <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[#7C9AB4]">
+          <span>© {new Date().getFullYear()} facturamea</span>
+          <div class="flex items-center gap-4">
+            <button id="help-open-2" class="hover:text-[#52B69A] transition-colors">Ajutor</button>
+            <a href="/termeni" class="hover:text-[#52B69A] transition-colors">Termeni</a>
+            <a href="/#contact" class="hover:text-[#52B69A] transition-colors">Contact</a>
+          </div>
+        </div>
+      </footer>
+    )}
+  </div>
+
+  <!-- ───────── Meniu overlay (quick actions) ───────── -->
+  <div id="menu-overlay" class="app-sheet hidden fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <div id="menu-card" class="app-sheet-card w-full sm:max-w-[820px] max-h-[94vh] sm:max-h-[92vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+      <div id="menu-handle" class="flex justify-center pt-3.5 pb-1 touch-none select-none cursor-grab active:cursor-grabbing"><span class="w-10 h-1.5 rounded-full fm-grab"></span></div>
+      <div class="sheet-content px-4 sm:px-7 pt-3 sm:pt-7 pb-7">
+      <div class="mb-6">
+        <h2 class="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-white">Ce vrei să faci?</h2>
+      </div>
+      {groups.map((g) => g.items.length > 0 && (
+        <div class="mb-7">
+          <p class="text-[13px] uppercase tracking-[0.14em] text-[#7C9AB4] font-semibold mb-3">{g.label}</p>
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-fr gap-3">
+            {g.items.map((m) => {
+              const t = m.primary ? { bg: '#E1FB15', fg: '#0A2238', sub: '#3F4D12' } : tileFor(m.key);
+              const canPin = isPinnable(m.key, m.primary);
+              return (
+                <div class="relative h-full">
+                  <a href={m.href} class={`group relative overflow-hidden flex h-full items-center gap-3 p-4 ${canPin ? 'pr-12' : ''} rounded-2xl transition-transform hover:-translate-y-0.5`} style={`background:${t.bg}`}>
+                    <span class="absolute inset-0 bg-black/25 pointer-events-none"></span>
+                    <svg class="relative w-7 h-7 shrink-0 text-[#ffffff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
+                    <span class="relative min-w-0 flex-1">
+                      <span class="block text-[15.5px] font-semibold leading-tight truncate text-[#ffffff]">{m.label}</span>
+                      <span class="block text-[12.5px] mt-0.5 leading-snug line-clamp-2 text-[#ffffff]/75">{m.desc}</span>
+                    </span>
+                  </a>
+                  {canPin && (
+                    <button type="button" class="dash-pin absolute top-2 right-2 w-8 h-8 grid place-items-center rounded-full bg-[#0A2238]/75 backdrop-blur text-white hover:bg-[#0A2238] transition-colors" data-pin={m.key} data-pinned={pinned.has(m.key) ? 'true' : 'false'} aria-label={`Adaugă ${m.label} pe pagina principală`} title="Adaugă pe pagina principală">
+                      <svg class="pin-add w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+                      <svg class="pin-on w-4 h-4 text-[#E1FB15]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      </div>
+    </div>
+  </div>
+
+  <!-- ───────── Ajutor sheet ───────── -->
+  <div id="help-modal" class="app-sheet hidden fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <div id="help-card" class="app-sheet-card w-full sm:max-w-[520px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#123455] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/15 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+      <div id="help-handle" class="flex justify-center pt-3.5 pb-1 touch-none select-none cursor-grab active:cursor-grabbing"><span class="w-10 h-1.5 rounded-full fm-grab"></span></div>
+      <div class="px-5 pt-3 sm:pt-6 pb-1">
+        <h3 class="text-[20px] font-bold text-white">Ajutor</h3>
+      </div>
+      <div class="sheet-content px-5 pt-3 pb-6 space-y-5 text-[15px] leading-relaxed text-[#C8DAE8]">
+        <div>
+          <p class="font-semibold text-white mb-2">Cum începi în 3 pași</p>
+          <ol class="space-y-2 list-decimal list-inside">
+            <li>Adaugă-ți firma în <a href="/app/setari/companie" class="text-[#76C893] font-medium underline">Date firmă</a>.</li>
+            <li>Adaugă un client în <a href="/app/facturare/clienti" class="text-[#76C893] font-medium underline">Clienți</a>.</li>
+            <li>Apasă <a href="/app/facturare/emite" class="text-[#76C893] font-medium underline">Emite factură</a> și gata.</li>
+          </ol>
+        </div>
+        <div>
+          <p class="font-semibold text-white mb-1">Ai date în Oblio sau SmartBill?</p>
+          <p>Le aduci automat din <a href="/app/import" class="text-[#76C893] font-medium underline">Import date</a>.</p>
+        </div>
+        <div class="rounded-xl bg-[#0A2238] border border-white/10 p-4">
+          <p class="font-semibold text-white mb-1">Ai nevoie de un om?</p>
+          <p>Scrie-ne la <a href="mailto:contact@facturamea.com" class="text-[#76C893] font-medium underline">contact@facturamea.com</a> și te ajutăm.</p>
+        </div>
+        <p class="text-[13px] text-[#7C9AB4]">Sfat: din meniul cu setări (colțul dreapta sus) poți comuta între tema deschisă și întunecată.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function bind(id: string, fn: () => void) { document.getElementById(id)?.addEventListener('click', fn); }
+
+    // Generic sheet — bottom-sheet on mobile / centered modal on desktop. Smooth
+    // open + close, backdrop & Esc to dismiss, and drag-down on the grab handle.
+    function setupSheet(overlayId: string, cardId: string, handleId: string) {
+      const overlay = document.getElementById(overlayId);
+      const card = document.getElementById(cardId);
+      const handle = document.getElementById(handleId);
+      let hideTimer = 0;
+      const open = () => {
+        if (!overlay) return;
+        window.clearTimeout(hideTimer);
+        overlay.classList.remove('hidden');
+        if (card) card.style.transform = '';
+        document.documentElement.classList.add('sheet-lock');
+        // Paint the closed state first, THEN flip to open so the enter transition
+        // actually runs (double rAF is more reliable than a reflow on mobile).
+        requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('is-open')));
+      };
+      const close = () => {
+        if (!overlay || overlay.classList.contains('hidden')) return;
+        overlay.classList.remove('is-open');
+        card?.classList.remove('dragging');
+        if (card) card.style.transform = '';
+        document.documentElement.classList.remove('sheet-lock');
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(() => overlay.classList.add('hidden'), 440);
+      };
+      const isOpen = () => !!overlay && overlay.classList.contains('is-open');
+      const toggle = () => (isOpen() ? close() : open());
+      overlay?.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+      const dismissThreshold = () => Math.min(110, (card ? card.offsetHeight : 600) * 0.2);
+
+      // (1) Drag the grab handle — works with mouse AND touch, because the handle
+      //     has touch-action:none so the browser never steals the gesture.
+      if (handle && card) {
+        let dragging = false, hSy = 0, hDy = 0;
+        handle.addEventListener('pointerdown', (e: PointerEvent) => {
+          dragging = true; hSy = e.clientY; hDy = 0;
+          card.classList.add('dragging');
+          handle.setPointerCapture?.(e.pointerId);
+        });
+        handle.addEventListener('pointermove', (e: PointerEvent) => {
+          if (!dragging) return;
+          hDy = Math.max(0, e.clientY - hSy);
+          card.style.transform = `translateY(${hDy}px)`;
+        });
+        const endHandle = () => {
+          if (!dragging) return;
+          dragging = false;
+          card.classList.remove('dragging');
+          if (hDy > dismissThreshold()) close(); else card.style.transform = '';
+        };
+        handle.addEventListener('pointerup', endHandle);
+        handle.addEventListener('pointercancel', endHandle);
+      }
+
+      // (2) Pull-to-dismiss: when scrolled to the very top, keep pulling down on
+      //     the content (touch) and it closes. Pulling up scrolls normally.
+      if (card) {
+        let sy = 0, sScroll = 0, active = false, dy = 0, onHandle = false;
+        card.addEventListener('touchstart', (e: TouchEvent) => {
+          if (e.touches.length !== 1) return;
+          onHandle = !!handle && handle.contains(e.target as Node);
+          sy = e.touches[0].clientY;
+          sScroll = card.scrollTop;
+          active = false; dy = 0;
+        }, { passive: true });
+        card.addEventListener('touchmove', (e: TouchEvent) => {
+          if (onHandle || e.touches.length !== 1) return;
+          const delta = e.touches[0].clientY - sy;
+          if (!active) {
+            if (sScroll <= 0 && delta > 6) { active = true; card.classList.add('dragging'); }
+            else return; // let the content scroll normally
+          }
+          dy = Math.max(0, delta);
+          card.style.transform = `translateY(${dy}px)`;
+          if (e.cancelable) e.preventDefault();
+        }, { passive: false });
+        const endTouch = () => {
+          if (!active) return;
+          active = false;
+          card.classList.remove('dragging');
+          if (dy > dismissThreshold()) close(); else card.style.transform = '';
+        };
+        card.addEventListener('touchend', endTouch);
+        card.addEventListener('touchcancel', endTouch);
+      }
+
+      // (3) Wheel / trackpad smooth close — ONLY in the mobile sheet layout
+      //     (< 640px, incl. the device sandbox). Overscroll past the top drags the
+      //     sheet and animates it closed. 'dragging' is toggled ONCE per gesture and
+      //     we preventDefault while we own it, so there's no transition flip-flop or
+      //     competing native scroll — i.e. no jitter.
+      if (card) {
+        const mqMobile = window.matchMedia('(max-width: 639px)');
+        let dist = 0, wTimer = 0;
+        const snapBack = () => { dist = 0; card.classList.remove('dragging'); card.style.transform = ''; };
+        card.addEventListener('wheel', (e: WheelEvent) => {
+          if (!mqMobile.matches) return; // desktop layout: no scroll-to-close
+          const atTop = card.scrollTop <= 0;
+          const noScroll = card.scrollHeight <= card.clientHeight + 2;
+          // Dismiss by swiping the sheet down (negative deltaY w/ natural scroll) at the top.
+          if (!(e.deltaY < 0 && (atTop || noScroll))) { if (dist > 0) snapBack(); return; }
+          e.preventDefault();                              // own the gesture (no native scroll)
+          if (dist === 0) card.classList.add('dragging');  // start once → smooth follow
+          dist += Math.abs(e.deltaY);
+          card.style.transform = `translateY(${Math.min(dist * 0.5, 220)}px)`;
+          window.clearTimeout(wTimer);
+          if (dist > 150) { dist = 0; close(); return; }
+          wTimer = window.setTimeout(snapBack, 160);
+        }, { passive: false });
+      }
+      return { open, close, toggle, isOpen };
+    }
+
+    const settingsBtn = document.getElementById('settings-btn');
+    const settings = setupSheet('settings-menu', 'settings-card', 'settings-handle');
+    const menu = setupSheet('menu-overlay', 'menu-card', 'menu-handle');
+    const help = setupSheet('help-modal', 'help-card', 'help-handle');
+
+    // Stylish back button → previous page (falls back to the dashboard).
+    document.getElementById('app-back')?.addEventListener('click', () => {
+      if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) history.back();
+      else if (history.length > 1) history.back();
+      else location.href = '/app';
+    });
+
+    bind('menu-open', menu.open); bind('menu-open-bottom', menu.open);
+    bind('help-open', help.open); bind('help-open-2', help.open);
+    bind('help-open-settings', () => { settings.close(); setTimeout(() => help.open(), 120); });
+    settingsBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      settings.toggle();
+      settingsBtn.setAttribute('aria-expanded', settings.isOpen() ? 'true' : 'false');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { menu.close(); help.close(); settings.close(); }
+    });
+
+    // Light ↔ dark theme. Binary: th-light (soft light) or th-app-dark (near-black).
+    // Default = dark. Persisted as 'app-theme-light'.
+    const LIGHT_KEY = 'app-theme-light';
+    const themeBtn = document.getElementById('th-dark-btn');
+    const moon = document.getElementById('th-moon'); const sun = document.getElementById('th-sun');
+    function applyTheme(light: boolean) {
+      const el = document.documentElement;
+      el.classList.toggle('th-light', light);
+      el.classList.toggle('th-app-dark', !light);
+      el.classList.toggle('th-dark', !light); // existing dark theme for the secondary pages
+      themeBtn?.setAttribute('aria-pressed', light ? 'true' : 'false');
+      moon?.classList.toggle('hidden', light);   // moon shows in dark mode
+      sun?.classList.toggle('hidden', !light);   // sun shows in light mode
+    }
+    applyTheme(localStorage.getItem(LIGHT_KEY) === '1');
+    themeBtn?.addEventListener('click', () => {
+      const next = !document.documentElement.classList.contains('th-light');
+      localStorage.setItem(LIGHT_KEY, next ? '1' : '0');
+      applyTheme(next);
+    });
+
+    // ── Dashboard pins from the Acțiuni overlay ──
+    const SYNC_EVENT = 'dashboard-modules-changed';
+    const pinBtns = Array.from(document.querySelectorAll('.dash-pin'));
+    const currentPins = () =>
+      Array.from(document.querySelectorAll('.dash-pin[data-pinned="true"]'))
+        .map((b) => b.getAttribute('data-pin'))
+        .filter((k): k is string => !!k);
+    async function savePins(list: string[]) {
+      try {
+        await fetch('/api/me/dashboard', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modules: list }),
+        });
+      } catch { /* keep optimistic state */ }
+    }
+    pinBtns.forEach((b) => b.addEventListener('click', (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const now = b.getAttribute('data-pinned') === 'true';
+      b.setAttribute('data-pinned', now ? 'false' : 'true');
+      // restart the little pop animation on the button
+      b.classList.remove('pin-pop'); void (b as HTMLElement).offsetWidth; b.classList.add('pin-pop');
+      const list = currentPins();
+      savePins(list);
+      window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: { modules: list, source: 'overlay' } }));
+    }));
+    // Keep the pin buttons in sync when the dashboard island changes things.
+    window.addEventListener(SYNC_EVENT, (e) => {
+      const detail = (e as CustomEvent).detail as { modules?: string[]; source?: string } | undefined;
+      if (!detail || detail.source === 'overlay') return;
+      const set = new Set(detail.modules || []);
+      pinBtns.forEach((b) => b.setAttribute('data-pinned', set.has(b.getAttribute('data-pin') || '') ? 'true' : 'false'));
+    });
+  </script>
+</BaseLayout>

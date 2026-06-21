@@ -1,0 +1,59 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ExpensesManager from '../../../components/cheltuieli/ExpensesManager';
+import FurnizoriSheet from '../../../components/cheltuieli/FurnizoriSheet';
+import { db } from '../../../db';
+import { expenses } from '../../../db/schema';
+import { and, eq, gte, sql } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+const now = new Date();
+const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+
+let kpis = { monthTotal: 0, unpaid: 0, deductible: 0 };
+try {
+  const [mRow] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${expenses.totalCents}), 0)` })
+    .from(expenses)
+    .where(and(eq(expenses.companyId, companyId), gte(expenses.issueDate, monthStart)));
+  kpis.monthTotal = Number(mRow?.total ?? 0);
+
+  const [uRow] = await db
+    .select({ unpaid: sql<number>`COALESCE(SUM(${expenses.totalCents} - ${expenses.paidCents}), 0)` })
+    .from(expenses)
+    .where(and(eq(expenses.companyId, companyId), sql`${expenses.status} <> 'paid'`));
+  kpis.unpaid = Number(uRow?.unpaid ?? 0);
+
+  const [dRow] = await db
+    .select({ deductible: sql<number>`COALESCE(SUM(${expenses.totalCents}) FILTER (WHERE ${expenses.deductible} = true), 0)` })
+    .from(expenses)
+    .where(and(eq(expenses.companyId, companyId), gte(expenses.issueDate, monthStart)));
+  kpis.deductible = Number(dRow?.deductible ?? 0);
+} catch (e) {
+  // DB not provisioned — render empty KPIs.
+}
+
+const cards = [
+  { label: 'Total luna aceasta', value: ron(kpis.monthTotal), accent: 'text-white' },
+  { label: 'Neplătit', value: ron(kpis.unpaid), accent: kpis.unpaid > 0 ? 'text-[#DC4B41]' : 'text-[#2E9E6A]' },
+  { label: 'Deductibil (luna)', value: ron(kpis.deductible), accent: 'text-white' },
+];
+---
+
+<AppLayout title="Cheltuieli" activeTab="cheltuieli">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Cheltuieli</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-2">Facturile primite de la furnizori.</p>
+    </div>
+    <FurnizoriSheet client:load />
+  </div>
+
+  <ExpensesManager client:load />
+</AppLayout>

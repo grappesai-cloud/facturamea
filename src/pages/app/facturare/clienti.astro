@@ -1,0 +1,18 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ClientsManager from '../../../components/invoicing/ClientsManager';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+---
+
+<AppLayout title="Clienți" activeTab="facturare">
+  <div class="mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Clienți</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-1">Clienții externi către care emiți facturi. Pentru clienții facturamea, datele se preiau automat.</p>
+  </div>
+
+  <div class="max-w-5xl">
+    <ClientsManager client:load />
+  </div>
+</AppLayout>

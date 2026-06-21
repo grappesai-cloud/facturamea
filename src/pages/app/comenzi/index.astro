@@ -1,0 +1,383 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { salesOrders, purchaseOrders, suppliers, warehouses } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+const tabParam = Astro.url.searchParams.get('tab') === 'furnizori' ? 'furnizori' : 'clienti';
+
+let salesRows: any[] = [];
+let purchaseRows: any[] = [];
+let whs: any[] = [];
+try {
+  salesRows = await db
+    .select({
+      id: salesOrders.id,
+      number: salesOrders.number,
+      clientNameSnap: salesOrders.clientNameSnap,
+      orderDate: salesOrders.orderDate,
+      totalCents: salesOrders.totalCents,
+      status: salesOrders.status,
+      invoiceId: salesOrders.invoiceId,
+    })
+    .from(salesOrders)
+    .where(eq(salesOrders.companyId, companyId))
+    .orderBy(desc(salesOrders.createdAt))
+    .limit(200);
+
+  purchaseRows = await db
+    .select({
+      id: purchaseOrders.id,
+      number: purchaseOrders.number,
+      supplierName: suppliers.name,
+      supplierNameSnap: purchaseOrders.supplierNameSnap,
+      orderDate: purchaseOrders.orderDate,
+      expectedDate: purchaseOrders.expectedDate,
+      totalCents: purchaseOrders.totalCents,
+      status: purchaseOrders.status,
+    })
+    .from(purchaseOrders)
+    .leftJoin(suppliers, eq(purchaseOrders.supplierId, suppliers.id))
+    .where(eq(purchaseOrders.companyId, companyId))
+    .orderBy(desc(purchaseOrders.createdAt))
+    .limit(200);
+
+  whs = await db.select({ id: warehouses.id, name: warehouses.name }).from(warehouses)
+    .where(eq(warehouses.companyId, companyId)).orderBy(desc(warehouses.createdAt)).limit(100);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+const salesBadge: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  confirmed: { label: 'Confirmată', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
+  invoiced: { label: 'Facturată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  delivered: { label: 'Livrată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  canceled: { label: 'Anulată', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
+};
+const purchaseBadge: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  sent: { label: 'Trimisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
+  received: { label: 'Recepționată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  closed: { label: 'Închisă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  canceled: { label: 'Anulată', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
+};
+---
+
+<AppLayout title="Comenzi" activeTab="comenzi">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Comenzi</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-2">Vânzări către clienți și achiziții de la furnizori.</p>
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <a href="/app/comenzi/noua-client" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Comandă client</a>
+      <a href="/app/comenzi/noua-furnizor" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Comandă furnizor</a>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="mb-4 inline-flex rounded-full bg-white/5 p-1">
+    <button data-tab="clienti" class={`tab-btn px-4 h-9 rounded-full text-[14px] font-semibold transition-colors ${tabParam === 'clienti' ? 'bg-white/10 text-white' : 'text-[#9FB8CC] hover:text-white'}`}>Clienți</button>
+    <button data-tab="furnizori" class={`tab-btn px-4 h-9 rounded-full text-[14px] font-semibold transition-colors ${tabParam === 'furnizori' ? 'bg-white/10 text-white' : 'text-[#9FB8CC] hover:text-white'}`}>Furnizori</button>
+  </div>
+
+  <!-- Clienti panel -->
+  <div data-panel="clienti" class={tabParam === 'clienti' ? '' : 'hidden'}>
+    <div class="rounded-2xl bg-white/5 overflow-hidden">
+      {salesRows.length === 0 ? (
+        <div class="px-5 py-12 text-center text-[14px] text-[#9FB8CC]">Nicio comandă de la clienți încă. <a href="/app/comenzi/noua-client" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="w-full text-[14px]">
+            <thead>
+              <tr class="text-left text-[12px] font-medium text-[#7C9AB4]">
+                <th class="px-5 py-3 font-medium">Număr</th>
+                <th class="px-5 py-3 font-medium">Client</th>
+                <th class="px-5 py-3 font-medium">Data</th>
+                <th class="px-5 py-3 font-medium text-right">Total</th>
+                <th class="px-5 py-3 font-medium">Status</th>
+                <th class="px-5 py-3 font-medium text-right">Acțiune</th>
+              </tr>
+            </thead>
+            <tbody>
+              {salesRows.slice(0, 3).map((o) => {
+                const st = salesBadge[o.status] || salesBadge.draft;
+                const canInvoice = o.status !== 'invoiced' && o.status !== 'canceled';
+                return (
+                  <tr class="border-t border-white/5 hover:bg-white/10 transition-colors" data-so-row data-id={o.id}>
+                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
+                    <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[220px]">{o.clientNameSnap}</td>
+                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate || '·'}</td>
+                    <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
+                    <td class="px-5 py-3.5"><span class={`so-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
+                    <td class="px-5 py-3.5 text-right">
+                      {o.status === 'invoiced' && o.invoiceId ? (
+                        <a href={`/app/facturare/${o.invoiceId}`} class="px-4 py-2 inline-flex items-center rounded-full bg-white/10 text-white text-[14px] font-semibold hover:bg-white/15 transition-colors">Vezi factura</a>
+                      ) : (
+                        <div class="inline-flex gap-1.5">
+                          {canInvoice && (
+                            <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
+                          )}
+                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {salesRows.length > 3 && salesRows.slice(3).map((o) => {
+                const st = salesBadge[o.status] || salesBadge.draft;
+                const canInvoice = o.status !== 'invoiced' && o.status !== 'canceled';
+                return (
+                  <tr class="so-extra hidden border-t border-white/5 hover:bg-white/10 transition-colors" data-so-row data-id={o.id}>
+                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
+                    <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[220px]">{o.clientNameSnap}</td>
+                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate || '·'}</td>
+                    <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
+                    <td class="px-5 py-3.5"><span class={`so-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
+                    <td class="px-5 py-3.5 text-right">
+                      {o.status === 'invoiced' && o.invoiceId ? (
+                        <a href={`/app/facturare/${o.invoiceId}`} class="px-4 py-2 inline-flex items-center rounded-full bg-white/10 text-white text-[14px] font-semibold hover:bg-white/15 transition-colors">Vezi factura</a>
+                      ) : (
+                        <div class="inline-flex gap-1.5">
+                          {canInvoice && (
+                            <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
+                          )}
+                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {salesRows.length > 3 && (
+                <tr>
+                  <td colspan="6" class="px-5 py-3.5 text-center">
+                    <button type="button" data-expand="so" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({salesRows.length})</button>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Furnizori panel -->
+  <div data-panel="furnizori" class={tabParam === 'furnizori' ? '' : 'hidden'}>
+    <div class="rounded-2xl bg-white/5 overflow-hidden">
+      {purchaseRows.length === 0 ? (
+        <div class="px-5 py-12 text-center text-[14px] text-[#9FB8CC]">Nicio comandă către furnizori încă. <a href="/app/comenzi/noua-furnizor" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="w-full text-[14px]">
+            <thead>
+              <tr class="text-left text-[12px] font-medium text-[#7C9AB4]">
+                <th class="px-5 py-3 font-medium">Număr</th>
+                <th class="px-5 py-3 font-medium">Furnizor</th>
+                <th class="px-5 py-3 font-medium">Data</th>
+                <th class="px-5 py-3 font-medium">Livrare est.</th>
+                <th class="px-5 py-3 font-medium text-right">Total</th>
+                <th class="px-5 py-3 font-medium">Status</th>
+                <th class="px-5 py-3 font-medium text-right">Acțiune</th>
+              </tr>
+            </thead>
+            <tbody>
+              {purchaseRows.slice(0, 3).map((o) => {
+                const st = purchaseBadge[o.status] || purchaseBadge.draft;
+                const canReceive = o.status !== 'received' && o.status !== 'canceled';
+                return (
+                  <tr class="border-t border-white/5 hover:bg-white/10 transition-colors" data-po-row data-id={o.id}>
+                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
+                    <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[200px]">{o.supplierName || o.supplierNameSnap}</td>
+                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate || '·'}</td>
+                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.expectedDate || '·'}</td>
+                    <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
+                    <td class="px-5 py-3.5"><span class={`po-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
+                    <td class="px-5 py-3.5 text-right">
+                      <div class="inline-flex gap-1.5">
+                        {canReceive && (
+                          <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
+                        )}
+                        {o.status !== 'received' && (
+                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {purchaseRows.length > 3 && purchaseRows.slice(3).map((o) => {
+                const st = purchaseBadge[o.status] || purchaseBadge.draft;
+                const canReceive = o.status !== 'received' && o.status !== 'canceled';
+                return (
+                  <tr class="po-extra hidden border-t border-white/5 hover:bg-white/10 transition-colors" data-po-row data-id={o.id}>
+                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
+                    <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[200px]">{o.supplierName || o.supplierNameSnap}</td>
+                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate || '·'}</td>
+                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.expectedDate || '·'}</td>
+                    <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
+                    <td class="px-5 py-3.5"><span class={`po-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
+                    <td class="px-5 py-3.5 text-right">
+                      <div class="inline-flex gap-1.5">
+                        {canReceive && (
+                          <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
+                        )}
+                        {o.status !== 'received' && (
+                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {purchaseRows.length > 3 && (
+                <tr>
+                  <td colspan="7" class="px-5 py-3.5 text-center">
+                    <button type="button" data-expand="po" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({purchaseRows.length})</button>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+
+  <!-- Warehouse picker for receiving -->
+  <div id="wh-data" data-warehouses={JSON.stringify(whs)} class="hidden"></div>
+
+  <script>
+    // Tab switching (keeps URL in sync).
+    const buttons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
+    const panels = document.querySelectorAll<HTMLElement>('[data-panel]');
+    function activate(tab: string) {
+      buttons.forEach((b) => {
+        const on = b.dataset.tab === tab;
+        b.classList.toggle('bg-white/10', on);
+        b.classList.toggle('text-white', on);
+        b.classList.toggle('text-[#9FB8CC]', !on);
+      });
+      panels.forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== (tab === 'furnizori' ? 'furnizori' : 'clienti')));
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', tab);
+      history.replaceState(null, '', url.toString());
+    }
+    buttons.forEach((b) => b.addEventListener('click', () => activate(b.dataset.tab || 'clienti')));
+
+    // "Vezi toate" — reveal rows beyond the first 3.
+    document.querySelectorAll<HTMLButtonElement>('[data-expand]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const kind = btn.dataset.expand; // 'so' | 'po'
+        document.querySelectorAll<HTMLElement>(`.${kind}-extra`).forEach((r) => r.classList.remove('hidden'));
+        btn.closest('tr')?.remove();
+      });
+    });
+
+    const whEl = document.getElementById('wh-data');
+    const warehouses: { id: string; name: string }[] = JSON.parse(whEl?.getAttribute('data-warehouses') || '[]');
+
+    function setBadge(row: Element | null, sel: string, label: string, cls: string) {
+      const badge = row?.querySelector(sel);
+      if (badge) { badge.textContent = label; badge.className = `${sel.slice(1)} inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${cls}`; }
+    }
+
+    // Sales: invoice
+    document.querySelectorAll<HTMLButtonElement>('.so-invoice').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id) return;
+        if (!confirm('Generez o factură din această comandă?')) return;
+        btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Se emite...';
+        try {
+          const res = await fetch(`/api/comenzi/sales/${id}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'invoice' }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok && data.invoiceId) {
+            window.location.href = `/app/facturare/${data.invoiceId}`;
+          } else {
+            btn.disabled = false; btn.textContent = orig;
+            alert('Nu s-a putut emite factura: ' + (data.error || 'eroare.'));
+          }
+        } catch { btn.disabled = false; btn.textContent = orig; alert('Eroare de rețea.'); }
+      });
+    });
+
+    // Sales: cancel
+    document.querySelectorAll<HTMLButtonElement>('.so-cancel').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id || !confirm('Anulez comanda?')) return;
+        try {
+          const res = await fetch(`/api/comenzi/sales/${id}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'canceled' }),
+          });
+          if (res.ok) setBadge(btn.closest('[data-so-row]'), '.so-badge', 'Anulată', 'bg-[#DC4B41]/15 text-[#DC4B41]');
+        } catch {}
+      });
+    });
+
+    // Purchase: receive
+    document.querySelectorAll<HTMLButtonElement>('.po-receive').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id) return;
+        if (warehouses.length === 0) { alert('Nu există nicio gestiune. Creează una în Stocuri → Depozite.'); return; }
+        let warehouseId = warehouses[0].id;
+        if (warehouses.length > 1) {
+          const list = warehouses.map((w, i) => `${i + 1}. ${w.name}`).join('\n');
+          const pick = prompt(`În ce gestiune intră marfa?\n${list}\n\nIntrodu numărul:`, '1');
+          const idx = Number(pick) - 1;
+          if (Number.isNaN(idx) || idx < 0 || idx >= warehouses.length) return;
+          warehouseId = warehouses[idx].id;
+        } else {
+          if (!confirm(`Recepționez marfa în gestiunea "${warehouses[0].name}"?`)) return;
+        }
+        btn.disabled = true; const orig = btn.textContent; btn.textContent = 'Se recepționează...';
+        try {
+          const res = await fetch(`/api/comenzi/purchase/${id}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'receive', warehouseId }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (res.ok) {
+            const row = btn.closest('[data-po-row]');
+            setBadge(row, '.po-badge', 'Recepționată', 'bg-[#2E9E6A]/15 text-[#2E9E6A]');
+            btn.remove();
+          } else {
+            btn.disabled = false; btn.textContent = orig;
+            alert('Nu s-a putut recepționa: ' + (data.error || 'eroare.'));
+          }
+        } catch { btn.disabled = false; btn.textContent = orig; alert('Eroare de rețea.'); }
+      });
+    });
+
+    // Purchase: cancel
+    document.querySelectorAll<HTMLButtonElement>('.po-cancel').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id || !confirm('Anulez comanda?')) return;
+        try {
+          const res = await fetch(`/api/comenzi/purchase/${id}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'canceled' }),
+          });
+          if (res.ok) setBadge(btn.closest('[data-po-row]'), '.po-badge', 'Anulată', 'bg-[#DC4B41]/15 text-[#DC4B41]');
+        } catch {}
+      });
+    });
+  </script>
+</AppLayout>

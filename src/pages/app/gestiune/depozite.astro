@@ -1,0 +1,18 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import WarehousesManager from '../../../components/gestiune/WarehousesManager';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+---
+
+<AppLayout title="Gestiuni" activeTab="stocuri">
+  <div class="mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Gestiuni</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Depozitele, magazinele și locațiile de custodie unde ții stocul.</p>
+  </div>
+
+  <div class="max-w-4xl">
+    <WarehousesManager client:load />
+  </div>
+</AppLayout>

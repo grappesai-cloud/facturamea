@@ -1,0 +1,49 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { bankAccounts, bankTransactions } from '../../../db/schema';
+import { and, eq, sql } from 'drizzle-orm';
+import BankManager from '../../../components/banca/BankManager.tsx';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 0 }).format((cents || 0) / 100);
+
+// Server-rendered KPIs (the React island re-computes live, but these avoid an empty flash).
+let accountCount = 0;
+let totalBalance = 0;
+let unreconciled = 0;
+try {
+  const [accRow] = await db.select({
+    n: sql<number>`COUNT(*)`,
+    bal: sql<number>`COALESCE(SUM(${bankAccounts.balanceCents}), 0)`,
+  }).from(bankAccounts).where(eq(bankAccounts.companyId, companyId));
+  accountCount = Number(accRow?.n ?? 0);
+  totalBalance = Number(accRow?.bal ?? 0);
+
+  const [txRow] = await db.select({ n: sql<number>`COUNT(*)` })
+    .from(bankTransactions)
+    .where(and(eq(bankTransactions.companyId, companyId), eq(bankTransactions.reconciled, false)));
+  unreconciled = Number(txRow?.n ?? 0);
+} catch (e) { /* DB not provisioned */ }
+---
+
+<AppLayout title="Bancă" activeTab="banca">
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Bancă</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">
+      Importă extrasul de cont (CSV sau MT940) și împacă încasările cu facturile, iar plățile cu cheltuielile.
+    </p>
+  </div>
+
+  <noscript>
+    <div class="mb-4 px-4 py-3 rounded-xl text-[14px] text-[#E8C98C] bg-[#E8A33C]/15">
+      Reconcilierea bancară are nevoie de JavaScript activat. Conturi: {accountCount} · Sold total: {ron(totalBalance)} · Neîmpăcate: {unreconciled}.
+    </div>
+  </noscript>
+
+  <BankManager client:load />
+</AppLayout>

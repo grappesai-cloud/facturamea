@@ -1,0 +1,125 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { accountLedger, listAccounts } from '../../../lib/accounting';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+const now = new Date();
+const yearStart = `${now.getFullYear()}-01-01`;
+const yearEnd = `${now.getFullYear()}-12-31`;
+const code = Astro.url.searchParams.get('cont') || '';
+const from = Astro.url.searchParams.get('from') || yearStart;
+const to = Astro.url.searchParams.get('to') || yearEnd;
+
+const accounts = await listAccounts(companyId).catch(() => []);
+const data = code
+  ? await accountLedger(companyId, code, from, to).catch(() => ({ name: code, lines: [], opening: 0 }))
+  : { name: '', lines: [], opening: 0 };
+
+const balanceLabel = (cents: number) =>
+  cents > 0 ? `${ron(cents)} (debitor)` : cents < 0 ? `${ron(-cents)} (creditor)` : ron(0);
+---
+
+<AppLayout title="Fișa contului" activeTab="contabilitate">
+  <a href="/app/contabilitate" class="inline-flex items-center gap-1.5 mb-4 text-[14px] font-medium text-[#9FB8CC] hover:text-white transition-colors">← Contabilitate</a>
+  <div class="mb-8 sm:mb-10">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Fișa contului</h1>
+    <p class="text-[15px] text-[#9FB8CC] mt-2">Mișcările și soldul unui cont, pe perioadă.</p>
+  </div>
+
+  <form method="GET" class="flex flex-wrap items-end gap-3 mb-6 rounded-2xl p-5 bg-white/5">
+    <div>
+      <label class="block text-[13px] text-[#9FB8CC] mb-1.5">Cont</label>
+      <select name="cont" class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none min-w-[200px]">
+        <option value="">Alege contul</option>
+        {accounts.map((a) => (
+          <option value={a.code} selected={a.code === code}>{a.code} · {a.name}</option>
+        ))}
+      </select>
+    </div>
+    <div>
+      <label class="block text-[13px] text-[#9FB8CC] mb-1.5">De la</label>
+      <input type="date" name="from" value={from} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+    </div>
+    <div>
+      <label class="block text-[13px] text-[#9FB8CC] mb-1.5">Până la</label>
+      <input type="date" name="to" value={to} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+    </div>
+    <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Afișează</button>
+  </form>
+
+  {!code ? (
+    <div class="rounded-2xl px-5 py-14 text-center text-[14px] text-[#9FB8CC] bg-white/5">Alege un cont pentru a vedea fișa.</div>
+  ) : (
+    <>
+      <div class="mb-5 rounded-2xl p-5 bg-white/5 flex flex-wrap items-center gap-6">
+        <div>
+          <p class="text-[13px] text-[#9FB8CC]">Cont</p>
+          <p class="text-[20px] font-bold text-white mt-1"><span class="font-mono">{code}</span> · {data.name}</p>
+        </div>
+        <div class="sm:ml-auto sm:text-right">
+          <p class="text-[13px] text-[#9FB8CC]">Sold inițial</p>
+          <p class="text-[20px] font-bold tabular-nums text-white mt-1">{balanceLabel(data.opening)}</p>
+        </div>
+      </div>
+
+      <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
+        {data.lines.length === 0 ? (
+          <div class="px-5 py-14 text-center text-[14px] text-[#9FB8CC]">Nicio mișcare în perioada selectată.</div>
+        ) : (
+          <div class="overflow-x-auto">
+            <table class="w-full text-[14px]">
+              <thead>
+                <tr class="text-left text-[11px] uppercase tracking-wide text-[#7C9AB4]">
+                  <th class="px-4 py-3 font-medium">Nr.</th>
+                  <th class="px-4 py-3 font-medium">Data</th>
+                  <th class="px-4 py-3 font-medium">Explicație</th>
+                  <th class="px-4 py-3 font-medium text-right">Debit</th>
+                  <th class="px-4 py-3 font-medium text-right">Credit</th>
+                  <th class="px-4 py-3 font-medium text-right">Sold</th>
+                </tr>
+                <tr><th colspan="6" class="p-0"><div class="h-px bg-white/10"></div></th></tr>
+              </thead>
+              <tbody>
+                {data.lines.slice(0, 3).map((l) => (
+                  <tr class="hover:bg-white/5 transition-colors">
+                    <td class="px-4 py-2.5 font-mono font-semibold text-white">{l.entryNumber}</td>
+                    <td class="px-4 py-2.5 tabular-nums text-[#9FB8CC]">{l.entryDate}</td>
+                    <td class="px-4 py-2.5 text-[#9FB8CC] max-w-[280px] truncate">{l.note || l.description || ''}</td>
+                    <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.debitCents ? ron(l.debitCents) : ''}</td>
+                    <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.creditCents ? ron(l.creditCents) : ''}</td>
+                    <td class="px-4 py-2.5 text-right tabular-nums text-white font-semibold">{balanceLabel(l.runningBalance)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {data.lines.length > 3 && (
+              <details class="mt-2.5">
+                <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({data.lines.length})</summary>
+                <table class="w-full text-[14px] mt-2.5">
+                  <tbody>
+                    {data.lines.slice(3).map((l) => (
+                      <tr class="hover:bg-white/5 transition-colors">
+                        <td class="px-4 py-2.5 font-mono font-semibold text-white">{l.entryNumber}</td>
+                        <td class="px-4 py-2.5 tabular-nums text-[#9FB8CC]">{l.entryDate}</td>
+                        <td class="px-4 py-2.5 text-[#9FB8CC] max-w-[280px] truncate">{l.note || l.description || ''}</td>
+                        <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.debitCents ? ron(l.debitCents) : ''}</td>
+                        <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.creditCents ? ron(l.creditCents) : ''}</td>
+                        <td class="px-4 py-2.5 text-right tabular-nums text-white font-semibold">{balanceLabel(l.runningBalance)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </details>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  )}
+</AppLayout>

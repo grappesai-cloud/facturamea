@@ -1,0 +1,47 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { tFn } from '../lib/i18n';
+
+interface Props {
+  title: string;
+  // Optional one-line tagline shown above the form (e.g. "Acces cont")
+  tagline?: string;
+}
+
+const { title, tagline } = Astro.props;
+const t = tFn(Astro.locals.locale);
+---
+
+<BaseLayout title={title} themeColor="#EDF1F5">
+  <div class="min-h-screen bg-[#EDF1F5] text-[#0A2238] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <!-- Top bar with logo + back to landing -->
+    <header class="px-6 lg:px-10 py-5 flex items-center justify-between border-b border-black/[0.06]">
+      <a href="/" class="flex items-center gap-2.5 group">
+        <img src="/logo.png" alt="facturamea" width="32" height="32" class="w-8 h-8 transition-transform group-hover:rotate-6" />
+        <span class="text-[15px] font-bold tracking-[-0.02em]">factura<span class="text-[#1A759F]">mea</span></span>
+      </a>
+      <a href="/" class="text-[12.5px] text-[#46627A] hover:text-[#0A2238] transition-colors">{t('pages.auth.back_to_site')}</a>
+    </header>
+
+    <!-- Centered content — single clean card -->
+    <main class="flex-1 flex items-center justify-center px-5 py-12">
+      <div class="w-full max-w-[420px]">
+        {tagline && (
+          <p class="text-[11px] uppercase tracking-[0.18em] text-[#7C9AB4] font-semibold text-center mb-3">{tagline}</p>
+        )}
+        <div class="rounded-[24px] bg-white ring-1 ring-black/[0.05] shadow-[0_26px_70px_-42px_rgba(16,42,67,0.45)] p-7 sm:p-9">
+          <slot />
+        </div>
+      </div>
+    </main>
+
+    <!-- Trust footer -->
+    <footer class="px-6 lg:px-10 py-5 border-t border-black/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#7C9AB4]">
+      <p>© {new Date().getFullYear()} facturamea. Facturare cu licență pe viață.</p>
+      <div class="flex items-center gap-4">
+        <a href="/termeni" class="hover:text-[#1A759F] transition-colors">Termeni</a>
+        <a href="/confidentialitate" class="hover:text-[#1A759F] transition-colors">Confidenţialitate</a>
+      </div>
+    </footer>
+  </div>
+</BaseLayout>

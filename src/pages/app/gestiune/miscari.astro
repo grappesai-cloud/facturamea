@@ -1,0 +1,106 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { stockMovements, invoiceProducts, warehouses } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+const qty = (n: number) =>
+  new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 3 }).format(n || 0);
+const fmtDate = (d: any) => d ? new Date(d).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select({
+      id: stockMovements.id,
+      warehouseName: warehouses.name,
+      productName: invoiceProducts.name,
+      kind: stockMovements.kind,
+      quantity: stockMovements.quantity,
+      unitCostCents: stockMovements.unitCostCents,
+      reason: stockMovements.reason,
+      refType: stockMovements.refType,
+      createdAt: stockMovements.createdAt,
+    })
+    .from(stockMovements)
+    .leftJoin(invoiceProducts, eq(stockMovements.productId, invoiceProducts.id))
+    .leftJoin(warehouses, eq(stockMovements.warehouseId, warehouses.id))
+    .where(eq(stockMovements.companyId, companyId))
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(200);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+const kindBadge: Record<string, { label: string; cls: string }> = {
+  in: { label: 'Intrare', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  out: { label: 'Ieșire', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
+  transfer: { label: 'Transfer', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
+  adjust: { label: 'Ajustare', cls: 'bg-[#E8A33C]/15 text-[#E8A33C]' },
+};
+---
+
+<AppLayout title="Mișcări stoc" activeTab="stocuri">
+  <div class="mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Mișcări stoc</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Jurnalul tuturor intrărilor, ieșirilor, transferurilor și ajustărilor de stoc.</p>
+  </div>
+
+  {rows.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 text-center py-10 text-[13px] text-[#9FB8CC]">Nicio mișcare de stoc înregistrată încă.</div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5">
+        {rows.slice(0, 3).map((r) => {
+          const k = kindBadge[r.kind] || { label: r.kind, cls: 'bg-white/10 text-[#9FB8CC]' };
+          return (
+            <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+              <div class="min-w-0 flex-1">
+                <p class="font-bold text-white truncate">
+                  {r.productName || '—'}
+                  <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${k.cls}`}>{k.label}</span>
+                </p>
+                <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{fmtDate(r.createdAt)} · {r.warehouseName || '—'}{r.reason ? ` · ${r.reason}` : ''}</p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-bold text-white tabular-nums">{qty(Number(r.quantity))}</p>
+                <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{ron(r.unitCostCents)}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {rows.length > 3 && (
+        <details class="mt-2.5">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {rows.slice(3).map((r) => {
+              const k = kindBadge[r.kind] || { label: r.kind, cls: 'bg-white/10 text-[#9FB8CC]' };
+              return (
+                <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-white truncate">
+                      {r.productName || '—'}
+                      <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${k.cls}`}>{k.label}</span>
+                    </p>
+                    <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{fmtDate(r.createdAt)} · {r.warehouseName || '—'}{r.reason ? ` · ${r.reason}` : ''}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-bold text-white tabular-nums">{qty(Number(r.quantity))}</p>
+                    <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{ron(r.unitCostCents)}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+</AppLayout>

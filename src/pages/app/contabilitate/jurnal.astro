@@ -1,0 +1,115 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { journalRegister } from '../../../lib/accounting';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+const SOURCE_LABELS: Record<string, string> = {
+  manual: 'Manuală', invoice: 'Factură', expense: 'Cheltuială',
+  payment: 'Încasare', bank: 'Bancă', depreciation: 'Amortizare',
+};
+
+// Default period: current year.
+const now = new Date();
+const yearStart = `${now.getFullYear()}-01-01`;
+const yearEnd = `${now.getFullYear()}-12-31`;
+const from = Astro.url.searchParams.get('from') || yearStart;
+const to = Astro.url.searchParams.get('to') || yearEnd;
+
+const entries = await journalRegister(companyId, from, to).catch(() => []);
+const totalDebit = entries.reduce((s, e) => s + (e.totalDebitCents || 0), 0);
+const totalCredit = entries.reduce((s, e) => s + (e.totalCreditCents || 0), 0);
+---
+
+<AppLayout title="Registru jurnal" activeTab="contabilitate">
+  <a href="/app/contabilitate" class="inline-flex items-center gap-1.5 mb-4 text-[14px] font-medium text-[#9FB8CC] hover:text-white transition-colors">← Contabilitate</a>
+  <div class="mb-8 sm:mb-10">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Registru jurnal</h1>
+    <p class="text-[15px] text-[#9FB8CC] mt-2">Toate operațiunile contabile, cronologic.</p>
+  </div>
+
+  <form method="GET" class="flex flex-wrap items-end gap-3 mb-6 rounded-2xl p-5 bg-white/5">
+    <div>
+      <label class="block text-[13px] text-[#9FB8CC] mb-1.5">De la</label>
+      <input type="date" name="from" value={from} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+    </div>
+    <div>
+      <label class="block text-[13px] text-[#9FB8CC] mb-1.5">Până la</label>
+      <input type="date" name="to" value={to} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+    </div>
+    <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Filtrează</button>
+  </form>
+
+  <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
+    {entries.length === 0 ? (
+      <div class="px-5 py-14 text-center text-[14px] text-[#9FB8CC]">Nicio operațiune în perioada selectată.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[14px]">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-wide text-[#7C9AB4]">
+              <th class="px-4 py-3 font-medium">Nr.</th>
+              <th class="px-4 py-3 font-medium">Data</th>
+              <th class="px-4 py-3 font-medium">Explicație</th>
+              <th class="px-4 py-3 font-medium">Cont D</th>
+              <th class="px-4 py-3 font-medium">Cont C</th>
+              <th class="px-4 py-3 font-medium text-right">Debit</th>
+              <th class="px-4 py-3 font-medium text-right">Credit</th>
+            </tr>
+            <tr><th colspan="7" class="p-0"><div class="h-px bg-white/10"></div></th></tr>
+          </thead>
+          <tbody>
+            {entries.slice(0, 3).map((e) => (
+              e.lines.map((l, idx) => (
+                <tr class={`hover:bg-white/5 transition-colors ${idx === 0 ? 'border-t border-white/10' : ''}`}>
+                  <td class="px-4 py-2.5 font-mono font-semibold text-white">{idx === 0 ? e.entryNumber : ''}</td>
+                  <td class="px-4 py-2.5 tabular-nums text-[#9FB8CC]">{idx === 0 ? e.entryDate : ''}</td>
+                  <td class="px-4 py-2.5 text-[#9FB8CC] max-w-[280px] truncate">{idx === 0 ? (e.description || SOURCE_LABELS[e.source || 'manual'] || '') : (l.note || '')}</td>
+                  <td class="px-4 py-2.5 font-mono text-white">{l.debitCents ? l.accountCode : ''}</td>
+                  <td class="px-4 py-2.5 font-mono text-white">{l.creditCents ? l.accountCode : ''}</td>
+                  <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.debitCents ? ron(l.debitCents) : ''}</td>
+                  <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.creditCents ? ron(l.creditCents) : ''}</td>
+                </tr>
+              ))
+            ))}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="7" class="p-0"><div class="h-px bg-white/10"></div></td></tr>
+            <tr class="font-bold text-[15px]">
+              <td class="px-4 py-3.5 text-white" colspan="5">Total perioadă</td>
+              <td class="px-4 py-3.5 text-right tabular-nums text-white">{ron(totalDebit)}</td>
+              <td class="px-4 py-3.5 text-right tabular-nums text-white">{ron(totalCredit)}</td>
+            </tr>
+          </tfoot>
+        </table>
+        {entries.length > 3 && (
+          <details class="mt-2.5">
+            <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({entries.length})</summary>
+            <table class="w-full text-[14px] mt-2.5">
+              <tbody>
+                {entries.slice(3).map((e) => (
+                  e.lines.map((l, idx) => (
+                    <tr class={`hover:bg-white/5 transition-colors ${idx === 0 ? 'border-t border-white/10' : ''}`}>
+                      <td class="px-4 py-2.5 font-mono font-semibold text-white">{idx === 0 ? e.entryNumber : ''}</td>
+                      <td class="px-4 py-2.5 tabular-nums text-[#9FB8CC]">{idx === 0 ? e.entryDate : ''}</td>
+                      <td class="px-4 py-2.5 text-[#9FB8CC] max-w-[280px] truncate">{idx === 0 ? (e.description || SOURCE_LABELS[e.source || 'manual'] || '') : (l.note || '')}</td>
+                      <td class="px-4 py-2.5 font-mono text-white">{l.debitCents ? l.accountCode : ''}</td>
+                      <td class="px-4 py-2.5 font-mono text-white">{l.creditCents ? l.accountCode : ''}</td>
+                      <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.debitCents ? ron(l.debitCents) : ''}</td>
+                      <td class="px-4 py-2.5 text-right tabular-nums text-white">{l.creditCents ? ron(l.creditCents) : ''}</td>
+                    </tr>
+                  ))
+                ))}
+              </tbody>
+            </table>
+          </details>
+        )}
+      </div>
+    )}
+  </div>
+</AppLayout>

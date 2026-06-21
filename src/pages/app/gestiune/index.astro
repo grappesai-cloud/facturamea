@@ -1,0 +1,135 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { stockLevels, invoiceProducts, warehouses } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+const qty = (n: number) =>
+  new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 3 }).format(n || 0);
+
+let rows: any[] = [];
+let kpis = { products: 0, totalValueCents: 0, belowMin: 0 };
+
+try {
+  rows = await db
+    .select({
+      id: stockLevels.id,
+      warehouseName: warehouses.name,
+      productName: invoiceProducts.name,
+      productCode: invoiceProducts.code,
+      um: invoiceProducts.defaultUm,
+      quantity: stockLevels.quantity,
+      avgCostCents: stockLevels.avgCostCents,
+      minQuantity: stockLevels.minQuantity,
+    })
+    .from(stockLevels)
+    .leftJoin(invoiceProducts, eq(stockLevels.productId, invoiceProducts.id))
+    .leftJoin(warehouses, eq(stockLevels.warehouseId, warehouses.id))
+    .where(eq(stockLevels.companyId, companyId))
+    .orderBy(desc(stockLevels.updatedAt))
+    .limit(500);
+
+  kpis.products = rows.length;
+  kpis.totalValueCents = rows.reduce((s, r) => s + Math.round((Number(r.quantity) || 0) * (Number(r.avgCostCents) || 0)), 0);
+  kpis.belowMin = rows.filter((r) => (Number(r.minQuantity) || 0) >= (Number(r.quantity) || 0)).length;
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+// Precompute derived flags in the frontmatter (avoid comparison operators in
+// the template, which the Astro JSX parser misreads as tag tokens).
+const display = rows.map((r) => {
+  const quantity = Number(r.quantity) || 0;
+  const min = Number(r.minQuantity) || 0;
+  return {
+    ...r,
+    low: min >= quantity,
+    valueCents: Math.round(quantity * (Number(r.avgCostCents) || 0)),
+  };
+});
+
+const cards = [
+  { label: 'Produse în stoc', value: String(kpis.products), accent: 'text-white' },
+  { label: 'Valoare totală stoc', value: ron(kpis.totalValueCents), accent: 'text-white' },
+  { label: 'Produse sub minim', value: String(kpis.belowMin), accent: kpis.belowMin > 0 ? 'text-[#DC4B41]' : 'text-[#2E9E6A]' },
+];
+---
+
+<AppLayout title="Stocuri" activeTab="stocuri">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Stocuri</h1>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="/app/gestiune/nir" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Recepție (NIR)</a>
+      <a href="/app/gestiune/depozite" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Gestiuni</a>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
+    {cards.map((c) => (
+      <div class="rounded-2xl p-5 bg-white/5">
+        <p class="text-[13px] font-medium text-[#7C9AB4]">{c.label}</p>
+        <p class={`text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums mt-2 ${c.accent}`}>{c.value}</p>
+      </div>
+    ))}
+  </div>
+
+  <h2 class="text-[18px] font-bold text-white mb-3">Produse în stoc</h2>
+  {rows.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 text-center py-10">
+      <p class="text-[13px] text-[#9FB8CC]">Niciun stoc înregistrat încă.</p>
+      <a href="/app/gestiune/nir" class="inline-block mt-3 text-[13px] font-semibold text-[#E1FB15] hover:underline">Înregistrează o recepție →</a>
+    </div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5">
+        {display.slice(0, 3).map((r) => (
+          <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-white truncate">
+                {r.productName || '—'}
+                {r.productCode && <span class="font-mono text-[12px] font-normal text-[#7C9AB4] ml-2">{r.productCode}</span>}
+                {r.low && <span class="ml-2 text-[11px] px-2 py-0.5 bg-[#DC4B41]/15 text-[#DC4B41] rounded-full font-semibold">sub minim</span>}
+              </p>
+              <p class="text-[13px] text-[#7C9AB4] mt-0.5">{r.warehouseName || '—'} · {ron(r.avgCostCents)} / {r.um || 'um'}</p>
+            </div>
+            <div class="text-right shrink-0">
+              <p class="font-bold text-white tabular-nums">{ron(r.valueCents)}</p>
+              <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{qty(Number(r.quantity))} {r.um || ''}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {display.length > 3 && (
+        <details class="mt-2.5">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({display.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {display.slice(3).map((r) => (
+              <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div class="min-w-0 flex-1">
+                  <p class="font-bold text-white truncate">
+                    {r.productName || '—'}
+                    {r.productCode && <span class="font-mono text-[12px] font-normal text-[#7C9AB4] ml-2">{r.productCode}</span>}
+                    {r.low && <span class="ml-2 text-[11px] px-2 py-0.5 bg-[#DC4B41]/15 text-[#DC4B41] rounded-full font-semibold">sub minim</span>}
+                  </p>
+                  <p class="text-[13px] text-[#7C9AB4] mt-0.5">{r.warehouseName || '—'} · {ron(r.avgCostCents)} / {r.um || 'um'}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="font-bold text-white tabular-nums">{ron(r.valueCents)}</p>
+                  <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{qty(Number(r.quantity))} {r.um || ''}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+</AppLayout>

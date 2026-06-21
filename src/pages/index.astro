@@ -1,0 +1,391 @@
+---
+// Prerendered to static HTML at build time — the landing renders with zero env,
+// no database and no API keys (frontend-only deploys just work).
+export const prerender = true;
+
+import LandingLayout from '../layouts/LandingLayout.astro';
+import PhoneFrame from '../components/PhoneFrame.astro';
+import StoreBadges from '../components/StoreBadges.astro';
+
+const homeJsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'facturamea',
+    url: 'https://facturamea.com',
+    logo: 'https://facturamea.com/favicon.svg',
+    sameAs: [],
+    contactPoint: [{ '@type': 'ContactPoint', contactType: 'customer support', email: 'contact@facturamea.com', areaServed: 'RO', availableLanguage: ['Romanian', 'English'] }],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'facturamea',
+    applicationCategory: 'BusinessApplication',
+    operatingSystem: 'Web, iOS, Android',
+    offers: { '@type': 'Offer', price: '700', priceCurrency: 'RON', description: 'Licență pe viață, o singură plată' },
+  },
+];
+
+// Mini chart palette (teal→blue) used in the phone "Rapoarte" screen
+const repColors = ['#52B69A', '#34A0A4', '#168AAD', '#1A759F', '#1E6091'];
+
+// Steps for the scroll-pinned showcase (text left · phone center · feature list right)
+const journeySteps = [
+  { key: 'meniu',     emoji: '📲', short: 'MENIU',      label: 'Meniu',     h: 'Tot ce poți face, la îndemână',  d: 'Facturi, proforme, avize, chitanțe, clienți, produse, cheltuieli, e-Factura și rapoarte — într-un meniu clar, ușor de citit și de folosit.' },
+  { key: 'facturare', emoji: '🧾', short: 'FACTURARE',  label: 'Facturare', h: 'Emiți și trimiți facturi rapid', d: 'Alegi clientul, adaugi produsele, iar TVA-ul, seriile și numerotarea se completează automat. Trimiți în SPV ANAF cu un singur click.' },
+  { key: 'cheltuieli',emoji: '💳', short: 'CHELTUIELI', label: 'Cheltuieli',h: 'Cheltuielile, sub control',      d: 'Adaugi cheltuieli, scanezi bonuri și ții evidența furnizorilor. Vezi exact unde se duc banii, lună de lună.' },
+  { key: 'rapoarte',  emoji: '📊', short: 'RAPOARTE',   label: 'Rapoarte',  h: 'Toate cifrele, dintr-o privire', d: 'Vânzări, TVA de plată, încasări și solduri clienți, în rapoarte clare pe care le exporți oricând pentru contabil.' },
+];
+---
+
+<LandingLayout
+  title="Facturare completă pentru firme din România"
+  description="facturamea: facturi, e-Factura ANAF, e-Transport, SAF-T, gestiune stocuri și rapoarte. O singură plată, 700 RON, licență pe viață. Web, iOS și Android."
+  structuredData={homeJsonLd}
+>
+  <!-- ═══════════════ HERO (white · headline left · phone right) ═══════════════ -->
+  <section class="hero relative px-4 sm:px-6 pt-32 sm:pt-40 lg:pt-44 pb-24 lg:pb-36">
+    <div class="hero-bg absolute inset-0 -z-10" aria-hidden="true"></div>
+
+    <div class="mx-auto max-w-[1180px] relative grid lg:grid-cols-[1.05fr_0.95fr] gap-14 lg:gap-12 items-center">
+
+      <!-- LEFT: headline + CTAs -->
+      <div class="relative z-10 text-center lg:text-left">
+        <h1 class="hero-title text-[2.6rem] leading-[1.04] sm:text-6xl lg:text-[4rem] lg:leading-[0.98] font-extrabold tracking-[-0.045em] text-[#0A2238]">
+          Facturează ca la carte, <span class="hero-mark">fără abonament.</span>
+        </h1>
+        <p class="hero-line mt-6 text-base sm:text-xl text-[#46627A] leading-relaxed max-w-md mx-auto lg:mx-0">
+          e-Factura, gestiune și rapoarte într-o singură aplicație. O singură plată de
+          <strong class="bg-[#E1FB15] text-[#0A2238] font-bold px-1.5 rounded">700 RON</strong>, licență pe viață.
+        </p>
+        <StoreBadges class="hero-line mt-8 justify-center lg:justify-start" />
+      </div>
+
+      <!-- RIGHT: single phone (flat, travels into next section on scroll) -->
+      <div class="hero-visual relative flex justify-center lg:justify-end">
+        <div data-hero-phone class="relative">
+        <PhoneFrame shadow={false} class="w-[270px] sm:w-[300px] aspect-[300/620]">
+          <div class="absolute inset-0 flex flex-col">
+            <div class="flex items-center justify-between px-7 pt-3 text-[11px] font-semibold text-[#0A2238]">
+              <span>9:41</span>
+              <span class="flex items-center gap-1 text-[#46627A]">
+                <svg width="15" height="11" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4" width="3" height="8" rx="1"/><rect x="10" y="1.5" width="3" height="10.5" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1" opacity="0.4"/></svg>
+                <svg width="22" height="11" viewBox="0 0 26 13" fill="none"><rect x="0.6" y="0.6" width="21" height="11.8" rx="3" stroke="currentColor" stroke-opacity="0.5"/><rect x="2" y="2" width="16" height="9" rx="1.5" fill="currentColor"/><rect x="23" y="4" width="2" height="5" rx="1" fill="currentColor" fill-opacity="0.6"/></svg>
+              </span>
+            </div>
+            <div class="flex-1 px-4 pt-3 overflow-hidden">
+              <div class="flex items-center justify-between">
+                <span class="text-base font-bold text-[#0A2238]">factura<span class="text-[#1A759F]">mea</span></span>
+                <span class="w-8 h-8 rounded-full bg-[#EDF1F5] grid place-items-center"><span class="w-2 h-2 rounded-full bg-[#1A759F]"></span></span>
+              </div>
+              <div class="mt-3 rounded-2xl bg-[#0A2238] p-4 text-white">
+                <p class="text-[11px] text-[#9FB8CC]">Încasat luna asta</p>
+                <p class="text-2xl font-extrabold tabular-nums mt-0.5">48.250 <span class="text-base text-[#E1FB15]">lei</span></p>
+                <div class="mt-3 flex items-end gap-1 h-12">
+                  {[40, 62, 48, 78, 58, 90, 70].map((h, i) => (
+                    <div class="flex-1 rounded-t" style={`height:${h}%;background:${i === 5 ? '#E1FB15' : 'rgba(255,255,255,0.22)'}`}></div>
+                  ))}
+                </div>
+              </div>
+              <div class="mt-3 grid grid-cols-2 gap-2.5">
+                <div class="rounded-2xl bg-[#E1FB15] p-3.5">
+                  <p class="text-[12px] font-bold text-[#0A2238] leading-tight">Emite<br/>factură</p>
+                  <span class="mt-4 inline-grid place-items-center w-7 h-7 rounded-full bg-[#0A2238] text-white">↗</span>
+                </div>
+                <div class="rounded-2xl bg-white ring-1 ring-black/[0.05] p-3.5">
+                  <p class="text-[12px] font-bold text-[#0A2238] leading-tight">Trimite<br/>în SPV</p>
+                  <span class="mt-4 inline-grid place-items-center w-7 h-7 rounded-full bg-[#F0F4F8] text-[#0A2238]">↗</span>
+                </div>
+              </div>
+              <div class="mt-3 flex items-center justify-between">
+                <p class="text-[12px] font-bold text-[#0A2238]">Facturi recente</p>
+                <span class="text-[11px] text-[#7C9AB4]">Vezi tot</span>
+              </div>
+              <div class="mt-2 space-y-2">
+                {[['Acme SRL', '4.998 lei', '#52B69A'], ['Delta SA', '1.200 lei', '#168AAD']].map(([n, v, c]) => (
+                  <div class="flex items-center justify-between rounded-xl bg-white ring-1 ring-black/[0.05] px-3 py-2.5">
+                    <span class="flex items-center gap-2.5 text-[12.5px] font-semibold text-[#0A2238]"><span class="w-6 h-6 rounded-lg" style={`background:${c}`}></span>{n}</span>
+                    <span class="text-[12.5px] font-bold text-[#0A2238] tabular-nums">{v}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </PhoneFrame>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ SHOWCASE — text left · phone center · feature list right (pinned, swaps per scroll) ═══════════════ -->
+  <section id="functii" class="journey relative scroll-mt-24">
+    <div data-journey class="journey-stage relative overflow-hidden px-4 sm:px-6 py-20">
+      <span class="journey-watermark pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[8%] text-[20vw] font-extrabold tracking-tighter leading-none text-[#0A2238]/[0.04] select-none hidden lg:block" aria-hidden="true">facturamea</span>
+
+      <div class="journey-inner mx-auto max-w-[1180px] w-full relative">
+        <!-- DESKTOP: pinned showcase (text · phone · feature list) -->
+        <div class="hidden lg:grid lg:grid-cols-[1fr_minmax(264px,310px)_0.62fr] gap-10 lg:gap-8 items-center">
+
+          <!-- LEFT: heading + description (crossfade per step) -->
+          <div class="relative min-h-[280px] sm:min-h-[240px] order-2 lg:order-1 text-center lg:text-left">
+            {journeySteps.map((s, i) => (
+              <div data-jstep data-jstep-i={i} class={`jstep ${i === 0 ? 'is-active' : ''}`}>
+                <p class="text-[12px] font-bold uppercase tracking-[0.2em] text-[#1A759F] mb-3">Pasul 0{i + 1}</p>
+                <h2 class="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold text-[#0A2238] tracking-[-0.03em] leading-[1.05]">{s.h}</h2>
+                <p class="mt-4 text-[15px] sm:text-base text-[#46627A] leading-relaxed max-w-md mx-auto lg:mx-0">{s.d}</p>
+              </div>
+            ))}
+          </div>
+
+          <!-- CENTER: phone (screen crossfade per step) -->
+          <div class="flex justify-center order-1 lg:order-2">
+            <PhoneFrame class="journey-phone w-[266px] sm:w-[286px] aspect-[286/590]">
+              <!-- 1 · Meniu (all actions) -->
+              <div data-jscreen data-jscreen-i="0" class="jscreen is-active absolute inset-0 pt-11 px-4 pb-4">
+                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/meniu.jpg"><source src="/showcase/meniu.mp4" type="video/mp4" /></video>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">facturamea</p>
+                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Meniu</p>
+                <div class="mt-3 grid grid-cols-3 gap-2">
+                  {['Facturi', 'e-Factura', 'Clienți', 'Produse', 'Cheltuieli', 'Rapoarte', 'Avize', 'Chitanțe', 'Stoc'].map((n) => (
+                    <div class="rounded-xl bg-white ring-1 ring-black/[0.05] py-3.5 px-1 grid place-items-center text-center">
+                      <span class="text-[10.5px] font-semibold text-[#0A2238] leading-tight">{n}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <!-- 2 · Facturare -->
+              <div data-jscreen data-jscreen-i="1" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
+                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/facturare.jpg"><source src="/showcase/facturare.mp4" type="video/mp4" /></video>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Factură nouă</p>
+                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">FCT-2026-0127</p>
+                <div class="mt-3 rounded-2xl bg-white ring-1 ring-black/[0.04] p-3.5">
+                  <p class="text-[11px] text-[#7C9AB4] font-medium">Client</p>
+                  <p class="text-sm font-bold text-[#0A2238]">Acme Solutions SRL</p>
+                  <div class="mt-3 space-y-2">
+                    {[['Consultanță', '2.400'], ['Licență soft', '1.200'], ['Mentenanță', '600']].map(([n, v]) => (
+                      <div class="flex items-center justify-between text-[12.5px]"><span class="text-[#46627A]">{n}</span><span class="font-semibold text-[#0A2238] tabular-nums">{v} lei</span></div>
+                    ))}
+                  </div>
+                  <div class="mt-3 pt-3 border-t border-black/[0.07] flex items-center justify-between">
+                    <span class="text-[12px] text-[#7C9AB4]">Total cu TVA</span>
+                    <span class="text-base font-extrabold text-[#168AAD] tabular-nums">4.998 lei</span>
+                  </div>
+                </div>
+                <div class="mt-3 rounded-full bg-[#0A2238] text-white text-[13px] font-bold text-center py-3">Emite & trimite în SPV</div>
+              </div>
+
+              <!-- 3 · Cheltuieli -->
+              <div data-jscreen data-jscreen-i="2" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
+                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/cheltuieli.jpg"><source src="/showcase/cheltuieli.mp4" type="video/mp4" /></video>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Cheltuieli</p>
+                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Luna aceasta</p>
+                <div class="mt-3 rounded-2xl bg-[#0A2238] p-4 text-white">
+                  <p class="text-[11px] text-[#9FB8CC]">Total cheltuieli</p>
+                  <p class="text-2xl font-extrabold tabular-nums mt-0.5">7.640 <span class="text-base text-[#E1FB15]">lei</span></p>
+                </div>
+                <div class="mt-3 space-y-2">
+                  {[['Combustibil', '1.840', '#52B69A'], ['Chirie birou', '2.500', '#34A0A4'], ['Software', '1.300', '#168AAD'], ['Furnizor TransSped', '2.000', '#1A759F']].map(([n, v, c]) => (
+                    <div class="flex items-center justify-between rounded-xl bg-white ring-1 ring-black/[0.04] px-3.5 py-2.5">
+                      <span class="flex items-center gap-2.5 text-[13px] font-semibold text-[#0A2238]"><span class="w-2 h-2 rounded-full" style={`background:${c}`}></span>{n}</span>
+                      <span class="text-[13px] font-bold text-[#46627A] tabular-nums">{v} lei</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <!-- 4 · Rapoarte -->
+              <div data-jscreen data-jscreen-i="3" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
+                <video data-jvid class="jvid" muted loop playsinline preload="none" poster="/showcase/rapoarte.jpg"><source src="/showcase/rapoarte.mp4" type="video/mp4" /></video>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Rapoarte</p>
+                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Vânzări 2026</p>
+                <div class="mt-3 rounded-2xl bg-white ring-1 ring-black/[0.04] p-3.5">
+                  <div class="flex items-end gap-1.5 h-24">
+                    {[40, 62, 50, 78, 66, 92].map((h, i) => (
+                      <div class="flex-1 rounded-t" style={`height:${h}%;background:${repColors[i % repColors.length]}`}></div>
+                    ))}
+                  </div>
+                </div>
+                <div class="mt-3 grid grid-cols-2 gap-2">
+                  {[['Încasat', '214.8k'], ['TVA', '34.2k'], ['Facturi', '127'], ['Restanțe', '3']].map(([l, v]) => (
+                    <div class="rounded-xl bg-white ring-1 ring-black/[0.04] px-3 py-2.5">
+                      <p class="text-[10px] uppercase tracking-wide text-[#7C9AB4] font-semibold">{l}</p>
+                      <p class="text-sm font-extrabold text-[#0A2238] tabular-nums">{v}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </PhoneFrame>
+          </div>
+
+          <!-- RIGHT: feature list (active highlighted) -->
+          <nav class="order-3 flex flex-wrap lg:flex-col items-center lg:items-start gap-x-6 gap-y-4 justify-center lg:justify-start lg:pl-6">
+            {journeySteps.map((s, i) => (
+              <button type="button" data-jnav data-jnav-i={i} class={`jnav-item ${i === 0 ? 'is-active' : ''}`}>
+                <span>{s.short}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <!-- MOBILE: stacked step cards (sticky card-stack — pin-free, reliable on touch) -->
+        <div class="lg:hidden">
+          <h2 data-anim class="text-center text-3xl font-extrabold text-[#0A2238] tracking-[-0.03em] leading-tight mb-9">
+            Cum funcționează, <span class="hero-mark">pas cu pas.</span>
+          </h2>
+          <div data-anim-stagger class="space-y-5">
+            {journeySteps.map((s, i) => (
+              <div class="rounded-[24px] bg-white ring-1 ring-black/[0.06] shadow-[0_18px_50px_-26px_rgba(16,42,67,0.5)] p-6">
+                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1A759F]">Pasul 0{i + 1} · {s.short}</p>
+                <h3 class="mt-4 text-2xl font-extrabold text-[#0A2238] tracking-[-0.02em] leading-tight">{s.h}</h3>
+                <p class="mt-2.5 text-[15px] text-[#46627A] leading-relaxed">{s.d}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ PRICING ═══════════════ -->
+  <section id="preturi" class="relative px-4 sm:px-6 py-20 lg:py-28 scroll-mt-24">
+    <div class="mx-auto max-w-[1180px] grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+      <div>
+        <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.02]">
+          O singură plată, nu lunar.
+        </h2>
+        <p data-anim="left" class="text-[#46627A] leading-relaxed mt-5 text-base sm:text-lg max-w-lg">
+          Concurența îți cere abonament în fiecare lună, la nesfârșit. La facturamea plătești o dată și folosești aplicația cât timp exiști firmă, fără reînnoiri și fără surprize.
+        </p>
+        <ul data-anim-stagger class="space-y-3 mt-7 text-[15px] text-[#26415A]">
+          {['Fără abonament lunar sau anual', 'Actualizări fiscale incluse', 'Toate funcțiile, fără pachete decupate'].map((li) => (
+            <li class="flex items-center gap-3"><span class="shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center text-xs font-bold bg-[#168AAD]">✓</span> {li}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div data-anim="scale" class="rounded-[26px] bg-[#0A2238] text-white p-7 sm:p-10">
+        <div class="inline-block px-3 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold uppercase tracking-wide">Licență pe viață</div>
+        <div class="flex items-baseline gap-2 mt-4 mb-1">
+          <span class="text-5xl lg:text-6xl font-extrabold tracking-[-0.04em]">700</span>
+          <span class="text-2xl font-bold text-[#9FB8CC]">RON</span>
+        </div>
+        <p class="text-sm text-[#9FB8CC] mb-7">o singură plată, pentru totdeauna</p>
+        <ul class="space-y-3 text-[15px] text-[#EAF2F8] mb-8">
+          {['Facturi, proforme, avize, chitanțe', 'e-Factura ANAF + e-Transport', 'SAF-T D406 & rapoarte', 'Gestiune stocuri, NIR, cheltuieli', 'POS, facturi recurente, multi-utilizator', 'Aplicații web, iOS și Android'].map((item) => (
+            <li class="flex items-start gap-3"><span class="shrink-0 w-6 h-6 rounded-full bg-[#E1FB15] text-[#0A2238] flex items-center justify-center text-xs font-bold mt-0.5">✓</span> {item}</li>
+          ))}
+        </ul>
+        <a href="/auth/register" data-magnetic class="block text-center w-full px-6 py-4 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] transition-colors">
+          Începe gratuit
+        </a>
+        <div class="mt-5 flex items-center justify-center gap-3">
+          <a href="/auth/register" aria-label="App Store" class="flex items-center gap-2 px-4 py-2 rounded-full ring-1 ring-white/15 text-white hover:bg-white/[0.07] transition-colors">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.9c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7 2-1.1 2.7-2.1c.9-1.2 1.2-2.4 1.2-2.5-.1 0-2.3-.9-2.3-3.4zM14.1 5.9c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.3-.6.7-1.1 1.7-1 2.7 1 .1 2-.5 2.7-1.1z"/></svg>
+            <span class="text-[12px] font-semibold">App Store</span>
+          </a>
+          <a href="/auth/register" aria-label="Google Play" class="flex items-center gap-2 px-4 py-2 rounded-full ring-1 ring-white/15 text-white hover:bg-white/[0.07] transition-colors">
+            <svg width="14" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 2.5v19l10.5-9.5L3 2.5z" fill="#34A0A4"/><path d="M3 2.5l10.5 9.5 3-2.7L4.6 1.6A1.7 1.7 0 0 0 3 2.5z" fill="#76C893"/><path d="M3 21.5l10.5-9.5 3 2.7-11.9 7.7a1.7 1.7 0 0 1-1.6-.9z" fill="#168AAD"/><path d="M16.5 9.3l-3 2.7 3 2.7 3.6-2a1.5 1.5 0 0 0 0-1.4l-3.6-2z" fill="#E1FB15"/></svg>
+            <span class="text-[12px] font-semibold">Google Play</span>
+          </a>
+        </div>
+        <p class="text-center text-xs text-[#7C9AB4] mt-4">Plata o faci din aplicație, când ești gata.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ APLICAȚII ═══════════════ -->
+  <section id="aplicatii" class="relative px-4 sm:px-6 py-16 sm:py-20 scroll-mt-24">
+    <div class="mx-auto max-w-[1180px] flex flex-col items-center text-center">
+      <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.02] max-w-2xl">
+        Web, iOS și Android, cu același cont.
+      </h2>
+      <p data-anim="scale" class="text-[#46627A] leading-relaxed max-w-xl mt-5 text-base sm:text-lg">
+        Emite o factură de la birou, verifică încasările din mers și ține stocul la zi de oriunde. Datele se sincronizează în timp real.
+      </p>
+      <div data-anim-stagger class="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <a href="/app" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#0A2238] text-white hover:bg-[#14304b] transition-colors">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 16 0 18M12 3c-2.5 2.5-2.5 16 0 18" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span class="text-left leading-tight"><span class="block text-[10px] text-[#9FB8CC]">Deschide în</span><span class="block text-[15px] font-bold">Aplicație web</span></span>
+        </a>
+        <a href="/auth/register" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#0A2238] text-white hover:bg-[#14304b] transition-colors">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.9c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7 2-1.1 2.7-2.1c.9-1.2 1.2-2.4 1.2-2.5-.1 0-2.3-.9-2.3-3.4zM14.1 5.9c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.3-.6.7-1.1 1.7-1 2.7 1 .1 2-.5 2.7-1.1z"/></svg>
+          <span class="text-left leading-tight"><span class="block text-[10px] text-[#9FB8CC]">Descarcă pe</span><span class="block text-[15px] font-bold">App Store</span></span>
+        </a>
+        <a href="/auth/register" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#0A2238] text-white hover:bg-[#14304b] transition-colors">
+          <svg width="20" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 2.5v19l10.5-9.5L3 2.5z" fill="#34A0A4"/><path d="M3 2.5l10.5 9.5 3-2.7L4.6 1.6A1.7 1.7 0 0 0 3 2.5z" fill="#76C893"/><path d="M3 21.5l10.5-9.5 3 2.7-11.9 7.7a1.7 1.7 0 0 1-1.6-.9z" fill="#168AAD"/><path d="M16.5 9.3l-3 2.7 3 2.7 3.6-2a1.5 1.5 0 0 0 0-1.4l-3.6-2z" fill="#E1FB15"/></svg>
+          <span class="text-left leading-tight"><span class="block text-[10px] text-[#9FB8CC]">Disponibil pe</span><span class="block text-[15px] font-bold">Google Play</span></span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ FAQ ═══════════════ -->
+  <section id="faq" class="relative px-4 sm:px-6 py-20 lg:py-24 scroll-mt-24">
+    <div class="mx-auto max-w-[1180px] grid lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-16 lg:items-start">
+      <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.02]">
+        Întrebări frecvente.
+      </h2>
+      <div data-anim-stagger class="space-y-3">
+        {[
+          { q: 'Chiar e o singură plată, fără abonament?', a: 'Da. Plătești 700 RON o singură dată și primești licență pe viață, fără costuri lunare sau anuale.' },
+          { q: 'e-Factura este inclusă?', a: 'Da. Trimitem facturile direct în SPV ANAF, conform cerințelor 2026, inclusiv e-Transport și SAF-T D406.' },
+          { q: 'Pot lucra cu echipa și contabilul?', a: 'Da. Adaugi mai mulți utilizatori cu roluri și permisiuni, iar contabilul are acces la rapoarte și exporturi.' },
+          { q: 'Funcționează și pe telefon?', a: 'Da. Ai aplicație web plus aplicații native iOS și Android, sincronizate cu același cont.' },
+        ].map((item) => (
+          <details data-faq class="group rounded-2xl bg-white ring-1 ring-black/[0.04] overflow-hidden">
+            <summary class="cursor-pointer list-none px-5 sm:px-6 py-[1.125rem] font-semibold text-[#0A2238] flex items-center justify-between gap-4 hover:bg-black/[0.015] transition-colors">
+              <span>{item.q}</span>
+              <span class="faq-ico shrink-0 grid place-items-center w-9 h-9 rounded-full bg-[#0A2238] text-white transition-transform duration-300 group-open:rotate-180">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </span>
+            </summary>
+            <div data-faq-panel class="overflow-hidden">
+              <div class="px-5 sm:px-6 pb-5 text-[15px] text-[#46627A] leading-relaxed">{item.a}</div>
+            </div>
+          </details>
+        ))}
+      </div>
+    </div>
+  </section>
+
+
+  <style>
+    details summary { list-style: none; }
+    details summary::-webkit-details-marker { display: none; }
+
+    /* lime highlighter marker (survives SplitText — sits behind the chars) */
+    .hero-mark {
+      background-image: linear-gradient(transparent 60%, rgba(225, 251, 21, 0.9) 60%);
+      border-radius: 2px;
+      padding: 0 0.04em;
+      box-decoration-break: clone;
+      -webkit-box-decoration-break: clone;
+    }
+
+    /* ── HERO (white) ── */
+    .hero-bg { background: radial-gradient(75% 65% at 50% -5%, #FFFFFF 0%, #EDF1F5 72%); }
+
+    /* ── SHOWCASE (text left · phone center · feature list right) ── */
+    /* smooth, premium easing for every phase transition */
+    .journey { --jease: cubic-bezier(0.22, 0.61, 0.36, 1); }
+    .jstep { transition: opacity 0.6s var(--jease), transform 0.6s var(--jease); }
+    .jstep + .jstep { margin-top: 2rem; }               /* mobile: stacked list */
+    .jscreen { opacity: 0; transform: scale(0.965) translateY(12px); transition: opacity 0.55s var(--jease), transform 0.55s var(--jease); will-change: opacity, transform; }
+    .jscreen.is-active { opacity: 1; transform: scale(1) translateY(0); }
+    /* video layer (screenshots/videos drop into /public/showcase) — fades in once loaded, mockup is the fallback */
+    .jvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; z-index: 6; pointer-events: none; transition: opacity 0.5s var(--jease); }
+    .jvid.is-ready { opacity: 1; }
+    .jnav-item { display: inline-flex; align-items: center; gap: 0.6rem; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.03em; color: #8DA0B3; opacity: 0.55; transition: color 0.4s var(--jease), opacity 0.4s var(--jease), transform 0.4s var(--jease); }
+    .jnav-item:hover { opacity: 0.85; }
+    .jnav-item.is-active { color: #0A2238; opacity: 1; transform: translateX(4px); }
+
+    /* desktop pinned mode (class added by JS, fine-pointer + motion on) */
+    .is-journey { min-height: 100vh; display: flex; align-items: center; padding-top: 0; padding-bottom: 0; }
+    .is-journey .jstep { position: absolute; inset: 0; opacity: 0; margin-top: 0; transform: translateY(22px); will-change: opacity, transform; }
+    .is-journey .jstep.is-active { opacity: 1; transform: translateY(0); }
+
+  </style>
+</LandingLayout>

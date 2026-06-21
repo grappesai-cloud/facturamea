@@ -1,0 +1,40 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ReceiptScanner from '../../../components/cheltuieli-plus/ReceiptScanner';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+
+// Surface whether OCR is configured so we can set expectations up front.
+const ocrEnabled = !!process.env.ANTHROPIC_API_KEY;
+---
+
+<AppLayout title="Scanează bon / factură — facturamea" activeTab="cheltuieli">
+  <div class="max-w-3xl mx-auto">
+    <a href="/app/cheltuieli" class="inline-flex items-center gap-1.5 mb-4 text-[14px] font-medium text-[#9FB8CC] hover:text-white transition-colors">← Toate cheltuielile</a>
+
+    <div class="mb-6">
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Scanează bon sau factură</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-2">Fotografiază documentul, iar noi citim datele și creăm cheltuiala.</p>
+    </div>
+
+    {!ocrEnabled && (
+      <div class="mb-4 flex flex-wrap items-center gap-2.5 px-4 py-3 rounded-xl bg-[#E8A33C]/15">
+        <span class="w-2 h-2 rounded-full bg-[#E8A33C]"></span>
+        <p class="text-[14px] text-[#E8C98C]">Citirea automată nu este activă acum. Poți încărca documentul și completa datele manual.</p>
+      </div>
+    )}
+
+    <ReceiptScanner client:load />
+
+    <div class="mt-6 rounded-2xl p-5 bg-white/5">
+      <h2 class="text-[18px] font-bold text-white mb-3">Cum funcționează</h2>
+      <ol class="space-y-2 text-[14px] text-[#9FB8CC] leading-relaxed list-decimal pl-5">
+        <li>Apeși „Fă o poză" sau „Încarcă fișier" și alegi bonul ori factura.</li>
+        <li>Citim furnizorul, numărul, data și sumele (net, TVA, total).</li>
+        <li>Verifici datele și corectezi dacă e nevoie, apoi salvezi.</li>
+        <li>Cheltuiala apare imediat în lista ta de cheltuieli.</li>
+      </ol>
+    </div>
+  </div>
+</AppLayout>

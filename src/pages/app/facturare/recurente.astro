@@ -1,0 +1,45 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import RecurringManager from '../../../components/invoicing/RecurringManager';
+import { db } from '../../../db';
+import { invoiceRecurring, invoiceClients, companies } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+const cid = user.companyId;
+
+const items = cid ? await db.select().from(invoiceRecurring)
+  .where(eq(invoiceRecurring.companyId, cid))
+  .orderBy(desc(invoiceRecurring.createdAt)) : [];
+
+// Resolve client names for the table view.
+const clientCompanyIds = items.map(i => i.clientCompanyId).filter(Boolean) as string[];
+const clientExternalIds = items.map(i => i.clientExternalId).filter(Boolean) as string[];
+const [intCompanies, extClients] = await Promise.all([
+  clientCompanyIds.length ? db.select({ id: companies.id, name: companies.name }).from(companies) : [],
+  clientExternalIds.length ? db.select({ id: invoiceClients.id, name: invoiceClients.name }).from(invoiceClients) : [],
+]);
+const nameMap: Record<string, string> = {};
+for (const c of intCompanies) nameMap[c.id] = c.name;
+for (const c of extClients) nameMap[c.id] = c.name;
+
+// Also load potential clients for the create-form picker.
+const allInternal = cid ? await db.select({ id: companies.id, name: companies.name, cui: companies.cui }).from(companies).limit(500) : [];
+const allExternal = cid ? await db.select({ id: invoiceClients.id, name: invoiceClients.name, taxId: invoiceClients.taxId }).from(invoiceClients).where(eq(invoiceClients.ownerCompanyId, cid)) : [];
+---
+
+<AppLayout title="Facturi recurente" activeTab="facturare">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 print:hidden">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Facturi recurente</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-1 max-w-2xl">Abonamente care emit automat facturi la frecvența setată (zilnic / săptămânal / lunar). Rulează zilnic la 07:00 UTC.</p>
+    </div>
+  </div>
+
+  <RecurringManager
+    initial={items.map(i => ({ ...i, clientName: (i.clientCompanyId ?? i.clientExternalId) ? nameMap[(i.clientCompanyId ?? i.clientExternalId)!] || '—' : '—' }))}
+    internalClients={allInternal}
+    externalClients={allExternal}
+    client:load
+  />
+</AppLayout>

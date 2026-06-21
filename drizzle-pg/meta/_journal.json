@@ -22,6 +22,13 @@
       "when": 1782064530788,
       "tag": "0002_drop_transport",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782066288504,
+      "tag": "0003_add_dashboard_modules",
+      "breakpoints": true
     }
   ]
 }

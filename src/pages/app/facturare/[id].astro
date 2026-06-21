@@ -1,0 +1,201 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import InvoiceActions from '../../../components/invoicing/InvoiceActions';
+import { nudgesForInvoice } from '../../../lib/invoice-nudges';
+import { db } from '../../../db';
+import { transportInvoices, transportInvoiceLines, transportInvoicePayments, companies } from '../../../db/schema';
+import { eq, asc, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+const id = Astro.params.id!;
+
+const [inv] = await db.select().from(transportInvoices).where(eq(transportInvoices.id, id)).limit(1);
+if (!inv || inv.companyId !== user.companyId) {
+  return Astro.redirect('/app/facturare');
+}
+
+const lines = await db.select().from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, id)).orderBy(asc(transportInvoiceLines.position));
+const nudges = await nudgesForInvoice(id).catch(() => []);
+const payments = await db.select().from(transportInvoicePayments).where(eq(transportInvoicePayments.invoiceId, id)).orderBy(desc(transportInvoicePayments.receivedAt));
+const [issuer] = await db.select().from(companies).where(eq(companies.id, inv.companyId)).limit(1);
+
+const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const remaining = inv.totalCents - inv.paidCents;
+const overdue = inv.status !== 'paid' && inv.dueAt && new Date(inv.dueAt) < new Date();
+const effectiveStatus = overdue ? 'overdue' : inv.status;
+
+const kindLabel: Record<string, string> = { factura: 'Factură', proforma: 'Proformă', storno: 'Factură storno', chitanta: 'Chitanță' };
+const statusTone: Record<string, string> = {
+  draft: 'bg-white/10 text-[#9FB8CC]',
+  issued: 'bg-[#E8A33C]/15 text-[#E8A33C]',
+  sent: 'bg-[#34A0A4]/15 text-[#34A0A4]',
+  paid: 'bg-[#2E9E6A]/15 text-[#2E9E6A]',
+  partial: 'bg-[#E8A33C]/15 text-[#E8A33C]',
+  overdue: 'bg-[#DC4B41]/15 text-[#DC4B41]',
+  disputed: 'bg-white/10 text-[#C8DAE8]',
+  voided: 'bg-white/10 text-[#7C9AB4]',
+};
+const statusLabel: Record<string, string> = {
+  draft: '⚪ Ciornă', issued: '🟡 Emisă', sent: '🔵 Trimisă', paid: '🟢 Plătită',
+  partial: '🟠 Plătită parțial', overdue: '🔴 Întârziată', disputed: '⚫ Dispută', voided: '⚪ Anulată',
+};
+---
+
+<AppLayout title={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber}`} activeTab="facturare">
+
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8 print:hidden">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">{inv.fullNumber}</h1>
+      <div class="mt-2 flex flex-wrap items-center gap-2.5">
+        <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${statusTone[effectiveStatus] ?? statusTone.draft}`}>
+          {statusLabel[effectiveStatus] ?? effectiveStatus}
+        </span>
+        <span class="text-[14px] text-[#9FB8CC]">{kindLabel[inv.kind] ?? 'Document'}</span>
+        {inv.dueAt && <span class="text-[14px] text-[#7C9AB4]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO')}</span>}
+      </div>
+    </div>
+    <InvoiceActions invoiceId={inv.id} kind={inv.kind} status={inv.status} totalCents={inv.totalCents} paidCents={inv.paidCents} currency={inv.currency} clientCompanyId={inv.clientCompanyId} client:load />
+  </div>
+
+  {nudges.length > 0 && (
+    <div class="mb-6 max-w-4xl space-y-2.5 print:hidden">
+      {nudges.map((n) => {
+        const tone = n.tone === 'good' ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]'
+          : n.tone === 'warn' ? 'bg-[#E8A33C]/15 text-[#E8A33C]'
+          : 'bg-[#34A0A4]/15 text-[#34A0A4]';
+        const icon = n.tone === 'good' ? '✓' : n.tone === 'warn' ? '⚠' : 'ℹ';
+        return (
+          <div class={`flex items-start gap-2.5 px-4 py-3 rounded-2xl text-[14px] ${tone}`}>
+            <span class="font-bold shrink-0">{icon}</span>
+            <span>{n.message}</span>
+          </div>
+        );
+      })}
+    </div>
+  )}
+
+  <!-- ─── Print-friendly invoice document ─── -->
+  <div class="rounded-3xl p-6 sm:p-10 bg-white/5 print:bg-transparent print:p-0 print:rounded-none max-w-4xl">
+    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 pb-8 border-b border-white/10">
+      <div>
+        <p class="text-[13px] font-medium text-[#7C9AB4]">De la</p>
+        <p class="text-[16px] font-bold text-white mt-1.5">{issuer?.name ?? '—'}</p>
+        {issuer?.cui && <p class="text-[13px] text-[#9FB8CC] mt-0.5">CUI: {issuer.cui}</p>}
+        {issuer?.address && <p class="text-[13px] text-[#9FB8CC] mt-0.5">{issuer.address}</p>}
+      </div>
+      <div class="sm:text-right">
+        <p class="text-[13px] font-medium text-[#7C9AB4]">{kindLabel[inv.kind] ?? 'Document'}</p>
+        <p class="text-[28px] font-bold tracking-[-0.03em] text-white mt-1.5 font-mono tabular-nums">{inv.fullNumber}</p>
+        <p class="text-[13px] text-[#9FB8CC] mt-1.5">Emis: {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO') : '—'}</p>
+      </div>
+    </div>
+
+    <div class="py-8 border-b border-white/10">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Către</p>
+      <p class="text-[16px] font-bold text-white mt-1.5">{inv.clientNameSnap}</p>
+      {inv.clientTaxIdSnap && <p class="text-[13px] text-[#9FB8CC] mt-0.5">CUI: {inv.clientTaxIdSnap}</p>}
+      {inv.clientAddressSnap && <p class="text-[13px] text-[#9FB8CC] mt-0.5">{inv.clientAddressSnap}</p>}
+    </div>
+
+    <!-- Line items: airy rows; stacked cards on mobile, table on sm+ -->
+    <div class="py-8">
+      <!-- mobile -->
+      <ul class="space-y-2.5 sm:hidden">
+        {lines.map((l) => (
+          <li class="rounded-2xl bg-white/5 p-4">
+            <div class="flex items-start justify-between gap-3">
+              <p class="text-[14px] font-bold text-white">{l.description}</p>
+              <p class="text-[14px] font-bold tabular-nums text-white shrink-0">{fmt(l.lineTotalCents)}</p>
+            </div>
+            <p class="text-[13px] text-[#7C9AB4] mt-1.5 tabular-nums">{l.quantity} {l.unit} × {fmt(l.unitPriceCents)} · TVA {l.vatRate}%</p>
+          </li>
+        ))}
+      </ul>
+      <!-- desktop -->
+      <table class="w-full text-[14px] hidden sm:table">
+        <thead>
+          <tr class="text-left text-[12px] text-[#7C9AB4] font-semibold border-b border-white/10">
+            <th class="py-2.5 pr-3">Descriere</th>
+            <th class="py-2.5 px-2 text-right w-16">Cant.</th>
+            <th class="py-2.5 px-2 w-12">UM</th>
+            <th class="py-2.5 px-2 text-right w-24">Preț unit.</th>
+            <th class="py-2.5 px-2 text-right w-16">TVA</th>
+            <th class="py-2.5 pl-2 text-right w-28">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          {lines.map((l) => (
+            <tr class="border-t border-white/10">
+              <td class="py-4 pr-3 text-white">{l.description}</td>
+              <td class="py-4 px-2 text-right tabular-nums text-[#9FB8CC]">{l.quantity}</td>
+              <td class="py-4 px-2 text-[#9FB8CC]">{l.unit}</td>
+              <td class="py-4 px-2 text-right tabular-nums text-[#9FB8CC]">{fmt(l.unitPriceCents)}</td>
+              <td class="py-4 px-2 text-right tabular-nums text-[#9FB8CC]">{l.vatRate}%</td>
+              <td class="py-4 pl-2 text-right tabular-nums font-semibold text-white">{fmt(l.lineTotalCents)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="flex justify-end pt-2">
+      <div class="w-full sm:w-1/2 space-y-2 text-[14px]">
+        <div class="flex justify-between"><span class="text-[#9FB8CC]">Subtotal</span><span class="tabular-nums text-white">{fmt(inv.subtotalCents)} {inv.currency}</span></div>
+        <div class="flex justify-between"><span class="text-[#9FB8CC]">TVA</span><span class="tabular-nums text-white">{fmt(inv.vatCents)} {inv.currency}</span></div>
+        <div class="flex justify-between items-baseline text-[20px] font-bold tracking-[-0.02em] border-t border-white/10 pt-3 mt-1 text-white"><span>Total</span><span class="tabular-nums">{fmt(inv.totalCents)} {inv.currency}</span></div>
+        {inv.paidCents > 0 && (
+          <>
+            <div class="flex justify-between pt-2 text-[#2E9E6A]"><span>Plătit</span><span class="tabular-nums">{fmt(inv.paidCents)} {inv.currency}</span></div>
+            {remaining > 0 && <div class="flex justify-between font-semibold text-[#DC4B41]"><span>Rest de plată</span><span class="tabular-nums">{fmt(remaining)} {inv.currency}</span></div>}
+          </>
+        )}
+      </div>
+    </div>
+
+    {inv.notes && (
+      <div class="mt-8 pt-8 border-t border-white/10">
+        <p class="text-[13px] font-medium text-[#7C9AB4] mb-1.5">Mențiuni</p>
+        <p class="text-[14px] text-[#9FB8CC] whitespace-pre-wrap">{inv.notes}</p>
+      </div>
+    )}
+  </div>
+
+  {payments.length > 0 && (
+    <div class="mt-8 max-w-4xl print:hidden">
+      <h2 class="text-[18px] font-bold text-white mb-3">Încasări</h2>
+      <ul class="space-y-2.5">
+        {payments.slice(0, 3).map((p) => (
+          <li class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+            <div>
+              <p class="text-[12px] text-[#9FB8CC]">
+                {new Date(p.receivedAt).toLocaleDateString('ro-RO')}
+                {p.method && ` · ${p.method}`}
+                {p.reference && ` · ref ${p.reference}`}
+              </p>
+            </div>
+            <p class="text-[15px] font-bold text-[#2E9E6A] tabular-nums shrink-0">{fmt(p.amountCents)} {p.currency}</p>
+          </li>
+        ))}
+      </ul>
+      {payments.length > 3 && (
+        <details class="mt-2.5">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({payments.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {payments.slice(3).map((p) => (
+              <li class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div>
+                  <p class="text-[12px] text-[#9FB8CC]">
+                    {new Date(p.receivedAt).toLocaleDateString('ro-RO')}
+                    {p.method && ` · ${p.method}`}
+                    {p.reference && ` · ref ${p.reference}`}
+                  </p>
+                </div>
+                <p class="text-[15px] font-bold text-[#2E9E6A] tabular-nums shrink-0">{fmt(p.amountCents)} {p.currency}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  )}
+</AppLayout>

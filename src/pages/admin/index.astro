@@ -1,0 +1,97 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../db';
+import { users, companies, appLicenses } from '../../db/schema';
+import { sql, eq, and, desc } from 'drizzle-orm';
+
+async function safe<T>(p: Promise<T>, fallback: T): Promise<T> {
+  try { return await p; } catch { return fallback; }
+}
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 0 }).format((cents || 0) / 100);
+
+const [
+  companyCount, userCount, lifetimeActive, trialActive, lifetimeRevenue,
+] = await Promise.all([
+  safe(db.select({ c: sql<number>`COUNT(*)::int` }).from(companies), [{ c: 0 }]),
+  safe(db.select({ c: sql<number>`COUNT(*)::int` }).from(users), [{ c: 0 }]),
+  safe(db.select({ c: sql<number>`COUNT(*)::int` }).from(appLicenses).where(and(eq(appLicenses.plan, 'lifetime'), eq(appLicenses.status, 'active'))), [{ c: 0 }]),
+  safe(db.select({ c: sql<number>`COUNT(*)::int` }).from(appLicenses).where(and(eq(appLicenses.plan, 'trial'), eq(appLicenses.status, 'active'))), [{ c: 0 }]),
+  safe(db.select({ total: sql<number>`COALESCE(SUM(${appLicenses.amountCents}), 0)::int` }).from(appLicenses).where(eq(appLicenses.plan, 'lifetime')), [{ total: 0 }]),
+]);
+
+const recentCompanies = await safe(
+  db.select({
+    id: companies.id,
+    name: companies.name,
+    cui: companies.cui,
+    city: companies.city,
+    createdAt: companies.createdAt,
+  }).from(companies).orderBy(desc(companies.createdAt)).limit(8),
+  [] as { id: string; name: string; cui: string | null; city: string | null; createdAt: Date | null }[]
+);
+
+const stats = [
+  { label: 'Companii',          value: (companyCount[0]?.c ?? 0).toLocaleString('ro-RO') },
+  { label: 'Utilizatori',       value: (userCount[0]?.c ?? 0).toLocaleString('ro-RO') },
+  { label: 'Licențe lifetime',  value: (lifetimeActive[0]?.c ?? 0).toLocaleString('ro-RO') },
+  { label: 'Trial active',      value: (trialActive[0]?.c ?? 0).toLocaleString('ro-RO') },
+];
+
+const revenue = ron(lifetimeRevenue[0]?.total ?? 0);
+const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+---
+
+<AdminLayout title="Tablou de bord" activeTab="dashboard">
+  <!-- Hero: lifetime revenue -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
+    <div class="lg:col-span-2 p-5 bg-white border border-[#E8E8E4] rounded-2xl">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Venit licențe lifetime</p>
+      <p class="text-[36px] font-bold mt-2 leading-none tabular-nums text-[#0A0A0A]">{revenue}</p>
+      <p class="text-[12px] text-[#6B6B68] mt-1.5">{lifetimeActive[0]?.c ?? 0} licențe lifetime active</p>
+    </div>
+    <div class="p-5 bg-white border border-[#E8E8E4] rounded-2xl">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Acțiuni rapide</p>
+      <div class="mt-3 space-y-2">
+        <a href="/admin/licente" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Acordă licență lifetime</a>
+        <a href="/admin/companies" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Vezi companiile</a>
+        <a href="/admin/analytics" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Analiză platformă</a>
+        <a href="/admin/audit" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Jurnal audit</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI grid -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+    {stats.map((s) => (
+      <div class="bg-white border border-[#E8E8E4] rounded-2xl p-4">
+        <p class="text-[11px] uppercase tracking-[0.12em] text-[#8A8A85] font-medium">{s.label}</p>
+        <p class="text-[24px] font-bold text-[#0A0A0A] mt-2 leading-none tabular-nums">{s.value}</p>
+      </div>
+    ))}
+  </div>
+
+  <!-- Recent companies -->
+  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-[#F0F0EC] flex items-center justify-between">
+      <h2 class="text-[14px] font-semibold text-[#0A0A0A]">Companii recente</h2>
+      <a href="/admin/companies" class="text-[12px] font-medium text-[#6B6B68] hover:text-[#0A0A0A]">Vezi toate →</a>
+    </div>
+    {recentCompanies.length === 0 ? (
+      <div class="px-5 py-12 text-center text-[14px] text-[#6B6B68]">Nicio companie încă.</div>
+    ) : (
+      <div class="divide-y divide-[#F0F0EC]">
+        {recentCompanies.map((c) => (
+          <div class="px-5 py-3 flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[13px] font-medium text-[#0A0A0A] truncate">{c.name}</p>
+              <p class="text-[11px] text-[#6B6B68] truncate">{c.cui ? `CUI ${c.cui}` : 'fără CUI'}{c.city ? ` · ${c.city}` : ''}</p>
+            </div>
+            <p class="text-[11px] text-[#A8A8A4] shrink-0">{fmt(c.createdAt)}</p>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</AdminLayout>

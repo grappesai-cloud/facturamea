@@ -1,0 +1,95 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { transportInvoices } from '../../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select()
+    .from(transportInvoices)
+    .where(and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'proforma')))
+    .orderBy(desc(transportInvoices.createdAt))
+    .limit(100);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+const statusLabels: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  issued: { label: 'Emisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
+  sent: { label: 'Trimisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
+  partial: { label: 'Încasată parțial', cls: 'bg-[#E8A33C]/15 text-[#E8A33C]' },
+  paid: { label: 'Încasată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  overdue: { label: 'Termen depășit', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
+  voided: { label: 'Anulată', cls: 'bg-white/10 text-[#7C9AB4]' },
+};
+---
+
+<AppLayout title="Proforme" activeTab="facturare">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Proforme</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-1 max-w-2xl">Facturile proforma emise către clienți.</p>
+    </div>
+    <a href="/app/facturare/emite" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Emite document</a>
+  </div>
+
+  {rows.length === 0 ? (
+    <div class="rounded-2xl p-8 bg-white/5 text-center text-[13px] text-[#9FB8CC]">Nicio proformă emisă încă.</div>
+  ) : (
+    <Fragment>
+    <ul class="space-y-2.5">
+      {rows.slice(0, 3).map((inv) => {
+        const st = statusLabels[inv.status] || statusLabels.draft;
+        return (
+          <li>
+            <a href={`/app/facturare/${inv.id}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
+                  <span class="font-mono text-[12px] text-[#7C9AB4] tabular-nums truncate">{inv.fullNumber}</span>
+                </div>
+                <p class="text-[15px] text-white font-bold truncate mt-1.5">{inv.clientNameSnap}</p>
+              </div>
+              <p class="text-[15px] font-bold text-white tabular-nums shrink-0">{ron(inv.totalCents)}</p>
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+    {rows.length > 3 && (
+      <details class="mt-2.5">
+        <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+        <ul class="space-y-2.5 mt-2.5">
+          {rows.slice(3).map((inv) => {
+            const st = statusLabels[inv.status] || statusLabels.draft;
+            return (
+              <li>
+                <a href={`/app/facturare/${inv.id}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
+                      <span class="font-mono text-[12px] text-[#7C9AB4] tabular-nums truncate">{inv.fullNumber}</span>
+                    </div>
+                    <p class="text-[15px] text-white font-bold truncate mt-1.5">{inv.clientNameSnap}</p>
+                  </div>
+                  <p class="text-[15px] font-bold text-white tabular-nums shrink-0">{ron(inv.totalCents)}</p>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </details>
+    )}
+    </Fragment>
+  )}
+</AppLayout>

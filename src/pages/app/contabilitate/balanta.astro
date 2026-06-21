@@ -1,0 +1,114 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { trialBalance } from '../../../lib/accounting';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+// Default period: current year.
+const now = new Date();
+const yearStart = `${now.getFullYear()}-01-01`;
+const yearEnd = `${now.getFullYear()}-12-31`;
+const from = Astro.url.searchParams.get('from') || yearStart;
+const to = Astro.url.searchParams.get('to') || yearEnd;
+
+const rows = await trialBalance(companyId, from, to).catch(() => []);
+
+const totals = rows.reduce(
+  (acc, r) => {
+    acc.openingDebit += r.openingDebit;
+    acc.openingCredit += r.openingCredit;
+    acc.periodDebit += r.periodDebit;
+    acc.periodCredit += r.periodCredit;
+    acc.closingDebit += r.closingDebit;
+    acc.closingCredit += r.closingCredit;
+    return acc;
+  },
+  { openingDebit: 0, openingCredit: 0, periodDebit: 0, periodCredit: 0, closingDebit: 0, closingCredit: 0 },
+);
+---
+
+<AppLayout title="Balanță de verificare" activeTab="contabilitate">
+  <a href="/app/contabilitate" class="inline-flex items-center gap-1.5 mb-4 text-[14px] font-medium text-[#9FB8CC] hover:text-white transition-colors">← Contabilitate</a>
+  <div class="mb-8 sm:mb-10">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Balanță de verificare</h1>
+    <p class="text-[15px] text-[#9FB8CC] mt-2">Solduri și rulaje pe conturi, pentru perioada aleasă.</p>
+  </div>
+
+  <form method="GET" class="flex flex-wrap items-end gap-3 mb-6 rounded-2xl p-5 bg-white/5">
+    <div>
+      <label class="block text-[13px] text-[#9FB8CC] mb-1.5">De la</label>
+      <input type="date" name="from" value={from} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+    </div>
+    <div>
+      <label class="block text-[13px] text-[#9FB8CC] mb-1.5">Până la</label>
+      <input type="date" name="to" value={to} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+    </div>
+    <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Calculează</button>
+  </form>
+
+  <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
+    {rows.length === 0 ? (
+      <div class="px-5 py-14 text-center text-[14px] text-[#9FB8CC]">Nicio mișcare contabilă în perioada selectată.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[14px]">
+          <thead>
+            <tr class="text-[11px] uppercase tracking-wide text-[#7C9AB4]">
+              <th class="px-3 py-3 font-medium text-left" rowspan="2">Cont</th>
+              <th class="px-3 py-3 font-medium text-left" rowspan="2">Denumire</th>
+              <th class="px-3 py-2 font-medium text-center" colspan="2">Sold inițial</th>
+              <th class="px-3 py-2 font-medium text-center" colspan="2">Rulaj perioadă</th>
+              <th class="px-3 py-2 font-medium text-center" colspan="2">Sold final</th>
+            </tr>
+            <tr class="text-[11px] uppercase tracking-wide text-[#7C9AB4]">
+              <th class="px-3 py-2 font-medium text-right">Debit</th>
+              <th class="px-3 py-2 font-medium text-right">Credit</th>
+              <th class="px-3 py-2 font-medium text-right">Debit</th>
+              <th class="px-3 py-2 font-medium text-right">Credit</th>
+              <th class="px-3 py-2 font-medium text-right">Debit</th>
+              <th class="px-3 py-2 font-medium text-right">Credit</th>
+            </tr>
+            <tr><th colspan="8" class="p-0"><div class="h-px bg-white/10"></div></th></tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-3 py-2.5 font-mono font-semibold text-white">
+                  <a href={`/app/contabilitate/fisa?cont=${r.code}`} class="hover:text-[#E1FB15]">{r.code}</a>
+                </td>
+                <td class="px-3 py-2.5 text-[#9FB8CC] max-w-[240px] truncate">{r.name}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.openingDebit ? ron(r.openingDebit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.openingCredit ? ron(r.openingCredit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.periodDebit ? ron(r.periodDebit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.periodCredit ? ron(r.periodCredit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white font-semibold">{r.closingDebit ? ron(r.closingDebit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white font-semibold">{r.closingCredit ? ron(r.closingCredit) : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="8" class="p-0"><div class="h-px bg-white/10"></div></td></tr>
+            <tr class="font-bold text-[15px]">
+              <td class="px-3 py-3.5 text-white" colspan="2">Total</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.openingDebit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.openingCredit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.periodDebit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.periodCredit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.closingDebit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.closingCredit)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    )}
+  </div>
+
+  {rows.length > 0 && (totals.periodDebit !== totals.periodCredit) && (
+    <p class="mt-3 text-[14px] text-[#DC4B41]">Atenție: rulajul debitor nu este egal cu cel creditor. Verifică notele contabile.</p>
+  )}
+</AppLayout>
