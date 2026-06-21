@@ -23,7 +23,9 @@ const license = Astro.locals.license;
 const anafConnected = Astro.locals.anafConnected;
 const currentPath = Astro.url.pathname;
 const isHome = currentPath === '/app';
-const showTrialBanner = license && license.plan === 'trial' && license.status === 'active';
+// No trial anymore: unpaid accounts are gated to /app/onboarding by middleware,
+// so the in-app trial banner is never shown.
+const showTrialBanner = false;
 
 const groups: { label: string; items: typeof NAV_MODULES }[] = [
   { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare') },

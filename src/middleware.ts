@@ -313,9 +313,15 @@ export const onRequest = defineMiddleware(async (context, next) => {
           try {
             const st = await licenseState(user.companyId);
             context.locals.license = { plan: st.plan, status: st.status, active: st.active, trialDaysLeft: st.trialDaysLeft };
-            const exempt = pathname.startsWith('/app/setari/abonament') || pathname === '/app/logout';
-            if (!st.active && !exempt && !isAdmin) {
-              return context.redirect('/app/setari/abonament');
+            // Activation gate: a company must have a complete fiscal profile
+            // (CIF + address + city) AND a paid lifetime license. Until then,
+            // every /app page is funneled into the onboarding wizard. No trial.
+            const companyComplete = !!(company && company.cui && company.address && company.city);
+            const exempt = pathname.startsWith('/app/onboarding')
+              || pathname.startsWith('/app/setari/abonament')
+              || pathname === '/app/logout';
+            if ((!companyComplete || !st.active) && !exempt && !isAdmin) {
+              return context.redirect('/app/onboarding');
             }
           } catch { /* DB not ready — don't lock out */ }
           try { context.locals.anafConnected = await isAnafConnected(user.companyId); } catch {}

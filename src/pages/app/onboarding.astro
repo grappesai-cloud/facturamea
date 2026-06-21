@@ -1,0 +1,48 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import OnboardingWizard from '../../components/onboarding/OnboardingWizard';
+import { db } from '../../db';
+import { companies } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+import { licenseState } from '../../lib/license';
+
+const user = Astro.locals.user;
+if (!user) return Astro.redirect('/auth/login');
+
+let company: any = null;
+if (user.companyId) {
+  const [c] = await db.select().from(companies).where(eq(companies.id, user.companyId));
+  company = c || null;
+}
+
+let isPaid = false;
+if (user.companyId) {
+  try { isPaid = (await licenseState(user.companyId)).active; } catch {}
+}
+
+const companyComplete = !!(company && company.cui && company.address && company.city);
+
+// Already fully onboarded → straight into the app.
+if (companyComplete && isPaid) return Astro.redirect('/app');
+
+const initial = {
+  cui: company?.cui || '',
+  name: company?.name || '',
+  address: company?.address || '',
+  city: company?.city || '',
+  country: company?.country || 'Romania',
+  phone: company?.phone || '',
+};
+---
+
+<BaseLayout title="Activare cont" noindex={true}>
+  <main class="min-h-screen w-full flex flex-col items-center justify-center px-5 py-12">
+    <div class="flex items-center gap-2 mb-8">
+      <span class="text-xl font-bold text-white">factura<span class="text-[#E1FB15]">mea</span></span>
+    </div>
+    <div class="w-full max-w-lg bg-white/[0.03] ring-1 ring-white/10 rounded-3xl p-7 sm:p-9">
+      <OnboardingWizard client:load initial={initial} companyComplete={companyComplete} isPaid={isPaid} />
+    </div>
+    <a href="/app/logout" class="mt-6 text-[13px] text-[#7C9AB4] hover:text-white transition-colors">Deconectează-te</a>
+  </main>
+</BaseLayout>

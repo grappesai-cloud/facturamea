@@ -41,17 +41,10 @@ export function computeState(license: any): LicenseState {
   const plan = (license?.plan as 'trial' | 'lifetime') || 'trial';
   const status = license?.status || 'active';
   const trialEndsAt = license?.trialEndsAt ? new Date(license.trialEndsAt) : null;
-  let active = false;
-  let trialDaysLeft = 0;
-  if (status === 'active') {
-    if (plan === 'lifetime') active = true;
-    else if (trialEndsAt) {
-      const ms = trialEndsAt.getTime() - Date.now();
-      trialDaysLeft = Math.max(0, Math.ceil(ms / (24 * 60 * 60 * 1000)));
-      active = ms > 0;
-    }
-  }
-  return { plan, status, active, trialEndsAt, trialDaysLeft };
+  // No trial period. An account is active ONLY with a paid lifetime license.
+  // Unpaid accounts are inactive and gated to /app/onboarding (data + payment).
+  const active = plan === 'lifetime' && status === 'active';
+  return { plan, status, active, trialEndsAt, trialDaysLeft: 0 };
 }
 
 // Convenience: full state for a company (creates trial if missing).
