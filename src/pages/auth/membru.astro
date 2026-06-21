@@ -1,0 +1,72 @@
+---
+import AuthLayout from '../../layouts/AuthLayout.astro';
+
+if (Astro.locals.user) {
+  return Astro.redirect('/app');
+}
+// Optional ?cod= prefill (owner can share a direct link too).
+const prefill = (Astro.url.searchParams.get('cod') || Astro.url.searchParams.get('code') || '').toUpperCase();
+---
+
+<AuthLayout title="Intră în echipă" tagline="Activează-ți contul de membru">
+  <div class="space-y-6">
+    <div>
+      <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Activează contul de membru</h1>
+      <p class="text-[13px] text-[#46627A] mt-1.5">Ai primit un cod de la administratorul firmei. Introdu-l mai jos și setează-ți parola.</p>
+    </div>
+
+    <form id="join-form" class="space-y-4">
+      <div>
+        <label class="block text-[13px] font-semibold text-[#0A2238] mb-1.5">Cod de acces</label>
+        <input id="code" type="text" value={prefill} autocomplete="one-time-code" placeholder="ex: K7M2PQR9TX"
+          class="w-full px-4 py-3 rounded-md border border-[#D5E0EA] focus:border-[#1A759F] focus:outline-none text-[15px] tracking-[2px] uppercase font-mono" required />
+      </div>
+      <div>
+        <label class="block text-[13px] font-semibold text-[#0A2238] mb-1.5">Parolă nouă</label>
+        <input id="password" type="password" autocomplete="new-password" placeholder="minim 8 caractere"
+          class="w-full px-4 py-3 rounded-md border border-[#D5E0EA] focus:border-[#1A759F] focus:outline-none text-[15px]" required minlength="8" />
+      </div>
+      <p id="join-error" class="hidden text-[13px] text-[#DC4B41] bg-white border border-[#DC4B41]/30 rounded-md px-4 py-3"></p>
+      <button id="join-btn" type="submit"
+        class="w-full px-4 py-3 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#0A2238] text-[14px] font-bold transition-colors">
+        Activează contul
+      </button>
+    </form>
+
+    <p class="text-[12px] text-[#46627A] text-center">
+      Ai deja parolă? <a href="/auth/login" class="text-[#0A2238] font-semibold hover:text-[#1A759F]">Conectează-te</a>
+    </p>
+  </div>
+
+  <script>
+    const form = document.getElementById('join-form') as HTMLFormElement;
+    const errEl = document.getElementById('join-error') as HTMLElement;
+    const btn = document.getElementById('join-btn') as HTMLButtonElement;
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.classList.add('hidden');
+      const code = (document.getElementById('code') as HTMLInputElement).value.trim();
+      const password = (document.getElementById('password') as HTMLInputElement).value;
+      btn.disabled = true; const original = btn.textContent; btn.textContent = 'Se activează...';
+      try {
+        const res = await fetch('/api/auth/join', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, password }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+          window.location.href = '/app';
+          return;
+        }
+        errEl.textContent = data.error || 'Cod invalid sau expirat.';
+        errEl.classList.remove('hidden');
+      } catch {
+        errEl.textContent = 'Eroare de rețea. Încearcă din nou.';
+        errEl.classList.remove('hidden');
+      } finally {
+        btn.disabled = false; btn.textContent = original;
+      }
+    });
+  </script>
+</AuthLayout>

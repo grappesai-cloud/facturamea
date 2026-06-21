@@ -344,6 +344,34 @@ export const POST: APIRoute = async ({ request, url }) => {
     }
   }
 
+  // ─── MEMBER JOIN via one-time code (no email needed) ─────────────────────
+  if (path.endsWith('/join')) {
+    try {
+      const clientIp = getClientIp(request);
+      const rl = await rateLimitAsync(`join:${clientIp}`, 10, 15 * 60 * 1000);
+      if (!rl.allowed) {
+        return new Response(JSON.stringify({ error: 'Prea multe încercări. Încearcă mai târziu.' }), { status: 429, headers: { 'Content-Type': 'application/json' } });
+      }
+      const { code, password } = await request.json();
+      const norm = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      if (!norm || !password || String(password).length < 8) {
+        return new Response(JSON.stringify({ error: 'Cod și parolă obligatorii (parola minim 8 caractere).' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+      const [tok] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, norm));
+      if (!tok || tok.usedAt || new Date(tok.expiresAt) < new Date()) {
+        return new Response(JSON.stringify({ error: 'Cod invalid sau expirat. Cere administratorului un cod nou.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+      const hashed = await hashPassword(String(password));
+      await db.update(users).set({ hashedPassword: hashed, emailVerified: true } as any).where(eq(users.id, tok.userId));
+      await db.update(passwordResetTokens).set({ usedAt: new Date() }).where(eq(passwordResetTokens.id, tok.id));
+      const sessionId = await createSession(tok.userId);
+      try { await logAction({ userId: tok.userId, action: 'team.member_joined', request }); } catch {}
+      return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json', 'Set-Cookie': setSessionCookie(sessionId) } });
+    } catch {
+      return new Response(JSON.stringify({ error: 'Eroare' }), { status: 500 });
+    }
+  }
+
   // ─── PASSWORD RESET CONFIRM ─────────────────
   if (path.endsWith('/reset-password')) {
     try {

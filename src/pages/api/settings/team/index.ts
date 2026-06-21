@@ -2,7 +2,10 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { users, userCompanyMemberships, companies, passwordResetTokens } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
-import { nanoid } from 'nanoid';
+import { nanoid, customAlphabet } from 'nanoid';
+
+// Readable code, no ambiguous chars (no 0/O/1/I). 10 chars ≈ 50 bits.
+const genJoinCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 10);
 import { generatePlatformId } from '../../../../lib/platform-id';
 import { hashPassword } from '../../../../lib/auth';
 import { isValidRole, normalizeRole, ROLE_LABELS } from '../../../../lib/permissions-roles';
@@ -128,31 +131,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
       isDefault: false,
     } as any);
 
-    // Send an invite email with a set-password link (reuses the reset-token
-    // flow, 7-day expiry for invites). Without this the new member has a random
-    // password and no way to get in.
-    let invited = false;
+    // Generate a one-time JOIN CODE (no email needed). The owner shares it with
+    // the member out-of-band (WhatsApp/in person); the member activates at
+    // /auth/membru by entering the code + setting a password. Stored in the
+    // reset-token table (token = code), 30-day expiry. Email is a best-effort
+    // bonus on top (fire-and-forget) when a provider is configured.
+    let code = '';
     try {
-      const token = nanoid(48);
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      await db.insert(passwordResetTokens).values({ id: nanoid(), userId, token, expiresAt } as any);
+      code = genJoinCode(); // e.g. "K7M2PQR9TX"
+      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      await db.insert(passwordResetTokens).values({ id: nanoid(), userId, token: code, expiresAt } as any);
       const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, companyId)).limit(1);
       const companyName = co?.name || 'compania';
       const inviter = locals.user.name || 'Administratorul';
       const roleLabel = ROLE_LABELS[normalizeRole(role)];
-      const link = `https://facturamea.com/auth/reset-password?token=${token}`;
       const esc = (s: string) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       const subject = `Ai fost adăugat în echipa ${companyName} pe facturamea`;
-      const text = `Bună ${name},\n${inviter} te-a adăugat în echipa "${companyName}" pe facturamea, cu rolul ${roleLabel}.\nSetează-ți parola și intră în cont: ${link}\nLinkul e valabil 7 zile.`;
-      const html = `<p>Bună ${esc(name)},</p><p><strong>${esc(inviter)}</strong> te-a adăugat în echipa <strong>${esc(companyName)}</strong> pe facturamea, cu rolul <strong>${esc(roleLabel)}</strong>.</p><p><a href="${link}">Setează-ți parola și intră în cont</a> — link valabil 7 zile.</p>`;
-      // Fire-and-forget: member creation must not block on (or fail with) email.
+      const text = `Bună ${name},\n${inviter} te-a adăugat în echipa "${companyName}" pe facturamea, cu rolul ${roleLabel}.\nIntră pe https://facturamea.com/auth/membru și folosește codul: ${code}\nCodul e valabil 30 de zile.`;
+      const html = `<p>Bună ${esc(name)},</p><p><strong>${esc(inviter)}</strong> te-a adăugat în echipa <strong>${esc(companyName)}</strong> pe facturamea, cu rolul <strong>${esc(roleLabel)}</strong>.</p><p>Intră pe <a href="https://facturamea.com/auth/membru">facturamea.com/auth/membru</a> și folosește codul: <strong style="font-size:18px;letter-spacing:2px">${esc(code)}</strong></p><p>Cod valabil 30 de zile.</p>`;
       void sendEmail(email, subject, text, html).catch((e) => console.error('team invite email failed:', e));
-      invited = true;
     } catch (err) {
-      console.error('team invite token failed:', err);
+      console.error('team join code failed:', err);
     }
 
-    return json({ ok: true, userId, platformId, invited }, 201);
+    return json({ ok: true, userId, platformId, code, joinUrl: 'https://facturamea.com/auth/membru' }, 201);
   } catch (err) {
     console.error('team add member failed:', err);
     return json({ error: 'Eroare la adăugarea membrului' }, 500);

@@ -34,6 +34,8 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [joinCode, setJoinCode] = useState<{ code: string; name: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -62,6 +64,8 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
         body: JSON.stringify({ name: name.trim(), email: email.trim(), role }),
       });
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        if (data.code) { setJoinCode({ code: data.code, name: name.trim() }); setCopied(false); }
         setName(''); setEmail(''); setRole('operator');
         await load();
       } else {
@@ -147,6 +151,22 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />} Adaugă membru
             </button>
           </form>
+
+          {joinCode && (
+            <div className="mt-5 p-4 rounded-2xl bg-[#0A2238] text-white">
+              <p className="text-[13px] font-semibold">Cod de acces pentru {joinCode.name || 'membru'}</p>
+              <p className="text-[12px] text-[#9FB8CC] mt-0.5">Trimite-i acest cod (WhatsApp, în persoană). Intră pe <span className="font-mono">facturamea.com/auth/membru</span>, îl introduce și își setează parola. Nu e nevoie de email.</p>
+              <div className="mt-3 flex items-center gap-2">
+                <code className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-[20px] font-mono tracking-[3px] font-bold text-[#E1FB15]">{joinCode.code}</code>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard?.writeText(joinCode.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}
+                  className="px-4 py-3 rounded-xl bg-[#E1FB15] text-[#0A2238] text-[13px] font-bold hover:bg-[#D2EA0E] transition-colors"
+                >{copied ? 'Copiat!' : 'Copiază'}</button>
+                <button type="button" onClick={() => setJoinCode(null)} className="px-3 py-3 rounded-xl bg-white/10 text-white text-[13px] hover:bg-white/20 transition-colors">Închide</button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
