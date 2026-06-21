@@ -2,7 +2,7 @@
 import PrintLayout from '../../../../layouts/PrintLayout.astro';
 import InvoiceDocument from '../../../../components/invoicing/InvoiceDocument.astro';
 import { db } from '../../../../db';
-import { transportInvoices, transportInvoiceLines, companies, invoiceModels, orders, freight } from '../../../../db/schema';
+import { transportInvoices, transportInvoiceLines, companies, invoiceModels } from '../../../../db/schema';
 import { eq, asc } from 'drizzle-orm';
 import QRCode from 'qrcode';
 
@@ -10,23 +10,15 @@ const user = Astro.locals.user!;
 const id = Astro.params.id!;
 
 const [invRow] = await db.select().from(transportInvoices).where(eq(transportInvoices.id, id)).limit(1);
-if (!invRow || invRow.companyId !== user.companyId) return Astro.redirect('/app/facturare');
+if (!invRow || invRow.companyId !== user.companyId) {
+  return new Response('Factură inexistentă', { status: 404 });
+}
 
 const lines = await db.select().from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, id)).orderBy(asc(transportInvoiceLines.position));
 const [issuer] = await db.select().from(companies).where(eq(companies.id, invRow.companyId)).limit(1);
 const [model] = invRow.modelId ? await db.select().from(invoiceModels).where(eq(invoiceModels.id, invRow.modelId)).limit(1) : [null];
 
-// Shipping details from the linked order (for the "date privind expediția" box).
-let shippingText: string | null = null;
-if (invRow.orderId) {
-  const [o] = await db.select().from(orders).where(eq(orders.id, invRow.orderId)).limit(1);
-  if (o) {
-    const [f] = o.freightId ? await db.select().from(freight).where(eq(freight.id, o.freightId)).limit(1) : [null];
-    const route = f ? `${f.loadingCityName ?? ''}${f.loadingCountry ? ', ' + f.loadingCountry : ''} → ${f.unloadingCityName ?? ''}${f.unloadingCountry ? ', ' + f.unloadingCountry : ''}` : '';
-    shippingText = [route, o.vehiclePlate ? `Auto: ${o.vehiclePlate}` : '', o.driverName ? `Șofer: ${o.driverName}` : ''].filter(Boolean).join(' · ') || null;
-  }
-}
-const inv = { ...invRow, shippingText };
+const inv = { ...invRow, shippingText: null as string | null };
 
 const kindLabel: Record<string, string> = { factura: 'Factură fiscală', proforma: 'Factură proformă', storno: 'Factură storno', chitanta: 'Chitanță' };
 
