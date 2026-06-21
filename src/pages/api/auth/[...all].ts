@@ -29,18 +29,15 @@ export const POST: APIRoute = async ({ request, url }) => {
       const body = await request.json();
       const { name, email, password, userType, phone, companyName, cui, country, city, companyPhone, referralCode, depot, gps } = body;
 
-      if (!name || !email || !password || !userType || !companyName) {
+      if (!name || !email || !password || !companyName) {
         return new Response(JSON.stringify({ error: 'Câmpuri obligatorii lipsă' }), {
           status: 400, headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      // Only two operational roles exist: carrier or business.
-      if (userType !== 'transportator' && userType !== 'intermediar') {
-        return new Response(JSON.stringify({ error: 'Tip cont invalid' }), {
-          status: 400, headers: { 'Content-Type': 'application/json' },
-        });
-      }
+      // Invoicing platform for everyone: every account is a business owner.
+      // userType is optional and defaults to 'intermediar' (full access).
+      const userTypeResolved = userType === 'transportator' ? 'transportator' : 'intermediar';
 
       if (password.length < 8) {
         return new Response(JSON.stringify({ error: 'Parola trebuie să aibă minim 8 caractere' }), {
@@ -72,7 +69,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         name: sanitizeHtml(name.trim()),
         email: email.trim().toLowerCase(),
         password,
-        userType,
+        userType: userTypeResolved,
         phone: phone?.trim(),
         companyName: sanitizeHtml(companyName.trim()),
         cui: cui?.trim(),
