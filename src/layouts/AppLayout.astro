@@ -428,6 +428,13 @@ const navMobile = navSections.filter((s) => s.mobile);
   <div data-app-shell class="min-h-screen bg-[#0A2238] text-[#EAF2F8] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <main class="flex-1 w-full">
       <div class="max-w-[1180px] mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28 lg:pb-10">
+        {user?.isAdmin && !isImpersonating && (
+          <a href="/admin" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#1A759F] rounded-2xl text-[15px] text-white hover:bg-[#1E6091] transition-colors">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#E1FB15]"></span>
+            <span><strong>Cont de administrator</strong></span>
+            <span class="ml-auto font-semibold text-[#E1FB15]">Deschide panoul admin →</span>
+          </a>
+        )}
         {isImpersonating && (
           <a href="/api/admin/stop-impersonate" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#E8A33C] rounded-2xl text-[15px] text-[#0A2238] hover:bg-[#D9912C] transition-colors">
             <span class="w-2.5 h-2.5 rounded-full bg-[#0A2238]"></span>
