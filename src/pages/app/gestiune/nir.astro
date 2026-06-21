@@ -1,0 +1,97 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ReceptionForm from '../../../components/gestiune/ReceptionForm';
+import { db } from '../../../db';
+import { receptions, suppliers } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select({
+      id: receptions.id,
+      nirNumber: receptions.nirNumber,
+      supplierInvoiceNumber: receptions.supplierInvoiceNumber,
+      supplierName: suppliers.name,
+      receptionDate: receptions.receptionDate,
+      totalCents: receptions.totalCents,
+      status: receptions.status,
+    })
+    .from(receptions)
+    .leftJoin(suppliers, eq(receptions.supplierId, suppliers.id))
+    .where(eq(receptions.companyId, companyId))
+    .orderBy(desc(receptions.createdAt))
+    .limit(100);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+
+const statusBadge: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  posted: { label: 'Înregistrată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+};
+---
+
+<AppLayout title="Recepții (NIR)" activeTab="stocuri">
+  <div class="mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Recepții (NIR)</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Notele de intrare recepție. La înregistrare, produsele intră automat pe stoc cu cost mediu ponderat.</p>
+  </div>
+
+  <h2 class="text-[18px] font-bold text-white mb-3">Recepții recente</h2>
+  {rows.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 text-center py-10 text-[13px] text-[#9FB8CC] mb-8">Nicio recepție înregistrată încă.</div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5 mb-8">
+        {rows.slice(0, 3).map((r) => {
+          const st = statusBadge[r.status] || statusBadge.draft;
+          return (
+            <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+              <div class="min-w-0 flex-1">
+                <p class="font-bold text-white truncate">
+                  <span class="font-mono">{r.nirNumber}</span>
+                  <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
+                </p>
+                <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{r.supplierName || '—'}{r.supplierInvoiceNumber ? ` · fact. ${r.supplierInvoiceNumber}` : ''} · {r.receptionDate || '—'}</p>
+              </div>
+              <p class="font-bold text-white tabular-nums shrink-0">{ron(r.totalCents)}</p>
+            </li>
+          );
+        })}
+      </ul>
+      {rows.length > 3 && (
+        <details class="mt-2.5 mb-8">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {rows.slice(3).map((r) => {
+              const st = statusBadge[r.status] || statusBadge.draft;
+              return (
+                <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <p class="font-bold text-white truncate">
+                      <span class="font-mono">{r.nirNumber}</span>
+                      <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
+                    </p>
+                    <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{r.supplierName || '—'}{r.supplierInvoiceNumber ? ` · fact. ${r.supplierInvoiceNumber}` : ''} · {r.receptionDate || '—'}</p>
+                  </div>
+                  <p class="font-bold text-white tabular-nums shrink-0">{ron(r.totalCents)}</p>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+
+  <h2 class="text-[18px] font-bold text-white mb-3">Recepție nouă</h2>
+  <ReceptionForm client:load />
+</AppLayout>

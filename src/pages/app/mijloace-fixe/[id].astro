@@ -1,0 +1,176 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { fixedAssets, depreciationEntries } from '../../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
+import { buildSchedule } from '../../../lib/depreciation';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+const id = Astro.params.id!;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let asset: any = null;
+let entries: any[] = [];
+try {
+  const [a] = await db.select().from(fixedAssets)
+    .where(and(eq(fixedAssets.id, id), eq(fixedAssets.companyId, companyId))).limit(1);
+  asset = a || null;
+  if (asset) {
+    entries = await db.select().from(depreciationEntries)
+      .where(eq(depreciationEntries.assetId, id))
+      .orderBy(desc(depreciationEntries.period));
+  }
+} catch (e) { /* DB not provisioned */ }
+
+if (!asset) return Astro.redirect('/app/mijloace-fixe');
+
+const METHOD_LABELS: Record<string, string> = {
+  liniara: 'Liniară', degresiva: 'Degresivă', accelerata: 'Accelerată',
+};
+
+const value = asset.valueCents || 0;
+const accumulated = asset.accumulatedCents || 0;
+const remaining = Math.max(0, value - accumulated);
+const disposed = asset.status === 'disposed';
+
+// Forward-looking schedule (full life) for the table.
+const schedule = buildSchedule({
+  valueCents: value,
+  usefulLifeMonths: asset.usefulLifeMonths,
+  method: asset.method,
+  accumulatedCents: 0,
+});
+---
+
+<AppLayout title={asset.name} activeTab="mijloace-fixe">
+
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">{asset.name}</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-2">
+        {asset.inventoryNumber ? `Nr. inventar ${asset.inventoryNumber} · ` : ''}{asset.category || 'Fără categorie'}
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class:list={['inline-block px-3 py-1.5 rounded-full text-[12px] font-semibold', disposed ? 'bg-white/10 text-[#9FB8CC]' : 'bg-[#2E9E6A]/15 text-[#2E9E6A]']}>
+        {disposed ? 'Casat' : 'Activ'}
+      </span>
+      {!disposed && (
+        <button id="dispose-btn" class="px-4 py-2.5 rounded-full bg-[#DC4B41]/15 text-[#DC4B41] font-semibold text-[14px] hover:bg-[#DC4B41]/25 transition-colors">Casează</button>
+      )}
+      {disposed && (
+        <button id="reactivate-btn" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Reactivează</button>
+      )}
+    </div>
+  </div>
+
+  <!-- Summary cards -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Valoare de intrare</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{ron(value)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Amortizat</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{ron(accumulated)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Rămas</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-2">{ron(remaining)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Metodă · Durată</p>
+      <p class="text-[20px] font-bold tracking-[-0.03em] text-white mt-2">{METHOD_LABELS[asset.method] || asset.method}</p>
+      <p class="text-[13px] text-[#7C9AB4] mt-0.5">{asset.usefulLifeMonths} luni{asset.acquisitionDate ? ` · achiziție ${asset.acquisitionDate}` : ''}</p>
+    </div>
+  </div>
+
+  <!-- Booked depreciation entries -->
+  <h2 class="text-[18px] font-bold text-white mb-3">Amortizări înregistrate</h2>
+  {entries.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 py-8 text-center text-[14px] text-[#9FB8CC] mb-8">Nicio amortizare înregistrată încă. Rulează amortizarea din pagina de mijloace fixe.</div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5 mb-8">
+        {entries.slice(0, 3).map((e) => (
+          <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+            <p class="font-bold text-white font-mono flex-1">{e.period}</p>
+            <p class="font-bold text-white tabular-nums shrink-0">{ron(e.amountCents)}</p>
+          </li>
+        ))}
+      </ul>
+      {entries.length > 3 && (
+        <details class="mt-2.5 mb-8">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({entries.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {entries.slice(3).map((e) => (
+              <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <p class="font-bold text-white font-mono flex-1">{e.period}</p>
+                <p class="font-bold text-white tabular-nums shrink-0">{ron(e.amountCents)}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+
+  <!-- Full planned schedule -->
+  <h2 class="text-[18px] font-bold text-white mb-3">Plan de amortizare</h2>
+  {schedule.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 py-8 text-center text-[14px] text-[#9FB8CC]">Plan indisponibil.</div>
+  ) : (
+    <div class="rounded-2xl p-5 bg-white/5">
+      <div class="overflow-x-auto max-h-[520px] overflow-y-auto">
+        <table class="w-full text-[14px]">
+          <thead class="sticky top-0 bg-[#0A2238]">
+            <tr class="text-left text-[11px] uppercase tracking-wide text-[#7C9AB4]">
+              <th class="px-3 py-3 font-semibold">Luna</th>
+              <th class="px-3 py-3 font-semibold text-right">Amortizare</th>
+              <th class="px-3 py-3 font-semibold text-right">Cumulat</th>
+              <th class="px-3 py-3 font-semibold text-right">Rămas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {schedule.map((r) => (
+              <tr class="hover:bg-white/5 transition-colors">
+                <td class="px-3 py-2.5 text-white tabular-nums">{r.index}</td>
+                <td class="px-3 py-2.5 text-right text-white tabular-nums">{ron(r.amountCents)}</td>
+                <td class="px-3 py-2.5 text-right text-[#9FB8CC] tabular-nums">{ron(r.accumulatedCents)}</td>
+                <td class="px-3 py-2.5 text-right text-[#9FB8CC] tabular-nums">{ron(r.remainingCents)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )}
+
+  <script is:inline define:vars={{ assetId: id }}>
+    (function () {
+      async function patch(payload, confirmMsg) {
+        if (confirmMsg && !confirm(confirmMsg)) return;
+        try {
+          const res = await fetch('/api/mijloace-fixe/' + assetId, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json().catch(function () { return {}; });
+          if (res.ok && data.ok) { window.location.reload(); }
+          else { alert(data.error || 'Eroare.'); }
+        } catch (e) { alert('Eroare de conexiune.'); }
+      }
+      document.getElementById('dispose-btn')?.addEventListener('click', function () {
+        patch({ dispose: true }, 'Sigur casezi acest mijloc fix? Nu va mai fi amortizat.');
+      });
+      document.getElementById('reactivate-btn')?.addEventListener('click', function () {
+        patch({ reactivate: true });
+      });
+    })();
+  </script>
+</AppLayout>

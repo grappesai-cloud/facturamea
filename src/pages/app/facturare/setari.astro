@@ -1,0 +1,46 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import SeriesManager from '../../../components/invoicing/SeriesManager';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+---
+
+<AppLayout title="Setări facturare" activeTab="facturare">
+  <div class="mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Setări facturare</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-1">Serii de documente, cote TVA, clienți, produse și designul facturii.</p>
+  </div>
+
+  <!-- Quick links to the dedicated nomenclatoare pages (Oblio-style) -->
+  <div class="max-w-4xl grid grid-cols-2 md:grid-cols-5 gap-3 mb-8">
+    <a href="/app/facturare/tva" class="rounded-2xl p-5 bg-white/5 hover:bg-white/10 transition-colors text-center">
+      <p class="text-[14px] font-bold text-white">Cote TVA</p>
+      <p class="text-[12px] text-[#7C9AB4] mt-1">Normală, scutită...</p>
+    </a>
+    <a href="/app/facturare/clienti" class="rounded-2xl p-5 bg-white/5 hover:bg-white/10 transition-colors text-center">
+      <p class="text-[14px] font-bold text-white">Clienți</p>
+      <p class="text-[12px] text-[#7C9AB4] mt-1">Clienți externi</p>
+    </a>
+    <a href="/app/facturare/produse" class="rounded-2xl p-5 bg-white/5 hover:bg-white/10 transition-colors text-center">
+      <p class="text-[14px] font-bold text-white">Produse</p>
+      <p class="text-[12px] text-[#7C9AB4] mt-1">Catalog servicii</p>
+    </a>
+    <a href="/app/facturare/model" class="rounded-2xl p-5 bg-[#E1FB15]/10 ring-1 ring-[#E1FB15]/30 hover:bg-[#E1FB15]/15 transition-colors text-center">
+      <p class="text-[14px] font-bold text-white">Design factură</p>
+      <p class="text-[12px] text-[#7C9AB4] mt-1">Șablon, logo, culoare…</p>
+    </a>
+    <a href="/app/facturare/limbi" class="rounded-2xl p-5 bg-white/5 hover:bg-white/10 transition-colors text-center">
+      <p class="text-[14px] font-bold text-white">Limbi</p>
+      <p class="text-[12px] text-[#7C9AB4] mt-1">RO · EN</p>
+    </a>
+  </div>
+
+  <div class="max-w-4xl space-y-8">
+    <section>
+      <h2 class="text-[18px] font-bold text-white mb-3">Serii de documente</h2>
+      <p class="text-[13px] text-[#9FB8CC] mb-4">Câte o serie pe tip (factură / proformă / storno / chitanță). Poți avea mai multe — una pentru comenzi TH și una pentru clienți externi.</p>
+      <SeriesManager client:load />
+    </section>
+  </div>
+</AppLayout>

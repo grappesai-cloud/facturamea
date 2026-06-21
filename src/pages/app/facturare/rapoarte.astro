@@ -1,0 +1,589 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { transportInvoices, transportInvoicePayments, invoiceSeries } from '../../../db/schema';
+import { and, eq, sql, desc, gte, lte, lt, ilike } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/facturare');
+const cid = user.companyId;
+
+const tab = (Astro.url.searchParams.get('tab') as ('facturi' | 'proforma' | 'incasari' | 'spv')) || 'facturi';
+const q = Astro.url.searchParams.get('q')?.trim() || '';
+const clientFilter = Astro.url.searchParams.get('client')?.trim() || '';
+const seriesId = Astro.url.searchParams.get('series') || '';
+const statusFilter = Astro.url.searchParams.get('status') || 'toate';
+
+// Oblio-style status filter (the dropdown over "ce fel de facturi").
+const STATUS_OPTIONS = [
+  { id: 'toate', label: 'Toate facturile' },
+  { id: 'nefinalizata', label: 'Nefinalizată' },
+  { id: 'anulata', label: 'Anulată' },
+  { id: 'termen_depasit', label: 'Termen depășit' },
+  { id: 'incasata', label: 'Încasată' },
+  { id: 'incasata_partial', label: 'Încasată parțial' },
+  { id: 'neincasata', label: 'Neîncasată' },
+  { id: 'storno', label: 'Storno' },
+  { id: 'netrimise', label: 'Facturi netrimise' },
+  { id: 'cu_erori', label: 'Facturi cu erori' },
+];
+
+// Date range. Default view = last 30 days (like Oblio/BursaTransport); presets
+// for month/year/all, plus a custom interval. `from`/`to` without an explicit
+// range = custom.
+const rawFrom = Astro.url.searchParams.get('from') || '';
+const rawTo = Astro.url.searchParams.get('to') || '';
+const range = Astro.url.searchParams.get('range') || ((rawFrom || rawTo) ? 'custom' : '30d');
+const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+let fromIso = rawFrom;
+let toIso = rawTo;
+if (range !== 'custom') {
+  const now = new Date();
+  toIso = isoDate(now);
+  if (range === 'month') {
+    fromIso = isoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  } else if (range === 'year') {
+    fromIso = isoDate(new Date(now.getFullYear(), 0, 1));
+  } else if (range === 'all') {
+    fromIso = ''; toIso = '';
+  } else { // '30d' (and any unknown value)
+    const d = new Date(now); d.setDate(d.getDate() - 30);
+    fromIso = isoDate(d);
+  }
+}
+
+const PRESETS = [
+  { id: '30d', label: 'Ultimele 30 zile' },
+  { id: 'month', label: 'Luna aceasta' },
+  { id: 'year', label: 'Anul acesta' },
+  { id: 'all', label: 'Tot' },
+];
+const presetHref = (r: string) =>
+  `/app/facturare/rapoarte?tab=${tab}&range=${r}&q=${encodeURIComponent(q)}&client=${encodeURIComponent(clientFilter)}&series=${seriesId}&status=${statusFilter}`;
+
+const seriesAll = await db.select().from(invoiceSeries).where(eq(invoiceSeries.companyId, cid));
+
+async function safe<T>(p: Promise<T>, fb: T): Promise<T> { try { return await p; } catch { return fb; } }
+
+const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const statusTone: Record<string, string> = {
+  draft: 'bg-white/10 text-[#9FB8CC]',
+  issued: 'bg-[#E8A33C]/15 text-[#E8A33C]',
+  sent: 'bg-[#34A0A4]/15 text-[#34A0A4]',
+  paid: 'bg-[#2E9E6A]/15 text-[#2E9E6A]',
+  partial: 'bg-[#E8A33C]/15 text-[#E8A33C]',
+  voided: 'bg-white/10 text-[#7C9AB4]',
+};
+
+type TabId = 'facturi' | 'proforma' | 'incasari' | 'spv';
+
+// All four report tabs are queried up front so switching between them is instant
+// client-side — no extra page loads / server round-trips per tab.
+async function queryTab(t: TabId): Promise<{ rows: any[]; totals: { count: number; sum: number; paid: number } }> {
+  let rows: any[] = [];
+  const totals = { count: 0, sum: 0, paid: 0 };
+  if (t === 'facturi' || t === 'proforma') {
+    const conds: any[] = [eq(transportInvoices.companyId, cid)];
+    const kindForTab = (t === 'facturi' && statusFilter === 'storno') ? 'storno' : (t === 'proforma' ? 'proforma' : 'factura');
+    conds.push(eq(transportInvoices.kind, kindForTab));
+    if (q) conds.push(ilike(transportInvoices.fullNumber, `%${q}%`));
+    if (clientFilter) conds.push(ilike(transportInvoices.clientNameSnap, `%${clientFilter}%`));
+    if (seriesId) conds.push(eq(transportInvoices.seriesId, seriesId));
+    if (fromIso) conds.push(gte(transportInvoices.issuedAt, new Date(fromIso)));
+    if (toIso) conds.push(lte(transportInvoices.issuedAt, new Date(toIso + 'T23:59:59')));
+    const nowDate = new Date();
+    switch (statusFilter) {
+      case 'nefinalizata': conds.push(eq(transportInvoices.status, 'draft')); break;
+      case 'anulata': conds.push(eq(transportInvoices.status, 'voided')); break;
+      case 'termen_depasit':
+        conds.push(sql`${transportInvoices.status} IN ('issued','sent','partial')`);
+        conds.push(lt(transportInvoices.dueAt, nowDate));
+        break;
+      case 'incasata': conds.push(eq(transportInvoices.status, 'paid')); break;
+      case 'incasata_partial': conds.push(eq(transportInvoices.status, 'partial')); break;
+      case 'neincasata': conds.push(sql`${transportInvoices.status} IN ('issued','sent')`); break;
+      case 'netrimise': conds.push(sql`${transportInvoices.efacturaStatus} IS NULL`); break;
+      case 'cu_erori': conds.push(sql`(${transportInvoices.efacturaStatus} = 'rejected' OR ${transportInvoices.efacturaError} IS NOT NULL)`); break;
+    }
+    rows = await safe(db.select().from(transportInvoices).where(and(...conds)).orderBy(desc(transportInvoices.issuedAt)).limit(500), [] as any[]);
+    totals.count = rows.length;
+    totals.sum = rows.reduce((a, r) => a + (r.totalCents || 0), 0);
+    totals.paid = rows.reduce((a, r) => a + (r.paidCents || 0), 0);
+  } else if (t === 'incasari') {
+    // 1) Recorded payment events (from "Înregistrează încasare").
+    const conds: any[] = [];
+    if (fromIso) conds.push(gte(transportInvoicePayments.receivedAt, new Date(fromIso)));
+    if (toIso) conds.push(lte(transportInvoicePayments.receivedAt, new Date(toIso + 'T23:59:59')));
+    const payments = await safe(db.select({
+      id: transportInvoicePayments.id,
+      invoiceId: transportInvoicePayments.invoiceId,
+      amountCents: transportInvoicePayments.amountCents,
+      currency: transportInvoicePayments.currency,
+      method: transportInvoicePayments.method,
+      reference: transportInvoicePayments.reference,
+      receivedAt: transportInvoicePayments.receivedAt,
+      fullNumber: transportInvoices.fullNumber,
+      clientName: transportInvoices.clientNameSnap,
+    })
+      .from(transportInvoicePayments)
+      .innerJoin(transportInvoices, eq(transportInvoices.id, transportInvoicePayments.invoiceId))
+      .where(and(eq(transportInvoices.companyId, cid), ...conds))
+      .orderBy(desc(transportInvoicePayments.receivedAt))
+      .limit(500), [] as any[]);
+
+    // 2) Invoices marked paid WITHOUT a payment row (bank reconciliation, import,
+    //    seed). Their paidCents shows in the dashboard, so surface them here too
+    //    to keep the încasări tab consistent with the dashboard venituri.
+    const withPayments = await safe(db.selectDistinct({ invoiceId: transportInvoicePayments.invoiceId })
+      .from(transportInvoicePayments)
+      .innerJoin(transportInvoices, eq(transportInvoices.id, transportInvoicePayments.invoiceId))
+      .where(eq(transportInvoices.companyId, cid)), [] as any[]);
+    const hasPaymentRow = new Set(withPayments.map((r: any) => r.invoiceId));
+
+    const iConds: any[] = [eq(transportInvoices.companyId, cid), eq(transportInvoices.kind, 'factura'), sql`${transportInvoices.paidCents} > 0`];
+    if (fromIso) iConds.push(sql`COALESCE(${transportInvoices.paidAt}, ${transportInvoices.issuedAt}) >= ${new Date(fromIso)}`);
+    if (toIso) iConds.push(sql`COALESCE(${transportInvoices.paidAt}, ${transportInvoices.issuedAt}) <= ${new Date(toIso + 'T23:59:59')}`);
+    const paidInvs = await safe(db.select({
+      id: transportInvoices.id,
+      paidCents: transportInvoices.paidCents,
+      currency: transportInvoices.currency,
+      paidAt: transportInvoices.paidAt,
+      issuedAt: transportInvoices.issuedAt,
+      fullNumber: transportInvoices.fullNumber,
+      clientName: transportInvoices.clientNameSnap,
+    })
+      .from(transportInvoices)
+      .where(and(...iConds))
+      .orderBy(desc(transportInvoices.issuedAt))
+      .limit(500), [] as any[]);
+
+    const synthetic = paidInvs
+      .filter((inv: any) => !hasPaymentRow.has(inv.id))
+      .map((inv: any) => ({
+        id: `inv-${inv.id}`,
+        invoiceId: inv.id,
+        amountCents: inv.paidCents,
+        currency: inv.currency,
+        method: null,
+        reference: null,
+        receivedAt: inv.paidAt || inv.issuedAt,
+        fullNumber: inv.fullNumber,
+        clientName: inv.clientName,
+      }));
+
+    rows = [...payments, ...synthetic].sort(
+      (a: any, b: any) => new Date(b.receivedAt || 0).getTime() - new Date(a.receivedAt || 0).getTime(),
+    );
+    totals.count = rows.length;
+    totals.sum = rows.reduce((a, r) => a + (r.amountCents || 0), 0);
+  } else {
+    rows = await safe(db.select().from(transportInvoices).where(and(
+      eq(transportInvoices.companyId, cid),
+      sql`${transportInvoices.efacturaStatus} IS NOT NULL`,
+    )).orderBy(desc(transportInvoices.efacturaSubmittedAt)).limit(500), [] as any[]);
+    totals.count = rows.length;
+  }
+  return { rows, totals };
+}
+
+const panels: Record<TabId, { rows: any[]; totals: { count: number; sum: number; paid: number } }> = {
+  facturi: await queryTab('facturi'),
+  proforma: await queryTab('proforma'),
+  incasari: await queryTab('incasari'),
+  spv: await queryTab('spv'),
+};
+
+// ── Quick-read summary across all issued facturi in the selected period ──
+const sumConds: any[] = [eq(transportInvoices.companyId, cid), eq(transportInvoices.kind, 'factura')];
+if (fromIso) sumConds.push(gte(transportInvoices.issuedAt, new Date(fromIso)));
+if (toIso) sumConds.push(lte(transportInvoices.issuedAt, new Date(toIso + 'T23:59:59')));
+const sumRows = cid ? await safe(db.select({
+  totalCents: transportInvoices.totalCents,
+  paidCents: transportInvoices.paidCents,
+  vatCents: transportInvoices.vatCents,
+  subtotalCents: transportInvoices.subtotalCents,
+  status: transportInvoices.status,
+  dueAt: transportInvoices.dueAt,
+  clientName: transportInvoices.clientNameSnap,
+}).from(transportInvoices).where(and(...sumConds)).limit(2000), [] as any[]) : [];
+
+const nowS = new Date();
+const summary = { facturat: 0, incasat: 0, tva: 0, baza: 0, restante: 0, restanteCount: 0, count: sumRows.length, paidCount: 0 };
+const clientMap = new Map<string, number>();
+for (const r of sumRows) {
+  summary.facturat += r.totalCents || 0;
+  summary.incasat += r.paidCents || 0;
+  summary.tva += r.vatCents || 0;
+  summary.baza += r.subtotalCents || 0;
+  if (r.status === 'paid') summary.paidCount++;
+  const outstanding = (r.totalCents || 0) - (r.paidCents || 0);
+  const overdue = ['issued', 'sent', 'partial'].includes(r.status) && r.dueAt && new Date(r.dueAt) < nowS;
+  if (overdue && outstanding > 0) { summary.restante += outstanding; summary.restanteCount++; }
+  const ck = r.clientName || '—';
+  clientMap.set(ck, (clientMap.get(ck) || 0) + (r.totalCents || 0));
+}
+const deIncasat = Math.max(0, summary.facturat - summary.incasat);
+const collectRatePct = summary.facturat > 0 ? Math.round((summary.incasat / summary.facturat) * 100) : 0;
+const topClients = [...clientMap.entries()].map(([name, total]) => ({ name, total })).sort((a, b) => b.total - a.total).slice(0, 5);
+const maxClient = Math.max(1, ...topClients.map((c) => c.total));
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'facturi', label: 'Facturi' },
+  { id: 'proforma', label: 'Proforme' },
+  { id: 'incasari', label: 'Încasări' },
+  { id: 'spv', label: 'SPV' },
+];
+---
+
+<AppLayout title="Rapoarte facturare" activeTab="facturare">
+  <div class="mb-6">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Rapoarte</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-1">Sumar rapid pe perioada selectată — vânzări, încasări, TVA și restanțe dintr-o privire.</p>
+  </div>
+
+  <!-- ── Quick-read summary ── -->
+  <section class="mb-8">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Vânzări (facturat)</p>
+        <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(summary.facturat)} <span class="text-[13px] sm:text-[15px] text-[#7C9AB4] font-semibold">RON</span></p>
+        <p class="text-[12px] text-[#7C9AB4] mt-1">{summary.count} facturi · {summary.paidCount} plătite</p>
+      </div>
+      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Încasat</p>
+        <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#2E9E6A] mt-1.5 whitespace-nowrap">{fmt(summary.incasat)} <span class="text-[13px] sm:text-[15px] text-[#2E9E6A]/70 font-semibold">RON</span></p>
+        <p class="text-[12px] text-[#7C9AB4] mt-1">Rată încasare {collectRatePct}%</p>
+      </div>
+      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">De încasat</p>
+        <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-1.5 whitespace-nowrap">{fmt(deIncasat)} <span class="text-[13px] sm:text-[15px] text-[#E8A33C]/70 font-semibold">RON</span></p>
+        <p class="text-[12px] text-[#E8A33C]/80 mt-1">{summary.restanteCount} restante · {fmt(summary.restante)}</p>
+      </div>
+      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">TVA colectată</p>
+        <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E1FB15] mt-1.5 whitespace-nowrap">{fmt(summary.tva)} <span class="text-[13px] sm:text-[15px] text-[#E1FB15]/70 font-semibold">RON</span></p>
+        <p class="text-[12px] text-[#7C9AB4] mt-1">Bază impozabilă {fmt(summary.baza)}</p>
+      </div>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-3 mt-3">
+      <!-- Top clients -->
+      <div class="rounded-2xl p-5 bg-white/5">
+        <h3 class="text-[15px] font-bold text-white mb-3">Top clienți · facturat</h3>
+        {topClients.length === 0 ? (
+          <p class="text-[13px] text-[#9FB8CC]">Niciun client în perioada selectată.</p>
+        ) : (
+          <div class="space-y-2.5">
+            {topClients.map((c) => (
+              <div class="flex items-center gap-3 text-[13px]">
+                <span class="w-32 sm:w-40 shrink-0 text-white truncate">{c.name}</span>
+                <div class="flex-1 h-5 bg-white/5 rounded-lg overflow-hidden">
+                  <div class="h-full rounded-lg bg-[#34A0A4]" style={`width:${Math.max((c.total / maxClient) * 100, 3)}%`}></div>
+                </div>
+                <span class="shrink-0 w-24 text-right text-white font-semibold tabular-nums">{fmt(c.total)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <!-- More report types -->
+      <div class="rounded-2xl p-5 bg-white/5">
+        <h3 class="text-[15px] font-bold text-white mb-3">Mai multe rapoarte</h3>
+        <div class="grid sm:grid-cols-2 gap-2.5">
+          <a href="/app/rapoarte/analitice" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+            <span class="text-[13.5px] font-semibold text-white">Analiză detaliată</span>
+            <span class="text-[#9FB8CC] text-[12px]">grafice, top produse →</span>
+          </a>
+          <a href="/app/rapoarte/declaratii" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+            <span class="text-[13.5px] font-semibold text-white">Declarații fiscale</span>
+            <span class="text-[#9FB8CC] text-[12px]">D300/D390/D394, SAF-T →</span>
+          </a>
+          <a href="/app/cheltuieli" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+            <span class="text-[13.5px] font-semibold text-white">Cheltuieli</span>
+            <span class="text-[#9FB8CC] text-[12px]">costuri, furnizori →</span>
+          </a>
+          <a href="/app/banca" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+            <span class="text-[13.5px] font-semibold text-white">Bancă & împăcare</span>
+            <span class="text-[#9FB8CC] text-[12px]">extrase, încasări →</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tabs (switch instantly client-side) -->
+  <div class="flex gap-2 mb-6 border-b border-white/10">
+    {TABS.map((t) => (
+      <button type="button" data-tab={t.id}
+        class:list={['report-tab px-4 py-2.5 text-[14px] font-medium transition-colors border-b-2 -mb-px',
+          tab === t.id ? 'text-white border-[#E1FB15]' : 'text-[#9FB8CC] hover:text-white border-transparent']}>
+        {t.label}
+      </button>
+    ))}
+  </div>
+
+  <!-- KPI cards — first, per tab (toggled with the tabs) -->
+  {TABS.map(({ id }) => {
+    const { totals } = panels[id];
+    const rest = Math.max(0, totals.sum - totals.paid);
+    const isDoc = id === 'facturi' || id === 'proforma';
+    const collectRate = totals.sum > 0 ? Math.round((totals.paid / totals.sum) * 100) : 0;
+    const avgPayment = totals.count > 0 ? Math.round(totals.sum / totals.count) : 0;
+    return (
+      <div data-kpis={id} class:list={['grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6', id === tab ? '' : 'hidden']}>
+        {id !== 'spv' && (
+          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">{id === 'incasari' ? 'Total încasat' : 'Total facturat'}</p>
+            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(totals.sum)} <span class="text-[13px] sm:text-[15px] text-[#7C9AB4] font-semibold">RON</span></p>
+          </div>
+        )}
+        {isDoc && (
+          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Încasat</p>
+            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#2E9E6A] mt-1.5 whitespace-nowrap">{fmt(totals.paid)} <span class="text-[13px] sm:text-[15px] text-[#2E9E6A]/70 font-semibold">RON</span></p>
+          </div>
+        )}
+        {isDoc && (
+          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">De încasat</p>
+            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-1.5 whitespace-nowrap">{fmt(rest)} <span class="text-[13px] sm:text-[15px] text-[#E8A33C]/70 font-semibold">RON</span></p>
+          </div>
+        )}
+        {isDoc ? (
+          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Rată încasare</p>
+            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E1FB15] mt-1.5">{collectRate}<span class="text-[15px] text-[#E1FB15]/70">%</span></p>
+          </div>
+        ) : id === 'incasari' ? (
+          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Medie / încasare</p>
+            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(avgPayment)} <span class="text-[13px] sm:text-[15px] text-[#7C9AB4] font-semibold">RON</span></p>
+          </div>
+        ) : (
+          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Documente trimise</p>
+            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5">{totals.count}</p>
+          </div>
+        )}
+      </div>
+    );
+  })}
+
+  <!-- Filters toggle (collapsed by default, below the KPIs) -->
+  <div class="mb-4">
+    <button type="button" id="toggle-filters" aria-expanded="false" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 text-white text-[13.5px] font-semibold hover:bg-white/15 transition-colors">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M6 12h12M10 18h4"/></svg>
+      Filtre avansate
+      <svg class="w-4 h-4 transition-transform" data-chev fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+    </button>
+  </div>
+
+  <!-- Collapsible: date presets (30 zile / 3 luni …) + advanced form -->
+  <div id="rap-filters" class="hidden">
+    <!-- Quick date presets -->
+    <div class="flex flex-wrap gap-2 mb-3">
+      {PRESETS.map((p) => (
+        <a href={presetHref(p.id)} data-preset
+           class:list={['px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors',
+             range === p.id
+               ? 'bg-[#E1FB15] text-[#0A2238]'
+               : 'bg-white/5 text-[#9FB8CC] hover:bg-white/10']}>
+          {p.label}
+        </a>
+      ))}
+      {range === 'custom' && (
+        <span class="px-4 py-1.5 rounded-full text-[13px] font-semibold bg-[#E1FB15] text-[#0A2238]">Interval custom</span>
+      )}
+    </div>
+
+    <!-- Advanced form -->
+    <form method="GET" class="mb-4 grid grid-cols-1 md:grid-cols-6 gap-2 items-end">
+    <input type="hidden" name="tab" value={tab} />
+    <input type="hidden" name="range" value="custom" />
+    <div data-doc-filters class:list={[(tab === 'facturi' || tab === 'proforma') ? 'contents' : 'hidden']}>
+      <div>
+        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Caută serie/număr</label>
+        <input name="q" value={q} placeholder="ex: TH 0012" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+      </div>
+      <div>
+        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Client</label>
+        <input name="client" value={clientFilter} placeholder="nume client" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+      </div>
+      <div>
+        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Serie</label>
+        <select name="series" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none">
+          <option value="">Toate</option>
+          {seriesAll.filter((s) => s.kind === 'factura' || s.kind === 'proforma').map((s) => (
+            <option value={s.id} selected={seriesId === s.id}>{s.prefix} — {s.name}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Ce fel de facturi</label>
+        <select name="status" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none">
+          {STATUS_OPTIONS.map((o) => (
+            <option value={o.id} selected={statusFilter === o.id}>{o.label}</option>
+          ))}
+        </select>
+      </div>
+    </div>
+    <div>
+      <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">De la</label>
+      <input type="date" name="from" value={fromIso} class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none" />
+    </div>
+    <div>
+      <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Până la</label>
+      <input type="date" name="to" value={toIso} class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none" />
+    </div>
+    <div class="flex gap-2 flex-wrap">
+      <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Filtrează</button>
+      <a id="export-link" href={`/api/invoicing/reports/export?tab=${tab}&q=${encodeURIComponent(q)}&client=${encodeURIComponent(clientFilter)}&series=${seriesId}&status=${statusFilter}&from=${fromIso}&to=${toIso}`}
+         class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">⭳ Export CSV</a>
+    </div>
+    </form>
+  </div>
+
+  <!-- One panel per tab — all rendered, only the active one shown (instant switch) -->
+  {TABS.map(({ id }) => {
+    const { rows } = panels[id];
+    return (
+      <div data-panel={id} class:list={[id === tab ? '' : 'hidden']}>
+        <!-- Results — top 3 + "Vezi toate" expander -->
+        {rows.length === 0 ? (
+          <div class="rounded-2xl bg-white/5 text-center py-10 text-[13px] text-[#9FB8CC]">Niciun rezultat.</div>
+        ) : (
+          <Fragment>
+          <div class="space-y-2.5">
+            {(id === 'facturi' || id === 'proforma') && rows.slice(0, 3).map((r) => (
+              <a href={`/app/facturare/${r.id}`} class="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2">
+                    <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusTone[r.status] ?? 'bg-white/10 text-[#9FB8CC]'}`}>{r.status}</span>
+                    <span class="font-mono text-[12px] text-[#7C9AB4] truncate">{r.fullNumber}</span>
+                  </div>
+                  <p class="text-[15px] text-white font-semibold truncate mt-1.5">{r.clientNameSnap}</p>
+                  <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO') : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO') : '—'}</p>
+                </div>
+                <div class="text-right shrink-0">
+                  <p class="text-[15px] font-bold tabular-nums text-white">{fmt(r.totalCents)} {r.currency}</p>
+                  <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Plătit {fmt(r.paidCents)}</p>
+                </div>
+                <div class="shrink-0 flex flex-col items-end gap-1.5">
+                  {!['paid', 'voided', 'draft'].includes(r.status) && (
+                    <span class="px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold whitespace-nowrap">Încasează</span>
+                  )}
+                  <span class="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#9FB8CC] group-hover:text-white transition-colors whitespace-nowrap">Detalii<svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></span>
+                </div>
+              </a>
+            ))}
+            {id === 'incasari' && rows.slice(0, 3).map((r) => (
+              <a href={`/app/facturare/${r.invoiceId}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[15px] text-white font-semibold truncate">{r.clientName}</p>
+                  <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO')}{r.method ? ` · ${r.method}` : ''}</p>
+                </div>
+                <p class="text-[15px] font-bold tabular-nums text-white shrink-0">{fmt(r.amountCents)} {r.currency}</p>
+              </a>
+            ))}
+            {id === 'spv' && rows.slice(0, 3).map((r) => (
+              <a href={`/app/facturare/${r.id}`} class="block p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-mono text-[13px] text-white truncate">{r.fullNumber}</span>
+                  <span class="text-[12px] text-[#9FB8CC] shrink-0">{r.efacturaStatus}</span>
+                </div>
+                <p class="text-[12px] text-[#7C9AB4] mt-1 truncate">SPV {r.efacturaAnafId ?? '—'} · {r.efacturaSubmittedAt ? new Date(r.efacturaSubmittedAt).toLocaleString('ro-RO') : '—'}</p>
+                {r.efacturaError && <p class="text-[12px] text-[#DC4B41] mt-1">{r.efacturaError}</p>}
+              </a>
+            ))}
+          </div>
+          {rows.length > 3 && (
+            <details class="mt-2.5">
+              <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+              <div class="space-y-2.5 mt-2.5">
+                {(id === 'facturi' || id === 'proforma') && rows.slice(3).map((r) => (
+                  <a href={`/app/facturare/${r.id}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2">
+                        <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusTone[r.status] ?? 'bg-white/10 text-[#9FB8CC]'}`}>{r.status}</span>
+                        <span class="font-mono text-[12px] text-[#7C9AB4] truncate">{r.fullNumber}</span>
+                      </div>
+                      <p class="text-[15px] text-white font-semibold truncate mt-1.5">{r.clientNameSnap}</p>
+                      <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO') : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO') : '—'}</p>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <p class="text-[15px] font-bold tabular-nums text-white">{fmt(r.totalCents)} {r.currency}</p>
+                      <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Plătit {fmt(r.paidCents)}</p>
+                    </div>
+                  </a>
+                ))}
+                {id === 'incasari' && rows.slice(3).map((r) => (
+                  <a href={`/app/facturare/${r.invoiceId}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                    <div class="min-w-0 flex-1">
+                      <p class="text-[15px] text-white font-semibold truncate">{r.clientName}</p>
+                      <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO')}{r.method ? ` · ${r.method}` : ''}</p>
+                    </div>
+                    <p class="text-[15px] font-bold tabular-nums text-white shrink-0">{fmt(r.amountCents)} {r.currency}</p>
+                  </a>
+                ))}
+                {id === 'spv' && rows.slice(3).map((r) => (
+                  <a href={`/app/facturare/${r.id}`} class="block p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-mono text-[13px] text-white truncate">{r.fullNumber}</span>
+                      <span class="text-[12px] text-[#9FB8CC] shrink-0">{r.efacturaStatus}</span>
+                    </div>
+                    <p class="text-[12px] text-[#7C9AB4] mt-1 truncate">SPV {r.efacturaAnafId ?? '—'} · {r.efacturaSubmittedAt ? new Date(r.efacturaSubmittedAt).toLocaleString('ro-RO') : '—'}</p>
+                    {r.efacturaError && <p class="text-[12px] text-[#DC4B41] mt-1">{r.efacturaError}</p>}
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
+          </Fragment>
+        )}
+      </div>
+    );
+  })}
+
+  <script>
+    function setReportTab(id: string) {
+      document.querySelectorAll('[data-panel]').forEach((p) => p.classList.toggle('hidden', p.getAttribute('data-panel') !== id));
+      document.querySelectorAll('[data-kpis]').forEach((p) => p.classList.toggle('hidden', p.getAttribute('data-kpis') !== id));
+      document.querySelectorAll('.report-tab').forEach((b) => {
+        const active = b.getAttribute('data-tab') === id;
+        b.classList.toggle('text-white', active);
+        b.classList.toggle('border-[#E1FB15]', active);
+        b.classList.toggle('text-[#9FB8CC]', !active);
+        b.classList.toggle('border-transparent', !active);
+      });
+      const docOnly = id === 'facturi' || id === 'proforma';
+      document.querySelectorAll('[data-doc-filters]').forEach((el) => {
+        el.classList.toggle('hidden', !docOnly);
+        el.classList.toggle('contents', docOnly);
+      });
+      const ti = document.querySelector('input[name="tab"]') as HTMLInputElement | null;
+      if (ti) ti.value = id;
+      // Keep export + preset links pointed at the active tab.
+      const setTabParam = (el: Element) => {
+        const a = el as HTMLAnchorElement;
+        try { const u = new URL(a.href, location.origin); u.searchParams.set('tab', id); a.setAttribute('href', u.pathname + u.search); } catch {}
+      };
+      const ex = document.getElementById('export-link'); if (ex) setTabParam(ex);
+      document.querySelectorAll('[data-preset]').forEach(setTabParam);
+      const url = new URL(location.href); url.searchParams.set('tab', id); history.replaceState({}, '', url);
+    }
+    document.querySelectorAll('.report-tab').forEach((b) =>
+      b.addEventListener('click', () => setReportTab(b.getAttribute('data-tab') || 'facturi')));
+
+    // Advanced-filters dropdown (collapsed by default)
+    const fBtn = document.getElementById('toggle-filters');
+    const fForm = document.getElementById('rap-filters');
+    fBtn?.addEventListener('click', () => {
+      const show = fForm?.classList.contains('hidden');
+      fForm?.classList.toggle('hidden');
+      fBtn.setAttribute('aria-expanded', String(show));
+      fBtn.querySelector('[data-chev]')?.classList.toggle('rotate-180', show);
+      fBtn.classList.toggle('bg-white/15', show);
+    });
+  </script>
+</AppLayout>

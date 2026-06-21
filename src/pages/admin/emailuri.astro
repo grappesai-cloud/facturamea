@@ -1,0 +1,109 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import EmailComposer from '../../components/admin/EmailComposer';
+import { db } from '../../db';
+import { emailCampaigns, users } from '../../db/schema';
+import { desc, eq } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+
+async function safe<T>(p: Promise<T>, fb: T): Promise<T> {
+  try { return await p; } catch { return fb; }
+}
+
+const campaigns = await safe(
+  db
+    .select({
+      id: emailCampaigns.id,
+      subject: emailCampaigns.subject,
+      audience: emailCampaigns.audience,
+      status: emailCampaigns.status,
+      totalRecipients: emailCampaigns.totalRecipients,
+      sentCount: emailCampaigns.sentCount,
+      failedCount: emailCampaigns.failedCount,
+      createdAt: emailCampaigns.createdAt,
+      sentAt: emailCampaigns.sentAt,
+      createdByName: users.name,
+    })
+    .from(emailCampaigns)
+    .leftJoin(users, eq(emailCampaigns.createdByAdminId, users.id))
+    .orderBy(desc(emailCampaigns.createdAt))
+    .limit(30),
+  [] as any[],
+);
+
+const audienceLabels: Record<string, string> = {
+  all: 'Toți',
+  trial: 'Trial',
+  lifetime: 'Lifetime',
+  custom: 'Listă custom',
+};
+
+const statusMeta: Record<string, { label: string; cls: string }> = {
+  draft: { label: 'Schiță', cls: 'bg-[#F0F0EC] text-[#6B6B68]' },
+  sending: { label: 'Se trimite', cls: 'bg-[#1A759F]/10 text-[#1A759F]' },
+  sent: { label: 'Trimis', cls: 'bg-[#15803D]/10 text-[#15803D]' },
+  failed: { label: 'Eșuat', cls: 'bg-[#B91C1C]/10 text-[#B91C1C]' },
+};
+
+const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
+---
+
+<AdminLayout title="Emailuri" activeTab="emailuri">
+  <div class="mb-6">
+    <h2 class="text-[22px] font-bold tracking-[-0.02em]">Campanii email</h2>
+    <p class="text-[13px] text-[#6B6B68] mt-1">
+      Compune un email HTML branded, alege audiența, previzualizează, trimite un test și apoi campania prin Resend.
+    </p>
+  </div>
+
+  <EmailComposer client:load adminEmail={user.email} />
+
+  <div class="mt-8 bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-[#E8E8E4]">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Istoric campanii</p>
+    </div>
+    {campaigns.length === 0 ? (
+      <div class="px-5 py-10 text-center text-[12px] text-[#6B6B68]">Nicio campanie încă.</div>
+    ) : (
+      <div class="overflow-x-auto">
+        <table class="w-full text-[13px]">
+          <thead>
+            <tr class="text-left text-[11px] uppercase tracking-[0.12em] text-[#A8A8A4] border-b border-[#E8E8E4]">
+              <th class="px-5 py-3 font-medium">Subiect</th>
+              <th class="px-5 py-3 font-medium">Audiență</th>
+              <th class="px-5 py-3 font-medium">Status</th>
+              <th class="px-5 py-3 font-medium">Trimise / Eșuate</th>
+              <th class="px-5 py-3 font-medium">Creat</th>
+              <th class="px-5 py-3 font-medium">Trimis</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-[#E8E8E4]">
+            {campaigns.map((c: any) => {
+              const sm = statusMeta[c.status] ?? { label: c.status, cls: 'bg-[#F0F0EC] text-[#6B6B68]' };
+              return (
+                <tr>
+                  <td class="px-5 py-3 max-w-[280px]">
+                    <span class="font-medium truncate block">{c.subject}</span>
+                    <span class="text-[11px] text-[#A8A8A4]">{c.createdByName ?? 'admin'}</span>
+                  </td>
+                  <td class="px-5 py-3 text-[#6B6B68]">{audienceLabels[c.audience] ?? c.audience}</td>
+                  <td class="px-5 py-3">
+                    <span class={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${sm.cls}`}>{sm.label}</span>
+                  </td>
+                  <td class="px-5 py-3 text-[#6B6B68]">
+                    {c.status === 'sent' || c.status === 'failed'
+                      ? `${c.sentCount ?? 0} / ${c.failedCount ?? 0}${c.totalRecipients ? ` (din ${c.totalRecipients})` : ''}`
+                      : '-'}
+                  </td>
+                  <td class="px-5 py-3 text-[11px] text-[#A8A8A4]">{fmt(c.createdAt)}</td>
+                  <td class="px-5 py-3 text-[11px] text-[#A8A8A4]">{fmt(c.sentAt)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </div>
+</AdminLayout>

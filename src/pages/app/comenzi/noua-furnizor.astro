@@ -1,0 +1,17 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import PurchaseOrderForm from '../../../components/comenzi/PurchaseOrderForm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+---
+
+<AppLayout title="Comandă furnizor nouă" activeTab="comenzi">
+
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Comandă furnizor nouă</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Înregistrează o comandă către un furnizor. La recepție, produsele intră automat pe stoc cu cost mediu ponderat.</p>
+  </div>
+
+  <PurchaseOrderForm client:load />
+</AppLayout>

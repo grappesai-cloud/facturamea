@@ -1,0 +1,18 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import AnalyticsDashboard from '../../../components/rapoarte/AnalyticsDashboard.tsx';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+---
+
+<AppLayout title="Analitice" activeTab="rapoarte">
+  <div class="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Analitice avansate</h1>
+      <p class="text-[15px] text-[#9FB8CC] mt-2 max-w-2xl">Facturat vs încasat, top clienți și produse, distribuția pe status și marja brută, pentru perioada aleasă.</p>
+    </div>
+  </div>
+
+  <AnalyticsDashboard client:load />
+</AppLayout>

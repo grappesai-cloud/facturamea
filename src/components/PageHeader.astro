@@ -1,0 +1,28 @@
+---
+// Unified page header for /app/* pages — pastel card with eyebrow tagline,
+// large title, optional muted subtitle and `actions` slot.
+interface Props {
+  title: string;
+  subtitle?: string;
+  tagline?: string;
+  tone?: 'yellow' | 'blue' | 'pink' | 'mint' | 'lilac' | 'cream' | 'plain';
+}
+const { title, subtitle, tagline, tone = 'cream' } = Astro.props;
+const hasActions = Astro.slots.has('actions');
+const toneClass = tone === 'plain' ? '' : `th-card-${tone}`;
+---
+
+<div class:list={['mb-6 flex items-end justify-between gap-4 flex-wrap', tone !== 'plain' && 'th-card th-card-lg', toneClass]}>
+  <div class="min-w-0">
+    {tagline && <p class="th-eyebrow">{tagline}</p>}
+    <h1 class="th-h1 mt-1">{title}</h1>
+    {subtitle && (
+      <p class="text-[13px] text-[#3D3D3A] mt-2 max-w-prose">{subtitle}</p>
+    )}
+  </div>
+  {hasActions && (
+    <div class="flex items-center gap-2 flex-wrap shrink-0">
+      <slot name="actions" />
+    </div>
+  )}
+</div>

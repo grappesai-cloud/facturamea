@@ -1,0 +1,82 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import TransferForm from '../../../components/gestiune-plus/TransferForm';
+import { db } from '../../../db';
+import { stockMovements, invoiceProducts, warehouses } from '../../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const qty = (n: number) =>
+  new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 3 }).format(n || 0);
+
+// Recent transfer ledger rows (refType='transfer'). We show the OUT leg as the
+// canonical record of each transfer.
+let rows: any[] = [];
+try {
+  rows = await db
+    .select({
+      id: stockMovements.id,
+      warehouseName: warehouses.name,
+      productName: invoiceProducts.name,
+      kind: stockMovements.kind,
+      quantity: stockMovements.quantity,
+      reason: stockMovements.reason,
+      createdAt: stockMovements.createdAt,
+    })
+    .from(stockMovements)
+    .leftJoin(invoiceProducts, eq(stockMovements.productId, invoiceProducts.id))
+    .leftJoin(warehouses, eq(stockMovements.warehouseId, warehouses.id))
+    .where(and(eq(stockMovements.companyId, companyId), eq(stockMovements.refType, 'transfer'), eq(stockMovements.kind, 'out')))
+    .orderBy(desc(stockMovements.createdAt))
+    .limit(50);
+} catch (e) {
+  // DB not provisioned — render empty.
+}
+---
+
+<AppLayout title="Transfer între gestiuni" activeTab="stocuri">
+  <div class="mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Transfer între gestiuni</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Mută stoc dintr-o gestiune în alta. Costul mediu urmează marfa.</p>
+  </div>
+
+  <TransferForm client:load />
+
+  <h2 class="text-[18px] font-bold text-white mb-3 mt-8">Transferuri recente</h2>
+  {rows.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 text-center py-10 text-[13px] text-[#9FB8CC]">Niciun transfer încă.</div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5">
+        {rows.slice(0, 3).map((r) => (
+          <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+            <div class="min-w-0 flex-1">
+              <p class="font-bold text-white truncate">{r.productName || '·'}</p>
+              <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">din {r.warehouseName || '·'} · {r.createdAt ? new Date(r.createdAt).toLocaleDateString('ro-RO') : '·'}</p>
+            </div>
+            <p class="font-bold text-white tabular-nums shrink-0">{qty(r.quantity)}</p>
+          </li>
+        ))}
+      </ul>
+      {rows.length > 3 && (
+        <details class="mt-2.5">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {rows.slice(3).map((r) => (
+              <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div class="min-w-0 flex-1">
+                  <p class="font-bold text-white truncate">{r.productName || '·'}</p>
+                  <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">din {r.warehouseName || '·'} · {r.createdAt ? new Date(r.createdAt).toLocaleDateString('ro-RO') : '·'}</p>
+                </div>
+                <p class="font-bold text-white tabular-nums shrink-0">{qty(r.quantity)}</p>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+</AppLayout>

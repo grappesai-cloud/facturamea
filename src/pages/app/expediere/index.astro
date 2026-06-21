@@ -1,0 +1,171 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ShipmentForm from '../../../components/expediere/ShipmentForm';
+import { db } from '../../../db';
+import { shipments } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let rows: any[] = [];
+try {
+  rows = await db
+    .select()
+    .from(shipments)
+    .where(eq(shipments.companyId, companyId))
+    .orderBy(desc(shipments.createdAt))
+    .limit(150);
+} catch (e) {
+  /* DB not provisioned */
+}
+
+const PROVIDER_LABELS: Record<string, string> = {
+  sameday: 'Sameday',
+  fan: 'FAN Courier',
+  dpd: 'DPD',
+  cargus: 'Cargus',
+};
+
+function statusBadge(status: string | null) {
+  switch (status) {
+    case 'generated':
+    case 'awb':
+      return { label: 'AWB generat', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' };
+    case 'delivered':
+      return { label: 'Livrat', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' };
+    case 'canceled':
+      return { label: 'Anulat', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' };
+    default:
+      return { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' };
+  }
+}
+
+const fmtDate = (d: any) => {
+  if (!d) return '—';
+  try {
+    return new Intl.DateTimeFormat('ro-RO', { dateStyle: 'medium' }).format(new Date(d));
+  } catch {
+    return '—';
+  }
+};
+---
+
+<AppLayout title="Expediere — facturamea" activeTab="expediere" breadcrumbTitle="Expediere">
+  <div class="max-w-5xl">
+    <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div>
+        <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Expediere (AWB curier)</h1>
+        <p class="text-[14px] text-[#9FB8CC] mt-2 leading-relaxed">
+          Sameday, FAN, DPD sau Cargus. Salvăm datele coletului, iar AWB-ul real se generează după conectarea contului.
+        </p>
+      </div>
+      <div id="form-mount">
+        <ShipmentForm client:load />
+      </div>
+    </div>
+
+    <!-- Connect-account hint -->
+    <div class="rounded-2xl p-5 mb-6 bg-[#E8A33C]/15">
+      <p class="text-[13px] text-[#9FB8CC]">
+        Conectează contul de curier ca să generezi AWB real. Deocamdată expedierile sunt salvate ca ciorne.
+      </p>
+    </div>
+
+    {rows.length === 0 ? (
+      <div class="rounded-2xl p-5 bg-white/5 py-14 text-center text-[14px] text-[#9FB8CC]">Nicio expediere încă. Apasă „AWB nou".</div>
+    ) : (
+      <Fragment>
+        <ul class="space-y-2.5">
+          {rows.slice(0, 3).map((s) => {
+            const badge = statusBadge(s.status);
+            return (
+              <li class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors" data-row data-id={s.id}>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="font-bold text-white">{s.recipientName || '—'}</span>
+                    <span class={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${badge.cls}`}>{badge.label}</span>
+                  </div>
+                  <p class="text-[13px] text-[#9FB8CC] mt-1 truncate">
+                    {[PROVIDER_LABELS[s.provider] || s.provider, [s.city, s.county].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                  </p>
+                  <p class="text-[13px] text-[#7C9AB4] mt-0.5 tabular-nums">
+                    {[s.awb ? `AWB ${s.awb}` : null, `${s.parcels || 1} colet${(s.parcels || 1) === 1 ? '' : 'e'}`, s.recipientPhone, fmtDate(s.createdAt)].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <div class="flex flex-col items-end gap-2 shrink-0">
+                  <p class="font-bold text-white tabular-nums">{s.codCents ? ron(s.codCents) : '—'}</p>
+                  <button
+                    class="delete-shipment px-3 py-1.5 rounded-full text-[13px] font-semibold text-[#DC4B41] hover:bg-[#DC4B41]/15 transition-colors"
+                    data-id={s.id}
+                  >
+                    Șterge
+                  </button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        {rows.length > 3 && (
+          <details class="mt-2.5">
+            <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+            <ul class="space-y-2.5 mt-2.5">
+              {rows.slice(3).map((s) => {
+                const badge = statusBadge(s.status);
+                return (
+                  <li class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors" data-row data-id={s.id}>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="font-bold text-white">{s.recipientName || '—'}</span>
+                        <span class={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${badge.cls}`}>{badge.label}</span>
+                      </div>
+                      <p class="text-[13px] text-[#9FB8CC] mt-1 truncate">
+                        {[PROVIDER_LABELS[s.provider] || s.provider, [s.city, s.county].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}
+                      </p>
+                      <p class="text-[13px] text-[#7C9AB4] mt-0.5 tabular-nums">
+                        {[s.awb ? `AWB ${s.awb}` : null, `${s.parcels || 1} colet${(s.parcels || 1) === 1 ? '' : 'e'}`, s.recipientPhone, fmtDate(s.createdAt)].filter(Boolean).join(' · ')}
+                      </p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2 shrink-0">
+                      <p class="font-bold text-white tabular-nums">{s.codCents ? ron(s.codCents) : '—'}</p>
+                      <button
+                        class="delete-shipment px-3 py-1.5 rounded-full text-[13px] font-semibold text-[#DC4B41] hover:bg-[#DC4B41]/15 transition-colors"
+                        data-id={s.id}
+                      >
+                        Șterge
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        )}
+      </Fragment>
+    )}
+  </div>
+
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('.delete-shipment').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id) return;
+        if (!confirm('Sigur ștergi această expediere?')) return;
+        try {
+          const res = await fetch(`/api/curierat/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            btn.closest('[data-row]')?.remove();
+          } else {
+            alert('Eroare la ștergere.');
+          }
+        } catch {
+          alert('Eroare de rețea.');
+        }
+      });
+    });
+  </script>
+</AppLayout>

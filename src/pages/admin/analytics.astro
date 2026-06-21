@@ -1,0 +1,121 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../db';
+import { users, freight, orders, waitlistSignups } from '../../db/schema';
+import { sql } from 'drizzle-orm';
+
+const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+async function dailySeries(table: any, dateCol: any) {
+  try {
+    const r = await db.execute(sql`
+      SELECT TO_CHAR(${dateCol}, 'YYYY-MM-DD') AS d, COUNT(*)::int AS c
+      FROM ${table}
+      WHERE ${dateCol} >= ${thirtyDaysAgo}
+      GROUP BY 1 ORDER BY 1
+    `);
+    return ((r as any).rows ?? r ?? []) as { d: string; c: number }[];
+  } catch { return [] as { d: string; c: number }[]; }
+}
+
+const [signups, freightSeries, orderSeries, waitlistSeries] = await Promise.all([
+  dailySeries(users, users.createdAt),
+  dailySeries(freight, freight.createdAt),
+  dailySeries(orders, orders.createdAt),
+  dailySeries(waitlistSignups, waitlistSignups.createdAt),
+]);
+
+let topRoutes: { route: string; c: number }[] = [];
+try {
+  const r = await db.execute(sql`
+    SELECT (loading_country || ' → ' || unloading_country) AS route, COUNT(*)::int AS c
+    FROM freight
+    WHERE created_at >= ${thirtyDaysAgo}
+    GROUP BY 1 ORDER BY c DESC LIMIT 10
+  `);
+  topRoutes = ((r as any).rows ?? r ?? []) as { route: string; c: number }[];
+} catch {}
+
+const [waitlistTotal] = await db.select({ c: sql<number>`COUNT(*)::int` }).from(waitlistSignups);
+const [registered] = await db.select({ c: sql<number>`COUNT(*)::int` }).from(users);
+const conversionPct = waitlistTotal?.c ? Math.round(((registered?.c ?? 0) / waitlistTotal.c) * 100) : 0;
+
+function sparkline(series: { d: string; c: number }[], w = 280, h = 50): string {
+  if (series.length === 0) return '<div class="h-12 flex items-center justify-center text-[11px] text-[#A8A8A4]">Date insuficiente</div>';
+  const max = Math.max(...series.map((s) => s.c), 1);
+  const stepX = w / Math.max(series.length - 1, 1);
+  const points = series.map((s, i) => `${i * stepX},${h - (s.c / max) * (h - 6) - 3}`).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="w-full h-12"><polyline fill="none" stroke="#1A759F" stroke-width="1.5" points="${points}"/></svg>`;
+}
+
+const series = [
+  { label: 'Înscrieri utilizatori', total: signups.reduce((a, b) => a + b.c, 0), data: signups },
+  { label: 'Marfă publicată',       total: freightSeries.reduce((a, b) => a + b.c, 0), data: freightSeries },
+  { label: 'Comenzi create',        total: orderSeries.reduce((a, b) => a + b.c, 0), data: orderSeries },
+  { label: 'Waitlist signups',      total: waitlistSeries.reduce((a, b) => a + b.c, 0), data: waitlistSeries },
+];
+---
+
+<AdminLayout title="Analytics" activeTab="analytics">
+  <div class="mb-6">
+    <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Ultimele 30 zile</p>
+    <h2 class="text-[22px] font-bold tracking-[-0.02em] mt-1">Activitate platformă</h2>
+  </div>
+
+  <div class="mb-6 p-5 bg-white border border-[#E8E8E4] rounded-xl">
+    <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium mb-3">Funnel waitlist → cont activ</p>
+    <div class="flex items-center gap-3">
+      <div class="text-center">
+        <p class="text-[24px] font-bold tabular-nums">{waitlistTotal?.c ?? 0}</p>
+        <p class="text-[11px] text-[#6B6B68]">Waitlist</p>
+      </div>
+      <span class="text-[#A8A8A4]">→</span>
+      <div class="text-center">
+        <p class="text-[24px] font-bold tabular-nums">{registered?.c ?? 0}</p>
+        <p class="text-[11px] text-[#6B6B68]">Înregistraţi</p>
+      </div>
+      <span class="text-[#A8A8A4]">·</span>
+      <div class="text-center">
+        <p class="text-[24px] font-bold tabular-nums text-[#1A759F]">{conversionPct}%</p>
+        <p class="text-[11px] text-[#6B6B68]">conversie</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+    {series.map((s) => (
+      <div class="p-5 bg-white border border-[#E8E8E4] rounded-xl">
+        <div class="flex items-baseline justify-between mb-3">
+          <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">{s.label}</p>
+          <p class="text-[20px] font-bold tabular-nums">{s.total.toLocaleString()}</p>
+        </div>
+        <div set:html={sparkline(s.data)} />
+        <div class="flex justify-between text-[10px] text-[#A8A8A4] mt-2">
+          <span>{s.data[0]?.d ?? ''}</span>
+          <span>{s.data[s.data.length - 1]?.d ?? ''}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <div class="bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-[#E8E8E4]">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Top rute (după volum marfă, 30z)</p>
+    </div>
+    {topRoutes.length === 0 ? (
+      <div class="px-5 py-8 text-center text-[12px] text-[#6B6B68]">Nu există suficiente date încă</div>
+    ) : (
+      <div class="divide-y divide-[#E8E8E4]">
+        {topRoutes.map((r, i) => (
+          <div class="px-5 py-2.5 flex items-center justify-between text-[13px]">
+            <span class="flex items-center gap-3">
+              <span class="text-[#A8A8A4] font-mono w-6 text-right">{i + 1}.</span>
+              <span class="font-medium">{r.route}</span>
+            </span>
+            <span class="font-semibold tabular-nums">{r.c}</span>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</AdminLayout>

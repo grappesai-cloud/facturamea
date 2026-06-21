@@ -1,0 +1,137 @@
+---
+import AppLayout from '../../../../layouts/AppLayout.astro';
+import { db } from '../../../../db';
+import { transportInvoices } from '../../../../db/schema';
+import { and, eq, sql } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+const cid = user.companyId;
+const now = new Date();
+
+interface Row {
+  clientName: string;
+  clientTaxId: string | null;
+  bucketCurrent: number;
+  bucket30: number;
+  bucket60: number;
+  bucket90: number;
+  bucket90plus: number;
+  total: number;
+  invoiceCount: number;
+}
+
+const rows: Row[] = [];
+const totals = { bucketCurrent: 0, bucket30: 0, bucket60: 0, bucket90: 0, bucket90plus: 0, total: 0, invoiceCount: 0 };
+
+if (cid) {
+  const open = await db.select().from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, cid),
+    eq(transportInvoices.kind, 'factura'),
+    sql`${transportInvoices.status} IN ('issued','sent','partial')`,
+  ));
+  const byClient = new Map<string, Row>();
+  for (const inv of open) {
+    const remaining = inv.totalCents - inv.paidCents;
+    if (remaining <= 0) continue;
+    const due = inv.dueAt ? new Date(inv.dueAt) : (inv.issuedAt ? new Date(inv.issuedAt) : now);
+    const days = Math.floor((now.getTime() - due.getTime()) / 86400000);
+    const key = inv.clientTaxIdSnap || inv.clientNameSnap;
+    let r = byClient.get(key);
+    if (!r) {
+      r = { clientName: inv.clientNameSnap, clientTaxId: inv.clientTaxIdSnap,
+            bucketCurrent: 0, bucket30: 0, bucket60: 0, bucket90: 0, bucket90plus: 0, total: 0, invoiceCount: 0 };
+      byClient.set(key, r);
+    }
+    if      (days <= 0)  r.bucketCurrent += remaining;
+    else if (days <= 30) r.bucket30      += remaining;
+    else if (days <= 60) r.bucket60      += remaining;
+    else if (days <= 90) r.bucket90      += remaining;
+    else                 r.bucket90plus  += remaining;
+    r.total += remaining; r.invoiceCount += 1;
+  }
+  rows.push(...Array.from(byClient.values()).sort((a, b) => b.total - a.total));
+  for (const r of rows) {
+    totals.bucketCurrent += r.bucketCurrent; totals.bucket30 += r.bucket30;
+    totals.bucket60 += r.bucket60; totals.bucket90 += r.bucket90;
+    totals.bucket90plus += r.bucket90plus; totals.total += r.total;
+    totals.invoiceCount += r.invoiceCount;
+  }
+}
+
+const fmt = (cents: number) => cents === 0 ? '—' : (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+---
+
+<AppLayout title="Aging — solduri clienți" activeTab="facturare">
+  <div class="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 print:hidden">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Aging clienți</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-1">Solduri restante grupate pe vechime, după data scadenței facturilor neîncasate.</p>
+    </div>
+  </div>
+
+  <!-- KPI summary -->
+  <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-8">
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Total restant</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{fmt(totals.total)}</p>
+      <p class="text-[12px] text-[#7C9AB4] mt-1">{totals.invoiceCount} facturi</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#2E9E6A]">În termen</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{fmt(totals.bucketCurrent)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#E8A33C]">1-30 zile</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{fmt(totals.bucket30)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#E8A33C]">31-60 zile</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{fmt(totals.bucket60)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#DC4B41]">61-90 zile</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{fmt(totals.bucket90)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-[#DC4B41]/10">
+      <p class="text-[13px] font-medium text-[#DC4B41]">90+ zile</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{fmt(totals.bucket90plus)}</p>
+    </div>
+  </div>
+
+  <!-- Aging table -->
+  <div class="rounded-2xl bg-white/5 overflow-x-auto">
+    <table class="w-full min-w-[560px] text-[13px]">
+      <thead class="bg-white/5">
+        <tr class="text-left text-[12px] text-[#7C9AB4] font-semibold">
+          <th class="py-3 px-4">Client</th>
+          <th class="py-3 px-4">CUI</th>
+          <th class="py-3 px-4 text-right">În termen</th>
+          <th class="py-3 px-4 text-right">1-30 z</th>
+          <th class="py-3 px-4 text-right">31-60 z</th>
+          <th class="py-3 px-4 text-right">61-90 z</th>
+          <th class="py-3 px-4 text-right">90+ z</th>
+          <th class="py-3 px-4 text-right">Total</th>
+          <th class="py-3 px-4 text-right">#</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.length === 0 && (
+          <tr><td colspan="9" class="py-10 text-center text-[#9FB8CC]">Niciun sold restant.</td></tr>
+        )}
+        {rows.map((r) => (
+          <tr class="border-t border-white/10 hover:bg-white/5 transition-colors">
+            <td class="py-3 px-4 font-medium text-white">{r.clientName}</td>
+            <td class="py-3 px-4 text-xs text-[#7C9AB4] font-mono">{r.clientTaxId ?? '—'}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#2E9E6A]">{fmt(r.bucketCurrent)}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#9FB8CC]">{fmt(r.bucket30)}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#9FB8CC]">{fmt(r.bucket60)}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#9FB8CC]">{fmt(r.bucket90)}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#DC4B41]">{fmt(r.bucket90plus)}</td>
+            <td class="py-3 px-4 text-right tabular-nums font-bold text-white">{fmt(r.total)}</td>
+            <td class="py-3 px-4 text-right text-[#7C9AB4]">{r.invoiceCount}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</AppLayout>

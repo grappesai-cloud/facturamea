@@ -37,6 +37,8 @@ export const users = pgTable('users', {
   // Set the first time the user dismisses the welcome tour. Persistent so the tour
   // never re-appears across browsers / devices, even if localStorage is cleared.
   onboardingSeenAt: timestamp('onboarding_seen_at'),
+  // JSON array of dashboard module keys the user pinned/ordered (new FE).
+  dashboardModules: text('dashboard_modules'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 }, (table) => [

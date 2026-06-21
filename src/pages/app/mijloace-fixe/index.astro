@@ -1,0 +1,187 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import AssetForm from '../../../components/mijloace-fixe/AssetForm.tsx';
+import { db } from '../../../db';
+import { fixedAssets } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let assets: any[] = [];
+try {
+  assets = await db.select().from(fixedAssets)
+    .where(eq(fixedAssets.companyId, companyId))
+    .orderBy(desc(fixedAssets.createdAt))
+    .limit(500);
+} catch (e) { /* DB not provisioned */ }
+
+const active = assets.filter((a) => a.status === 'active');
+const totalValue = assets.reduce((s, a) => s + (a.valueCents || 0), 0);
+const totalAccumulated = assets.reduce((s, a) => s + (a.accumulatedCents || 0), 0);
+const totalRemaining = assets.reduce((s, a) => s + Math.max(0, (a.valueCents || 0) - (a.accumulatedCents || 0)), 0);
+
+const METHOD_LABELS: Record<string, string> = {
+  liniara: 'Liniară', degresiva: 'Degresivă', accelerata: 'Accelerată',
+};
+
+const now = new Date();
+const defaultPeriod = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+---
+
+<AppLayout title="Mijloace fixe" activeTab="mijloace-fixe">
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Mijloace fixe și amortizare</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Registrul mijloacelor fixe, amortizarea lunară și valoarea rămasă de recuperat.</p>
+  </div>
+
+  <!-- KPI -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Active</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{active.length}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Valoare totală</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{ron(totalValue)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Amortizat</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{ron(totalAccumulated)}</p>
+    </div>
+    <div class="rounded-2xl p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#7C9AB4]">Rămas de amortizat</p>
+      <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-2">{ron(totalRemaining)}</p>
+    </div>
+  </div>
+
+  <!-- Actions: add asset + run depreciation -->
+  <div class="flex flex-wrap items-end gap-3 mb-5">
+    <div class="flex-1 min-w-[220px]">
+      <AssetForm client:load />
+    </div>
+    <div class="flex items-end gap-2 rounded-2xl p-5 bg-white/5">
+      <div>
+        <label for="dep-period" class="block text-[13px] font-medium text-[#9FB8CC] mb-1.5">Perioada</label>
+        <input id="dep-period" type="month" value={defaultPeriod}
+          class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none [color-scheme:dark]" />
+      </div>
+      <button id="run-dep" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
+        Rulează amortizarea lunii
+      </button>
+    </div>
+  </div>
+  <p id="dep-msg" class="text-[14px] mb-4 hidden"></p>
+
+  <!-- Assets list -->
+  {assets.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 py-12 text-center text-[14px] text-[#9FB8CC]">Niciun mijloc fix înregistrat. Adaugă primul mijloc fix mai sus.</div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5">
+        {assets.slice(0, 3).map((a) => {
+          const remaining = Math.max(0, (a.valueCents || 0) - (a.accumulatedCents || 0));
+          const disposed = a.status === 'disposed';
+          return (
+            <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+              <div class="min-w-0 flex-1">
+                <p class="truncate">
+                  <a href={`/app/mijloace-fixe/${a.id}`} class="font-bold text-white hover:text-[#E1FB15] transition-colors">{a.name}</a>
+                  <span class:list={['ml-2 inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold align-middle', disposed ? 'bg-white/10 text-[#9FB8CC]' : 'bg-[#2E9E6A]/15 text-[#2E9E6A]']}>
+                    {disposed ? 'Casat' : 'Activ'}
+                  </span>
+                </p>
+                <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">
+                  {a.inventoryNumber ? `${a.inventoryNumber} · ` : ''}{a.category ? `${a.category} · ` : ''}{METHOD_LABELS[a.method] || a.method || '—'}
+                </p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-bold text-white tabular-nums">{ron(a.valueCents)}</p>
+                <p class="text-[13px] tabular-nums mt-0.5" style={remaining > 0 ? 'color:#E8A33C' : 'color:#2E9E6A'}>rămas {ron(remaining)}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {assets.length > 3 && (
+        <details class="mt-2.5">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({assets.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {assets.slice(3).map((a) => {
+              const remaining = Math.max(0, (a.valueCents || 0) - (a.accumulatedCents || 0));
+              const disposed = a.status === 'disposed';
+              return (
+                <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate">
+                      <a href={`/app/mijloace-fixe/${a.id}`} class="font-bold text-white hover:text-[#E1FB15] transition-colors">{a.name}</a>
+                      <span class:list={['ml-2 inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold align-middle', disposed ? 'bg-white/10 text-[#9FB8CC]' : 'bg-[#2E9E6A]/15 text-[#2E9E6A]']}>
+                        {disposed ? 'Casat' : 'Activ'}
+                      </span>
+                    </p>
+                    <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">
+                      {a.inventoryNumber ? `${a.inventoryNumber} · ` : ''}{a.category ? `${a.category} · ` : ''}{METHOD_LABELS[a.method] || a.method || '—'}
+                    </p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-bold text-white tabular-nums">{ron(a.valueCents)}</p>
+                    <p class="text-[13px] tabular-nums mt-0.5" style={remaining > 0 ? 'color:#E8A33C' : 'color:#2E9E6A'}>rămas {ron(remaining)}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+
+  <p class="mt-6 text-[12px] text-[#7C9AB4] max-w-2xl leading-relaxed">
+    Amortizarea se calculează lunar pe baza metodei și a duratei de utilizare. Rularea pentru o lună deja procesată nu produce înregistrări duplicate.
+  </p>
+
+  <script is:inline define:vars={{ defaultPeriod }}>
+    (function () {
+      const btn = document.getElementById('run-dep');
+      const periodEl = document.getElementById('dep-period');
+      const msg = document.getElementById('dep-msg');
+
+      function show(text, ok) {
+        msg.textContent = text;
+        msg.className = 'text-[14px] mb-4 ' + (ok ? 'text-[#2E9E6A]' : 'text-[#DC4B41]');
+      }
+
+      btn?.addEventListener('click', async function () {
+        const period = (periodEl && periodEl.value) || defaultPeriod;
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Se rulează...';
+        try {
+          const res = await fetch('/api/mijloace-fixe/run-depreciation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ period: period }),
+          });
+          const data = await res.json().catch(function () { return {}; });
+          if (res.ok && data.ok) {
+            const ron = new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((data.totalCents || 0) / 100);
+            show('Amortizare rulată pentru ' + period + ': ' + data.processed + ' mijloace, total ' + ron + '. Reîncărcăm...', true);
+            setTimeout(function () { window.location.reload(); }, 1200);
+          } else {
+            show(data.error || 'Eroare la rularea amortizării.', false);
+            btn.disabled = false;
+            btn.textContent = original;
+          }
+        } catch (e) {
+          show('Eroare de conexiune.', false);
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      });
+    })();
+  </script>
+</AppLayout>

@@ -1,0 +1,87 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+Astro.response.headers.set('Vary', 'Cookie');
+---
+
+<PublicLayout title="Politica de confidențialitate" description="Cum colectăm, folosim și protejăm datele tale în facturamea.">
+  <article class="max-w-none">
+    <h1 class="text-3xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-2">Politica de confidențialitate</h1>
+    <p class="text-sm text-[#6B6B68] mb-8">Ultima actualizare: 11 iunie 2026</p>
+
+    <p class="text-[#0A0A0A] leading-relaxed mb-6">
+      Această politică explică ce date colectăm în facturamea, cum le folosim și care sunt drepturile tale conform Regulamentului General privind Protecția Datelor (GDPR, Regulamentul UE 2016/679).
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">1. Operator</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Operatorul datelor este facturamea. Pentru orice solicitare legată de datele tale, ne poți contacta la <a href="mailto:contact@facturamea.com" class="text-[#1A759F] hover:underline">contact@facturamea.com</a>.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">2. Date pe care le colectăm</h2>
+    <ul class="list-disc list-inside space-y-1 text-[#0A0A0A] mb-4">
+      <li><strong>Date de cont:</strong> nume, email, parolă (stocată ca hash), identificator de la furnizorul de login (Google sau Apple, dacă alegi această metodă).</li>
+      <li><strong>Date despre companie:</strong> denumire, CUI, sediu, date de contact, serii de documente.</li>
+      <li><strong>Date de facturare:</strong> facturi, proforme, avize, chitanțe, clienți, produse, stocuri, cheltuieli.</li>
+      <li><strong>Date tehnice:</strong> adresa IP, user agent, log-uri de autentificare, cookies strict necesare.</li>
+    </ul>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">3. Scopul prelucrării</h2>
+    <ul class="list-disc list-inside space-y-1 text-[#0A0A0A] mb-4">
+      <li>Furnizarea serviciilor de facturare (emitere documente, gestiune, rapoarte).</li>
+      <li>Transmiterea documentelor către ANAF prin e-Factura, e-Transport și SAF-T, la cererea ta.</li>
+      <li>Trimiterea notificărilor (email + in-app) conform preferințelor tale.</li>
+      <li>Prevenirea fraudelor și menținerea integrității aplicației.</li>
+      <li>Respectarea obligațiilor legale (raportări fiscale, cereri ale autorităților).</li>
+    </ul>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">4. Cu cine partajăm datele</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Datele tale nu sunt vândute terților. Le partajăm doar cu:
+    </p>
+    <ul class="list-disc list-inside space-y-1 text-[#0A0A0A] mb-4">
+      <li><strong>Furnizori de infrastructură:</strong> servicii de hosting, bază de date, email transacțional și procesare a plăților, strict pentru funcționarea aplicației.</li>
+      <li><strong>ANAF:</strong> atunci când transmiți facturi prin e-Factura, e-Transport sau depui SAF-T, datele relevante sunt trimise către sistemele ANAF.</li>
+      <li><strong>Autorități legale:</strong> doar la cererea formală a unei autorități competente.</li>
+    </ul>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">5. Drepturile tale GDPR</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">Ai următoarele drepturi:</p>
+    <ul class="list-disc list-inside space-y-1 text-[#0A0A0A] mb-4">
+      <li><strong>Acces:</strong> să afli ce date avem despre tine.</li>
+      <li><strong>Rectificare:</strong> să corectezi date inexacte.</li>
+      <li><strong>Ștergere ("dreptul de a fi uitat"):</strong> să ne ceri ștergerea contului și a datelor asociate, în limitele obligațiilor legale de păstrare.</li>
+      <li><strong>Restricționare:</strong> să limitezi anumite prelucrări.</li>
+      <li><strong>Portabilitate:</strong> să primești datele într-un format structurat.</li>
+      <li><strong>Opoziție:</strong> să te opui prelucrării în scopuri de marketing.</li>
+    </ul>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Pentru exercitarea acestor drepturi, scrie la <a href="mailto:contact@facturamea.com" class="text-[#1A759F] hover:underline">contact@facturamea.com</a>. Răspundem în maxim 30 de zile.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">6. Securitate</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Folosim măsuri tehnice și organizatorice pentru a proteja datele: parole stocate ca hash, conexiuni HTTPS criptate, sesiuni cu cookie HttpOnly și separare logică între medii (production, preview, dev).
+    </p>
+
+    <h2 id="cookies" class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3 scroll-mt-24">7. Politica de cookies</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Folosim cookies strict necesare pentru funcționarea aplicației (autentificare, sesiune, preferințe de limbă). Nu folosim cookies de tracking publicitar. Poți controla cookies din setările browserului, însă dezactivarea celor strict necesare poate afecta funcționarea contului.
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">8. Retenția datelor</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Păstrăm datele cât timp contul tău este activ. La închiderea contului, ștergem datele personale în maxim 30 de zile, cu excepția documentelor pe care suntem obligați legal să le păstrăm (de exemplu, facturile, conform termenelor din legislația fiscală română).
+    </p>
+
+    <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mt-8 mb-3">9. Plângeri</h2>
+    <p class="text-[#0A0A0A] leading-relaxed mb-4">
+      Dacă consideri că drepturile tale au fost încălcate, te poți adresa Autorității Naționale de Supraveghere a Prelucrării Datelor cu Caracter Personal (ANSPDCP), <a href="https://www.dataprotection.ro" class="text-[#1A759F] hover:underline" target="_blank" rel="noopener">dataprotection.ro</a>.
+    </p>
+
+    <p class="text-sm text-[#6B6B68] mt-10 italic">
+      Pentru orice întrebare privind datele tale, scrie-ne la <a href="mailto:contact@facturamea.com" class="text-[#1A759F] hover:underline">contact@facturamea.com</a>.
+    </p>
+  </article>
+</PublicLayout>

@@ -1,0 +1,17 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import SalesOrderForm from '../../../components/comenzi/SalesOrderForm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+---
+
+<AppLayout title="Comandă client nouă" activeTab="comenzi">
+
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Comandă client nouă</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Înregistrează o comandă de la un client. O poți transforma în factură oricând din lista de comenzi.</p>
+  </div>
+
+  <SalesOrderForm client:load />
+</AppLayout>

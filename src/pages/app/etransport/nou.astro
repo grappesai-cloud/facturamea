@@ -1,0 +1,28 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import EtransportForm from '../../../components/anaf/EtransportForm';
+import { getAnafStatus } from '../../../lib/anaf/tokens';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const anaf = await getAnafStatus(companyId).catch(() => ({ connected: false, cif: null as string | null }));
+---
+
+<AppLayout title="Declarație e-Transport" activeTab="etransport">
+
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Declarație e-Transport nouă</h1>
+    <p class="text-[14px] text-[#9FB8CC] mt-2">Completează datele transportului. La trimitere, ANAF îți alocă un cod UIT.</p>
+  </div>
+
+  {!anaf.connected && (
+    <div class="rounded-2xl p-5 mb-6 bg-[#E8A33C]/15 flex flex-wrap items-center gap-3">
+      <p class="text-[13px] text-[#9FB8CC]">ANAF neconectat: declarația se va salva ca ciornă. Conectează firma din <strong class="text-white">Setări → Integrare ANAF</strong> pentru a o trimite.</p>
+      <a href="/app/setari/integrari-anaf" class="text-[13px] font-semibold text-[#E1FB15] hover:underline ml-auto">Conectează →</a>
+    </div>
+  )}
+
+  <EtransportForm client:load />
+</AppLayout>

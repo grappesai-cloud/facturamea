@@ -1,0 +1,65 @@
+---
+import AuthLayout from '../../layouts/AuthLayout.astro';
+import { db } from '../../db';
+import { emailVerificationTokens, users } from '../../db/schema';
+import { and, eq, gt, isNull } from 'drizzle-orm';
+
+// Public page reached from the confirmation email link. Flips emailVerified
+// on a valid, unused, unexpired token. Soft verification: the account already
+// works; this just confirms ownership of the address.
+const token = Astro.url.searchParams.get('token') || '';
+let status: 'ok' | 'invalid' | 'missing' = 'missing';
+
+if (token) {
+  const now = new Date();
+  const [t] = await db.select().from(emailVerificationTokens)
+    .where(and(
+      eq(emailVerificationTokens.token, token),
+      isNull(emailVerificationTokens.usedAt),
+      gt(emailVerificationTokens.expiresAt, now),
+    ))
+    .limit(1);
+  if (t) {
+    await db.update(users).set({ emailVerified: true }).where(eq(users.id, t.userId));
+    await db.update(emailVerificationTokens).set({ usedAt: now }).where(eq(emailVerificationTokens.id, t.id));
+    status = 'ok';
+  } else {
+    status = 'invalid';
+  }
+}
+
+const isAuthed = !!Astro.locals.user;
+---
+
+<AuthLayout title="Confirmare email" tagline="facturamea">
+  <div class="space-y-6">
+    {status === 'ok' && (
+      <>
+        <div>
+          <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Email confirmat ✓</h1>
+          <p class="text-[13px] text-[#46627A] mt-1.5">Adresa ta de email a fost confirmată. Mulțumim!</p>
+        </div>
+        <a href={isAuthed ? '/app' : '/auth/login'} class="block w-full text-center py-3 bg-[#0A2238] hover:bg-[#14304b] text-white font-semibold rounded-xl text-[14px] transition-colors">
+          {isAuthed ? 'Mergi la dashboard' : 'Autentifică-te'}
+        </a>
+      </>
+    )}
+    {status === 'invalid' && (
+      <>
+        <div>
+          <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Link invalid sau expirat</h1>
+          <p class="text-[13px] text-[#46627A] mt-1.5">Linkul de confirmare nu mai este valid. Contul tău funcționează normal — confirmarea emailului este opțională.</p>
+        </div>
+        <a href={isAuthed ? '/app' : '/auth/login'} class="block w-full text-center py-3 bg-white border border-[#E2E8EF] hover:border-[#0A2238] text-[#0A2238] font-semibold rounded-xl text-[14px] transition-colors">
+          {isAuthed ? 'Mergi la dashboard' : 'Autentifică-te'}
+        </a>
+      </>
+    )}
+    {status === 'missing' && (
+      <div>
+        <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Token lipsă</h1>
+        <p class="text-[13px] text-[#46627A] mt-1.5">Deschide linkul din emailul de confirmare.</p>
+      </div>
+    )}
+  </div>
+</AuthLayout>

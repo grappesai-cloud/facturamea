@@ -1,0 +1,135 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { companies } from '../../../db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const role = (Astro.locals.company as any)?.role || 'owner';
+const canManage = !!user.isAdmin || role === 'owner';
+
+let enabled = false;
+try {
+  const [co] = await db.select({ enabled: companies.dunningEnabled }).from(companies).where(eq(companies.id, companyId)).limit(1);
+  enabled = !!co?.enabled;
+} catch {
+  // DB not provisioned — render with reminders off.
+}
+---
+
+<AppLayout title="Remindere de încasare — facturamea" activeTab="setari" breadcrumbTitle="Remindere de încasare">
+  <div class="max-w-3xl">
+    <div class="mb-6 sm:mb-8">
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Remindere de încasare</h1>
+      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl leading-relaxed">
+        Trimitem automat e-mailuri de reamintire către clienții tăi pentru facturile cu scadență apropiată sau restante.
+        Funcționează doar pentru facturile la care clientul are o adresă de e-mail.
+      </p>
+    </div>
+
+    {!canManage && (
+      <div class="mb-4 flex flex-wrap items-center gap-2.5 px-4 py-3 rounded-xl bg-[#E8A33C]/15">
+        <span class="w-2 h-2 rounded-full bg-[#E8A33C]"></span>
+        <p class="text-[14px] text-[#9FB8CC]">Doar administratorul firmei poate modifica acest setaj.</p>
+      </div>
+    )}
+
+    <!-- Master toggle -->
+    <div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl p-5 bg-white/5">
+      <div class="flex-1 min-w-[220px]">
+        <p class="text-[16px] font-semibold text-white">Trimitere automată de remindere</p>
+        <p class="text-[13px] text-[#9FB8CC] mt-0.5">Când e pornit, clienții primesc remindere prin e-mail după programul de mai jos.</p>
+      </div>
+      <button id="dunning-toggle" role="switch" aria-checked={enabled ? 'true' : 'false'} disabled={!canManage}
+        class:list={['relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0', enabled ? 'bg-[#E1FB15]' : 'bg-white/15', !canManage && 'opacity-50 cursor-not-allowed']}>
+        <span class:list={['inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow', enabled ? 'translate-x-7' : 'translate-x-1']}></span>
+      </button>
+      <span id="dunning-state" class="text-[14px] font-semibold w-[60px] text-white">{enabled ? 'Pornit' : 'Oprit'}</span>
+    </div>
+
+    <!-- Schedule explainer -->
+    <div class="mb-4 rounded-2xl p-5 bg-white/5">
+      <h2 class="text-[18px] font-bold text-white mb-3">Când se trimit remindere</h2>
+      <ul class="space-y-2.5 text-[14px] text-[#9FB8CC] leading-relaxed">
+        <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-[#34A0A4] shrink-0"></span><span><strong class="text-white">Cu 3 zile înainte</strong> de scadență — un reminder amabil.</span></li>
+        <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-[#E8A33C] shrink-0"></span><span><strong class="text-white">În ziua scadenței</strong> — factura este de plată astăzi.</span></li>
+        <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-[#DC4B41] shrink-0"></span><span><strong class="text-white">La 7 zile după</strong> scadență — factura figurează ca restantă.</span></li>
+      </ul>
+      <p class="text-[13px] text-[#7C9AB4] mt-4">Fiecare tip de reminder se trimite o singură dată per factură. Facturile achitate sunt excluse automat.</p>
+    </div>
+
+    {canManage && (
+      <div class="flex flex-wrap items-center gap-3 rounded-2xl p-5 bg-white/5">
+        <div class="flex-1 min-w-[220px]">
+          <p class="text-[16px] font-semibold text-white">Trimite remindere acum</p>
+          <p class="text-[13px] text-[#9FB8CC] mt-0.5">Rulează verificarea imediat pentru facturile tale, fără să aștepți programul zilnic.</p>
+        </div>
+        <button id="run-now" class="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors whitespace-nowrap">Trimite remindere acum</button>
+        <span id="run-result" class="text-[14px] text-[#9FB8CC]"></span>
+      </div>
+    )}
+  </div>
+
+  <script>
+    const toggle = document.getElementById('dunning-toggle');
+    const stateLbl = document.getElementById('dunning-state');
+
+    toggle?.addEventListener('click', async () => {
+      if ((toggle as HTMLButtonElement).disabled) return;
+      const next = toggle.getAttribute('aria-checked') !== 'true';
+      toggle.setAttribute('aria-checked', next ? 'true' : 'false');
+      toggle.classList.toggle('bg-[#E1FB15]', next);
+      toggle.classList.toggle('bg-white/15', !next);
+      const knob = toggle.querySelector('span');
+      knob?.classList.toggle('translate-x-7', next);
+      knob?.classList.toggle('translate-x-1', !next);
+      if (stateLbl) stateLbl.textContent = next ? 'Pornit' : 'Oprit';
+      try {
+        const res = await fetch('/api/settings/dunning', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ enabled: next }),
+        });
+        if (!res.ok) throw new Error('save failed');
+      } catch {
+        // Revert UI on failure.
+        const reverted = !next;
+        toggle.setAttribute('aria-checked', reverted ? 'true' : 'false');
+        toggle.classList.toggle('bg-[#E1FB15]', reverted);
+        toggle.classList.toggle('bg-white/15', !reverted);
+        knob?.classList.toggle('translate-x-7', reverted);
+        knob?.classList.toggle('translate-x-1', !reverted);
+        if (stateLbl) stateLbl.textContent = reverted ? 'Pornit' : 'Oprit';
+        alert('Nu am putut salva setajul. Încearcă din nou.');
+      }
+    });
+
+    const runBtn = document.getElementById('run-now') as HTMLButtonElement | null;
+    const runResult = document.getElementById('run-result');
+    runBtn?.addEventListener('click', async () => {
+      runBtn.disabled = true;
+      const original = runBtn.textContent;
+      runBtn.textContent = 'Se trimite...';
+      if (runResult) runResult.textContent = '';
+      try {
+        const res = await fetch('/api/settings/dunning', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ runNow: true }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.ok) {
+          if (runResult) runResult.textContent = data.sent > 0 ? `Trimise: ${data.sent} remindere.` : 'Niciun reminder de trimis acum.';
+        } else {
+          if (runResult) runResult.textContent = data.error || 'Nu s-a putut trimite.';
+        }
+      } catch {
+        if (runResult) runResult.textContent = 'Eroare de rețea.';
+      } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = original || 'Trimite remindere acum';
+      }
+    });
+  </script>
+</AppLayout>

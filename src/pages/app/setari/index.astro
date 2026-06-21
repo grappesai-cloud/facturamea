@@ -1,0 +1,182 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+
+const user = Astro.locals.user!;
+
+const userTypeLabels: Record<string, string> = {
+  transportator: 'Transportator',
+  intermediar: 'Business',
+  client_direct: 'Business',
+  partener: 'Partener',
+};
+
+const inputCls = 'w-full rounded-xl bg-white/[0.06] ring-1 ring-white/15 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/60 hover:ring-white/25 transition';
+const inputDisabledCls = 'w-full rounded-xl bg-white/[0.03] ring-1 ring-white/10 px-4 py-2.5 text-[14px] text-[#7C9AB4] cursor-not-allowed';
+const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
+
+---
+
+<AppLayout title="Setări — facturamea" activeTab="setari">
+  <div class="max-w-3xl">
+    <div class="mb-6 sm:mb-8">
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Setări</h1>
+      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">Profil, companie, notificări, abonament.</p>
+    </div>
+
+    <!-- Profile -->
+    <section class="mb-10">
+      <h2 class="text-[18px] font-bold text-white mb-3">Profilul tău</h2>
+
+      <form id="profile-form" class="rounded-2xl p-5 bg-white/5 space-y-4">
+        <div id="profile-success" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl bg-[#2E9E6A]/15">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#2E9E6A] mt-1.5 shrink-0"></span>
+          <p class="text-[13px] text-[#2E9E6A]">Profil actualizat.</p>
+        </div>
+        <div id="profile-error" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl bg-[#DC4B41]/15">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#DC4B41] mt-1.5 shrink-0"></span>
+          <p id="profile-error-text" class="text-[13px] text-[#DC4B41]"></p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class={labelCls}>Nume</label>
+            <input type="text" name="name" value={user.name} required class={inputCls} />
+          </div>
+          <div>
+            <label class={labelCls}>Email</label>
+            <input type="email" value={user.email} disabled class={inputDisabledCls} />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class={labelCls}>Telefon</label>
+            <input type="tel" name="phone" value={user.phone || ''} placeholder="+40 700 000 000" class={inputCls} />
+          </div>
+          <div>
+            <label class={labelCls}>Tip cont</label>
+            <input type="text" value={userTypeLabels[user.userType]} disabled class={inputDisabledCls} />
+          </div>
+        </div>
+
+        <p class="text-[11px] text-[#7C9AB4]">
+          ID platformă <span class="font-mono text-white font-semibold ml-1">{user.platformId}</span>
+        </p>
+
+        <div class="pt-2">
+          <button
+            type="submit"
+            class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors"
+          >
+            Salvează modificările
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Afișare: font scale -->
+    <section class="mb-10">
+      <h2 class="text-[18px] font-bold text-white mb-3">Afișare</h2>
+      <div class="rounded-2xl p-5 bg-white/5">
+        <div class="mb-3">
+          <p class="text-[13px] font-medium text-white">Mărimea fontului</p>
+          <p class="text-[12px] text-[#7C9AB4] mt-0.5">Aplicat pe toate paginile — se salvează local pe dispozitivul tău.</p>
+        </div>
+        <div class="inline-flex items-stretch rounded-xl overflow-hidden bg-white/5" role="group" aria-label="Mărimea fontului">
+          <button type="button" data-font-scale="75"  class="th-fs-btn px-4 py-2 text-[11px] font-semibold text-white hover:bg-white/10">A · 75%</button>
+          <button type="button" data-font-scale="100" class="th-fs-btn px-4 py-2 text-[13px] font-semibold text-white hover:bg-white/10">A · 100%</button>
+          <button type="button" data-font-scale="125" class="th-fs-btn px-4 py-2 text-[15px] font-semibold text-white hover:bg-white/10">A · 125%</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Account & company settings — links to the existing sub-pages so the
+         sections promised in the page subtitle are actually reachable here. -->
+    <section class="mb-10">
+      <h2 class="text-[18px] font-bold text-white mb-3">Cont & companie</h2>
+      <div class="space-y-2">
+        <a href="/app/setari/companie" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>
+          <span class="flex-1 text-[16px] text-white">Companie</span>
+          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="/app/setari/notifications" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+          <span class="flex-1 text-[16px] text-white">Notificări</span>
+          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="/app/setari/subscription" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z"/></svg>
+          <span class="flex-1 text-[16px] text-white">Abonament</span>
+          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        <a href="/app/setari/securitate" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 4v5c0 4.4-3 8.3-7 9-4-0.7-7-4.6-7-9V7l7-4z"/></svg>
+          <span class="flex-1 text-[16px] text-white">Securitate</span>
+          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </section>
+
+  </div>
+
+  <style is:global>
+    .th-fs-btn[data-active="true"] { background-color: #E1FB15 !important; color: #0A2238 !important; }
+  </style>
+
+  <script>
+    // Font scale buttons
+    (function(){
+      const FS_KEY = 'th-font-scale';
+      const btns = document.querySelectorAll<HTMLButtonElement>('.th-fs-btn');
+      function current(): string {
+        const raw = localStorage.getItem(FS_KEY);
+        return raw === '75' || raw === '125' ? raw : '100';
+      }
+      function apply(s: string) {
+        if (s === '100') document.documentElement.removeAttribute('data-fs');
+        else document.documentElement.setAttribute('data-fs', s);
+        btns.forEach((b) => b.setAttribute('data-active', b.dataset.fontScale === s ? 'true' : 'false'));
+      }
+      apply(current());
+      btns.forEach((b) => b.addEventListener('click', () => {
+        const v = b.dataset.fontScale!;
+        localStorage.setItem(FS_KEY, v);
+        apply(v);
+      }));
+    })();
+  </script>
+
+  <script>
+    document.getElementById('profile-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const form = e.target as HTMLFormElement;
+      const successEl = document.getElementById('profile-success')!;
+      const errorEl = document.getElementById('profile-error')!;
+      const errorTextEl = document.getElementById('profile-error-text')!;
+      const data = Object.fromEntries(new FormData(form));
+
+      successEl.classList.add('hidden');
+      errorEl.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/settings/profile', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        });
+
+        if (res.ok) {
+          successEl.classList.remove('hidden');
+        } else {
+          const result = await res.json();
+          errorTextEl.textContent = result.error || 'Eroare';
+          errorEl.classList.remove('hidden');
+        }
+      } catch {
+        errorTextEl.textContent = 'Eroare de conectare';
+        errorEl.classList.remove('hidden');
+      }
+    });
+  </script>
+</AppLayout>

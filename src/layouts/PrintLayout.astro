@@ -3,17 +3,10 @@ import '../styles/global.css';
 
 interface Props {
   title: string;
-  // When set (public share page), render a WhatsApp button that forwards
-  // this link — lets the issuer/client send the document with zero email.
-  shareUrl?: string;
-  shareText?: string;
 }
 
-const { title, shareUrl, shareText } = Astro.props;
+const { title } = Astro.props;
 const locale = Astro.locals?.locale ?? 'ro';
-const waHref = shareUrl
-  ? `https://wa.me/?text=${encodeURIComponent(`${shareText ?? 'Vă transmit documentul'}: ${shareUrl}`)}`
-  : null;
 ---
 
 <!doctype html>
@@ -28,22 +21,17 @@ const waHref = shareUrl
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   </head>
   <body class="bg-[#FAFAF8] print:bg-white">
-    <div class="no-print bg-white border-b border-[#E8E8E4] sticky top-0 z-10 print:hidden">
+    <div class="no-print bg-white border-b border-[#E3EAF1] sticky top-0 z-10 print:hidden">
       <div class="max-w-[210mm] mx-auto px-4 py-3 flex items-center justify-between gap-3">
-        <div class="text-[13px] text-[#6B6B68] truncate">{title}</div>
+        <div class="text-[13px] text-[#46627A] truncate">{title}</div>
         <div class="flex gap-2 shrink-0">
-          {waHref && (
-            <a href={waHref} target="_blank" rel="noopener" class="px-4 py-2 rounded-xl bg-[#25D366] hover:bg-[#1FB855] text-white text-[13px] font-semibold transition-colors">
-              WhatsApp
-            </a>
-          )}
-          <button id="download-pdf-btn" class="px-4 py-2 rounded-xl bg-[#FF5C00] hover:bg-[#E04E00] text-white text-[13px] font-semibold transition-colors">
+          <button id="download-pdf-btn" class="px-4 py-2 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#0A2238] text-[13px] font-bold transition-colors">
             Descarcă PDF
           </button>
-          <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] text-[13px] font-medium transition-colors">
+          <button onclick="window.print()" class="px-4 py-2 rounded-full bg-white ring-1 ring-[#0A2238]/15 hover:bg-[#0A2238]/[0.04] text-[#0A2238] text-[13px] font-semibold transition-colors">
             Tipăreşte
           </button>
-          <button onclick="window.close() || history.back()" class="px-4 py-2 rounded-xl bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] text-[13px] font-medium transition-colors">
+          <button onclick="window.close() || history.back()" class="px-4 py-2 rounded-full bg-white ring-1 ring-[#0A2238]/15 hover:bg-[#0A2238]/[0.04] text-[#0A2238] text-[13px] font-semibold transition-colors">
             Închide
           </button>
         </div>

@@ -1,0 +1,149 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import ImportWizard from '../../../components/import/ImportWizard.tsx';
+import { db } from '../../../db';
+import { importJobs } from '../../../db/schema';
+import { desc, eq } from 'drizzle-orm';
+
+const company = Astro.locals.company;
+const companyId = company?.id;
+
+let jobs: any[] = [];
+if (companyId) {
+  try {
+    jobs = await db
+      .select()
+      .from(importJobs)
+      .where(eq(importJobs.companyId, companyId))
+      .orderBy(desc(importJobs.createdAt))
+      .limit(15);
+  } catch (e) {
+    // DB not provisioned yet — render the wizard with an empty jobs list.
+  }
+}
+
+const sourceLabels: Record<string, string> = {
+  oblio: 'Oblio',
+  smartbill: 'SmartBill',
+  fgo: 'FGO',
+  csv: 'CSV / Excel',
+  json: 'JSON',
+};
+const entityLabels: Record<string, string> = {
+  clients: 'Clienți',
+  products: 'Produse',
+  invoices: 'Facturi',
+};
+const statusLabels: Record<string, { label: string; cls: string }> = {
+  pending: { label: 'În curs', cls: 'bg-[#E8A33C]/15 text-[#E8A33C]' },
+  done: { label: 'Finalizat', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  failed: { label: 'Eșuat', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
+};
+
+const fmtDate = (d: Date | string | null) =>
+  d ? new Intl.DateTimeFormat('ro-RO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(d)) : '—';
+---
+
+<AppLayout title="Import date">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Import date</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-2 max-w-2xl">
+        Adu-ți clienții, produsele și istoricul de facturi din Oblio, SmartBill, FGO sau dintr-un fișier
+        CSV / Excel. Încarci fișierul, verifici maparea coloanelor, apoi confirmi importul.
+      </p>
+    </div>
+  </div>
+
+  <ImportWizard client:load />
+
+  <!-- Recent import jobs -->
+  <div id="import-jobs" class="mt-8 rounded-2xl bg-white/5 overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4">
+      <h2 class="text-[18px] font-bold text-white">Importuri recente</h2>
+      <button id="jobs-refresh" type="button" class="text-[13px] font-medium text-[#9FB8CC] hover:text-white transition-colors">
+        Reîmprospătează
+      </button>
+    </div>
+    <div id="jobs-body">
+      {jobs.length === 0 ? (
+        <div class="px-5 py-12 text-center">
+          <p class="text-[14px] text-[#9FB8CC]">Niciun import încă.</p>
+        </div>
+      ) : (
+        <div class="overflow-x-auto">
+          <table class="w-full text-[13px]">
+            <thead>
+              <tr class="text-left text-[12px] font-medium text-[#7C9AB4]">
+                <th class="px-5 py-2.5 font-medium">Data</th>
+                <th class="px-5 py-2.5 font-medium">Sursă</th>
+                <th class="px-5 py-2.5 font-medium">Tip</th>
+                <th class="px-5 py-2.5 font-medium text-right">Importate</th>
+                <th class="px-5 py-2.5 font-medium text-right">Erori</th>
+                <th class="px-5 py-2.5 font-medium">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((j) => {
+                const st = statusLabels[j.status] || statusLabels.pending;
+                return (
+                  <tr class="border-t border-white/5">
+                    <td class="px-5 py-3 text-[#9FB8CC] tabular-nums">{fmtDate(j.createdAt)}</td>
+                    <td class="px-5 py-3 text-white">{sourceLabels[j.source] || j.source || '—'}</td>
+                    <td class="px-5 py-3 text-[#9FB8CC]">{entityLabels[j.entity] || j.entity || '—'}</td>
+                    <td class="px-5 py-3 text-right font-semibold text-[#2E9E6A] tabular-nums">{j.importedRows ?? 0}</td>
+                    <td class="px-5 py-3 text-right text-[#DC4B41] tabular-nums">{j.errorRows ?? 0}</td>
+                    <td class="px-5 py-3"><span class={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  // Client-side refresh of the recent-jobs list (after a commit, or on click).
+  const sourceLabels: Record<string, string> = { oblio: 'Oblio', smartbill: 'SmartBill', fgo: 'FGO', csv: 'CSV / Excel', json: 'JSON' };
+  const entityLabels: Record<string, string> = { clients: 'Clienți', products: 'Produse', invoices: 'Facturi' };
+  const statusLabels: Record<string, { label: string; cls: string }> = {
+    pending: { label: 'În curs', cls: 'bg-[#E8A33C]/15 text-[#E8A33C]' },
+    done: { label: 'Finalizat', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+    failed: { label: 'Eșuat', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
+  };
+  const esc = (s: string) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  const fmtDate = (d: string | null) =>
+    d ? new Intl.DateTimeFormat('ro-RO', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(d)) : '—';
+
+  async function refreshJobs() {
+    const body = document.getElementById('jobs-body');
+    if (!body) return;
+    try {
+      const res = await fetch('/api/import/jobs');
+      if (!res.ok) return;
+      const { jobs } = await res.json();
+      if (!Array.isArray(jobs) || jobs.length === 0) {
+        body.innerHTML = '<div class="px-5 py-12 text-center"><p class="text-[14px] text-[#9FB8CC]">Niciun import încă.</p></div>';
+        return;
+      }
+      const rows = jobs.map((j: any) => {
+        const st = statusLabels[j.status] || statusLabels.pending;
+        return `<tr class="border-t border-white/5">
+          <td class="px-5 py-3 text-[#9FB8CC] tabular-nums">${esc(fmtDate(j.createdAt))}</td>
+          <td class="px-5 py-3 text-white">${esc(sourceLabels[j.source] || j.source || '—')}</td>
+          <td class="px-5 py-3 text-[#9FB8CC]">${esc(entityLabels[j.entity] || j.entity || '—')}</td>
+          <td class="px-5 py-3 text-right font-semibold text-[#2E9E6A] tabular-nums">${j.importedRows ?? 0}</td>
+          <td class="px-5 py-3 text-right text-[#DC4B41] tabular-nums">${j.errorRows ?? 0}</td>
+          <td class="px-5 py-3"><span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}">${esc(st.label)}</span></td>
+        </tr>`;
+      }).join('');
+      body.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-[13px]"><thead><tr class="text-left text-[12px] font-medium text-[#7C9AB4]"><th class="px-5 py-2.5 font-medium">Data</th><th class="px-5 py-2.5 font-medium">Sursă</th><th class="px-5 py-2.5 font-medium">Tip</th><th class="px-5 py-2.5 font-medium text-right">Importate</th><th class="px-5 py-2.5 font-medium text-right">Erori</th><th class="px-5 py-2.5 font-medium">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+    } catch {}
+  }
+
+  document.getElementById('jobs-refresh')?.addEventListener('click', refreshJobs);
+  window.addEventListener('import:done', () => { refreshJobs(); });
+</script>

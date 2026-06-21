@@ -1,0 +1,311 @@
+---
+import AppLayout from '../../layouts/AppLayout.astro';
+import { db } from '../../db';
+import { transportInvoices, expenses, users, invoiceProducts, etransportDeclarations } from '../../db/schema';
+import { and, eq, gte, sql } from 'drizzle-orm';
+import { NAV_MODULES } from '../../lib/nav-modules';
+import DashboardShortcuts from '../../components/DashboardShortcuts.tsx';
+import DashboardChart from '../../components/DashboardChart.tsx';
+import DashboardKpis, { type KpiDef } from '../../components/DashboardKpis.tsx';
+
+const user = Astro.locals.user!;
+const company = Astro.locals.company;
+const companyId = company?.id;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 0 }).format((cents || 0) / 100);
+
+const now = new Date();
+const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+const yearStart = new Date(now.getFullYear(), 0, 1);
+
+let kpis = { collectedMonth: 0, expensesMonth: 0 };
+// Headline counts shown as the default KPI cards.
+const counts = { facturi: 0, produse: 0, declaratii: 0 };
+// Per-month aggregates for the current year (index 1..12).
+const monthAgg = Array.from({ length: 13 }, () => ({ issued: 0, collected: 0, expenses: 0 }));
+
+if (companyId) {
+  try {
+    const base = and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'));
+
+    // Counts for the default KPI cards (each guarded so one miss won't break the rest).
+    try {
+      const [c] = await db.select({ n: sql<number>`COUNT(*)` }).from(transportInvoices).where(and(base, gte(transportInvoices.issuedAt, yearStart)));
+      counts.facturi = Number(c?.n ?? 0);
+    } catch (e) { /* table not ready */ }
+    try {
+      const [c] = await db.select({ n: sql<number>`COUNT(*)` }).from(invoiceProducts).where(and(eq(invoiceProducts.companyId, companyId), eq(invoiceProducts.isActive, true)));
+      counts.produse = Number(c?.n ?? 0);
+    } catch (e) { /* table not ready */ }
+    try {
+      const [c] = await db.select({ n: sql<number>`COUNT(*)` }).from(etransportDeclarations).where(eq(etransportDeclarations.companyId, companyId));
+      counts.declaratii = Number(c?.n ?? 0);
+    } catch (e) { /* table not ready */ }
+
+    // Top cards: money collected + expenses this month.
+    const [mRow] = await db.select({
+      collected: sql<number>`COALESCE(SUM(${transportInvoices.paidCents}), 0)`,
+    }).from(transportInvoices).where(and(base, gte(transportInvoices.issuedAt, monthStart)));
+    kpis.collectedMonth = Number(mRow?.collected ?? 0);
+
+    const monthStartStr = monthStart.toISOString().slice(0, 10);
+    const [eRow] = await db.select({
+      total: sql<number>`COALESCE(SUM(${expenses.totalCents}), 0)`,
+    }).from(expenses).where(and(eq(expenses.companyId, companyId), gte(expenses.issueDate, monthStartStr)));
+    kpis.expensesMonth = Number(eRow?.total ?? 0);
+
+    // Chart: invoices issued / collected per month this year.
+    const invByMonth = await db.select({
+      m: sql<number>`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})::int`,
+      collected: sql<number>`COALESCE(SUM(${transportInvoices.paidCents}), 0)`,
+      issued: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}), 0)`,
+    }).from(transportInvoices).where(and(base, gte(transportInvoices.issuedAt, yearStart)))
+      .groupBy(sql`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})`);
+    for (const r of invByMonth) {
+      const i = Number(r.m);
+      if (i >= 1 && i <= 12) { monthAgg[i].issued = Number(r.issued); monthAgg[i].collected = Number(r.collected); }
+    }
+
+    // Chart: expenses per month this year.
+    const yearStartStr = yearStart.toISOString().slice(0, 10);
+    const expByMonth = await db.select({
+      m: sql<number>`EXTRACT(MONTH FROM ${expenses.issueDate})::int`,
+      total: sql<number>`COALESCE(SUM(${expenses.totalCents}), 0)`,
+    }).from(expenses).where(and(eq(expenses.companyId, companyId), gte(expenses.issueDate, yearStartStr)))
+      .groupBy(sql`EXTRACT(MONTH FROM ${expenses.issueDate})`);
+    for (const r of expByMonth) {
+      const i = Number(r.m);
+      if (i >= 1 && i <= 12) { monthAgg[i].expenses = Number(r.total); }
+    }
+  } catch (e) { /* DB not ready */ }
+}
+
+// Demo fallback — when the company has no real data yet, populate the chart with
+// plausible mock numbers (only up to the current month; future months stay empty)
+// so the design is reviewable. Real data always wins when present.
+const curMonth = now.getMonth(); // 0-11
+const hasRealData = monthAgg.some((a, i) => i >= 1 && (a.issued || a.collected || a.expenses));
+if (!hasRealData) {
+  // { v: collected, d: still-to-pay, c: expenses } in RON.
+  const MOCK = [
+    { v: 9200, d: 1800, c: 6100 },  { v: 11500, d: 2400, c: 7200 },
+    { v: 8600, d: 1200, c: 5400 },  { v: 14800, d: 3600, c: 8100 },
+    { v: 12300, d: 2100, c: 9400 }, { v: 16900, d: 4200, c: 7600 },
+    { v: 13400, d: 2800, c: 8800 }, { v: 10200, d: 1500, c: 6700 },
+    { v: 15600, d: 3100, c: 9100 }, { v: 12900, d: 2600, c: 7300 },
+    { v: 17800, d: 4800, c: 9900 }, { v: 14100, d: 2200, c: 8400 },
+  ];
+  for (let i = 0; i < 12; i++) {
+    if (i <= curMonth) {
+      const m = MOCK[i];
+      monthAgg[i + 1] = { collected: m.v * 100, issued: (m.v + m.d) * 100, expenses: m.c * 100 };
+    } else {
+      monthAgg[i + 1] = { collected: 0, issued: 0, expenses: 0 };
+    }
+  }
+  // Top KPI cards: use the current month's mock so they aren't zero in the demo.
+  kpis.collectedMonth = MOCK[curMonth].v * 100;
+  kpis.expensesMonth = MOCK[curMonth].c * 100;
+  if (!counts.facturi) counts.facturi = 127;
+  if (!counts.produse) counts.produse = 48;
+  if (!counts.declaratii) counts.declaratii = 12;
+}
+
+// Build 12 monthly columns: income (collected + still-to-pay, stacked) vs expenses.
+const MONTH_ABBR = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
+const MONTH_FULL = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+const months = MONTH_ABBR.map((short, idx) => {
+  const a = monthAgg[idx + 1];
+  const venituri = a.collected;
+  const deplatit = Math.max(0, a.issued - a.collected);
+  const emise = a.issued; // = venituri + deplatit
+  const cheltuieli = a.expenses;
+  return {
+    short,
+    name: MONTH_FULL[idx],
+    empty: !(emise || cheltuieli),
+    venituri, deplatit, emise, cheltuieli,
+    dv: ron(venituri), dd: ron(deplatit), de: ron(emise), dc: ron(cheltuieli),
+  };
+});
+const scaleMax = Math.max(1, ...months.map((m) => Math.max(m.emise, m.cheltuieli)));
+
+const yearly = monthAgg.reduce(
+  (acc, a) => ({ issued: acc.issued + a.issued, collected: acc.collected + a.collected, expenses: acc.expenses + a.expenses }),
+  { issued: 0, collected: 0, expenses: 0 },
+);
+const legend = [
+  { label: 'Facturat',   colors: ['#3A47C2'], display: ron(yearly.issued) },
+  { label: 'Venituri',   colors: ['#0E8074'], display: ron(yearly.collected) },
+  { label: 'De plătit',  colors: ['#E8730C'], display: ron(Math.max(0, yearly.issued - yearly.collected)) },
+  { label: 'Cheltuieli', colors: ['#D11149'], display: ron(yearly.expenses) },
+];
+const netYear = yearly.collected - yearly.expenses;
+const yearLabel = String(now.getFullYear());
+
+// Extra detail stats.
+const active = months.map((m, i) => ({ m, i })).filter((x) => x.m.venituri > 0);
+const avgInc = active.length ? Math.round(active.reduce((s, x) => s + x.m.venituri, 0) / active.length) : 0;
+const best = active.reduce<{ m: typeof months[number]; i: number } | null>((a, b) => (a && a.m.venituri >= b.m.venituri ? a : b), null);
+const margin = yearly.collected > 0 ? Math.round((netYear / yearly.collected) * 100) : 0;
+const stats = [
+  { label: 'Medie lunară', value: ron(avgInc) },
+  { label: 'Cea mai bună lună', value: best ? MONTH_FULL[best.i] : '—' },
+  { label: 'Marjă netă', value: `${margin}%` },
+];
+
+// Flat solid tiles cycling the full lime→teal→blue ramp.
+const TILE = [
+  { bg: '#D9ED92', fg: '#1C3A22', sub: '#3C5A33' },              // Lime Cream
+  { bg: '#B5E48C', fg: '#1B3A24', sub: '#395A33' },              // Light Green
+  { bg: '#99D98C', fg: '#163A26', sub: '#2F5638' },              // Willow
+  { bg: '#76C893', fg: '#0F3A28', sub: '#235340' },              // Emerald
+  { bg: '#52B69A', fg: '#06322A', sub: '#0F4A3C' },              // Ocean Mist
+  { bg: '#34A0A4', fg: '#06272B', sub: '#0C3E44' },              // Tropical Teal
+  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Bondi Blue
+  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Cerulean
+  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Baltic Blue
+];
+const tileFor = (key: string) => TILE[Math.max(0, NAV_MODULES.findIndex((m) => m.key === key)) % TILE.length];
+
+const primary = NAV_MODULES.find((m) => m.primary)!;
+const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import');
+
+// Full catalog (with flat tile colours) the user can pin to the launcher.
+const shortcutCatalog = rest.map((m) => {
+  const t = tileFor(m.key);
+  return { key: m.key, label: m.label, desc: m.desc, href: m.href, icon: m.icon, group: m.group, bg: t.bg, fg: t.fg, sub: t.sub };
+});
+
+// Which modules this user has pinned (personal preference, persisted on users.dashboardModules).
+let selectedModules: string[] = [];
+try {
+  const [urow] = await db.select({ dm: users.dashboardModules }).from(users).where(eq(users.id, user.id));
+  if (urow?.dm) {
+    const arr = JSON.parse(urow.dm);
+    if (Array.isArray(arr)) selectedModules = arr.filter((k) => typeof k === 'string');
+  }
+} catch { /* column may not exist yet / DB not ready */ }
+
+// Dashboard hero helpers (reference look: big number + faded decimals + mini chart).
+const curM = now.getMonth();
+const curMonthData = months[curM] || { venituri: 0, cheltuieli: 0, emise: 0 };
+const splitRon = (cents: number) => {
+  const w = Math.floor((cents || 0) / 100);
+  const d = String(Math.abs((cents || 0) % 100)).padStart(2, '0');
+  return { whole: w.toLocaleString('ro-RO'), dec: d };
+};
+const incomeSplit = splitRon(curMonthData.venituri);
+const expSplit = splitRon(curMonthData.cheltuieli);
+const sparkFrom = (key: 'venituri' | 'cheltuieli' | 'emise') => {
+  const s = months.slice(Math.max(0, curM - 6), curM + 1).map((m) => m[key]);
+  const mx = Math.max(1, ...s);
+  return s.map((v) => Math.max(8, Math.round((v / mx) * 100)));
+};
+const expBars = sparkFrom('cheltuieli');
+const factBars = sparkFrom('emise'); // invoiced trend — always has data when invoices exist
+const sparkLabels = months.slice(Math.max(0, curM - 6), curM + 1).map((m) => m.short);
+const sparkVals = (key: 'venituri' | 'cheltuieli' | 'emise') => months.slice(Math.max(0, curM - 6), curM + 1).map((m) => ron(m[key]));
+const factVals = sparkVals('emise');
+const expVals = sparkVals('cheltuieli');
+const initials = (user.name || 'U').split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
+
+// Catalog of KPI cards the user can show / swipe-to-remove / add. Each carries
+// its own pre-formatted value + optional sparkline + icon + info + extra stats.
+const netSplit = splitRon(netYear);
+const deplatitYear = Math.max(0, yearly.issued - yearly.collected);
+const bestMonth = best ? MONTH_FULL[best.i] : '—';
+const ICON = {
+  up: 'M2.25 18 9 11.25l4.306 4.307a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941',
+  down: 'M2.25 6 9 12.75l4.286-4.286a11.948 11.948 0 0 1 4.306 6.43l.776 2.898m0 0 3.182-5.511m-3.182 5.51-5.511-3.181',
+  cash: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z',
+  doc: 'M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z',
+  check: 'M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  clock: 'M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z',
+  pie: 'M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z',
+  bars: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z',
+};
+const kpiCatalog: KpiDef[] = [
+  { key: 'facturi', label: `Facturi · ${yearLabel}`, kind: 'percent', whole: String(counts.facturi), dec: '', accent: '#168AAD', icon: ICON.doc, info: 'Numărul de facturi emise anul acesta.', href: '/app/facturare' },
+  { key: 'produse', label: 'Produse active', kind: 'percent', whole: String(counts.produse), dec: '', accent: '#52B69A', icon: ICON.bars, info: 'Produse și servicii din catalogul tău, disponibile pe facturi.', href: '/app/facturare' },
+  { key: 'declaratii', label: 'Declarații', kind: 'percent', whole: String(counts.declaratii), dec: '', accent: '#1A759F', icon: ICON.check, info: 'Declarații e-Transport generate.', href: '/app/etransport' },
+  { key: 'incasari_luna', label: 'Încasări · luna aceasta', kind: 'money', whole: incomeSplit.whole, dec: incomeSplit.dec, note: `din ${ron(curMonthData.emise)} facturat`, bars: factBars, barLabels: sparkLabels, barValues: factVals, accent: '#76C893', icon: ICON.up, info: 'Banii încasați efectiv luna aceasta (din facturile marcate ca plătite), din totalul facturat.', href: '/app/facturare', extra: [{ label: 'Facturat luna', value: ron(curMonthData.emise) }, { label: 'Încasat anual', value: ron(yearly.collected) }] },
+  { key: 'cheltuieli_luna', label: 'Cheltuieli · luna aceasta', kind: 'money', whole: expSplit.whole, dec: expSplit.dec, bars: expBars, barLabels: sparkLabels, barValues: expVals, accent: '#34A0A4', icon: ICON.down, info: 'Totalul cheltuielilor înregistrate luna aceasta.', href: '/app/cheltuieli', extra: [{ label: 'Cheltuieli anuale', value: ron(yearly.expenses) }] },
+  { key: 'venit_net', label: `Venit net · ${yearLabel}`, kind: 'money', whole: netSplit.whole, dec: netSplit.dec, accent: '#B5E48C', icon: ICON.cash, info: `Venitul rămas după cheltuieli pentru ${yearLabel}.`, href: '/app/rapoarte', extra: [{ label: 'Venituri', value: ron(yearly.collected) }, { label: 'Cheltuieli', value: ron(yearly.expenses) }, { label: 'Marjă netă', value: `${margin}%` }] },
+  { key: 'facturat_an', label: `Facturat · ${yearLabel}`, kind: 'money', whole: splitRon(yearly.issued).whole, dec: splitRon(yearly.issued).dec, accent: '#168AAD', icon: ICON.doc, info: 'Valoarea totală a facturilor emise anul acesta.', href: '/app/facturare', extra: [{ label: 'Încasat', value: ron(yearly.collected) }, { label: 'De plătit', value: ron(deplatitYear) }] },
+  { key: 'venituri_an', label: `Venituri încasate · ${yearLabel}`, kind: 'money', whole: splitRon(yearly.collected).whole, dec: splitRon(yearly.collected).dec, accent: '#52B69A', icon: ICON.check, info: 'Totalul încasat din facturi anul acesta.', href: '/app/facturare', extra: [{ label: 'Facturat', value: ron(yearly.issued) }, { label: 'De plătit', value: ron(deplatitYear) }] },
+  { key: 'deplatit_an', label: `De plătit · ${yearLabel}`, kind: 'money', whole: splitRon(deplatitYear).whole, dec: splitRon(deplatitYear).dec, accent: '#1A759F', icon: ICON.clock, info: 'Facturi emise dar neîncasate încă.', href: '/app/facturare', extra: [{ label: 'Facturat', value: ron(yearly.issued) }, { label: 'Încasat', value: ron(yearly.collected) }] },
+  { key: 'marja', label: `Marjă netă · ${yearLabel}`, kind: 'percent', whole: `${margin}%`, dec: '', accent: '#99D98C', icon: ICON.pie, info: 'Procentul din venituri rămas ca profit, după cheltuieli.', href: '/app/rapoarte', extra: [{ label: 'Venituri', value: ron(yearly.collected) }, { label: 'Cheltuieli', value: ron(yearly.expenses) }, { label: 'Venit net', value: ron(netYear) }] },
+  { key: 'medie', label: 'Medie lunară', kind: 'money', whole: splitRon(avgInc).whole, dec: splitRon(avgInc).dec, accent: '#D9ED92', icon: ICON.bars, info: 'Media încasărilor pe lunile active din an.', href: '/app/rapoarte', extra: [{ label: 'Încasat anual', value: ron(yearly.collected) }, { label: 'Cea mai bună lună', value: bestMonth }] },
+];
+const defaultKpis = ['facturi', 'incasari_luna', 'cheltuieli_luna', 'venit_net'];
+---
+
+<AppLayout title="Acasă" hideBreadcrumbs>
+  <!-- Primary action — standalone lime button -->
+  <a href={primary.href} class="group flex items-center justify-center gap-2.5 w-full px-6 py-4 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[17px] hover:bg-[#D2EA0E] transition-colors mb-6 shadow-[0_10px_30px_-12px_rgba(225,251,21,0.6)]" data-reveal>
+    <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d={primary.icon}/></svg>
+    {primary.label}
+    <svg class="w-5 h-5 shrink-0 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+  </a>
+
+  <!-- Quick actions (above the KPI cards so they're reachable straight away) -->
+  <div class="mb-7" data-reveal>
+    <DashboardShortcuts client:load catalog={shortcutCatalog} initialSelected={selectedModules} />
+  </div>
+
+  <!-- Customizable KPI cards: swipe-left to reveal Info / Delete, tap + to add more -->
+  <div class="mb-4" data-reveal>
+    <DashboardKpis client:load catalog={kpiCatalog} initialSelected={defaultKpis} />
+  </div>
+
+  {/* Yearly chart — off by default; the deletable "Încasări · luna aceasta" KPI widget covers this
+  <div class="mt-7" data-reveal>
+    <DashboardChart
+      client:load
+      title={yearLabel}
+      subtitle="Evoluție anuală"
+      netDisplay={ron(netYear)}
+      netValue={netYear}
+      netPositive={netYear >= 0}
+      legend={legend}
+      months={months}
+      scaleMax={scaleMax}
+      highlightIndex={now.getMonth()}
+      stats={stats}
+      demo={!hasRealData}
+    />
+  </div>
+  */}
+
+  <script>
+    import { gsap } from 'gsap';
+
+    const ron = (v: number) =>
+      new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 0 }).format(v / 100);
+
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Staggered reveal of the major blocks.
+    const blocks = gsap.utils.toArray<HTMLElement>('[data-reveal]');
+    if (!reduce) {
+      gsap.set(blocks, { opacity: 0, y: 22 });
+      // clearProps: remove the leftover transform so position:fixed modals inside
+      // these blocks (e.g. the "Adaugă" picker) anchor to the viewport, not the card.
+      gsap.to(blocks, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.09, delay: 0.05, clearProps: 'transform' });
+    }
+
+    // Count-up the KPI numbers.
+    document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
+      const target = Number(el.getAttribute('data-count')) || 0;
+      const fmt = el.getAttribute('data-fmt');
+      if (reduce) { el.textContent = fmt === 'ron' ? ron(target) : String(Math.round(target)); return; }
+      const o = { v: 0 };
+      gsap.to(o, {
+        v: target, duration: 1.1, ease: 'power2.out', delay: 0.25,
+        onUpdate() { el.textContent = fmt === 'ron' ? ron(o.v) : String(Math.round(o.v)); },
+      });
+    });
+  </script>
+</AppLayout>

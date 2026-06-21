@@ -1,0 +1,153 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { etransportDeclarations } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { getAnafStatus } from '../../../lib/anaf/tokens';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const anaf = await getAnafStatus(companyId).catch(() => ({ connected: false, cif: null as string | null }));
+
+const ron = (cents: number | null) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+const fmtDate = (d: Date | string | null) => {
+  if (!d) return '-';
+  const date = new Date(d);
+  return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('ro-RO');
+};
+
+let rows: any[] = [];
+try {
+  rows = await db.select().from(etransportDeclarations)
+    .where(eq(etransportDeclarations.companyId, companyId))
+    .orderBy(desc(etransportDeclarations.createdAt))
+    .limit(200);
+} catch (e) { /* DB not provisioned */ }
+
+function statusPill(status: string) {
+  switch (status) {
+    case 'sent': return { label: 'Trimisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' };
+    case 'confirmed': return { label: 'Confirmată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' };
+    case 'error': return { label: 'Eroare', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' };
+    default: return { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' };
+  }
+}
+---
+
+<AppLayout title="e-Transport" activeTab="etransport">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">e-Transport (UIT)</h1>
+      <p class="text-[14px] text-[#9FB8CC] mt-2">Declarațiile de transport trimise la ANAF.</p>
+    </div>
+    <a href="/app/etransport/nou" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
+      + Declarație nouă
+    </a>
+  </div>
+
+  {!anaf.connected && (
+    <div class="rounded-2xl p-5 mb-6 bg-[#E8A33C]/15 flex flex-wrap items-center gap-3">
+      <p class="text-[13px] text-[#9FB8CC]">Poți pregăti declarații ca ciorne. Pentru a le trimite la ANAF, conectează firma din <strong class="text-white">Setări → Integrare ANAF</strong>.</p>
+      <a href="/app/setari/integrari-anaf" class="text-[13px] font-semibold text-[#E1FB15] hover:underline ml-auto">Conectează →</a>
+    </div>
+  )}
+
+  {rows.length === 0 ? (
+    <div class="rounded-2xl p-5 bg-white/5 py-14 text-center">
+      <p class="text-[14px] text-[#9FB8CC]">Nicio declarație încă.</p>
+      <a href="/app/etransport/nou" class="inline-block mt-3 text-[14px] font-semibold text-[#E1FB15] hover:underline">Creează prima declarație →</a>
+    </div>
+  ) : (
+    <Fragment>
+      <ul class="space-y-2.5">
+        {rows.slice(0, 3).map((d) => {
+          const pill = statusPill(d.status);
+          return (
+            <li class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono font-bold text-white">{d.uit || 'Ciornă'}</span>
+                  <span class={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${pill.cls}`}>{pill.label}</span>
+                </div>
+                <p class="text-[13px] text-[#9FB8CC] mt-1 truncate">{d.senderName || '-'} → {d.recipientName || '-'}</p>
+                <p class="text-[13px] text-[#7C9AB4] mt-0.5 tabular-nums">
+                  {[d.operationType, d.vehiclePlate, fmtDate(d.createdAt)].filter(Boolean).join(' · ')}
+                </p>
+                {d.status === 'error' && d.errorText && (
+                  <p class="text-[12px] text-[#DC4B41] mt-1 truncate">{d.errorText}</p>
+                )}
+                {d.spvIndex && d.status !== 'confirmed' && d.status !== 'error' && (
+                  <button class="check-status mt-1 text-[12px] font-semibold text-[#E1FB15] hover:underline" data-id={d.id}>Verifică starea</button>
+                )}
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-bold text-white tabular-nums">{ron(d.totalValueCents)}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+      {rows.length > 3 && (
+        <details class="mt-2.5">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+          <ul class="space-y-2.5 mt-2.5">
+            {rows.slice(3).map((d) => {
+              const pill = statusPill(d.status);
+              return (
+                <li class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-mono font-bold text-white">{d.uit || 'Ciornă'}</span>
+                      <span class={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${pill.cls}`}>{pill.label}</span>
+                    </div>
+                    <p class="text-[13px] text-[#9FB8CC] mt-1 truncate">{d.senderName || '-'} → {d.recipientName || '-'}</p>
+                    <p class="text-[13px] text-[#7C9AB4] mt-0.5 tabular-nums">
+                      {[d.operationType, d.vehiclePlate, fmtDate(d.createdAt)].filter(Boolean).join(' · ')}
+                    </p>
+                    {d.status === 'error' && d.errorText && (
+                      <p class="text-[12px] text-[#DC4B41] mt-1 truncate">{d.errorText}</p>
+                    )}
+                    {d.spvIndex && d.status !== 'confirmed' && d.status !== 'error' && (
+                      <button class="check-status mt-1 text-[12px] font-semibold text-[#E1FB15] hover:underline" data-id={d.id}>Verifică starea</button>
+                    )}
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-bold text-white tabular-nums">{ron(d.totalValueCents)}</p>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </details>
+      )}
+    </Fragment>
+  )}
+
+  <script>
+    document.querySelectorAll<HTMLButtonElement>('.check-status').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const id = btn.dataset.id;
+        if (!id) return;
+        const original = btn.textContent;
+        btn.textContent = 'Se verifică...';
+        try {
+          const r = await fetch(`/api/anaf/etransport/${id}`);
+          const d = await r.json();
+          if (d.ok) {
+            window.location.reload();
+          } else {
+            btn.textContent = original;
+            alert(d.error || 'Nu s-a putut verifica starea.');
+          }
+        } catch {
+          btn.textContent = original;
+          alert('Eroare de rețea.');
+        }
+      });
+    });
+  </script>
+</AppLayout>
