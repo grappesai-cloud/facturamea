@@ -23,13 +23,10 @@ export interface TurnstileResult {
 export async function verifyTurnstile(token: string, ip?: string): Promise<TurnstileResult> {
   const secret = process.env.TURNSTILE_SECRET || process.env.CLOUDFLARE_TURNSTILE_SECRET;
   if (!secret) {
-    // Fail CLOSED in production (mirrors the cron-auth pattern): a missing/typo'd
-    // secret must never silently disable the anti-bot gate on a live deploy. In
-    // dev/preview (no prod build) we fail open so local runs work without a key.
-    const isProd = import.meta.env.PROD || process.env.NODE_ENV === 'production';
-    if (isProd) {
-      return { ok: false, reason: 'turnstile_not_configured' };
-    }
+    // Anti-bot is OPT-IN: enforced only when TURNSTILE_SECRET is configured.
+    // If it isn't set up, skip — blocking every login because a captcha was
+    // never configured is far worse than not having one (login still has
+    // rate-limiting + lockout). Set the secret to turn enforcement on.
     return { ok: true, reason: 'turnstile_not_configured' };
   }
   if (!token) {
