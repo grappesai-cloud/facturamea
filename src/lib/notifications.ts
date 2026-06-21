@@ -52,9 +52,37 @@ function shouldSend(
   }
 }
 
+// Provider-agnostic email. Prefers SMTP (any provider: Brevo, Amazon SES,
+// Zoho ZeptoMail, self-hosted Postfix — all pay-per-use / free-tier, no
+// monthly lock-in) when SMTP_HOST is set; falls back to the Resend HTTP API
+// when only RESEND_API_KEY is present. Configure ONE of:
+//   SMTP_HOST, SMTP_PORT(=587), SMTP_USER, SMTP_PASS  + EMAIL_FROM
+//   RESEND_API_KEY                                     + RESEND_FROM
+const env = (k: string): string | undefined =>
+  ((import.meta as any).env?.[k] as string | undefined) ?? process.env[k];
+
 export async function sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
-  const apiKey = import.meta.env.RESEND_API_KEY || process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error('RESEND_API_KEY not set');
+  const from = env('EMAIL_FROM') || env('SMTP_FROM') || env('RESEND_FROM') || 'facturamea <no-reply@facturamea.com>';
+  const smtpHost = env('SMTP_HOST');
+
+  // ── SMTP (preferred, provider-agnostic) ────────────────────────────────
+  if (smtpHost) {
+    const nodemailer = (await import('nodemailer')).default;
+    const port = Number(env('SMTP_PORT') || 587);
+    const user = env('SMTP_USER');
+    const transport = nodemailer.createTransport({
+      host: smtpHost,
+      port,
+      secure: port === 465, // 465 = implicit TLS; 587 = STARTTLS
+      auth: user ? { user, pass: env('SMTP_PASS') } : undefined,
+    });
+    await transport.sendMail({ from, to, subject, text, ...(html ? { html } : {}) });
+    return;
+  }
+
+  // ── Resend HTTP API (fallback) ─────────────────────────────────────────
+  const apiKey = env('RESEND_API_KEY');
+  if (!apiKey) throw new Error('No email provider configured (set SMTP_HOST or RESEND_API_KEY)');
 
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -63,7 +91,7 @@ export async function sendEmail(to: string, subject: string, text: string, html?
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: import.meta.env.RESEND_FROM || process.env.RESEND_FROM || 'facturamea <no-reply@send.facturamea.com>',
+      from,
       to: [to],
       subject,
       text,

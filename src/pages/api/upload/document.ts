@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import { sniffFileKind, isImageKind, validateImageDimensions } from '../../../lib/file-sniff';
 import { rateLimitAsync, getClientIp } from '../../../lib/security';
 import { logAction } from '../../../lib/audit';
+import { putObject, storageConfigured } from '../../../lib/storage';
 
 // Unified, hardened file upload endpoint.
 //
@@ -96,29 +97,26 @@ export const POST: APIRoute = async ({ request, locals }) => {
     height = dims.height;
   }
 
-  // Upload to Vercel Blob (private store) if configured. We return a stable
-  // proxy URL (/api/files?p=<pathname>) rather than the raw blob URL, because
-  // private blobs 403 without auth — the proxy streams them to logged-in users.
-  // Without the token, return a clear pending:// URL so the caller knows
+  // Store privately (S3-compatible: R2/MinIO/S3, or Vercel Blob fallback) if
+  // configured. We return a stable proxy URL (/api/files?p=<key>) — never a raw
+  // public URL — so the authenticated, same-company proxy gates every read.
+  // Without any backend, return a clear pending:// URL so the caller knows
   // storage isn't wired.
   let url: string;
   try {
-    if (process.env.BLOB_READ_WRITE_TOKEN) {
-      const { put } = await import('@vercel/blob');
-      // Path: <companyId>/<purpose>/<nanoid>-<sanitized-filename>
+    if (storageConfigured()) {
+      // Key: <companyId>/<purpose>/<nanoid>-<sanitized-filename>
       const safeName = file.name.replace(/[^A-Za-z0-9._-]+/g, '_').slice(-80);
       const folder = locals.user.companyId ?? 'orphan';
       const pathname = `${folder}/${purposeKey}/${nanoid(10)}-${safeName}`;
-      await put(pathname, file, {
-        access: 'private',
-        addRandomSuffix: false,
-      });
+      const buf = Buffer.from(await file.arrayBuffer());
+      await putObject(pathname, buf, kind);
       url = `/api/files?p=${encodeURIComponent(pathname)}`;
     } else {
-      url = `pending://blob-not-configured/${file.name}`;
+      url = `pending://storage-not-configured/${file.name}`;
     }
   } catch (err) {
-    console.error('blob upload failed', err);
+    console.error('file upload failed', err);
     return new Response(JSON.stringify({ error: 'Eroare upload' }), { status: 500 });
   }
 

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { getObject, storageConfigured } from '../../lib/storage';
 
 // Authenticated proxy for PRIVATE Vercel Blob files.
 //
@@ -23,23 +24,22 @@ export const GET: APIRoute = async ({ url, locals }) => {
     return new Response('Acces interzis', { status: 403 });
   }
 
-  if (!process.env.BLOB_READ_WRITE_TOKEN) {
+  if (!storageConfigured()) {
     return new Response('Stocare neconfigurată', { status: 503 });
   }
 
   try {
-    const { get } = await import('@vercel/blob');
-    const res = await get(pathname, { access: 'private' });
-    if (!res || res.statusCode !== 200 || !res.stream) {
+    const obj = await getObject(pathname);
+    if (!obj) {
       return new Response('Fișier negăsit', { status: 404 });
     }
-    const name = res.blob.pathname.split('/').pop() || 'file';
-    return new Response(res.stream, {
+    const name = pathname.split('/').pop() || 'file';
+    return new Response(obj.body as unknown as BodyInit, {
       status: 200,
       headers: {
-        'Content-Type': res.blob.contentType || 'application/octet-stream',
+        'Content-Type': obj.contentType,
         'Content-Disposition': `inline; filename="${name.replace(/"/g, '')}"`,
-        'Content-Length': String(res.blob.size),
+        'Content-Length': String(obj.size),
         // Private: browsers may cache per-user but shared caches/CDN must not.
         'Cache-Control': 'private, max-age=300',
       },
