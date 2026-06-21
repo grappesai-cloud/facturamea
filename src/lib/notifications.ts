@@ -52,56 +52,75 @@ function shouldSend(
   }
 }
 
-// Provider-agnostic email. Prefers SMTP (any provider: Brevo, Amazon SES,
-// Zoho ZeptoMail, self-hosted Postfix — all pay-per-use / free-tier, no
-// monthly lock-in) when SMTP_HOST is set; falls back to the Resend HTTP API
-// when only RESEND_API_KEY is present. Configure ONE of:
-//   SMTP_HOST, SMTP_PORT(=587), SMTP_USER, SMTP_PASS  + EMAIL_FROM
-//   RESEND_API_KEY                                     + RESEND_FROM
+// Email delivery. Prefers HTTP APIs over HTTPS (443) — the ONLY reliable path
+// on hosts (Netcup) that filter outbound SMTP ports (25/587). Order:
+//   1. Brevo HTTP API   (BREVO_API_KEY)   — recommended, free 300/day
+//   2. Resend HTTP API  (RESEND_API_KEY)
+//   3. SMTP             (SMTP_HOST...)     — last resort, with short timeouts so
+//      a blocked port fails fast instead of hanging the request.
+// Sender from EMAIL_FROM ("Name <email>") / RESEND_FROM.
 const env = (k: string): string | undefined =>
   ((import.meta as any).env?.[k] as string | undefined) ?? process.env[k];
 
+function parseFrom(from: string): { name: string; email: string } {
+  const m = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(from);
+  if (m) return { name: m[1] || 'facturamea', email: m[2] };
+  return { name: 'facturamea', email: from.trim() };
+}
+
+async function fetchJson(url: string, init: RequestInit, label: string): Promise<void> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 15000);
+  try {
+    const res = await fetch(url, { ...init, signal: ctrl.signal });
+    if (!res.ok) throw new Error(`${label} error ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 export async function sendEmail(to: string, subject: string, text: string, html?: string): Promise<void> {
   const from = env('EMAIL_FROM') || env('SMTP_FROM') || env('RESEND_FROM') || 'facturamea <no-reply@facturamea.com>';
-  const smtpHost = env('SMTP_HOST');
 
-  // ── SMTP (preferred, provider-agnostic) ────────────────────────────────
-  if (smtpHost) {
-    const nodemailer = (await import('nodemailer')).default;
-    const port = Number(env('SMTP_PORT') || 587);
-    const user = env('SMTP_USER');
-    const transport = nodemailer.createTransport({
-      host: smtpHost,
-      port,
-      secure: port === 465, // 465 = implicit TLS; 587 = STARTTLS
-      auth: user ? { user, pass: env('SMTP_PASS') } : undefined,
-    });
-    await transport.sendMail({ from, to, subject, text, ...(html ? { html } : {}) });
+  // ── Brevo HTTP API (preferred — works over 443, no SMTP port needed) ─────
+  const brevoKey = env('BREVO_API_KEY');
+  if (brevoKey) {
+    const sender = parseFrom(from);
+    await fetchJson('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': brevoKey, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ sender, to: [{ email: to }], subject, htmlContent: html || `<pre>${text}</pre>`, textContent: text }),
+    }, 'Brevo');
     return;
   }
 
-  // ── Resend HTTP API (fallback) ─────────────────────────────────────────
-  const apiKey = env('RESEND_API_KEY');
-  if (!apiKey) throw new Error('No email provider configured (set SMTP_HOST or RESEND_API_KEY)');
-
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      text,
-      ...(html ? { html } : {}),
-    }),
-  });
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Resend error ${res.status}: ${errText}`);
+  // ── Resend HTTP API ──────────────────────────────────────────────────────
+  const resendKey = env('RESEND_API_KEY');
+  if (resendKey) {
+    await fetchJson('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to: [to], subject, text, ...(html ? { html } : {}) }),
+    }, 'Resend');
+    return;
   }
+
+  // ── SMTP (last resort, fail-fast timeouts so a blocked port can't hang) ──
+  const smtpHost = env('SMTP_HOST');
+  if (!smtpHost) throw new Error('No email provider configured (set BREVO_API_KEY, RESEND_API_KEY, or SMTP_HOST)');
+  const nodemailer = (await import('nodemailer')).default;
+  const port = Number(env('SMTP_PORT') || 587);
+  const user = env('SMTP_USER');
+  const transport = nodemailer.createTransport({
+    host: smtpHost,
+    port,
+    secure: port === 465,
+    auth: user ? { user, pass: env('SMTP_PASS') } : undefined,
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 12000,
+  });
+  await transport.sendMail({ from, to, subject, text, ...(html ? { html } : {}) });
 }
 
 /** Strip a trailing http(s) URL from a notification body — the in-app row

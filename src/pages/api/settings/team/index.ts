@@ -145,10 +145,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       const subject = `Ai fost adăugat în echipa ${companyName} pe facturamea`;
       const text = `Bună ${name},\n${inviter} te-a adăugat în echipa "${companyName}" pe facturamea, cu rolul ${roleLabel}.\nSetează-ți parola și intră în cont: ${link}\nLinkul e valabil 7 zile.`;
       const html = `<p>Bună ${esc(name)},</p><p><strong>${esc(inviter)}</strong> te-a adăugat în echipa <strong>${esc(companyName)}</strong> pe facturamea, cu rolul <strong>${esc(roleLabel)}</strong>.</p><p><a href="${link}">Setează-ți parola și intră în cont</a> — link valabil 7 zile.</p>`;
-      await sendEmail(email, subject, text, html);
+      // Fire-and-forget: member creation must not block on (or fail with) email.
+      void sendEmail(email, subject, text, html).catch((e) => console.error('team invite email failed:', e));
       invited = true;
     } catch (err) {
-      console.error('team invite email failed:', err);
+      console.error('team invite token failed:', err);
     }
 
     return json({ ok: true, userId, platformId, invited }, 201);
