@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../db';
-import { users, sessions, passwordResetTokens, emailVerificationTokens, companies } from '../../../db/schema';
+import { users, sessions, passwordResetTokens, emailVerificationTokens, companies, auditLog } from '../../../db/schema';
 import { inArray, notInArray } from 'drizzle-orm';
 
 // One-time cleanup: removes ALL accounts except the kept ones (demo + admin).
@@ -42,6 +42,9 @@ export const GET: APIRoute = async ({ url }) => {
       await db.delete(sessions).where(inArray(sessions.userId, victimUserIds));
       await db.delete(passwordResetTokens).where(inArray(passwordResetTokens.userId, victimUserIds));
       await db.delete(emailVerificationTokens).where(inArray(emailVerificationTokens.userId, victimUserIds));
+      // audit_log: schema says SET NULL but the live DB has a RESTRICT FK
+      // (schema drift), so its rows block user deletion — clear victims' rows.
+      await db.delete(auditLog).where(inArray(auditLog.userId, victimUserIds));
       // 3) the users themselves.
       await db.delete(users).where(inArray(users.id, victimUserIds));
     }
