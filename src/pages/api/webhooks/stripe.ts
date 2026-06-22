@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getStripe, isStripeConfigured } from '../../../lib/stripe';
 import { grantLifetime } from '../../../lib/license';
+import { processLifetimeRevShare } from '../../../lib/revenue-share';
 
 // Stripe webhook receiver. Configure in Stripe dashboard:
 //   Developers → Webhooks → Add endpoint
@@ -48,6 +49,12 @@ export const POST: APIRoute = async ({ request }) => {
         });
       } catch (err) {
         console.error('grantLifetime failed', err);
+      }
+      // Revenue share către asociat (Stripe Connect). Nu blochează webhookul.
+      try {
+        await processLifetimeRevShare(session);
+      } catch (err) {
+        console.error('revenue share failed', err);
       }
     } else if (product === 'invoice' && session.payment_status === 'paid') {
       // Online invoice payment via the per-invoice Checkout link.

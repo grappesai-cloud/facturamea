@@ -1512,6 +1512,40 @@ export const posSaleLines = pgTable('pos_sale_lines', {
 ]);
 
 // ═══════════════════════════════════════════════════════════════════════
+// facturamea — platform settings (key-value) + revenue share (Stripe Connect)
+// ═══════════════════════════════════════════════════════════════════════
+
+// Generic platform-level key-value config (single-tenant platform settings).
+// Used by revenue share: revshare_account_id / revshare_enabled / revshare_bps / revshare_base.
+export const platformSettings = pgTable('platform_settings', {
+  key: varchar('key', { length: 64 }).primaryKey(),
+  value: text('value'),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// Audit of each automatic revenue-share transfer to the associate's Connect account.
+export const revenueSharePayouts = pgTable('revenue_share_payouts', {
+  id: text('id').primaryKey(),
+  sourceType: varchar('source_type', { length: 24 }).notNull().default('lifetime'), // ce a generat plata
+  sourceId: varchar('source_id', { length: 128 }).notNull(),   // Stripe Checkout session id (idempotency)
+  companyId: text('company_id'),                               // firma cumpărătoare
+  destinationAccount: varchar('destination_account', { length: 64 }).notNull(), // acct_...
+  grossCents: integer('gross_cents').notNull().default(0),     // suma plătită de client
+  feeCents: integer('fee_cents').notNull().default(0),         // comision Stripe
+  baseCents: integer('base_cents').notNull().default(0),       // baza pe care s-a aplicat %
+  bps: integer('bps').notNull().default(0),                    // procent în basis points (2000=20%)
+  amountCents: integer('amount_cents').notNull().default(0),   // suma efectiv transferată
+  currency: varchar('currency', { length: 8 }).notNull().default('RON'),
+  stripeTransferId: varchar('stripe_transfer_id', { length: 64 }),
+  status: varchar('status', { length: 16 }).notNull().default('pending'), // pending|paid|skipped|error
+  error: text('error'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('uq_revshare_source').on(table.sourceType, table.sourceId),
+  index('idx_revshare_created').on(table.createdAt),
+]);
+
+// ═══════════════════════════════════════════════════════════════════════
 // facturamea — public API keys, admin email campaigns, import jobs
 // ═══════════════════════════════════════════════════════════════════════
 

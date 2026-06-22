@@ -1,0 +1,20 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import RevShareAdmin from '../../components/admin/RevShareAdmin';
+import { isStripeConfigured } from '../../lib/stripe';
+
+const stripeOk = isStripeConfigured();
+---
+
+<AdminLayout title="Revenue share" activeTab="revshare">
+  <div class="mb-6">
+    <h1 class="text-[26px] font-semibold tracking-[-0.02em] text-[#0A0A0A]">Revenue share asociat</h1>
+    <p class="text-[14px] text-[#6B6B68] mt-1.5">Împarte automat un procent din fiecare vânzare către contul Connect al asociatului care a făcut frontend-ul.</p>
+  </div>
+
+  {!stripeOk ? (
+    <div class="bg-[#DC4B41]/8 text-[#b3392f] rounded-xl px-5 py-4 text-[13px]">Stripe nu e configurat (lipsește STRIPE_SECRET_KEY). Setează-l în Coolify înainte.</div>
+  ) : (
+    <RevShareAdmin client:only="react" />
+  )}
+</AdminLayout>
