@@ -49,6 +49,14 @@ export const GET: APIRoute = async ({ url }) => {
     const remaining = await db.select({ email: users.email }).from(users);
     return new Response(JSON.stringify({ ok: true, deletedUsers: victimUserIds.length, remaining: remaining.map((r) => r.email) }, null, 2), { headers: { 'Content-Type': 'application/json' } });
   } catch (e: any) {
-    return new Response(JSON.stringify({ ok: false, error: e?.message || 'error', detail: String(e?.detail || '') }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    const cause = e?.cause || e;
+    return new Response(JSON.stringify({
+      ok: false,
+      error: e?.message || 'error',
+      pgDetail: String(cause?.detail || ''),
+      pgTable: String(cause?.table || ''),
+      pgConstraint: String(cause?.constraint || ''),
+      pgCode: String(cause?.code || ''),
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 };
