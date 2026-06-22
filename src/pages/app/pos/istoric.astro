@@ -25,6 +25,13 @@ try {
 }
 
 const payLabel: Record<string, string> = { cash: 'Numerar', card: 'Card', mixed: 'Mixt' };
+
+// Eticheta de fiscalizare pentru un bon (vine din aparatul fiscal, dacă e configurat).
+const fiscal = (s: any): { text: string; cls: string } | null => {
+  if (s.fiscalStatus === 'printed') return { text: s.fiscalReceiptNumber ? `Fiscal · ${s.fiscalReceiptNumber}` : 'Fiscal', cls: 'bg-[#2E9E6A]/15 text-[#46C28A]' };
+  if (s.fiscalStatus === 'error') return { text: 'Fiscal eșuat', cls: 'bg-[#DC4B41]/15 text-[#E8736A]' };
+  return null;
+};
 ---
 
 <AppLayout title="Istoric vânzări POS" activeTab="pos">
@@ -42,7 +49,10 @@ const payLabel: Record<string, string> = { cash: 'Numerar', card: 'Card', mixed:
         {rows.slice(0, 3).map((s) => (
           <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
             <div class="min-w-0">
-              <p class="font-mono font-bold text-white truncate">{s.receiptNumber}</p>
+              <p class="font-mono font-bold text-white truncate">
+                {s.receiptNumber}
+                {fiscal(s) && <span class={`ml-2 align-middle inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${fiscal(s)!.cls}`}>{fiscal(s)!.text}</span>}
+              </p>
               <p class="text-[13px] text-[#7C9AB4] tabular-nums mt-0.5">
                 {fmtDate(s.createdAt)} · {payLabel[s.paymentMethod] || s.paymentMethod}
               </p>
@@ -61,7 +71,10 @@ const payLabel: Record<string, string> = { cash: 'Numerar', card: 'Card', mixed:
             {rows.slice(3).map((s) => (
               <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div class="min-w-0">
-                  <p class="font-mono font-bold text-white truncate">{s.receiptNumber}</p>
+                  <p class="font-mono font-bold text-white truncate">
+                    {s.receiptNumber}
+                    {fiscal(s) && <span class={`ml-2 align-middle inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${fiscal(s)!.cls}`}>{fiscal(s)!.text}</span>}
+                  </p>
                   <p class="text-[13px] text-[#7C9AB4] tabular-nums mt-0.5">
                     {fmtDate(s.createdAt)} · {payLabel[s.paymentMethod] || s.paymentMethod}
                   </p>

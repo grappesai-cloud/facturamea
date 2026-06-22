@@ -1484,6 +1484,14 @@ export const posSales = pgTable('pos_sales', {
   cashReceivedCents: integer('cash_received_cents').default(0),
   changeCents: integer('change_cents').default(0),
   invoiceId: text('invoice_id').references(() => transportInvoices.id, { onDelete: 'set null' }),
+  // Fiscalizare prin driver local de casă de marcat (ErpNet.FP / AMEF).
+  // fiscalStatus: none (neîncercat) | printed (bon fiscal emis) | error.
+  // Când e 'printed', fiscalReceiptNumber + fiscalSerial vin din memoria fiscală a aparatului.
+  fiscalStatus: varchar('fiscal_status', { length: 16 }).notNull().default('none'),
+  fiscalReceiptNumber: varchar('fiscal_receipt_number', { length: 64 }),
+  fiscalSerial: varchar('fiscal_serial', { length: 64 }),
+  fiscalError: text('fiscal_error'),
+  fiscalPrintedAt: timestamp('fiscal_printed_at'),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [
   index('idx_pos_sales_company').on(table.companyId),

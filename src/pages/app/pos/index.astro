@@ -12,9 +12,14 @@ if (!user.companyId) return Astro.redirect('/app/setari');
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">POS / Casă de marcat</h1>
       <p class="text-[14px] text-[#9FB8CC] mt-2">Vânzare rapidă la tejghea. Prețurile sunt cu TVA inclus.</p>
     </div>
-    <a href="/app/pos/istoric" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 text-white font-bold text-[14px] hover:bg-white/15 transition-colors">
-      Istoric vânzări
-    </a>
+    <div class="flex items-center gap-2">
+      <a href="/app/pos/setari" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 text-white font-bold text-[14px] hover:bg-white/15 transition-colors">
+        Aparat fiscal
+      </a>
+      <a href="/app/pos/istoric" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 text-white font-bold text-[14px] hover:bg-white/15 transition-colors">
+        Istoric vânzări
+      </a>
+    </div>
   </div>
 
   <PosTerminal client:load />

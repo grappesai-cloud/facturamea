@@ -29,6 +29,13 @@
       "when": 1782066288504,
       "tag": "0003_add_dashboard_modules",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1782141759305,
+      "tag": "0004_pos_fiscal",
+      "breakpoints": true
     }
   ]
 }

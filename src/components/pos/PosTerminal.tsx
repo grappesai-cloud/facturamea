@@ -4,7 +4,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Minus, Trash2, Loader2, Search, Printer } from 'lucide-react';
+import { Plus, Minus, Trash2, Loader2, Search, Printer, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { isFiscalEnabled, getFiscalConfig, printReceipt as fiscalPrint, type FiscalSale } from '../../lib/fiscal';
 
 interface Product {
   id: string; code: string | null; name: string;
@@ -15,8 +16,12 @@ interface CartLine {
   productId: string; name: string; unitPriceCents: number; vatRate: number; quantity: number;
 }
 interface Receipt {
+  saleId: string;
   receiptNumber: string; subtotalCents: number; vatCents: number; totalCents: number;
   changeCents: number; paymentMethod: string; lines: CartLine[];
+  // 'none' = fiscalizare dezactivată; 'printed' = bon fiscal emis; 'error' = aparatul a refuzat / e offline.
+  fiscalStatus: 'none' | 'printed' | 'error';
+  fiscalReceiptNumber?: string; fiscalSerial?: string; fiscalError?: string;
 }
 
 const ron = (cents: number) =>
@@ -31,6 +36,7 @@ export default function PosTerminal() {
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [cashReceived, setCashReceived] = useState('');
   const [busy, setBusy] = useState(false);
+  const [fiscalBusy, setFiscalBusy] = useState(false);
   const [error, setError] = useState('');
   const [receipt, setReceipt] = useState<Receipt | null>(null);
 
@@ -111,13 +117,58 @@ export default function PosTerminal() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Eroare'); return; }
-      setReceipt({
+      const soldLines = cart;
+      const base: Receipt = {
+        saleId: data.id,
         receiptNumber: data.receiptNumber,
         subtotalCents: data.subtotalCents, vatCents: data.vatCents, totalCents: data.totalCents,
-        changeCents: data.changeCents, paymentMethod, lines: cart,
-      });
+        changeCents: data.changeCents, paymentMethod, lines: soldLines,
+        fiscalStatus: 'none',
+      };
+      setReceipt(base);
       setCart([]); setCashReceived('');
+      // Dacă e configurat un aparat fiscal la casă, emite bonul fiscal acum.
+      if (isFiscalEnabled()) await fiscalize(base);
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
+  };
+
+  // Comandă aparatul fiscal (din browser, către driverul local) și salvează în DB
+  // numărul fiscal returnat. Reapelabilă din butonul de retry când aparatul a fost offline.
+  const fiscalize = async (r: Receipt) => {
+    setFiscalBusy(true);
+    const sale: FiscalSale = {
+      receiptNumber: r.receiptNumber,
+      paymentMethod: r.paymentMethod,
+      totalCents: r.totalCents,
+      cashReceivedCents: Math.round((Number(cashReceived) || 0) * 100) || undefined,
+      lines: r.lines.map((l) => ({ name: l.name, quantity: l.quantity, unitPriceCents: l.unitPriceCents, vatRate: l.vatRate })),
+    };
+    let result;
+    try {
+      result = await fiscalPrint(getFiscalConfig(), sale);
+    } catch (e: any) {
+      result = { ok: false, error: e?.message || 'Eroare driver fiscal' };
+    }
+    // Persistă rezultatul (printed / error) pe bon.
+    try {
+      await fetch(`/api/pos/sales/${r.saleId}/fiscalize`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: result.ok ? 'printed' : 'error',
+          fiscalReceiptNumber: result.fiscalReceiptNumber,
+          fiscalSerial: result.fiscalSerial,
+          error: result.error,
+        }),
+      });
+    } catch { /* DB-ul rămâne 'none'; bonul intern e oricum salvat */ }
+    setReceipt((prev) => prev && prev.saleId === r.saleId ? {
+      ...prev,
+      fiscalStatus: result.ok ? 'printed' : 'error',
+      fiscalReceiptNumber: result.fiscalReceiptNumber,
+      fiscalSerial: result.fiscalSerial,
+      fiscalError: result.error,
+    } : prev);
+    setFiscalBusy(false);
   };
 
   if (receipt) {
@@ -125,9 +176,31 @@ export default function PosTerminal() {
       <Card className="max-w-md mx-auto bg-white/5 border-0 shadow-none rounded-2xl">
         <CardContent className="p-6 space-y-3">
           <div className="text-center">
-            <p className="text-xs uppercase tracking-[0.12em] text-[#7C9AB4]">Bon fiscal</p>
-            <p className="text-lg font-bold font-mono text-white">{receipt.receiptNumber}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[#7C9AB4]">{receipt.fiscalStatus === 'printed' ? 'Bon fiscal' : 'Bon'}</p>
+            <p className="text-lg font-bold font-mono text-white">{receipt.fiscalReceiptNumber || receipt.receiptNumber}</p>
           </div>
+
+          {fiscalBusy && (
+            <div className="flex items-center justify-center gap-2 text-sm text-[#9FB8CC]">
+              <Loader2 className="w-4 h-4 animate-spin" /> Se emite bonul fiscal...
+            </div>
+          )}
+          {!fiscalBusy && receipt.fiscalStatus === 'printed' && (
+            <div className="flex items-center justify-center gap-1.5 text-sm text-[#2E9E6A] font-semibold">
+              <ShieldCheck className="w-4 h-4" /> Bon fiscal emis{receipt.fiscalSerial ? ` · AMEF ${receipt.fiscalSerial}` : ''}
+            </div>
+          )}
+          {!fiscalBusy && receipt.fiscalStatus === 'error' && (
+            <div className="rounded-xl bg-[#DC4B41]/10 p-3 space-y-2">
+              <p className="flex items-start gap-1.5 text-sm text-[#DC4B41]">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>Bonul fiscal nu a fost emis. {receipt.fiscalError || ''} Vânzarea e salvată; reîncearcă emiterea.</span>
+              </p>
+              <Button className="w-full rounded-full bg-[#DC4B41] text-white font-bold hover:bg-[#C53E35]" disabled={fiscalBusy} onClick={() => fiscalize(receipt)}>
+                Reîncearcă bonul fiscal
+              </Button>
+            </div>
+          )}
           <div className="border-t border-dashed border-white/10 pt-3 space-y-1.5 text-sm">
             {receipt.lines.map((l, i) => (
               <div key={i} className="flex justify-between gap-2">
