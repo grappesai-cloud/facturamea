@@ -21,13 +21,16 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   const [error, setError] = useState('');
 
   const remaining = totalCents - paidCents;
-  const canRecordPayment = kind === 'factura' && status !== 'paid' && status !== 'voided' && status !== 'draft';
-  const canPayLink = kind === 'factura' && remaining > 0 && status !== 'voided' && status !== 'draft';
+  // A storno'd (reversed) or voided document is settled: no more money/mutation
+  // actions — you can't collect on, pay-link, re-storno, dispute or recur it.
+  const settled = status === 'voided' || status === 'reversed';
+  const canRecordPayment = kind === 'factura' && status !== 'paid' && !settled && status !== 'draft';
+  const canPayLink = kind === 'factura' && remaining > 0 && !settled && status !== 'draft';
   const canSend = status !== 'draft';
-  const canSubmitSpv = (kind === 'factura' || kind === 'storno') && status !== 'draft';
-  const canStorno = kind === 'factura' && status !== 'draft' && status !== 'voided';
-  const canDispute = kind === 'factura' && !['draft', 'paid', 'voided', 'disputed'].includes(status);
-  const canRecur = (kind === 'factura' || kind === 'proforma') && status !== 'draft' && status !== 'voided';
+  const canSubmitSpv = (kind === 'factura' || kind === 'storno') && status !== 'draft' && !settled;
+  const canStorno = kind === 'factura' && status !== 'draft' && !settled;
+  const canDispute = kind === 'factura' && !['draft', 'paid', 'voided', 'reversed', 'disputed'].includes(status);
+  const canRecur = (kind === 'factura' || kind === 'proforma') && status !== 'draft' && !settled;
 
   const doShare = async () => {
     setBusy(true); setError('');

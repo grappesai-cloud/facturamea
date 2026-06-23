@@ -41,6 +41,17 @@ const statusLabel: Record<string, string> = {
   partial: '🟠 Plătită parțial', overdue: '🔴 Întârziată', disputed: '⚫ Dispută', voided: '⚪ Anulată',
   reversed: '⚪ Stornată',
 };
+
+// e-Factura (ANAF SPV) indicator: green = reached ANAF, red = rejected/error,
+// grey = not sent yet. Only for documents that go to ANAF (factura / storno).
+const ef = (inv.efacturaStatus || '').toLowerCase();
+const efSendable = inv.kind === 'factura' || inv.kind === 'storno';
+const efBadge = !efSendable ? null
+  : (ef === 'rejected' || inv.efacturaError)
+    ? { cls: 'bg-[#DC4B41]/15 text-[#DC4B41]', text: '🔴 e-Factura: eroare', title: inv.efacturaError || 'Respinsă de ANAF' }
+  : (ef === 'submitted' || ef === 'accepted' || ef === 'sent')
+    ? { cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]', text: '🟢 e-Factura: trimisă la ANAF', title: inv.efacturaAnafId ? `Index ANAF: ${inv.efacturaAnafId}` : 'Trimisă la ANAF' }
+  : { cls: 'bg-white/10 text-[#9FB8CC]', text: '⚪ e-Factura: netrimisă', title: 'Nu a fost încă trimisă la ANAF' };
 ---
 
 <AppLayout title={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber}`} activeTab="facturare">
@@ -52,6 +63,11 @@ const statusLabel: Record<string, string> = {
         <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${statusTone[effectiveStatus] ?? statusTone.draft}`}>
           {statusLabel[effectiveStatus] ?? effectiveStatus}
         </span>
+        {efBadge && (
+          <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold ${efBadge.cls}`} title={efBadge.title}>
+            {efBadge.text}
+          </span>
+        )}
         <span class="text-[14px] text-[#9FB8CC]">{kindLabel[inv.kind] ?? 'Document'}</span>
         {inv.dueAt && <span class="text-[14px] text-[#7C9AB4]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO')}</span>}
       </div>
