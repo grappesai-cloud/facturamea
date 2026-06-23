@@ -263,10 +263,13 @@ const defaultKpis = ['facturi', 'incasari_luna', 'cheltuieli_luna', 'venit_net']
     // Staggered reveal of the major blocks.
     const blocks = gsap.utils.toArray<HTMLElement>('[data-reveal]');
     if (!reduce) {
-      gsap.set(blocks, { opacity: 0, y: 22 });
-      // clearProps: remove the leftover transform so position:fixed modals inside
-      // these blocks (e.g. the "Adaugă" picker) anchor to the viewport, not the card.
-      gsap.to(blocks, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.09, delay: 0.05, clearProps: 'transform' });
+      // gsap.from animates FROM hidden to the natural (visible) state, so a
+      // half-failed run can never leave a block stuck at opacity 0.
+      try {
+        gsap.from(blocks, { opacity: 0, y: 22, duration: 0.6, ease: 'power3.out', stagger: 0.09, delay: 0.05, clearProps: 'transform,opacity' });
+      } catch { blocks.forEach((b) => { b.style.opacity = '1'; }); }
+      // Safety net: force-show anything still invisible shortly after load.
+      setTimeout(() => blocks.forEach((b) => { if (getComputedStyle(b).opacity === '0') b.style.opacity = '1'; }), 1500);
     }
 
     // Count-up the KPI numbers.
