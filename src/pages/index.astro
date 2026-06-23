@@ -32,10 +32,10 @@ const repColors = ['#52B69A', '#34A0A4', '#168AAD', '#1A759F', '#1E6091'];
 
 // Steps for the scroll-pinned showcase (text left · phone center · feature list right)
 const journeySteps = [
-  { key: 'meniu',     emoji: '📲', short: 'MENIU',      label: 'Meniu',     h: 'Tot ce poți face, la îndemână',  d: 'Facturi, proforme, avize, chitanțe, clienți, produse, cheltuieli, e-Factura și rapoarte — într-un meniu clar, ușor de citit și de folosit.' },
-  { key: 'facturare', emoji: '🧾', short: 'FACTURARE',  label: 'Facturare', h: 'Emiți și trimiți facturi rapid', d: 'Alegi clientul, adaugi produsele, iar TVA-ul, seriile și numerotarea se completează automat. Trimiți în SPV ANAF cu un singur click.' },
-  { key: 'cheltuieli',emoji: '💳', short: 'CHELTUIELI', label: 'Cheltuieli',h: 'Cheltuielile, sub control',      d: 'Adaugi cheltuieli, scanezi bonuri și ții evidența furnizorilor. Vezi exact unde se duc banii, lună de lună.' },
-  { key: 'rapoarte',  emoji: '📊', short: 'RAPOARTE',   label: 'Rapoarte',  h: 'Toate cifrele, dintr-o privire', d: 'Vânzări, TVA de plată, încasări și solduri clienți, în rapoarte clare pe care le exporți oricând pentru contabil.' },
+  { key: 'meniu',     emoji: '📲', short: 'MENIU',      label: 'Meniu',     h: 'Tot într-un loc',               d: 'Facturi, e-Factura ANAF, cheltuieli, gestiune și rapoarte. Un singur meniu, clar. Fără 5 aplicații.' },
+  { key: 'facturare', emoji: '🧾', short: 'FACTURARE',  label: 'Facturare', h: 'O factură în 30 de secunde',    d: 'Alegi clientul, adaugi produsele. TVA, serii și numerotare se completează singure. La ANAF cu un click.' },
+  { key: 'cheltuieli',emoji: '💳', short: 'CHELTUIELI', label: 'Cheltuieli',h: 'Pozezi bonul. Gata.',            d: 'Scanezi bonuri, ții furnizorii, vezi unde se duc banii. Fără bătăi de cap.' },
+  { key: 'rapoarte',  emoji: '📊', short: 'RAPOARTE',   label: 'Rapoarte',  h: 'Toate cifrele, dintr-o privire', d: 'Vânzări, TVA, încasări, solduri clienți. Clare, gata de dat contabilului.' },
 ];
 ---
 
@@ -53,11 +53,11 @@ const journeySteps = [
       <!-- LEFT: headline + CTAs -->
       <div class="relative z-10 text-center lg:text-left">
         <h1 class="hero-title text-[2.6rem] leading-[1.04] sm:text-6xl lg:text-[4rem] lg:leading-[0.98] font-extrabold tracking-[-0.045em] text-[#0A2238]">
-          Facturează ca la carte, <span class="hero-mark">fără abonament.</span>
+          Plătești o dată. <span class="hero-mark">Facturezi pe viață.</span>
         </h1>
         <p class="hero-line mt-6 text-base sm:text-xl text-[#46627A] leading-relaxed max-w-md mx-auto lg:mx-0">
-          e-Factura, gestiune și rapoarte într-o singură aplicație. O singură plată de
-          <strong class="bg-[#E1FB15] text-[#0A2238] font-bold px-1.5 rounded">700 RON</strong>, licență pe viață.
+          Fără abonament, fără reînnoiri. O plată de
+          <strong class="bg-[#E1FB15] text-[#0A2238] font-bold px-1.5 rounded">700 RON</strong> și e al tău.
         </p>
         <StoreBadges class="hero-line mt-8 justify-center lg:justify-start" />
       </div>
@@ -209,10 +209,10 @@ const journeySteps = [
     <div class="mx-auto max-w-[1180px] grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
       <div>
         <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.02]">
-          O singură plată, nu lunar.
+          O plată. Atât.
         </h2>
         <p data-anim="left" class="text-[#46627A] leading-relaxed mt-5 text-base sm:text-lg max-w-lg">
-          Concurența îți cere abonament în fiecare lună, la nesfârșit. La facturamea plătești o dată și folosești aplicația cât timp exiști firmă, fără reînnoiri și fără surprize.
+          Restul îți cer bani lună de lună, la nesfârșit. Tu plătești o dată și folosești cât timp ai firma. Fără reînnoiri, fără surprize pe card.
         </p>
         <ul data-anim-stagger class="space-y-3 mt-7 text-[15px] text-[#26415A]">
           {['Fără abonament lunar sau anual', 'Actualizări fiscale incluse', 'Toate funcțiile, fără pachete decupate'].map((li) => (
@@ -246,7 +246,7 @@ const journeySteps = [
             <span class="text-[12px] font-semibold">Google Play</span>
           </a>
         </div>
-        <p class="text-center text-xs text-[#7C9AB4] mt-4">Plata o faci din aplicație, când ești gata.</p>
+        <p class="text-center text-xs text-[#7C9AB4] mt-4">Acces complet, imediat după plată.</p>
       </div>
     </div>
   </section>
