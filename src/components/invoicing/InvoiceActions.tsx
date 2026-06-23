@@ -243,7 +243,7 @@ function PaymentModal({ remainingCents, currency, busy, error, onClose, onSubmit
           <div>
             <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Sumă încasată ({currency})</Label>
             <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="[color-scheme:dark] bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
-            <p className="text-[11px] text-[#9FB8CC] mt-1">Rest de plată: {(remainingCents / 100).toFixed(2)} {currency}</p>
+            <p className="text-[11px] text-[#9FB8CC] mt-1">Rest de plată: {(remainingCents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</p>
           </div>
           <div>
             <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Metodă</Label>

@@ -896,9 +896,9 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                   {VAT_REGIMES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </Select>
               </div>
-              {kind === 'factura' && (
+              {(kind === 'factura' || kind === 'proforma') && (
                 <div className="sm:col-span-2">
-                  <Label className={LBL}>Scadență</Label>
+                  <Label className={LBL}>{kind === 'proforma' ? 'Valabilă' : 'Scadență'}</Label>
                   <div className="flex flex-wrap gap-1.5">
                     {DUE_PRESETS.map(([label, n]) => {
                       const active = dueDate === isoInDays(n);
