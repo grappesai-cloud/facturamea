@@ -248,7 +248,7 @@ const statusLabel: Record<string, string> = {
     <ul class="space-y-2.5">
       {recent.slice(0, 3).map((inv) => {
         const due = inv.dueAt ? new Date(inv.dueAt) : null;
-        const overdue = inv.status !== 'paid' && due && due < now;
+        const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && due && due < now;
         const effectiveStatus = overdue ? 'overdue' : inv.status;
         return (
           <li>

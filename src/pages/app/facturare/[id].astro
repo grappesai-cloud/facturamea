@@ -21,7 +21,8 @@ const [issuer] = await db.select().from(companies).where(eq(companies.id, inv.co
 
 const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const remaining = inv.totalCents - inv.paidCents;
-const overdue = inv.status !== 'paid' && inv.dueAt && new Date(inv.dueAt) < new Date();
+// Only genuinely open invoices can be overdue — never a storno'd/voided/draft one.
+const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && inv.dueAt && new Date(inv.dueAt) < new Date();
 const effectiveStatus = overdue ? 'overdue' : inv.status;
 
 const kindLabel: Record<string, string> = { factura: 'Factură', proforma: 'Proformă', storno: 'Factură storno', chitanta: 'Chitanță' };
