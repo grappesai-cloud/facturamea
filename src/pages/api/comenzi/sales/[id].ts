@@ -10,6 +10,7 @@ import {
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { ensureDefaultSeries, nextSeriesNumber, INVOICE_NUMBER_FORMAT } from '../../../../lib/invoicing';
+import { requireRole } from '../../../../lib/require-role';
 
 const VALID_STATUS = ['draft', 'confirmed', 'invoiced', 'delivered', 'canceled'];
 
@@ -39,6 +40,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
 export const PATCH: APIRoute = async ({ request, params, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'invoice.create'); if (denied) return denied; }
   const cid = locals.user.companyId;
   const id = params.id;
   if (!cid || !id) return new Response(JSON.stringify({ error: 'Date lipsă' }), { status: 400 });
@@ -161,6 +163,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'invoice.delete'); if (denied) return denied; }
   const cid = locals.user.companyId;
   const id = params.id;
   if (!cid || !id) return new Response(JSON.stringify({ error: 'Date lipsă' }), { status: 400 });

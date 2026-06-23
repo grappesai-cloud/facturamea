@@ -6,9 +6,11 @@ import { db } from '../../../../../db';
 import { transportInvoices } from '../../../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { submitInvoiceToAnaf } from '../../../../../lib/efactura-submit';
+import { requireRole } from '../../../../../lib/require-role';
 
 export const POST: APIRoute = async ({ params, locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   const invoiceId = params.id as string;
   if (!invoiceId) return new Response(JSON.stringify({ error: 'ID lipsă' }), { status: 400 });
 

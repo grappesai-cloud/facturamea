@@ -7,6 +7,7 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { companies } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
+import { requireRole } from '../../../../lib/require-role';
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
@@ -22,6 +23,7 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const body = await request.json().catch(() => ({})) as any;
 
   const patch: any = { updatedAt: new Date() };

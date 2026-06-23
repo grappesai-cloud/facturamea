@@ -61,10 +61,10 @@ if (cid) {
 const fmt = (cents: number) => cents === 0 ? '—' : (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 ---
 
-<AppLayout title="Aging — solduri clienți" activeTab="facturare">
+<AppLayout title="Vechime solduri clienți" activeTab="facturare">
   <div class="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 print:hidden">
     <div>
-      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Aging clienți</h1>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Vechime solduri clienți</h1>
       <p class="text-[14px] text-[#9FB8CC] mt-1">Solduri restante grupate pe vechime, după data scadenței facturilor neîncasate.</p>
     </div>
   </div>

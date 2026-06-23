@@ -2,10 +2,11 @@
 //   POST  { email, password } -> { token, user, company }   (token = session id, send as `Authorization: Bearer <token>`)
 //   DELETE (Bearer)            -> revoke the current token
 import type { APIRoute } from 'astro';
-import { loginUser, getSessionFromRequest } from '../../../lib/auth';
+import { loginUser, getSessionFromRequest, deleteSessionByRawToken } from '../../../lib/auth';
 import { db } from '../../../db';
-import { companies, sessions, userCompanyMemberships } from '../../../db/schema';
+import { companies, sessions, userCompanyMemberships, totpPendingLogins } from '../../../db/schema';
 import { and, eq } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import { normalizeRole } from '../../../lib/permissions-roles';
 
 export const POST: APIRoute = async ({ request }) => {
@@ -18,6 +19,15 @@ export const POST: APIRoute = async ({ request }) => {
   }
   try {
     const { user, sessionId } = await loginUser(email, password);
+    // 2FA: don't hand out a session token before the second factor. loginUser
+    // already minted a session — revoke it and return a pending handle instead.
+    if ((user as any).totpEnabled) {
+      await deleteSessionByRawToken(sessionId).catch(() => {});
+      const handle = nanoid(32);
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+      await db.insert(totpPendingLogins).values({ id: handle, userId: user.id, expiresAt } as any);
+      return new Response(JSON.stringify({ requireTotp: true, handle }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
     let company: any = null;
     if (user.companyId) {
       const [c] = await db.select().from(companies).where(eq(companies.id, user.companyId));

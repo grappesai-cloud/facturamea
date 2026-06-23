@@ -7,6 +7,7 @@ import { db } from '../../../../db';
 import { purchaseOrders, purchaseOrderLines, warehouses } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { applyStockIn } from '../../../../lib/stock';
+import { requireRole } from '../../../../lib/require-role';
 
 const VALID_STATUS = ['draft', 'sent', 'received', 'closed', 'canceled'];
 
@@ -36,6 +37,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
 export const PATCH: APIRoute = async ({ request, params, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'stock.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   const id = params.id;
   if (!cid || !id) return new Response(JSON.stringify({ error: 'Date lipsă' }), { status: 400 });
@@ -102,6 +104,7 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'stock.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   const id = params.id;
   if (!cid || !id) return new Response(JSON.stringify({ error: 'Date lipsă' }), { status: 400 });

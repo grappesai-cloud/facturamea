@@ -109,7 +109,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   };
 
   const submitStorno = async () => {
-    if (!confirm('Storneaza această factură? Operația emite o factură storno cu valori negative și marchează originalul ca anulat.')) return;
+    if (!confirm('Stornează această factură? Operația emite o factură storno cu valori negative și marchează originalul ca anulat.')) return;
     setBusy(true); setError('');
     try {
       const res = await fetch(`/api/invoicing/invoices/${invoiceId}/storno`, { method: 'POST' });
@@ -158,12 +158,12 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       {canSubmitSpv && (
         <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={submitSpv}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Send className="w-4 h-4 mr-1.5" />}
-          Trimite la SPV
+          Trimite la ANAF
         </Button>
       )}
       {canStorno && (
         <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={submitStorno}>
-          <Undo2 className="w-4 h-4 mr-1.5" /> Storneaza
+          <Undo2 className="w-4 h-4 mr-1.5" /> Stornează
         </Button>
       )}
       {canDispute && (
@@ -180,7 +180,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
         </Button>
       )}
       <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={doShare}>
-        <Share2 className="w-4 h-4 mr-1.5" /> Share
+        <Share2 className="w-4 h-4 mr-1.5" /> Distribuie
       </Button>
 
       {shareUrl && (

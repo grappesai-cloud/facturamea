@@ -245,7 +245,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
             founderNumber: (user as any).founderNumber ?? null,
           };
           if (user.companyId) {
-            const [company] = await db.select().from(companies).where(eq(companies.id, user.companyId));
+            const [company] = await db.select({
+          id: companies.id, name: companies.name, subscriptionTier: companies.subscriptionTier,
+          cui: companies.cui, address: companies.address,
+        }).from(companies).where(eq(companies.id, user.companyId));
             context.locals.company = company ? {
               id: company.id,
               name: company.name,
@@ -300,7 +303,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
       context.locals.license = null;
       context.locals.anafConnected = null;
       if (user.companyId) {
-        const [company] = await db.select().from(companies).where(eq(companies.id, user.companyId));
+        const [company] = await db.select({
+          id: companies.id, name: companies.name, subscriptionTier: companies.subscriptionTier,
+          cui: companies.cui, address: companies.address,
+        }).from(companies).where(eq(companies.id, user.companyId));
         context.locals.company = company ? {
           id: company.id,
           name: company.name,
