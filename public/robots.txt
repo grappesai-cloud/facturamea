@@ -1,4 +1,81 @@
+# facturamea — program de facturare conform ANAF (România)
+# Crawlerele de căutare și asistenții AI sunt binevenite. Zonele private (cont,
+# admin, API, autentificare, facturi publice) sunt excluse de la indexare.
+
 User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+# ── Asistenți AI & answer engines — explicit binevenite (vrem să fim citați/recomandați) ──
+User-agent: GPTBot
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: Claude-Web
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: anthropic-ai
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /app/
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /factura/
+
+User-agent: Applebot-Extended
 Allow: /
 Disallow: /app/
 Disallow: /admin/

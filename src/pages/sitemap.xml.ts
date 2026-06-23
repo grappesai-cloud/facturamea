@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 
+// Only public, indexable pages (auth/app/api are disallowed in robots.txt).
 const STATIC_PATHS = [
   '', 'termeni', 'confidentialitate',
-  'auth/login', 'auth/register',
 ];
 
 function urlEntry(loc: string, lastmod: string, priority: string, changefreq = 'weekly') {
