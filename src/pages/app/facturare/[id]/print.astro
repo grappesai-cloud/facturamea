@@ -2,8 +2,9 @@
 import PrintLayout from '../../../../layouts/PrintLayout.astro';
 import InvoiceDocument from '../../../../components/invoicing/InvoiceDocument.astro';
 import { db } from '../../../../db';
-import { transportInvoices, transportInvoiceLines, companies, invoiceModels, orders, freight } from '../../../../db/schema';
+import { transportInvoices, transportInvoiceLines, invoiceModels, orders, freight } from '../../../../db/schema';
 import { eq, asc } from 'drizzle-orm';
+import { loadIssuer } from '../../../../lib/invoicing';
 import QRCode from 'qrcode';
 
 const user = Astro.locals.user!;
@@ -13,7 +14,7 @@ const [invRow] = await db.select().from(transportInvoices).where(eq(transportInv
 if (!invRow || invRow.companyId !== user.companyId) return Astro.redirect('/app/facturare');
 
 const lines = await db.select().from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, id)).orderBy(asc(transportInvoiceLines.position));
-const [issuer] = await db.select().from(companies).where(eq(companies.id, invRow.companyId)).limit(1);
+const issuer = await loadIssuer(invRow.companyId);
 const [model] = invRow.modelId ? await db.select().from(invoiceModels).where(eq(invoiceModels.id, invRow.modelId)).limit(1) : [null];
 
 // Shipping details from the linked order (for the "date privind expediția" box).

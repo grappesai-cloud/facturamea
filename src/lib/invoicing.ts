@@ -1,7 +1,30 @@
 import { db } from '../db';
-import { invoiceSeries } from '../db/schema';
-import { and, eq, sql } from 'drizzle-orm';
+import { invoiceSeries, companies, billingAddresses } from '../db/schema';
+import { and, eq, sql, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+
+// Build the invoice issuer = company (logo/stamp/signature/footer assets) merged
+// with the default billing profile (legal name, CUI, reg. com., IBAN, bank).
+// IBAN + reg. com. live on `billing_addresses`, NOT on `companies` — so any
+// render that reads only `companies` silently drops them (no IBAN on invoices).
+// Use this in every invoice render path so the issuer block is complete.
+export async function loadIssuer(companyId: string) {
+  const [company] = await db.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+  if (!company) return null;
+  const [billing] = await db.select().from(billingAddresses)
+    .where(eq(billingAddresses.companyId, companyId))
+    .orderBy(desc(billingAddresses.isDefault))
+    .limit(1);
+  return {
+    ...company,
+    name: billing?.legalName || company.name,
+    cui: billing?.cui || company.cui,
+    regCom: billing?.regCom ?? null,
+    iban: billing?.iban ?? null,
+    bank: billing?.bank ?? null,
+    address: billing?.address || company.address,
+  };
+}
 
 // Minimal shape shared by the global `db` handle and a transaction `tx`, so
 // number reservation / series bootstrap can run inside a caller's transaction

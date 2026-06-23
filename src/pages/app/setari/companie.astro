@@ -1,13 +1,18 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
-import { companies } from '../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { companies, billingAddresses } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user!;
 let company: any = null;
+let billing: any = null;
 if (user.companyId) {
   [company] = await db.select().from(companies).where(eq(companies.id, user.companyId)).limit(1);
+  [billing] = await db.select().from(billingAddresses)
+    .where(eq(billingAddresses.companyId, user.companyId))
+    .orderBy(desc(billingAddresses.isDefault))
+    .limit(1);
 }
 
 const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
@@ -44,8 +49,8 @@ const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-whi
             <p class="text-[12px] text-[#7C9AB4] mt-0.5">IBAN-ul se afișează automat pe orice factură emiți, la datele tale de emitent.</p>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div class="sm:col-span-2"><label class={labelCls}>IBAN</label><input id="iban" name="iban" type="text" value={company.iban ?? ''} placeholder="RO00 BANK 0000 0000 0000 0000" class={inputCls} /></div>
-            <div><label class={labelCls}>Bancă</label><input id="bank" name="bank" type="text" value={company.bank ?? ''} placeholder="ex: Banca Transilvania" class={inputCls} /></div>
+            <div class="sm:col-span-2"><label class={labelCls}>IBAN</label><input id="iban" name="iban" type="text" value={billing?.iban ?? ''} placeholder="RO00 BANK 0000 0000 0000 0000" class={inputCls} /></div>
+            <div><label class={labelCls}>Bancă</label><input id="bank" name="bank" type="text" value={billing?.bank ?? ''} placeholder="ex: Banca Transilvania" class={inputCls} /></div>
             <div><label class={labelCls}>Telefon</label><input id="phone" name="phone" type="text" value={company.phone ?? ''} placeholder="ex: 07xx xxx xxx" class={inputCls} /></div>
           </div>
           <div class="flex items-center gap-3 pt-1">
