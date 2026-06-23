@@ -32,8 +32,10 @@ export default function CompanySwitcher({ currentCompanyId, currentCompanyName }
     setLoading(true);
     try {
       const res = await fetch('/api/companies/switch');
-      const data = await res.json();
-      setItems(data.results || []);
+      const data = await res.json().catch(() => ({}));
+      setItems(Array.isArray(data.results) ? data.results : []);
+    } catch {
+      setItems([]);
     } finally {
       setLoading(false);
     }
