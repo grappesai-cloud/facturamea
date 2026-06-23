@@ -266,7 +266,7 @@ const statusLabel: Record<string, string> = {
               </div>
               <div class="text-right shrink-0">
                 <p class="text-[15px] font-bold text-white tabular-nums whitespace-nowrap">{fmtMoney(inv.totalCents, inv.currency)}</p>
-                <p class="text-[12px] text-[#7C9AB4] mt-1">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO') : '—'}</p>
+                <p class="text-[12px] text-[#7C9AB4] mt-1">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
               </div>
               <div class="shrink-0 flex flex-col items-end gap-1.5">
                 {inv.kind === 'factura' && !['paid', 'voided', 'draft', 'reversed'].includes(inv.status) && (

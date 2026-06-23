@@ -44,7 +44,7 @@ const scopes = [
 
 function fmt(d: Date | null | undefined): string {
   if (!d) return '—';
-  return new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' });
+  return new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/Bucharest' });
 }
 
 // Default SAF-T range: previous calendar month

@@ -35,7 +35,7 @@ const esc = (s: string) =>
 
 const fmtDate = (d: Date) => {
   try {
-    return new Intl.DateTimeFormat('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+    return new Intl.DateTimeFormat('ro-RO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Bucharest' }).format(d);
   } catch {
     return d.toISOString().slice(0, 10);
   }

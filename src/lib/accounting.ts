@@ -235,12 +235,17 @@ export async function postEntry(companyId: string, input: PostEntryInput): Promi
   if (!companyId) return { ok: false, error: 'Companie lipsă' };
 
   const lines = (input.lines || [])
-    .map((l) => ({
-      accountCode: String(l.accountCode || '').trim(),
-      debitCents: centsOf(l.debitCents),
-      creditCents: centsOf(l.creditCents),
-      note: l.note?.toString().trim() || null,
-    }))
+    .map((l) => {
+      // A reversal (storno) arrives as negative debit/credit. Proper double-entry
+      // has no negative sides: flip a negative debit into a positive credit and
+      // vice versa, so the entry posts as a correct contra-entry (and never trips
+      // a non-negative DB constraint).
+      let d = centsOf(l.debitCents);
+      let c = centsOf(l.creditCents);
+      if (d < 0) { c += -d; d = 0; }
+      if (c < 0) { d += -c; c = 0; }
+      return { accountCode: String(l.accountCode || '').trim(), debitCents: d, creditCents: c, note: l.note?.toString().trim() || null };
+    })
     .filter((l) => l.accountCode && (l.debitCents !== 0 || l.creditCents !== 0));
 
   if (lines.length < 2) return { ok: false, error: 'O notă contabilă are nevoie de cel puțin două rânduri.' };

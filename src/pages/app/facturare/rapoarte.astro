@@ -480,7 +480,7 @@ const TABS: { id: TabId; label: string }[] = [
                     <span class="font-mono text-[12px] text-[#7C9AB4] truncate">{r.fullNumber}</span>
                   </div>
                   <p class="text-[15px] text-white font-semibold truncate mt-1.5">{r.clientNameSnap}</p>
-                  <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO') : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO') : '—'}</p>
+                  <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
                 </div>
                 <div class="text-right shrink-0">
                   <p class="text-[15px] font-bold tabular-nums text-white">{fmt(r.totalCents)} {r.currency}</p>
@@ -498,7 +498,7 @@ const TABS: { id: TabId; label: string }[] = [
               <a href={`/app/facturare/${r.invoiceId}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div class="min-w-0 flex-1">
                   <p class="text-[15px] text-white font-semibold truncate">{r.clientName}</p>
-                  <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO')}{r.method ? ` · ${r.method}` : ''}</p>
+                  <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}{r.method ? ` · ${r.method}` : ''}</p>
                 </div>
                 <p class="text-[15px] font-bold tabular-nums text-white shrink-0">{fmt(r.amountCents)} {r.currency}</p>
               </a>
@@ -526,7 +526,7 @@ const TABS: { id: TabId; label: string }[] = [
                         <span class="font-mono text-[12px] text-[#7C9AB4] truncate">{r.fullNumber}</span>
                       </div>
                       <p class="text-[15px] text-white font-semibold truncate mt-1.5">{r.clientNameSnap}</p>
-                      <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO') : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO') : '—'}</p>
+                      <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
                     </div>
                     <div class="text-right shrink-0">
                       <p class="text-[15px] font-bold tabular-nums text-white">{fmt(r.totalCents)} {r.currency}</p>
@@ -538,7 +538,7 @@ const TABS: { id: TabId; label: string }[] = [
                   <a href={`/app/facturare/${r.invoiceId}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                     <div class="min-w-0 flex-1">
                       <p class="text-[15px] text-white font-semibold truncate">{r.clientName}</p>
-                      <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO')}{r.method ? ` · ${r.method}` : ''}</p>
+                      <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}{r.method ? ` · ${r.method}` : ''}</p>
                     </div>
                     <p class="text-[15px] font-bold tabular-nums text-white shrink-0">{fmt(r.amountCents)} {r.currency}</p>
                   </a>

@@ -60,7 +60,7 @@ const statusBadge: Record<string, { label: string; cls: string }> = {
                   <span class="font-mono">{r.nirNumber}</span>
                   <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
                 </p>
-                <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{r.supplierName || '—'}{r.supplierInvoiceNumber ? ` · fact. ${r.supplierInvoiceNumber}` : ''} · {r.receptionDate ? new Date(r.receptionDate).toLocaleDateString('ro-RO') : '—'}</p>
+                <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{r.supplierName || '—'}{r.supplierInvoiceNumber ? ` · fact. ${r.supplierInvoiceNumber}` : ''} · {r.receptionDate ? new Date(r.receptionDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
               </div>
               <p class="font-bold text-white tabular-nums shrink-0">{ron(r.totalCents)}</p>
             </li>
@@ -80,7 +80,7 @@ const statusBadge: Record<string, { label: string; cls: string }> = {
                       <span class="font-mono">{r.nirNumber}</span>
                       <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
                     </p>
-                    <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{r.supplierName || '—'}{r.supplierInvoiceNumber ? ` · fact. ${r.supplierInvoiceNumber}` : ''} · {r.receptionDate ? new Date(r.receptionDate).toLocaleDateString('ro-RO') : '—'}</p>
+                    <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">{r.supplierName || '—'}{r.supplierInvoiceNumber ? ` · fact. ${r.supplierInvoiceNumber}` : ''} · {r.receptionDate ? new Date(r.receptionDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
                   </div>
                   <p class="font-bold text-white tabular-nums shrink-0">{ron(r.totalCents)}</p>
                 </li>

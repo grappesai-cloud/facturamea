@@ -17,7 +17,7 @@ const ron = (cents: number | null) =>
 const fmtDate = (d: Date | string | null) => {
   if (!d) return '-';
   const date = new Date(d);
-  return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('ro-RO');
+  return isNaN(date.getTime()) ? '-' : date.toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' });
 };
 
 let rows: any[] = [];

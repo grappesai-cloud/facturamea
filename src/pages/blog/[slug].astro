@@ -17,7 +17,7 @@ if (!post) return Astro.redirect('/blog', 302);
 
 const url = `https://facturamea.com/blog/${post.slug}`;
 const publishedIso = post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined;
-const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Bucharest' }) : '';
 
 const jsonLd = [
   {

@@ -46,7 +46,7 @@ const planLabel: Record<string, { label: string; cls: string }> = {
   trial: { label: 'Trial', cls: 'bg-[#FFF7E6] text-[#B45309]' },
 };
 const statusLabel: Record<string, string> = { active: 'Activă', expired: 'Expirată', canceled: 'Revocată' };
-const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Bucharest' }) : '-';
 ---
 
 <AdminLayout title="Licențe" activeTab="licente">

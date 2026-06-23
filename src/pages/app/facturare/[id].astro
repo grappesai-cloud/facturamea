@@ -76,7 +76,7 @@ const efBadge = !efSendable ? null
           </span>
         )}
         <span class="text-[14px] text-[#9FB8CC]">{kindLabel[inv.kind] ?? 'Document'}</span>
-        {inv.dueAt && <span class="text-[14px] text-[#7C9AB4]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO')}</span>}
+        {inv.dueAt && <span class="text-[14px] text-[#7C9AB4]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
       </div>
     </div>
     <InvoiceActions invoiceId={inv.id} kind={inv.kind} status={inv.status} totalCents={inv.totalCents} paidCents={inv.paidCents} currency={inv.currency} clientCompanyId={inv.clientCompanyId} client:load />
@@ -111,7 +111,7 @@ const efBadge = !efSendable ? null
       <div class="sm:text-right">
         <p class="text-[13px] font-medium text-[#7C9AB4]">{kindLabel[inv.kind] ?? 'Document'}</p>
         <p class="text-[28px] font-bold tracking-[-0.03em] text-white mt-1.5 font-mono tabular-nums">{inv.fullNumber}</p>
-        <p class="text-[13px] text-[#9FB8CC] mt-1.5">Emis: {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO') : '—'}</p>
+        <p class="text-[13px] text-[#9FB8CC] mt-1.5">Emis: {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
       </div>
     </div>
 
@@ -193,7 +193,7 @@ const efBadge = !efSendable ? null
           <li class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
             <div>
               <p class="text-[12px] text-[#9FB8CC]">
-                {new Date(p.receivedAt).toLocaleDateString('ro-RO')}
+                {new Date(p.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}
                 {p.method && ` · ${p.method}`}
                 {p.reference && ` · ref ${p.reference}`}
               </p>
@@ -210,7 +210,7 @@ const efBadge = !efSendable ? null
               <li class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div>
                   <p class="text-[12px] text-[#9FB8CC]">
-                    {new Date(p.receivedAt).toLocaleDateString('ro-RO')}
+                    {new Date(p.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}
                     {p.method && ` · ${p.method}`}
                     {p.reference && ` · ref ${p.reference}`}
                   </p>

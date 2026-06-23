@@ -5,7 +5,7 @@
 // stockLevels (weighted-average cost) via applyStockIn.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { receptions, receptionLines, suppliers, warehouses } from '../../../../db/schema';
+import { receptions, receptionLines, suppliers, warehouses, invoiceProducts } from '../../../../db/schema';
 import { and, eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { applyStockIn } from '../../../../lib/stock';
@@ -113,10 +113,24 @@ export const POST: APIRoute = async ({ request, locals }) => {
       } as any);
 
       for (const l of lines) {
+        // Stock is tracked per catalogue product (stock_levels → invoice_products).
+        // A free-text line (name only, no productId) would otherwise post value
+        // without ever building stock. Auto-create a catalogue product so the
+        // reception actually lands on stock, matching the success message.
+        let productId = l.productId ? String(l.productId) : null;
+        if (!productId && l.name && status === 'posted') {
+          productId = nanoid();
+          await tx.insert(invoiceProducts).values({
+            id: productId, companyId: cid, name: String(l.name).slice(0, 300),
+            defaultUm: l.um || 'buc', defaultUnitPriceCents: l.unitCostCents ?? 0,
+            productType: 'Marfuri',
+          } as any);
+        }
+
         await tx.insert(receptionLines).values({
           id: nanoid(),
           receptionId,
-          productId: l.productId,
+          productId,
           name: l.name,
           um: l.um,
           quantity: l.quantity,
@@ -125,9 +139,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           lineTotalCents: l.lineTotalCents,
         } as any);
 
-        // Only post to stock when posted + product is known (stock references products).
-        if (status === 'posted' && l.productId) {
-          await applyStockIn(cid, warehouseId, l.productId, l.quantity, l.unitCostCents, {
+        // Post to stock when the reception is posted and we have a product.
+        if (status === 'posted' && productId) {
+          await applyStockIn(cid, warehouseId, productId, l.quantity, l.unitCostCents, {
             reason: `NIR ${nirNumber}`,
             refType: 'nir',
             refId: receptionId,

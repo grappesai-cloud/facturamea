@@ -40,7 +40,7 @@ const stats = [
 ];
 
 const revenue = ron(lifetimeRevenue[0]?.total ?? 0);
-const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '-';
+const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Bucharest' }) : '-';
 ---
 
 <AdminLayout title="Tablou de bord" activeTab="dashboard">

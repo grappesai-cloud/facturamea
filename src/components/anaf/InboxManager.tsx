@@ -26,7 +26,7 @@ const ron = (cents: number | null, currency = 'RON') =>
 const fmtDate = (s: string | null) => {
   if (!s) return '-';
   const d = new Date(s);
-  return isNaN(d.getTime()) ? s : d.toLocaleDateString('ro-RO');
+  return isNaN(d.getTime()) ? s : d.toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' });
 };
 
 function statusPill(status: string) {

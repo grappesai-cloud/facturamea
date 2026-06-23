@@ -11,7 +11,7 @@ const [u] = await db.select({
 }).from(users).where(eq(users.id, user.id));
 
 const totpEnabled = !!u?.totpEnabled;
-const totpEnrolledAt = u?.totpEnrolledAt ? new Date(u.totpEnrolledAt).toLocaleDateString('ro-RO') : null;
+const totpEnrolledAt = u?.totpEnrolledAt ? new Date(u.totpEnrolledAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : null;
 
 const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none';
 const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';

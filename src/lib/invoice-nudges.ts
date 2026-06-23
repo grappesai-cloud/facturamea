@@ -21,8 +21,9 @@ export interface Nudge { tone: NudgeTone; message: string }
 interface InvoiceSignals {
   invoiceFullNumber: string;
   status: string;
-  totalCents: number;
-  paidCents: number;
+  total: number;       // RON (major units), not bani
+  paid: number;        // RON
+  remaining: number;   // RON
   currency: string;
   dueDaysFromNow: number | null;       // negative = overdue
   daysOverdue: number | null;
@@ -70,8 +71,9 @@ async function gatherSignals(invoiceId: string): Promise<{ inv: typeof transport
     signals: {
       invoiceFullNumber: inv.fullNumber,
       status: inv.status,
-      totalCents: inv.totalCents,
-      paidCents: inv.paidCents,
+      total: Math.round(inv.totalCents) / 100,
+      paid: Math.round(inv.paidCents) / 100,
+      remaining: Math.round(inv.totalCents - inv.paidCents) / 100,
       currency: inv.currency,
       dueDaysFromNow,
       daysOverdue,
@@ -124,11 +126,13 @@ export async function nudgesForInvoice(invoiceId: string): Promise<Nudge[]> {
       'Reguli stricte:',
       '- Maximum 3 nudges. Maximum 1 propoziție per nudge, sub 140 caractere.',
       '- Nu inventa cifre. Folosește DOAR numerele din input. Dacă un câmp e null, ignoră-l.',
+      '- Sumele (total, paid, remaining) sunt în RON, NU în bani. Adaugă moneda din câmpul currency, ex: "restant 150 RON din 200 RON".',
+      '- Nu folosi liniuța lungă (—); folosește virgulă, punct sau două puncte.',
       '- Limbă: română, ton scurt și direct, fără emoji-uri.',
       '- "warn" pentru risc/probleme, "good" pentru semnale pozitive, "info" pentru context neutru.',
       '- Dacă nu ai nimic util de spus, returnează lista goală.',
       'Exemple bune:',
-      '  { "tone": "warn", "message": "Întârziată 14 zile — cu 7 peste media clientului (~7 zile)." }',
+      '  { "tone": "warn", "message": "Întârziată 14 zile, cu 7 peste media clientului (~7 zile)." }',
       '  { "tone": "good", "message": "Client cu istoric bun: 9 din 10 plătite la timp." }',
       '  { "tone": "info", "message": "Scadența e peste 2 zile." }',
     ].join('\n');

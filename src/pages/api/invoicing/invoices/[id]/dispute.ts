@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ params, locals, request }) => {
 
   let incidentId: string | null = null;
   const remaining = (inv.totalCents - inv.paidCents) / 100;
-  const dueStr = inv.dueAt ? new Date(inv.dueAt).toLocaleDateString('ro-RO') : null;
+  const dueStr = inv.dueAt ? new Date(inv.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : null;
   const amountStr = `${remaining.toLocaleString('ro-RO', { minimumFractionDigits: 2 })} ${inv.currency}`;
 
   // Only a TH-registered client company can be the incident target.

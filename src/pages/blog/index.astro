@@ -13,7 +13,7 @@ try {
   }).from(blogPosts).where(eq(blogPosts.status, 'published')).orderBy(desc(blogPosts.publishedAt)).limit(200);
 } catch { posts = []; }
 
-const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Bucharest' }) : '';
 
 const jsonLd = {
   '@context': 'https://schema.org',

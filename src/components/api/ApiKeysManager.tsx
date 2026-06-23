@@ -18,7 +18,7 @@ interface ApiKey {
 const fmtDate = (iso: string | null) => {
   if (!iso) return '—';
   try {
-    return new Intl.DateTimeFormat('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(iso));
+    return new Intl.DateTimeFormat('ro-RO', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'Europe/Bucharest' }).format(new Date(iso));
   } catch {
     return '—';
   }

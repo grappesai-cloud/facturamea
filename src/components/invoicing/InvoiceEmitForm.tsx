@@ -916,7 +916,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                       onChange={(e) => { const v = e.target.value; setDueDate(v === '' ? '' : isoInDays(Math.max(0, parseInt(v) || 0))); }}
                       className={`${SELECT} w-24 text-center`} placeholder="zile" />
                     <span className="text-[13px] text-[#9FB8CC]">zile de la emitere</span>
-                    {dueDate && <span className="text-[13px] text-[#7C9AB4] ml-auto">scadent {new Date(dueDate + 'T00:00:00').toLocaleDateString('ro-RO')}</span>}
+                    {dueDate && <span className="text-[13px] text-[#7C9AB4] ml-auto">scadent {new Date(dueDate + 'T00:00:00').toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
                   </div>
                 </div>
               )}

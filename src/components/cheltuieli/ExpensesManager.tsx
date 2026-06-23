@@ -146,7 +146,7 @@ export default function ExpensesManager() {
                     <span className="text-[12px] text-[#7C9AB4] truncate">{DOC_LABELS[e.documentType] || e.documentType}{e.documentNumber ? ` · ${e.documentNumber}` : ''}</span>
                   </div>
                   <p className="text-[15px] text-white font-semibold truncate mt-1.5">{e.supplierName || e.supplierNameSnap || '—'}</p>
-                  <p className="text-[12px] text-[#7C9AB4] mt-0.5 truncate">{e.category ? (CAT_LABELS[e.category] || e.category) : '—'}{e.issueDate ? ` · ${new Date(e.issueDate).toLocaleDateString('ro-RO')}` : ''}</p>
+                  <p className="text-[12px] text-[#7C9AB4] mt-0.5 truncate">{e.category ? (CAT_LABELS[e.category] || e.category) : '—'}{e.issueDate ? ` · ${new Date(e.issueDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}` : ''}</p>
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[15px] font-bold tabular-nums text-white">{ron(e.totalCents)}</p>
