@@ -3,6 +3,7 @@ import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
 import { transportInvoices } from '../../../db/schema';
 import { eq, sql, and, desc, lt, gte, isNull, ne } from 'drizzle-orm';
+import { isOverdue } from '../../../lib/dates';
 
 const user = Astro.locals.user!;
 const companyId = user.companyId;
@@ -248,7 +249,7 @@ const statusLabel: Record<string, string> = {
     <ul class="space-y-2.5">
       {recent.slice(0, 3).map((inv) => {
         const due = inv.dueAt ? new Date(inv.dueAt) : null;
-        const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && due && due < now;
+        const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && isOverdue(inv.dueAt);
         const effectiveStatus = overdue ? 'overdue' : inv.status;
         return (
           <li>

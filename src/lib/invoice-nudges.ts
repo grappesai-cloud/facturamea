@@ -13,6 +13,7 @@
 import { db } from '../db';
 import { transportInvoices } from '../db/schema';
 import { and, eq, isNotNull, sql } from 'drizzle-orm';
+import { daysUntilDue } from './dates';
 
 export type NudgeTone = 'info' | 'warn' | 'good';
 export interface Nudge { tone: NudgeTone; message: string }
@@ -35,10 +36,10 @@ async function gatherSignals(invoiceId: string): Promise<{ inv: typeof transport
   if (!inv) return null;
   const now = new Date();
 
-  const dueAt = inv.dueAt ? new Date(inv.dueAt) : null;
-  const dueDaysFromNow = dueAt ? Math.floor((dueAt.getTime() - now.getTime()) / 86400000) : null;
-  const daysOverdue = dueAt && dueAt < now && inv.status !== 'paid' && inv.status !== 'voided'
-    ? Math.floor((now.getTime() - dueAt.getTime()) / 86400000) : null;
+  // Calendar-day based (RO tz): a due date of TODAY is not overdue.
+  const dueDaysFromNow = daysUntilDue(inv.dueAt);
+  const daysOverdue = (dueDaysFromNow != null && dueDaysFromNow < 0 && inv.status !== 'paid' && inv.status !== 'voided' && inv.status !== 'reversed')
+    ? -dueDaysFromNow : null;
 
   let historyCount: number | null = null;
   let onTimeRatio: number | null = null;

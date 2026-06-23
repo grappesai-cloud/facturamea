@@ -8,11 +8,13 @@ import { eq } from 'drizzle-orm';
 const user = Astro.locals.user!;
 if (!user.companyId) return Astro.redirect('/app/setari');
 
-// e-Factura auto-send default for the "trimite acum" checkbox.
+// e-Factura auto-send default + VAT-payer status (non-payers issue without VAT).
 let efacturaAutoSend = false;
+let companyVatPayer = true;
 try {
-  const [co] = await db.select({ auto: companies.efacturaAutoSend }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
+  const [co] = await db.select({ auto: companies.efacturaAutoSend, isVatPayer: companies.isVatPayer }).from(companies).where(eq(companies.id, user.companyId)).limit(1);
   efacturaAutoSend = !!co?.auto;
+  companyVatPayer = (co as any)?.isVatPayer !== false; // treat null/unknown as payer (standard)
 } catch {}
 
 const kindParam = Astro.url.searchParams.get('kind') || 'factura';
@@ -43,6 +45,6 @@ if (orderId) {
 
 <AppLayout title="Emitere document" activeTab="facturare">
   <div class="max-w-5xl">
-    <InvoiceEmitForm kind={kind} orderId={orderId} fromId={fromId} dossierPrefill={dossierPrefill} efacturaAutoSend={efacturaAutoSend} anafConnected={Astro.locals.anafConnected ?? false} client:load />
+    <InvoiceEmitForm kind={kind} orderId={orderId} fromId={fromId} dossierPrefill={dossierPrefill} efacturaAutoSend={efacturaAutoSend} anafConnected={Astro.locals.anafConnected ?? false} companyVatPayer={companyVatPayer} client:load />
   </div>
 </AppLayout>

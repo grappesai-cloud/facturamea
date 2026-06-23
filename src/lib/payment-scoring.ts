@@ -1,6 +1,7 @@
 import { db } from '../db';
 import { transportInvoices, incidents, companies } from '../db/schema';
 import { and, eq, sql } from 'drizzle-orm';
+import { isOverdue } from './dates';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -38,7 +39,7 @@ export async function computePaymentBehavior(companyId: string): Promise<Payment
     const due = inv.dueAt ? new Date(inv.dueAt).getTime() : null;
     if (inv.paidAt && due) {
       delays.push((new Date(inv.paidAt).getTime() - due) / DAY);
-    } else if (due && due < now && (inv.paidCents ?? 0) < (inv.totalCents ?? 0)) {
+    } else if (isOverdue(inv.dueAt) && (inv.paidCents ?? 0) < (inv.totalCents ?? 0)) {
       overdueCount++;
     }
   }

@@ -3,6 +3,7 @@ import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
 import { transportInvoices, transportInvoicePayments, invoiceSeries } from '../../../db/schema';
 import { and, eq, sql, desc, gte, lte, lt, ilike } from 'drizzle-orm';
+import { isOverdue } from '../../../lib/dates';
 
 const user = Astro.locals.user!;
 if (!user.companyId) return Astro.redirect('/app/facturare');
@@ -233,7 +234,7 @@ for (const r of sumRows) {
   summary.baza += r.subtotalCents || 0;
   if (r.status === 'paid') summary.paidCount++;
   const outstanding = (r.totalCents || 0) - (r.paidCents || 0);
-  const overdue = ['issued', 'sent', 'partial'].includes(r.status) && r.dueAt && new Date(r.dueAt) < nowS;
+  const overdue = ['issued', 'sent', 'partial'].includes(r.status) && isOverdue(r.dueAt);
   if (overdue && outstanding > 0) { summary.restante += outstanding; summary.restanteCount++; }
   const ck = r.clientName || '—';
   clientMap.set(ck, (clientMap.get(ck) || 0) + (r.totalCents || 0));

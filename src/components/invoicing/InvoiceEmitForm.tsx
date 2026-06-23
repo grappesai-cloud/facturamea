@@ -143,7 +143,7 @@ function UnitSelect({ value, onChange, className }: { value: string; onChange: (
   );
 }
 
-export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill, efacturaAutoSend = false, anafConnected = true }: { kind: Kind; orderId?: string; fromId?: string; dossierPrefill?: DossierPrefill; efacturaAutoSend?: boolean; anafConnected?: boolean }) {
+export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill, efacturaAutoSend = false, anafConnected = true, companyVatPayer = true }: { kind: Kind; orderId?: string; fromId?: string; dossierPrefill?: DossierPrefill; efacturaAutoSend?: boolean; anafConnected?: boolean; companyVatPayer?: boolean }) {
   // Recipient — picker uses external clients only for now. Internal linking
   // comes from the comenzi-emit-invoice flow with orderId pre-populated.
   const [clientSearch, setClientSearch] = useState('');
@@ -373,7 +373,8 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const lineCalc = (l: Line) => {
     const q = parseFloat(l.quantity) || 0;
     const net = Math.round(q * netUnitCents(l));
-    const vat = Math.round((net * (parseFloat(l.vatRate) || 0)) / 100);
+    // Non-VAT-payer issuer: invoices carry no VAT (server enforces this too).
+    const vat = companyVatPayer ? Math.round((net * (parseFloat(l.vatRate) || 0)) / 100) : 0;
     return { net, vat, total: net + vat };
   };
   const totals = lines.reduce((acc, l) => {
@@ -830,7 +831,9 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                       </div>
                       <div>
                         <Label className={LBL}>Cotă TVA</Label>
-                        {tvaRates.length > 0 ? (
+                        {!companyVatPayer ? (
+                          <div className={`${SELECT_INSET} flex items-center text-[#9FB8CC]`}>Neplătitor TVA</div>
+                        ) : tvaRates.length > 0 ? (
                           <Select value={l.vatRate} onChange={(e) => setLine(i, { vatRate: e.target.value })} className={SELECT_INSET}>
                             {!tvaRates.some((r) => String(r.percent) === l.vatRate) && <option value={l.vatRate}>{l.vatRate}%</option>}
                             {tvaRates.map((r) => <option key={r.id} value={String(r.percent)}>{r.percent}% · {r.name}</option>)}

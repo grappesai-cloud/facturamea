@@ -6,6 +6,7 @@ import { db } from '../../../db';
 import { transportInvoices, transportInvoiceLines, transportInvoicePayments } from '../../../db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
 import { loadIssuer } from '../../../lib/invoicing';
+import { isOverdue } from '../../../lib/dates';
 
 const user = Astro.locals.user!;
 const id = Astro.params.id!;
@@ -23,7 +24,7 @@ const issuer = await loadIssuer(inv.companyId);
 const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const remaining = inv.totalCents - inv.paidCents;
 // Only genuinely open invoices can be overdue — never a storno'd/voided/draft one.
-const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && inv.dueAt && new Date(inv.dueAt) < new Date();
+const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && isOverdue(inv.dueAt);
 const effectiveStatus = overdue ? 'overdue' : inv.status;
 
 const kindLabel: Record<string, string> = { factura: 'Factură', proforma: 'Proformă', storno: 'Factură storno', chitanta: 'Chitanță' };

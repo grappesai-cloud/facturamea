@@ -10,6 +10,7 @@
 import { db } from '../db';
 import { transportInvoices } from '../db/schema';
 import { and, eq, sql, isNotNull } from 'drizzle-orm';
+import { isOverdue } from './dates';
 
 export interface ReliabilitySignals {
   totalIssued: number;          // count of factura status≠voided
@@ -68,7 +69,7 @@ export async function computePaymentReliability(companyId: string): Promise<Reli
       openCount++;
       const remaining = (r.totalCents ?? 0) - (r.paidCents ?? 0);
       openValueCents += remaining;
-      if (due && due < now) {
+      if (isOverdue(r.dueAt)) {
         openOverdueCount++;
         openOverdueValueCents += remaining;
       }

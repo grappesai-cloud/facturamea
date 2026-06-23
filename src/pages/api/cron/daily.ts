@@ -5,6 +5,7 @@ import { and, lt, sql } from 'drizzle-orm';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 import { refreshExpiringTokens } from '../../../lib/anaf/tokens';
 import { syncEfacturaStatuses } from '../../../lib/anaf/efactura-sync';
+import { startOfTodayRO } from '../../../lib/dates';
 
 // facturamea — daily maintenance cron (06:00 UTC, see vercel.json).
 // Marks unpaid documents past their due date as overdue, and proactively
@@ -22,7 +23,7 @@ export const GET: APIRoute = async ({ request }) => {
       .set({ status: 'overdue' })
       .where(
         and(
-          lt(transportInvoices.dueAt, new Date()),
+          lt(transportInvoices.dueAt, startOfTodayRO()),
           sql`${transportInvoices.status} IN ('issued','sent','partial')`,
         ),
       );
