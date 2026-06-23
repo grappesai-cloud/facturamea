@@ -27,8 +27,8 @@ export const GET: APIRoute = async ({ request }) => {
         ),
       );
     overdueMarked = (res as any)?.rowCount ?? 0;
-  } catch {
-    // Never let the cron hard-fail.
+  } catch (e) {
+    console.error('daily cron step failed:', e); // log but never hard-fail the cron
   }
 
   // ANAF OAuth maintenance: renew access tokens expiring within 7 days.
@@ -37,8 +37,8 @@ export const GET: APIRoute = async ({ request }) => {
     const r = await refreshExpiringTokens();
     anafRefreshed = r.refreshed;
     anafFailed = r.failed;
-  } catch {
-    // Never let the cron hard-fail.
+  } catch (e) {
+    console.error('daily cron step failed:', e); // log but never hard-fail the cron
   }
 
   // e-Factura status sync: advance 'submitted' uploads to 'validated'/'rejected'

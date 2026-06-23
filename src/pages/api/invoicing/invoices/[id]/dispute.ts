@@ -68,7 +68,7 @@ export const POST: APIRoute = async ({ params, locals, request }) => {
           type: 'incident',
           title: `Sesizare de neplată: factura ${inv.fullNumber}`,
           body: `${issuerName} a deschis o sesizare de neîncasare (${amountStr}). Ai drept de replică.`,
-          linkUrl: `/app/incidente/${incidentId}`,
+          linkUrl: `/app`,
           entityType: 'incident',
           entityId: incidentId,
         });

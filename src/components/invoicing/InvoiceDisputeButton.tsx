@@ -27,8 +27,7 @@ export default function InvoiceDisputeButton({ invoiceId, kind, status, clientCo
       const res = await fetch(`/api/invoicing/invoices/${invoiceId}/dispute`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) { alert(data.error || 'Eroare'); return; }
-      if (data.incidentId) window.location.href = `/app/incidente/${data.incidentId}`;
-      else window.location.reload();
+      window.location.reload();
     } catch {
       alert('Eroare conexiune');
     } finally {

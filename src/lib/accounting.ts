@@ -16,7 +16,7 @@ import {
   transportInvoicePayments,
   expenses,
 } from '../db/schema';
-import { and, eq, gte, lte, asc, sql } from 'drizzle-orm';
+import { and, eq, gte, lte, asc, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -511,7 +511,7 @@ export async function autoPostAll(companyId: string, createdByUserId?: string | 
     const invs = await db
       .select({ id: transportInvoices.id })
       .from(transportInvoices)
-      .where(and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura')));
+      .where(and(eq(transportInvoices.companyId, companyId), inArray(transportInvoices.kind, ['factura', 'storno'])));
     for (const r of invs) {
       const res = await postInvoice(r.id, createdByUserId);
       if (res.ok && !res.skipped) out.invoices++;

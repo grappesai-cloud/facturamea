@@ -21,6 +21,7 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
 
   const [inv] = await db.select().from(transportInvoices).where(and(eq(transportInvoices.id, invoiceId), eq(transportInvoices.companyId, cid))).limit(1);
   if (!inv) return new Response(JSON.stringify({ error: 'Factură inexistentă' }), { status: 404 });
+  if (inv.status === 'reversed' || inv.status === 'voided') return new Response(JSON.stringify({ error: 'Nu se poate înregistra încasare pe o factură stornată/anulată.' }), { status: 400 });
 
   // Payment currency must match the invoice currency (no implicit FX).
   const payCurrency = (body.currency || inv.currency || 'RON').toUpperCase();

@@ -78,8 +78,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       const res = await fetch(`/api/invoicing/invoices/${invoiceId}/dispute`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Eroare'); return; }
-      if (data.incidentId) window.location.href = `/app/incidente/${data.incidentId}`;
-      else window.location.reload();
+      window.location.reload();
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 

@@ -30,6 +30,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
   if (!parent) return new Response(JSON.stringify({ error: 'Factura nu există' }), { status: 404 });
   if (parent.companyId !== locals.user.companyId) return new Response(JSON.stringify({ error: 'Fără acces' }), { status: 403 });
   if (parent.kind !== 'factura') return new Response(JSON.stringify({ error: 'Chitanța se emite doar pentru facturi' }), { status: 400 });
+  if (parent.status === 'reversed' || parent.status === 'voided') return new Response(JSON.stringify({ error: 'Nu se poate încasa o factură stornată/anulată.' }), { status: 400 });
 
   const remaining = parent.totalCents - parent.paidCents;
   if (amountCents > remaining) return new Response(JSON.stringify({ error: `Sumă peste rest de plată (${remaining / 100})` }), { status: 400 });

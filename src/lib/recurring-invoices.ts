@@ -47,7 +47,14 @@ export async function runRecurringInvoices(today: string = new Date().toISOStrin
       const out = await emitOneRecurring(r, today);
       result.generated.push({ recurringId: r.id, invoiceId: out.invoiceId, fullNumber: out.fullNumber });
     } catch (e: any) {
-      result.errors.push({ recurringId: r.id, error: e?.message || String(e) });
+      const msg = e?.message || String(e);
+      result.errors.push({ recurringId: r.id, error: msg });
+      // Permanent data errors (corrupt snapshot) would otherwise retry forever —
+      // deactivate the template so it stops re-failing every day.
+      const permanent = e instanceof SyntaxError || /linesJson empty|Client snapshot missing|JSON/i.test(msg);
+      if (permanent) {
+        try { await db.update(invoiceRecurring).set({ isActive: false }).where(eq(invoiceRecurring.id, r.id)); } catch { /* best-effort */ }
+      }
     }
   }
 
