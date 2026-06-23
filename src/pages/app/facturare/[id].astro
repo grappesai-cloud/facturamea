@@ -3,8 +3,9 @@ import AppLayout from '../../../layouts/AppLayout.astro';
 import InvoiceActions from '../../../components/invoicing/InvoiceActions';
 import { nudgesForInvoice } from '../../../lib/invoice-nudges';
 import { db } from '../../../db';
-import { transportInvoices, transportInvoiceLines, transportInvoicePayments, companies } from '../../../db/schema';
+import { transportInvoices, transportInvoiceLines, transportInvoicePayments } from '../../../db/schema';
 import { eq, asc, desc } from 'drizzle-orm';
+import { loadIssuer } from '../../../lib/invoicing';
 
 const user = Astro.locals.user!;
 const id = Astro.params.id!;
@@ -17,7 +18,7 @@ if (!inv || inv.companyId !== user.companyId) {
 const lines = await db.select().from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, id)).orderBy(asc(transportInvoiceLines.position));
 const nudges = await nudgesForInvoice(id).catch(() => []);
 const payments = await db.select().from(transportInvoicePayments).where(eq(transportInvoicePayments.invoiceId, id)).orderBy(desc(transportInvoicePayments.receivedAt));
-const [issuer] = await db.select().from(companies).where(eq(companies.id, inv.companyId)).limit(1);
+const issuer = await loadIssuer(inv.companyId);
 
 const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const remaining = inv.totalCents - inv.paidCents;
@@ -43,15 +44,19 @@ const statusLabel: Record<string, string> = {
   reversed: '⚪ Stornată',
 };
 
-// e-Factura (ANAF SPV) indicator: green = reached ANAF, red = rejected/error,
-// grey = not sent yet. Only for documents that go to ANAF (factura / storno).
+// e-Factura (ANAF SPV) indicator. CRITICAL: an upload index ("submitted") means
+// ANAF only RECEIVED the file — NOT that it was validated. Green is reserved for
+// 'validated' (ANAF accepted). 'submitted' is amber (pending validation), and
+// 'rejected' is red. Only for documents that go to ANAF (factura / storno).
 const ef = (inv.efacturaStatus || '').toLowerCase();
 const efSendable = inv.kind === 'factura' || inv.kind === 'storno';
 const efBadge = !efSendable ? null
   : (ef === 'rejected' || inv.efacturaError)
-    ? { cls: 'bg-[#DC4B41]/15 text-[#DC4B41]', text: '🔴 e-Factura: eroare', title: inv.efacturaError || 'Respinsă de ANAF' }
-  : (ef === 'submitted' || ef === 'accepted' || ef === 'sent')
-    ? { cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]', text: '🟢 e-Factura: trimisă la ANAF', title: inv.efacturaAnafId ? `Index ANAF: ${inv.efacturaAnafId}` : 'Trimisă la ANAF' }
+    ? { cls: 'bg-[#DC4B41]/15 text-[#DC4B41]', text: '🔴 e-Factura: respinsă de ANAF', title: inv.efacturaError ? `Motiv ANAF: ${inv.efacturaError}` : 'Respinsă de ANAF la validare' }
+  : (ef === 'validated' || ef === 'accepted')
+    ? { cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]', text: '🟢 e-Factura: validată de ANAF', title: inv.efacturaAnafId ? `Index ANAF: ${inv.efacturaAnafId}` : 'Validată de ANAF' }
+  : (ef === 'submitted' || ef === 'sent')
+    ? { cls: 'bg-[#E8A33C]/15 text-[#E8A33C]', text: '🟡 e-Factura: trimisă, în validare la ANAF', title: inv.efacturaAnafId ? `Index încărcare: ${inv.efacturaAnafId} · verifică starea` : 'Trimisă, ANAF nu a confirmat încă validarea' }
   : { cls: 'bg-white/10 text-[#9FB8CC]', text: '⚪ e-Factura: netrimisă', title: 'Nu a fost încă trimisă la ANAF' };
 ---
 
