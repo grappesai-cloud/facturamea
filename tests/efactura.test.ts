@@ -125,7 +125,8 @@ describe('e-Factura UBL / CIUS-RO', () => {
       }),
     );
     expect(xml).toContain('<cbc:TaxCurrencyCode>RON</cbc:TaxCurrencyCode>');
-    expect(xml).toContain('<cbc:CalculationRate>4.9700</cbc:CalculationRate>');
+    // No cac:TaxExchangeRate (forbidden by UBL-CR-490) — rate is conveyed by VAT in RON.
+    expect(xml).not.toContain('TaxExchangeRate');
     // TVA doc = 21.00 EUR → 21*4.97 = 104.37 RON
     expect(xml).toContain('<cbc:TaxAmount currencyID="RON">104.37</cbc:TaxAmount>');
     expect(amt(xml, /<cbc:TaxAmount currencyID="EUR">([\d.]+)/)).toBe(21.0);
