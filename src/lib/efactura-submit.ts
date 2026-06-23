@@ -30,6 +30,10 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
   // Real VAT-payer status (from ANAF at onboarding) — never hardcode. A non-payer
   // issues without VAT and the e-Factura must not declare a VAT scheme.
   const supplierVatPayer = (supplierCo as any).isVatPayer === true;
+  // Invoice VAT regime → EN16931 category (only for VAT payers; non-payers = O).
+  const regimeCategory = ({
+    reverse_charge: 'AE', intra_eu: 'K', export_extra_eu: 'G', exempt: 'E',
+  } as Record<string, 'AE' | 'K' | 'G' | 'E'>)[inv.vatRegime || 'standard'];
 
   let customerCountry = 'RO';
   let customerCity = '';
@@ -77,7 +81,11 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
       quantity: l.quantity,
       unit: l.unit,
       unitPriceCents: l.unitPriceCents,
-      vatPercent: supplierVatPayer ? l.vatRate : 0,
+      // Map the invoice's VAT regime to the EN16931 category. Special regimes
+      // (reverse charge / intra-EU / export / exempt) carry 0% + their category;
+      // standard keeps the line rate (→ S/Z). Non-payers are forced to O upstream.
+      vatPercent: supplierVatPayer ? (regimeCategory ? 0 : l.vatRate) : 0,
+      vatCategory: supplierVatPayer ? regimeCategory : undefined,
     })),
   });
 
