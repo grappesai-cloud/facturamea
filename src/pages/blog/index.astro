@@ -1,0 +1,58 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import { db, blogPosts } from '../../db';
+import { eq, desc } from 'drizzle-orm';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
+
+let posts: any[] = [];
+try {
+  posts = await db.select({
+    slug: blogPosts.slug, title: blogPosts.title, description: blogPosts.description,
+    category: blogPosts.category, readMinutes: blogPosts.readMinutes, publishedAt: blogPosts.publishedAt,
+  }).from(blogPosts).where(eq(blogPosts.status, 'published')).orderBy(desc(blogPosts.publishedAt)).limit(200);
+} catch { posts = []; }
+
+const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Blog',
+  name: 'Blog facturamea',
+  url: 'https://facturamea.com/blog',
+  description: 'Ghiduri practice despre facturare, e-Factura ANAF, TVA, SAF-T, gestiune și fiscalitate pentru firme din România.',
+  blogPost: posts.slice(0, 50).map((p) => ({
+    '@type': 'BlogPosting', headline: p.title, url: `https://facturamea.com/blog/${p.slug}`,
+    datePublished: p.publishedAt ? new Date(p.publishedAt).toISOString() : undefined,
+  })),
+};
+---
+
+<PublicLayout
+  title="Blog · Ghiduri de facturare, e-Factura și TVA"
+  description="Ghiduri practice despre facturare, e-Factura ANAF, TVA, SAF-T, e-Transport și gestiune pentru firme, PFA și contabili din România."
+  structuredData={jsonLd}>
+  <article class="max-w-none">
+    <p class="text-[13px] font-semibold uppercase tracking-wide text-[#34A0A4] mb-2">Blog facturamea</p>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-[#0A2238] tracking-[-0.03em] mb-3">Ghiduri de facturare, e-Factura și fiscalitate</h1>
+    <p class="text-[#46627A] leading-relaxed mb-8 max-w-2xl">Explicații clare despre e-Factura ANAF, TVA, SAF-T, e-Transport, gestiune și tot ce ține de facturarea unei firme din România. Articol nou în fiecare zi.</p>
+
+    {posts.length === 0 ? (
+      <div class="p-8 bg-[#F5F8FB] rounded-2xl ring-1 ring-black/[0.05] text-[#46627A]">Primele articole apar în curând.</div>
+    ) : (
+      <div class="grid sm:grid-cols-2 gap-5">
+        {posts.map((p) => (
+          <a href={`/blog/${p.slug}`} class="block p-6 rounded-2xl bg-white ring-1 ring-black/[0.06] hover:ring-[#34A0A4]/40 hover:shadow-[0_12px_40px_-18px_rgba(10,34,56,0.25)] transition-all">
+            <div class="flex items-center gap-2 text-[12px] text-[#7C9AB4] mb-2">
+              {p.category && <span class="px-2 py-0.5 rounded-full bg-[#E1FB15]/30 text-[#0A2238] font-semibold">{p.category}</span>}
+              <span>{fmtDate(p.publishedAt)}</span>
+              <span>· {p.readMinutes} min</span>
+            </div>
+            <h2 class="text-lg font-bold text-[#0A2238] tracking-[-0.02em] mb-1.5 leading-snug">{p.title}</h2>
+            <p class="text-[14px] text-[#46627A] leading-relaxed line-clamp-3">{p.description}</p>
+          </a>
+        ))}
+      </div>
+    )}
+  </article>
+</PublicLayout>

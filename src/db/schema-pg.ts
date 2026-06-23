@@ -1939,3 +1939,20 @@ export const invoiceReminders = pgTable('invoice_reminders', {
   index('idx_invoice_reminders_company').on(table.companyId),
   uniqueIndex('uq_invoice_reminder').on(table.invoiceId, table.kind),
 ]);
+
+// ─── Blog / SEO content (auto-published) ───────────────────
+export const blogPosts = pgTable('blog_posts', {
+  id: text('id').primaryKey(),
+  slug: varchar('slug', { length: 200 }).unique().notNull(),
+  title: varchar('title', { length: 300 }).notNull(),
+  description: varchar('description', { length: 400 }).notNull(),
+  keywords: text('keywords'),
+  category: varchar('category', { length: 60 }),
+  bodyHtml: text('body_html').notNull(),
+  readMinutes: integer('read_minutes').default(5),
+  status: varchar('status', { length: 16 }).notNull().default('published'),
+  publishedAt: timestamp('published_at').defaultNow(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_blog_status_pub').on(table.status, table.publishedAt),
+]);

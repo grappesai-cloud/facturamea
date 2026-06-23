@@ -1,0 +1,88 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro';
+import { db, blogPosts } from '../../db';
+import { and, eq } from 'drizzle-orm';
+
+const { slug } = Astro.params;
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=86400');
+
+let post: any = null;
+try {
+  const [row] = await db.select().from(blogPosts)
+    .where(and(eq(blogPosts.slug, slug!), eq(blogPosts.status, 'published'))).limit(1);
+  post = row ?? null;
+} catch { post = null; }
+
+if (!post) return Astro.redirect('/blog', 302);
+
+const url = `https://facturamea.com/blog/${post.slug}`;
+const publishedIso = post.publishedAt ? new Date(post.publishedAt).toISOString() : undefined;
+const fmtDate = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.description,
+    url,
+    inLanguage: 'ro-RO',
+    datePublished: publishedIso,
+    dateModified: publishedIso,
+    author: { '@type': 'Organization', name: 'facturamea', url: 'https://facturamea.com' },
+    publisher: { '@type': 'Organization', name: 'facturamea', logo: { '@type': 'ImageObject', url: 'https://facturamea.com/favicon.svg' } },
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Acasă', item: 'https://facturamea.com/' },
+      { '@type': 'ListItem', position: 2, name: 'Blog', item: 'https://facturamea.com/blog' },
+      { '@type': 'ListItem', position: 3, name: post.title, item: url },
+    ],
+  },
+];
+---
+
+<PublicLayout
+  title={post.title}
+  description={post.description}
+  ogType="article"
+  publishedTime={publishedIso}
+  modifiedTime={publishedIso}
+  author="facturamea"
+  structuredData={jsonLd}>
+  <article class="max-w-2xl mx-auto">
+    <nav class="text-[13px] text-[#7C9AB4] mb-5">
+      <a href="/blog" class="hover:text-[#34A0A4]">Blog</a> <span class="opacity-50">/</span> <span>{post.category}</span>
+    </nav>
+    <h1 class="text-3xl sm:text-[40px] font-extrabold text-[#0A2238] tracking-[-0.03em] leading-[1.08] mb-4">{post.title}</h1>
+    <div class="flex items-center gap-2 text-[13px] text-[#7C9AB4] mb-8">
+      {post.category && <span class="px-2 py-0.5 rounded-full bg-[#E1FB15]/30 text-[#0A2238] font-semibold">{post.category}</span>}
+      <span>{fmtDate(post.publishedAt)}</span>
+      <span>· {post.readMinutes} min citire</span>
+    </div>
+
+    <div class="post-body" set:html={post.bodyHtml} />
+
+    <div class="mt-12 p-6 rounded-2xl bg-[#0A2238] text-white">
+      <p class="text-lg font-bold mb-1.5">Facturezi conform ANAF, fără bătăi de cap.</p>
+      <p class="text-[14px] text-[#9FB8CC] mb-4">facturamea: facturi, e-Factura, gestiune și rapoarte. O singură plată, fără abonament.</p>
+      <a href="/" class="inline-block px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Vezi facturamea</a>
+    </div>
+  </article>
+</PublicLayout>
+
+<style is:global>
+  .post-body { color: #1C3A52; font-size: 16px; line-height: 1.75; }
+  .post-body h2 { color: #0A2238; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; margin: 2rem 0 0.75rem; }
+  .post-body h3 { color: #0A2238; font-size: 1.18rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
+  .post-body p { margin: 0 0 1rem; }
+  .post-body ul, .post-body ol { margin: 0 0 1rem 1.25rem; }
+  .post-body ul { list-style: disc; }
+  .post-body ol { list-style: decimal; }
+  .post-body li { margin: 0.35rem 0; }
+  .post-body strong { color: #0A2238; font-weight: 700; }
+  .post-body a { color: #168AAD; text-decoration: underline; }
+</style>
