@@ -27,6 +27,10 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
   const cif = String(supplierCo.cui || '').replace(/^RO/i, '').replace(/\D/g, '');
   if (!cif) return { ok: false, error: 'CIF firmă invalid', reason: 'precondition' };
 
+  // Real VAT-payer status (from ANAF at onboarding) — never hardcode. A non-payer
+  // issues without VAT and the e-Factura must not declare a VAT scheme.
+  const supplierVatPayer = (supplierCo as any).isVatPayer === true;
+
   let customerCountry = 'RO';
   let customerCity = '';
   let customerStreet = inv.clientAddressSnap || '';
@@ -54,10 +58,11 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
     dueDate: (inv.dueAt || inv.issuedAt || new Date()).toISOString().slice(0, 10),
     currency: inv.currency || 'RON',
     precedingInvoiceRef,
+    supplierVatPayer,
     supplier: {
       name: supplierAddr.legalName,
       cui: cif,
-      vatPayer: true,
+      vatPayer: supplierVatPayer,
       registrationNumber: supplierAddr.regCom || undefined,
       address: { street: supplierAddr.address, city: supplierAddr.city, postalCode: supplierAddr.postalCode || undefined, country: supplierAddr.countryCode },
     },
@@ -72,7 +77,7 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
       quantity: l.quantity,
       unit: l.unit,
       unitPriceCents: l.unitPriceCents,
-      vatPercent: l.vatRate,
+      vatPercent: supplierVatPayer ? l.vatRate : 0,
     })),
   });
 

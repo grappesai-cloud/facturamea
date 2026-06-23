@@ -122,6 +122,9 @@ export const companies = pgTable('companies', {
   invoiceSignatureUrl: text('invoice_signature_url'),
   invoiceFooterText: text('invoice_footer_text'),
   tvaAtCollection: boolean('tva_at_collection').default(false),
+  // VAT-payer status (plătitor TVA) — captured from ANAF at onboarding. Non-payers
+  // issue invoices without VAT and their e-Factura must NOT declare a VAT scheme.
+  isVatPayer: boolean('is_vat_payer'),
   // e-Factura: when true, every issued invoice is auto-submitted to ANAF SPV on creation.
   efacturaAutoSend: boolean('efactura_auto_send').default(false),
   // Automated payment reminders (dunning) to clients.

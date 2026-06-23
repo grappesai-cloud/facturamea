@@ -100,6 +100,7 @@ export interface InvoiceInput {
   buyerReference?: string; // BT-10; implicit = invoiceNumber
   exchangeRate?: number; // RON per 1 unitate de valută; necesar dacă currency != RON
   precedingInvoiceRef?: { number: string; issueDate: string }; // storno: referință (BG-3) la factura originală
+  supplierVatPayer?: boolean; // false => emitent neplătitor TVA: liniile devin categoria O (neimpozabil)
 }
 
 const xmlEscape = (s: string) =>
@@ -188,7 +189,10 @@ export function generateEFacturaXml(input: InvoiceInput): string {
       const priceCents = Math.abs(line.unitPriceCents);
       const qty = line.unitPriceCents < 0 ? -line.quantity : line.quantity;
       const unitCode = mapUnitCode(line.unit);
-      const cat: VatCategory = line.vatCategory ?? (line.vatPercent > 0 ? 'S' : 'Z');
+      // Emitent neplătitor de TVA: toate liniile sunt categoria O (neimpozabil), 0%.
+      const cat: VatCategory = input.supplierVatPayer === false
+        ? 'O'
+        : (line.vatCategory ?? (line.vatPercent > 0 ? 'S' : 'Z'));
       const percent = cat === 'S' || cat === 'Z' ? line.vatPercent : 0;
       const key = `${cat}|${percent}`;
       const g = groups.get(key);

@@ -4,6 +4,7 @@ import { companies, billingAddresses } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { sanitizeHtml } from '../../../lib/security';
+import { lookupAnaf } from '../../../lib/anaf-lookup';
 
 // Best-effort locality extraction from an ANAF address string, e.g.
 // "JUD. BUZĂU, MUN. BUZĂU, STR. PATRIEI, NR.2" -> "BUZĂU".
@@ -40,6 +41,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const city = parseCity(address);
 
+  // Authoritative VAT-payer status straight from ANAF's public register — the
+  // company doesn't get to "choose" it; ANAF knows. Non-payers issue without VAT.
+  let isVatPayer: boolean | undefined = undefined;
+  try {
+    const a = await lookupAnaf(cui);
+    if (a.ok) isVatPayer = a.isVatPayer;
+  } catch { /* lookup best-effort; leave null if ANAF unreachable */ }
+
   try {
     await db.update(companies).set({
       cui: cui.slice(0, 50),
@@ -48,6 +57,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       city: city ? sanitizeHtml(city).slice(0, 200) : undefined,
       country: country.slice(0, 100),
       phone: phone ? phone.slice(0, 50) : undefined,
+      ...(isVatPayer !== undefined ? { isVatPayer } : {}),
     } as any).where(eq(companies.id, user.companyId));
   } catch {
     return new Response(JSON.stringify({ error: 'Nu am putut salva datele firmei.' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
