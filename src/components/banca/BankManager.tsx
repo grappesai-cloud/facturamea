@@ -187,7 +187,7 @@ export default function BankManager() {
         body: JSON.stringify({ matchType: s.type, matchId: s.id }),
       });
       const d = await r.json();
-      if (!r.ok) { setError(d.error || 'Împăcarea a eșuat.'); return; }
+      if (!r.ok) { setError(d.error || 'Reconcilierea a eșuat.'); return; }
       setOpenTxId('');
       await loadAccounts();
       await loadTransactions(activeId, filter);
@@ -196,7 +196,7 @@ export default function BankManager() {
   };
 
   const undoReconcile = async (tx: BankTransaction) => {
-    if (!confirm('Anulezi împăcarea acestei tranzacții? Plata aplicată documentului va fi retrasă.')) return;
+    if (!confirm('Anulezi reconcilierea acestei tranzacții? Plata aplicată documentului va fi retrasă.')) return;
     try {
       const r = await fetch(`/api/banca/transactions/${tx.id}`, {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -225,7 +225,7 @@ export default function BankManager() {
           <p className="text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 text-white tabular-nums">{ron(totalBalance)}</p>
         </div>
         <div className="bg-white/5 rounded-2xl p-4 sm:p-5 col-span-2 lg:col-span-1">
-          <p className="text-[14px] text-[#9FB8CC] font-medium">Tranzacții neîmpăcate</p>
+          <p className="text-[14px] text-[#9FB8CC] font-medium">Tranzacții nereconciliate</p>
           <p className={`text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 tabular-nums ${totalUnreconciled > 0 ? 'text-[#E8A33C]' : 'text-[#2E9E6A]'}`}>{totalUnreconciled}</p>
         </div>
       </div>
@@ -300,7 +300,7 @@ export default function BankManager() {
                 </span>
                 {(a.unreconciledCount ?? 0) > 0 && (
                   <span className="shrink-0 px-2.5 py-1 rounded-full text-[13px] font-semibold bg-[#E8A33C]/15 text-[#E8A33C]">
-                    {a.unreconciledCount} neîmpăcate
+                    {a.unreconciledCount} nereconciliate
                   </span>
                 )}
                 <span className="shrink-0 text-[16px] font-bold tabular-nums text-white">{ron(a.balanceCents || 0, a.currency)}</span>
@@ -337,7 +337,7 @@ export default function BankManager() {
 
           {/* Filter tabs */}
           <div className="flex items-center gap-2 px-5 sm:px-6 py-3 border-b border-white/10">
-            {([['unreconciled', 'Neîmpăcate'], ['reconciled', 'Împăcate'], ['all', 'Toate']] as const).map(([key, label]) => (
+            {([['unreconciled', 'Nereconciliate'], ['reconciled', 'Reconciliate'], ['all', 'Toate']] as const).map(([key, label]) => (
               <button key={key} onClick={() => setFilter(key)}
                 className={`px-3.5 h-10 rounded-full text-[14px] font-semibold transition-colors ${filter === key ? 'bg-[#E1FB15] text-[#0A2238] font-bold' : 'bg-white/10 border-0 text-[#9FB8CC] hover:bg-white/15'}`}>
                 {label}
@@ -349,7 +349,7 @@ export default function BankManager() {
             <div className="px-6 py-12 text-center text-[15px] text-[#9FB8CC]">Se încarcă tranzacțiile...</div>
           ) : transactions.length === 0 ? (
             <div className="px-6 py-12 text-center text-[15px] text-[#9FB8CC]">
-              {filter === 'reconciled' ? 'Nicio tranzacție împăcată încă.' : 'Nicio tranzacție. Importă un extras de cont ca să începi.'}
+              {filter === 'reconciled' ? 'Nicio tranzacție reconciliată încă.' : 'Nicio tranzacție. Importă un extras de cont ca să începi.'}
             </div>
           ) : (
             <div className="divide-y divide-white/5">
@@ -370,9 +370,9 @@ export default function BankManager() {
                         {incoming ? '+' : ''}{ron(tx.amountCents, tx.currency)}
                       </span>
                       {tx.reconciled ? (
-                        <span className="shrink-0 hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#2E9E6A]/15 text-[#2E9E6A]">Împăcat</span>
+                        <span className="shrink-0 hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#2E9E6A]/15 text-[#2E9E6A]">Reconciliat</span>
                       ) : (
-                        <span className="shrink-0 hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#E8A33C]/15 text-[#E8A33C]">Neîmpăcat</span>
+                        <span className="shrink-0 hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#E8A33C]/15 text-[#E8A33C]">Nereconciliat</span>
                       )}
                       {tx.reconciled ? (
                         <button onClick={() => undoReconcile(tx)}
@@ -382,7 +382,7 @@ export default function BankManager() {
                       ) : (
                         <button onClick={() => toggleSuggestions(tx)}
                           className="shrink-0 px-3.5 h-10 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] text-[14px]">
-                          {open ? 'Închide' : 'Împacă'}
+                          {open ? 'Închide' : 'Reconciliază'}
                         </button>
                       )}
                     </div>
@@ -412,7 +412,7 @@ export default function BankManager() {
                                 </span>
                                 <button onClick={() => reconcile(tx, s)} disabled={busyMatch === s.id}
                                   className="shrink-0 px-4 h-10 rounded-full bg-[#2E9E6A] text-white text-[14px] font-semibold hover:bg-[#2E9E6A]/80 disabled:opacity-60">
-                                  {busyMatch === s.id ? 'Se aplică...' : 'Împacă'}
+                                  {busyMatch === s.id ? 'Se aplică...' : 'Reconciliază'}
                                 </button>
                               </div>
                             ))}

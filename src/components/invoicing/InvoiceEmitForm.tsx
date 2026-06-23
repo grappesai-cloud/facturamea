@@ -335,10 +335,12 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
         setCuiLookupHint('CUI negăsit. Continuă manual.');
         return;
       }
+      // ANAF returns only `address`; derive the city/locality from it.
+      const parsedCity = ((data.address || '').match(/(?:MUNICIPIUL|MUN\.?|ORAŞUL|ORASUL|ORAŞ|ORAS|COMUNA|COM\.?|SAT)\s+([A-Za-zĂÂÎȘȚăâîșţş][A-Za-zĂÂÎȘȚăâîșţş.\- ]+?)(?:\s*,|\s+SECTOR|\s+STR\.|\s+NR\.|$)/i)?.[1] || '').trim().replace(/\s+/g, ' ');
       setNewClient((c) => ({
         ...c,
         name: c.name || data.name || '',
-        city: c.city || data.city || '',
+        city: c.city || parsedCity || '',
         address: c.address || data.address || '',
         isVatPayer: typeof data.isVatPayer === 'boolean' ? data.isVatPayer : c.isVatPayer,
       }));
@@ -570,7 +572,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <Label className={LBL}>CUI / Cod fiscal</Label>
-                    <Input value={newClient.taxId} onChange={(e) => setNewClient((c) => ({ ...c, taxId: e.target.value }))} onBlur={lookupCui} placeholder="ex: 14186770 sau RO14186770" className={FIELD} />
+                    <Input value={newClient.taxId} onChange={(e) => setNewClient((c) => ({ ...c, taxId: e.target.value }))} onBlur={lookupCui} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupCui(); } }} placeholder="ex: 14186770 sau RO14186770" className={FIELD} />
                     {cuiLookupHint && <p className={`text-[11px] mt-1.5 ${cuiLookupState === 'found' ? 'text-[#2E9E6A]' : 'text-[#E8A33C]'}`}>{cuiLookupHint}</p>}
                   </div>
                   <div>

@@ -117,7 +117,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
     const [tx] = await db.select().from(bankTransactions)
       .where(and(eq(bankTransactions.id, id), eq(bankTransactions.companyId, cid)));
     if (!tx) return new Response(JSON.stringify({ error: 'Tranzacție inexistentă' }), { status: 404 });
-    if (tx.reconciled) return new Response(JSON.stringify({ error: 'Tranzacția este deja împăcată' }), { status: 409 });
+    if (tx.reconciled) return new Response(JSON.stringify({ error: 'Tranzacția este deja reconciliată' }), { status: 409 });
 
     const pay = Math.abs(tx.amountCents);
 
@@ -155,7 +155,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
     return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
   } catch {
-    return new Response(JSON.stringify({ error: 'Împăcarea a eșuat. Verifică baza de date.' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'Reconcilierea a eșuat. Verifică baza de date.' }), { status: 500 });
   }
 };
 
@@ -170,7 +170,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
   if (!cid || !id) return new Response(JSON.stringify({ error: 'ID/companie lipsă' }), { status: 400 });
 
   const body = await request.json().catch(() => ({})) as any;
-  if (body.reconciled !== false) return new Response(JSON.stringify({ error: 'Doar anularea împăcării este permisă' }), { status: 400 });
+  if (body.reconciled !== false) return new Response(JSON.stringify({ error: 'Doar anularea reconcilierii este permisă' }), { status: 400 });
 
   try {
     const [tx] = await db.select().from(bankTransactions)
