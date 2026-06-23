@@ -239,16 +239,9 @@ export function generateEFacturaXml(input: InvoiceInput): string {
 
   const totalCents = netTotalCents + vatTotalCents;
 
-  // Pentru valută străină: cursul + TVA exprimată în RON (BT-111).
+  // Pentru valută străină: TVA exprimată în RON (BT-111). NU emitem
+  // cac:TaxExchangeRate — e interzis de UBL-CR-490; cursul reiese din TVA în RON.
   const vatTotalRon = ((vatTotalCents / 100) * rate).toFixed(2);
-  const exchangeXml = isForeign
-    ? `
-  <cac:TaxExchangeRate>
-    <cbc:SourceCurrencyCode>${cur}</cbc:SourceCurrencyCode>
-    <cbc:TargetCurrencyCode>RON</cbc:TargetCurrencyCode>
-    <cbc:CalculationRate>${rate.toFixed(4)}</cbc:CalculationRate>
-  </cac:TaxExchangeRate>`
-    : '';
   const ronTaxTotalXml = isForeign
     ? `
   <cac:TaxTotal>
@@ -276,7 +269,7 @@ export function generateEFacturaXml(input: InvoiceInput): string {
     </cac:InvoiceDocumentReference>
   </cac:BillingReference>` : ''}
   ${partyXml(input.supplierVatPayer === false ? { ...input.supplier, vatPayer: false } : input.supplier, 'AccountingSupplierParty')}
-  ${partyXml(input.supplierVatPayer === false ? { ...input.customer, vatPayer: false } : input.customer, 'AccountingCustomerParty')}${exchangeXml}
+  ${partyXml(input.supplierVatPayer === false ? { ...input.customer, vatPayer: false } : input.customer, 'AccountingCustomerParty')}
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="${cur}">${money(vatTotalCents)}</cbc:TaxAmount>${subtotalsXml}
   </cac:TaxTotal>${ronTaxTotalXml}
