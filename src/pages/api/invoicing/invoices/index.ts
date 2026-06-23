@@ -44,6 +44,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
+  // A non-VAT-payer issuer (per ANAF) may NOT charge VAT — force 0 on all lines
+  // regardless of what the form sent.
+  const [issuerCo] = await db.select({ isVatPayer: companies.isVatPayer }).from(companies).where(eq(companies.id, cid)).limit(1);
+  const forceNoVat = (issuerCo as any)?.isVatPayer === false;
+
   const v = await validateBody(request, invoiceCreateSchema);
   if (!v.ok) return v.response;
   const body = v.data as any;
@@ -81,7 +86,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const q = Number(l.quantity) || 0;
     const up = Math.round(Number(l.unitPriceCents) || 0);
     const lineSub = Math.round(q * up);
-    const rate = Math.max(0, Number(l.vatRate) || 0);
+    const rate = forceNoVat ? 0 : Math.max(0, Number(l.vatRate) || 0);
     const lineVat = Math.round((lineSub * rate) / 100);
     subtotalCents += lineSub;
     vatCents += lineVat;
