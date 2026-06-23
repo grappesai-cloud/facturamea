@@ -32,6 +32,52 @@ interface Party {
   contact?: { phone?: string; email?: string };
 }
 
+// BR-CL-23: unitatea de măsură trebuie să fie cod UN/ECE Rec 20/21, nu text liber.
+// Mapăm denumirile RO uzuale; fallback la C62 (one). „buc" => H87 (piece).
+function mapUnitCode(unit: string): string {
+  const u = (unit || '').trim().toLowerCase().replace(/\./g, '').replace(/[ăâ]/g, 'a').replace(/[șş]/g, 's').replace(/[țţ]/g, 't').replace(/î/g, 'i');
+  // Deja un cod UN/ECE valid (litere mari 1-3 caractere) — păstrează-l.
+  if (/^[A-Z][A-Z0-9]{1,2}$/.test(unit.trim())) return unit.trim();
+  const map: Record<string, string> = {
+    buc: 'H87', bucata: 'H87', bucati: 'H87', bc: 'H87',
+    ora: 'HUR', ore: 'HUR', h: 'HUR',
+    zi: 'DAY', zile: 'DAY',
+    luna: 'MON', luni: 'MON',
+    an: 'ANN', ani: 'ANN',
+    kg: 'KGM', g: 'GRM', gr: 'GRM', to: 'TNE', tona: 'TNE', tone: 'TNE',
+    l: 'LTR', litru: 'LTR', litri: 'LTR', ml: 'MLT',
+    m: 'MTR', metru: 'MTR', metri: 'MTR', km: 'KMT', cm: 'CMT', mm: 'MMT',
+    mp: 'MTK', m2: 'MTK', mc: 'MTQ', m3: 'MTQ',
+    set: 'SET', pereche: 'NPR', pachet: 'XPK', cutie: 'XBX', rola: 'XRO',
+    serviciu: 'C62', servicii: 'C62', abonament: 'C62', proiect: 'C62', unitate: 'C62',
+  };
+  return map[u] || 'C62';
+}
+
+// BR-RO-110: dacă țara = RO, subdiviziunea (județul) trebuie cod ISO 3166-2:RO.
+const RO_COUNTIES: Record<string, string> = {
+  alba: 'RO-AB', arad: 'RO-AR', arges: 'RO-AG', bacau: 'RO-BC', bihor: 'RO-BH',
+  'bistrita-nasaud': 'RO-BN', 'bistrita nasaud': 'RO-BN', botosani: 'RO-BT', braila: 'RO-BR',
+  brasov: 'RO-BV', bucuresti: 'RO-B', buzau: 'RO-BZ', 'caras-severin': 'RO-CS', 'caras severin': 'RO-CS',
+  calarasi: 'RO-CL', cluj: 'RO-CJ', constanta: 'RO-CT', covasna: 'RO-CV', dambovita: 'RO-DB',
+  dolj: 'RO-DJ', galati: 'RO-GL', giurgiu: 'RO-GR', gorj: 'RO-GJ', harghita: 'RO-HR',
+  hunedoara: 'RO-HD', ialomita: 'RO-IL', iasi: 'RO-IS', ilfov: 'RO-IF', maramures: 'RO-MM',
+  mehedinti: 'RO-MH', mures: 'RO-MS', neamt: 'RO-NT', olt: 'RO-OT', prahova: 'RO-PH',
+  'satu mare': 'RO-SM', salaj: 'RO-SJ', sibiu: 'RO-SB', suceava: 'RO-SV', teleorman: 'RO-TR',
+  timis: 'RO-TM', tulcea: 'RO-TL', vaslui: 'RO-VS', valcea: 'RO-VL', vrancea: 'RO-VN',
+};
+function resolveCountyCode(addr: { street?: string; city?: string }): string | null {
+  const hay = `${addr.street || ''} ${addr.city || ''}`.toLowerCase()
+    .replace(/[ăâ]/g, 'a').replace(/[șş]/g, 's').replace(/[țţ]/g, 't').replace(/î/g, 'i');
+  // Caută cel mai lung nume de județ prezent ca întreg cuvânt.
+  let best: string | null = null, bestLen = 0;
+  for (const [name, code] of Object.entries(RO_COUNTIES)) {
+    const re = new RegExp(`(^|[^a-z])${name.replace(/[-\s]/g, '[-\\s]')}([^a-z]|$)`);
+    if (re.test(hay) && name.length > bestLen) { best = code; bestLen = name.length; }
+  }
+  return best;
+}
+
 interface InvoiceLine {
   description: string;
   quantity: number;
@@ -53,6 +99,7 @@ export interface InvoiceInput {
   notes?: string;
   buyerReference?: string; // BT-10; implicit = invoiceNumber
   exchangeRate?: number; // RON per 1 unitate de valută; necesar dacă currency != RON
+  precedingInvoiceRef?: { number: string; issueDate: string }; // storno: referință (BG-3) la factura originală
 }
 
 const xmlEscape = (s: string) =>
@@ -65,6 +112,9 @@ const money = (cents: number) => (cents / 100).toFixed(2);
 
 function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCustomerParty'): string {
   const legalId = party.registrationNumber || (party.vatPayer ? `RO${party.cui}` : party.cui);
+  const countryCode = party.address.country.slice(0, 2).toUpperCase();
+  // BR-RO-110: pentru RO, subdiviziunea = cod ISO 3166-2:RO (ex. RO-CT). București = RO-B.
+  const county = countryCode === 'RO' ? resolveCountyCode(party.address) : null;
   return `
   <cac:${role}>
     <cac:Party>
@@ -73,7 +123,8 @@ function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCus
         <cbc:StreetName>${xmlEscape(party.address.street)}</cbc:StreetName>
         <cbc:CityName>${xmlEscape(party.address.city)}</cbc:CityName>
         ${party.address.postalCode ? `<cbc:PostalZone>${xmlEscape(party.address.postalCode)}</cbc:PostalZone>` : ''}
-        <cac:Country><cbc:IdentificationCode>${xmlEscape(party.address.country.slice(0, 2).toUpperCase())}</cbc:IdentificationCode></cac:Country>
+        ${county ? `<cbc:CountrySubentity>${county}</cbc:CountrySubentity>` : ''}
+        <cac:Country><cbc:IdentificationCode>${xmlEscape(countryCode)}</cbc:IdentificationCode></cac:Country>
       </cac:PostalAddress>
       ${
         party.vatPayer
@@ -132,6 +183,11 @@ export function generateEFacturaXml(input: InvoiceInput): string {
     .map((line, i) => {
       const lineNetCents = Math.round(line.quantity * line.unitPriceCents);
       netTotalCents += lineNetCents;
+      // BR-27: prețul unitar (BT-146) nu poate fi negativ. La storno (preț negativ)
+      // mutăm semnul pe cantitate: preț pozitiv, cantitate negativă, net neschimbat.
+      const priceCents = Math.abs(line.unitPriceCents);
+      const qty = line.unitPriceCents < 0 ? -line.quantity : line.quantity;
+      const unitCode = mapUnitCode(line.unit);
       const cat: VatCategory = line.vatCategory ?? (line.vatPercent > 0 ? 'S' : 'Z');
       const percent = cat === 'S' || cat === 'Z' ? line.vatPercent : 0;
       const key = `${cat}|${percent}`;
@@ -142,7 +198,7 @@ export function generateEFacturaXml(input: InvoiceInput): string {
       return `
   <cac:InvoiceLine>
     <cbc:ID>${i + 1}</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="${xmlEscape(line.unit)}">${line.quantity.toFixed(2)}</cbc:InvoicedQuantity>
+    <cbc:InvoicedQuantity unitCode="${xmlEscape(unitCode)}">${qty.toFixed(2)}</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="${cur}">${money(lineNetCents)}</cbc:LineExtensionAmount>
     <cac:Item>
       <cbc:Name>${xmlEscape(line.description)}</cbc:Name>
@@ -153,7 +209,7 @@ export function generateEFacturaXml(input: InvoiceInput): string {
       </cac:ClassifiedTaxCategory>
     </cac:Item>
     <cac:Price>
-      <cbc:PriceAmount currencyID="${cur}">${money(line.unitPriceCents)}</cbc:PriceAmount>
+      <cbc:PriceAmount currencyID="${cur}">${money(priceCents)}</cbc:PriceAmount>
     </cac:Price>
   </cac:InvoiceLine>`;
     })
@@ -206,6 +262,12 @@ export function generateEFacturaXml(input: InvoiceInput): string {
   <cbc:DocumentCurrencyCode>${cur}</cbc:DocumentCurrencyCode>
   ${isForeign ? '<cbc:TaxCurrencyCode>RON</cbc:TaxCurrencyCode>' : ''}
   <cbc:BuyerReference>${xmlEscape(input.buyerReference || input.invoiceNumber)}</cbc:BuyerReference>
+  ${input.precedingInvoiceRef ? `<cac:BillingReference>
+    <cac:InvoiceDocumentReference>
+      <cbc:ID>${xmlEscape(input.precedingInvoiceRef.number)}</cbc:ID>
+      <cbc:IssueDate>${input.precedingInvoiceRef.issueDate}</cbc:IssueDate>
+    </cac:InvoiceDocumentReference>
+  </cac:BillingReference>` : ''}
   ${partyXml(input.supplier, 'AccountingSupplierParty')}
   ${partyXml(input.customer, 'AccountingCustomerParty')}${exchangeXml}
   <cac:TaxTotal>

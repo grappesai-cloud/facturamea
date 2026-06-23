@@ -39,11 +39,21 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
     }
   }
 
-  const xml = inv.efacturaXml || generateEFacturaXml({
+  // Storno: reference the original invoice (BG-3 / BillingReference) so ANAF links them.
+  let precedingInvoiceRef: { number: string; issueDate: string } | undefined;
+  if (inv.kind === 'storno' && inv.parentInvoiceId) {
+    const [parent] = await db.select({ fullNumber: transportInvoices.fullNumber, issuedAt: transportInvoices.issuedAt })
+      .from(transportInvoices).where(eq(transportInvoices.id, inv.parentInvoiceId)).limit(1);
+    if (parent) precedingInvoiceRef = { number: parent.fullNumber, issueDate: (parent.issuedAt || new Date()).toISOString().slice(0, 10) };
+  }
+
+  // Always regenerate from current data — never reuse a cached (possibly invalid) XML.
+  const xml = generateEFacturaXml({
     invoiceNumber: inv.fullNumber,
     issueDate: (inv.issuedAt || new Date()).toISOString().slice(0, 10),
     dueDate: (inv.dueAt || inv.issuedAt || new Date()).toISOString().slice(0, 10),
     currency: inv.currency || 'RON',
+    precedingInvoiceRef,
     supplier: {
       name: supplierAddr.legalName,
       cui: cif,
@@ -60,7 +70,7 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
     lines: lines.map((l) => ({
       description: l.description,
       quantity: l.quantity,
-      unit: l.unit === 'buc' ? 'C62' : l.unit,
+      unit: l.unit,
       unitPriceCents: l.unitPriceCents,
       vatPercent: l.vatRate,
     })),
