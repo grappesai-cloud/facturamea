@@ -14,9 +14,11 @@ import { nanoid } from 'nanoid';
 import { notify } from '../../../../../lib/notifications';
 import { logAction } from '../../../../../lib/audit';
 import { recomputeCompanyPaymentScore } from '../../../../../lib/payment-scoring';
+import { requireRole } from '../../../../../lib/require-role';
 
 export const POST: APIRoute = async ({ params, locals, request }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'invoice.create'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 

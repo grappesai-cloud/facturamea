@@ -3,6 +3,7 @@ import { db } from '../../../../db';
 import { ledgerAccounts } from '../../../../db/schema';
 import { and, eq, asc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { requireRole } from '../../../../lib/require-role';
 
 const TYPES = ['A', 'P', 'B', 'V', 'C'];
 
@@ -27,6 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
 // POST — add a new ledger account.
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
@@ -65,6 +67,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 // PATCH — edit a ledger account (name, type, parentCode, isActive).
 export const PATCH: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 

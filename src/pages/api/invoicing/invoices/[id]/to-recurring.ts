@@ -6,11 +6,13 @@ import { db } from '../../../../../db';
 import { transportInvoices, transportInvoiceLines, invoiceRecurring, invoiceClients } from '../../../../../db/schema';
 import { and, eq, asc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { requireRole } from '../../../../../lib/require-role';
 
 const FREQ = new Set(['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly']);
 
 export const POST: APIRoute = async ({ params, request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 

@@ -4,6 +4,7 @@ import { db } from '../../../../db';
 import { invoiceModels } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { requireRole } from '../../../../lib/require-role';
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
@@ -15,6 +16,7 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const body = await request.json().catch(() => ({}));
@@ -41,6 +43,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
 export const PATCH: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const body = await request.json().catch(() => ({}));
@@ -68,6 +71,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
 
 export const DELETE: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const id = new URL(request.url).searchParams.get('id');

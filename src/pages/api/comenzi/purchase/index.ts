@@ -8,6 +8,7 @@ import { db } from '../../../../db';
 import { purchaseOrders, purchaseOrderLines, suppliers } from '../../../../db/schema';
 import { and, eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { requireRole } from '../../../../lib/require-role';
 
 const VALID_STATUS = ['draft', 'sent', 'received', 'closed', 'canceled'];
 
@@ -51,6 +52,7 @@ interface LineInput { productId?: string | null; name?: string; quantity?: numbe
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'stock.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 

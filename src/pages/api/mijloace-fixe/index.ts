@@ -7,6 +7,7 @@ import { db } from '../../../db';
 import { fixedAssets } from '../../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { requireRole } from '../../../lib/require-role';
 
 const METHODS = ['liniara', 'degresiva', 'accelerata'];
 
@@ -27,6 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  { const denied = requireRole(locals, 'settings.manage'); if (denied) return denied; }
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
