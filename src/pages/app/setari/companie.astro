@@ -12,6 +12,7 @@ if (user.companyId) {
 
 const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
 const inputDisabledCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-[#9FB8CC]';
+const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#D9ED92]/40';
 ---
 
 <AppLayout title="Setări companie — facturamea" activeTab="setari" breadcrumbTitle="Companie">
@@ -37,6 +38,22 @@ const inputDisabledCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] 
           Datele legale (denumire, CUI) sunt fixate la înregistrare. Pentru corecții, contactează suportul.
         </p>
 
+        <form id="bank-form" class="rounded-2xl p-5 bg-white/5 space-y-3">
+          <div>
+            <p class="text-[16px] font-bold text-white">Cont bancar (apare pe facturi)</p>
+            <p class="text-[12px] text-[#7C9AB4] mt-0.5">IBAN-ul se afișează automat pe orice factură emiți, la datele tale de emitent.</p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div class="sm:col-span-2"><label class={labelCls}>IBAN</label><input id="iban" name="iban" type="text" value={company.iban ?? ''} placeholder="RO00 BANK 0000 0000 0000 0000" class={inputCls} /></div>
+            <div><label class={labelCls}>Bancă</label><input id="bank" name="bank" type="text" value={company.bank ?? ''} placeholder="ex: Banca Transilvania" class={inputCls} /></div>
+            <div><label class={labelCls}>Telefon</label><input id="phone" name="phone" type="text" value={company.phone ?? ''} placeholder="ex: 07xx xxx xxx" class={inputCls} /></div>
+          </div>
+          <div class="flex items-center gap-3 pt-1">
+            <button type="submit" id="bank-save" class="px-5 py-2.5 rounded-full bg-[#D9ED92] text-[#0A2238] font-semibold text-[14px] hover:bg-[#c9e06f] transition-colors">Salvează</button>
+            <span id="bank-status" class="text-[13px] text-[#9FB8CC]"></span>
+          </div>
+        </form>
+
         <div class="flex flex-wrap gap-2 pt-2">
           <a href="/app/setari/branding" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Logo & branding</a>
           <a href="/app/depozite" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Locații & depozite</a>
@@ -44,4 +61,27 @@ const inputDisabledCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] 
       </section>
     )}
   </div>
+
+  <script>
+    const form = document.getElementById('bank-form') as HTMLFormElement | null;
+    const statusEl = document.getElementById('bank-status');
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const iban = (document.getElementById('iban') as HTMLInputElement).value;
+      const bank = (document.getElementById('bank') as HTMLInputElement).value;
+      const phone = (document.getElementById('phone') as HTMLInputElement).value;
+      if (statusEl) statusEl.textContent = 'Se salvează...';
+      try {
+        const res = await fetch('/api/companies/profile', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ iban, bank, phone }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (statusEl) statusEl.textContent = res.ok ? 'Salvat.' : (data.error || 'Eroare la salvare.');
+      } catch {
+        if (statusEl) statusEl.textContent = 'Eroare conexiune.';
+      }
+    });
+  </script>
 </AppLayout>
