@@ -121,36 +121,37 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 
     const pay = Math.abs(tx.amountCents);
 
+    // Resolve + validate the target first, then apply the payment AND the
+    // reconciled flag atomically — so a failure can't leave the money applied
+    // while the transaction stays re-matchable (double-apply).
+    let applyPayment: (tx: any) => Promise<void>;
     if (matchType === 'invoice') {
       const [inv] = await db.select().from(transportInvoices)
         .where(and(eq(transportInvoices.id, matchId), eq(transportInvoices.companyId, cid)));
       if (!inv) return new Response(JSON.stringify({ error: 'Factură inexistentă' }), { status: 404 });
-
       const newPaid = Math.min((inv.paidCents || 0) + pay, inv.totalCents);
       const fullyPaid = newPaid >= inv.totalCents;
-      await db.update(transportInvoices).set({
-        paidCents: newPaid,
-        status: fullyPaid ? 'paid' : 'partial',
-        paidAt: fullyPaid ? new Date() : inv.paidAt,
-        updatedAt: new Date(),
+      applyPayment = (t) => t.update(transportInvoices).set({
+        paidCents: newPaid, status: fullyPaid ? 'paid' : 'partial',
+        paidAt: fullyPaid ? new Date() : inv.paidAt, updatedAt: new Date(),
       }).where(eq(transportInvoices.id, matchId));
     } else {
       const [ex] = await db.select().from(expenses)
         .where(and(eq(expenses.id, matchId), eq(expenses.companyId, cid)));
       if (!ex) return new Response(JSON.stringify({ error: 'Cheltuială inexistentă' }), { status: 404 });
-
       const newPaid = Math.min((ex.paidCents || 0) + pay, ex.totalCents);
       const fullyPaid = newPaid >= ex.totalCents;
-      await db.update(expenses).set({
-        paidCents: newPaid,
-        status: fullyPaid ? 'paid' : 'partial',
-        updatedAt: new Date(),
+      applyPayment = (t) => t.update(expenses).set({
+        paidCents: newPaid, status: fullyPaid ? 'paid' : 'partial', updatedAt: new Date(),
       }).where(eq(expenses.id, matchId));
     }
 
-    await db.update(bankTransactions).set({
-      reconciled: true, matchedType: matchType, matchedId: matchId,
-    }).where(eq(bankTransactions.id, id));
+    await db.transaction(async (t) => {
+      await applyPayment(t);
+      await t.update(bankTransactions).set({
+        reconciled: true, matchedType: matchType, matchedId: matchId,
+      }).where(eq(bankTransactions.id, id));
+    });
 
     return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
   } catch {
