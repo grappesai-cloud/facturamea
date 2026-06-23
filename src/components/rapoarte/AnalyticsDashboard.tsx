@@ -23,7 +23,7 @@ const ron = (cents: number) =>
 
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Ciornă', issued: 'Emisă', sent: 'Trimisă', paid: 'Plătită',
-  partial: 'Parțial', overdue: 'Restantă', disputed: 'În dispută', voided: 'Anulată',
+  partial: 'Parțial', overdue: 'Restantă', disputed: 'În dispută', voided: 'Anulată', reversed: 'Stornată',
 };
 const STATUS_COLORS: Record<string, string> = {
   paid: '#76C893', sent: '#1A759F', issued: '#34A0A4', partial: '#E8A33C',
