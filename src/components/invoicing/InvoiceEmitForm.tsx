@@ -281,6 +281,10 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
     } : x));
   };
   const [dueDate, setDueDate] = useState('');
+  // Due date as "N days from issue" instead of a calendar. Presets + free input.
+  const isoInDays = (n: number) => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const daysFromToday = (iso: string): number | '' => { if (!iso) return ''; const d = new Date(iso + 'T00:00:00'); const t = new Date(); t.setHours(0, 0, 0, 0); return Math.round((d.getTime() - t.getTime()) / 86400000); };
+  const DUE_PRESETS: Array<[string, number]> = [['Azi', 0], ['Mâine', 1], ['7 zile', 7], ['14 zile', 14], ['30 zile', 30], ['60 zile', 60], ['90 zile', 90]];
   const [issueImmediately, setIssueImmediately] = useState(true);
   const [notes, setNotes] = useState(dossierPrefill ? `Dosar ${dossierPrefill.displayId}` : '');
   const [lines, setLines] = useState<Line[]>(() => {
@@ -893,9 +897,27 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                 </Select>
               </div>
               {kind === 'factura' && (
-                <div>
+                <div className="sm:col-span-2">
                   <Label className={LBL}>Scadență</Label>
-                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} className={SELECT} />
+                  <div className="flex flex-wrap gap-1.5">
+                    {DUE_PRESETS.map(([label, n]) => {
+                      const active = dueDate === isoInDays(n);
+                      return (
+                        <button type="button" key={label} onClick={() => setDueDate(isoInDays(n))}
+                          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${active ? 'bg-[#E1FB15] text-[#0A2238]' : 'bg-white/10 text-[#D7E5F0] hover:bg-white/15'}`}>
+                          {label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2.5">
+                    <span className="text-[13px] text-[#9FB8CC]">sau în</span>
+                    <Input type="number" min="0" inputMode="numeric" value={daysFromToday(dueDate)}
+                      onChange={(e) => { const v = e.target.value; setDueDate(v === '' ? '' : isoInDays(Math.max(0, parseInt(v) || 0))); }}
+                      className={`${SELECT} w-24 text-center`} placeholder="zile" />
+                    <span className="text-[13px] text-[#9FB8CC]">zile de la emitere</span>
+                    {dueDate && <span className="text-[13px] text-[#7C9AB4] ml-auto">scadent {new Date(dueDate + 'T00:00:00').toLocaleDateString('ro-RO')}</span>}
+                  </div>
                 </div>
               )}
               <div>
