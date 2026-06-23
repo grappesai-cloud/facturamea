@@ -104,44 +104,49 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
       });
       const totalCents = subtotalCents + vatCents;
 
-      const series = await ensureDefaultSeries(cid, 'factura', order.clientExternalId ? 'external' : null);
-      const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, INVOICE_NUMBER_FORMAT);
-
       const invoiceId = nanoid();
       const now = new Date();
-      await db.insert(transportInvoices).values({
-        id: invoiceId,
-        companyId: cid,
-        issuedByUserId: locals.user.id,
-        seriesId: series.id,
-        sequenceNumber,
-        fullNumber,
-        kind: 'factura',
-        clientExternalId: order.clientExternalId || null,
-        clientNameSnap: order.clientNameSnap || 'Client',
-        clientTaxIdSnap: clientTaxId,
-        clientAddressSnap: clientAddress,
-        currency: (order.currency || 'RON').toUpperCase().slice(0, 5),
-        vatRegime: 'standard',
-        subtotalCents,
-        vatCents,
-        totalCents,
-        paidCents: 0,
-        status: 'issued',
-        issuedAt: now,
-        dueAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
-        language: 'ro',
-        precision: 2,
-        notes: `Generată din comanda ${order.number}`,
-      } as any);
+      let fullNumber = '';
+      // Atomic: reserve number + insert invoice + lines + flip order to invoiced
+      // in one tx, so a retry after a partial failure can't mint a 2nd real invoice.
+      await db.transaction(async (tx) => {
+        const series = await ensureDefaultSeries(cid, 'factura', order.clientExternalId ? 'external' : null, tx);
+        const num = await nextSeriesNumber(series.id, INVOICE_NUMBER_FORMAT, tx);
+        fullNumber = num.fullNumber;
+        await tx.insert(transportInvoices).values({
+          id: invoiceId,
+          companyId: cid,
+          issuedByUserId: locals.user!.id,
+          seriesId: series.id,
+          sequenceNumber: num.number,
+          fullNumber,
+          kind: 'factura',
+          clientExternalId: order.clientExternalId || null,
+          clientNameSnap: order.clientNameSnap || 'Client',
+          clientTaxIdSnap: clientTaxId,
+          clientAddressSnap: clientAddress,
+          currency: (order.currency || 'RON').toUpperCase().slice(0, 5),
+          vatRegime: 'standard',
+          subtotalCents,
+          vatCents,
+          totalCents,
+          paidCents: 0,
+          status: 'issued',
+          issuedAt: now,
+          dueAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+          language: 'ro',
+          precision: 2,
+          notes: `Generată din comanda ${order.number}`,
+        } as any);
 
-      if (computed.length) {
-        await db.insert(transportInvoiceLines).values(computed.map((l) => ({ ...l, invoiceId })) as any);
-      }
+        if (computed.length) {
+          await tx.insert(transportInvoiceLines).values(computed.map((l) => ({ ...l, invoiceId })) as any);
+        }
 
-      await db.update(salesOrders)
-        .set({ status: 'invoiced', invoiceId })
-        .where(and(eq(salesOrders.id, id), eq(salesOrders.companyId, cid)));
+        await tx.update(salesOrders)
+          .set({ status: 'invoiced', invoiceId })
+          .where(and(eq(salesOrders.id, id), eq(salesOrders.companyId, cid)));
+      });
 
       return new Response(JSON.stringify({ ok: true, invoiceId, fullNumber, totalCents }), { headers: { 'Content-Type': 'application/json' } });
     } catch {

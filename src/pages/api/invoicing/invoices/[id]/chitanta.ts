@@ -7,7 +7,7 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../../../db';
 import { transportInvoices, transportInvoiceLines, transportInvoicePayments } from '../../../../../db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { ensureDefaultSeries, nextSeriesNumber } from '../../../../../lib/invoicing';
 import { recomputeCompanyPaymentScore } from '../../../../../lib/payment-scoring';
@@ -53,7 +53,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       receivedAt: now,
       recordedByUserId: locals.user!.id,
     });
-    const newPaidCents = parent.paidCents + amountCents;
+    // Recompute paidCents from the authoritative SUM inside the tx (avoids the
+    // stale-read lost-update race with a concurrent payment/chitanță).
+    const [agg] = await tx.select({ sum: sql<number>`COALESCE(SUM(${transportInvoicePayments.amountCents}), 0)` })
+      .from(transportInvoicePayments).where(eq(transportInvoicePayments.invoiceId, parent.id));
+    const newPaidCents = Math.min(parent.totalCents, Number(agg?.sum) || 0);
     const newStatus = newPaidCents >= parent.totalCents ? 'paid' : 'partial';
     await tx.update(transportInvoices).set({
       paidCents: newPaidCents,

@@ -80,51 +80,46 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
 
   try {
     let adjusted = 0;
-    for (const line of data.lines) {
-      const systemQty = Number(line.systemQty) || 0;
-      let counted = Number(line.countedQty) || 0;
-      const fromIdKey = entered.get(`id:${line.id}`);
-      const fromPidKey = line.productId ? entered.get(`pid:${line.productId}`) : undefined;
-      if (fromIdKey !== undefined) counted = fromIdKey;
-      else if (fromPidKey !== undefined) counted = fromPidKey;
+    // Atomic: all line adjustments + stock moves + the finalize flip in one tx,
+    // so a retry after a partial failure can't double-apply inventory deltas.
+    await db.transaction(async (tx) => {
+      adjusted = 0;
+      for (const line of data.lines) {
+        const systemQty = Number(line.systemQty) || 0;
+        let counted = Number(line.countedQty) || 0;
+        const fromIdKey = entered.get(`id:${line.id}`);
+        const fromPidKey = line.productId ? entered.get(`pid:${line.productId}`) : undefined;
+        if (fromIdKey !== undefined) counted = fromIdKey;
+        else if (fromPidKey !== undefined) counted = fromPidKey;
 
-      const diff = counted - systemQty;
+        const diff = counted - systemQty;
 
-      // Persist counted + diff on the line.
-      await db.update(stockCountLines)
-        .set({ countedQty: counted, diffQty: diff })
-        .where(eq(stockCountLines.id, line.id));
+        await tx.update(stockCountLines)
+          .set({ countedQty: counted, diffQty: diff })
+          .where(eq(stockCountLines.id, line.id));
 
-      if (diff === 0 || !line.productId) continue;
+        if (diff === 0 || !line.productId) continue;
 
-      // Pull avg cost for the surplus case (so the value stays meaningful).
-      let avgCost = 0;
-      try {
-        const [lvl] = await db.select({ avg: stockLevels.avgCostCents }).from(stockLevels)
+        let avgCost = 0;
+        const [lvl] = await tx.select({ avg: stockLevels.avgCostCents }).from(stockLevels)
           .where(and(eq(stockLevels.companyId, cid), eq(stockLevels.warehouseId, count.warehouseId), eq(stockLevels.productId, line.productId))).limit(1);
         avgCost = Number(lvl?.avg) || 0;
-      } catch { /* keep 0 */ }
 
-      if (diff > 0) {
-        await applyStockIn(cid, count.warehouseId, line.productId, diff, avgCost, {
-          reason: `Inventar ${count.number || ''} (plus)`,
-          refType: 'manual',
-          refId: count.id,
-          userId: locals.user.id,
-        });
-      } else {
-        await applyStockOut(cid, count.warehouseId, line.productId, Math.abs(diff), avgCost, {
-          reason: `Inventar ${count.number || ''} (minus)`,
-          refType: 'manual',
-          refId: count.id,
-          userId: locals.user.id,
-        });
+        if (diff > 0) {
+          await applyStockIn(cid, count.warehouseId, line.productId, diff, avgCost, {
+            reason: `Inventar ${count.number || ''} (plus)`, refType: 'manual', refId: count.id, userId: locals.user!.id,
+          }, tx);
+        } else {
+          await applyStockOut(cid, count.warehouseId, line.productId, Math.abs(diff), avgCost, {
+            reason: `Inventar ${count.number || ''} (minus)`, refType: 'manual', refId: count.id, userId: locals.user!.id,
+          }, tx);
+        }
+        adjusted++;
       }
-      adjusted++;
-    }
 
-    await db.update(stockCounts).set({ status: 'finalized' })
-      .where(and(eq(stockCounts.id, id), eq(stockCounts.companyId, cid)));
+      await tx.update(stockCounts).set({ status: 'finalized' })
+        .where(and(eq(stockCounts.id, id), eq(stockCounts.companyId, cid)));
+    });
 
     return new Response(JSON.stringify({ ok: true, adjusted }), { headers: { 'Content-Type': 'application/json' } });
   } catch {

@@ -69,20 +69,23 @@ export const PATCH: APIRoute = async ({ request, params, locals }) => {
         .where(and(eq(warehouses.id, warehouseId), eq(warehouses.companyId, cid))).limit(1);
       if (!wh) return new Response(JSON.stringify({ error: 'Gestiune inexistentă' }), { status: 400 });
 
-      for (const l of lines) {
-        if (!l.productId) continue; // stock references products only
-        const qty = Number(l.quantity) || 0;
-        if (qty <= 0) continue;
-        await applyStockIn(cid, warehouseId, l.productId, qty, Math.round(Number(l.unitPriceCents) || 0), {
-          reason: `Comandă furnizor ${order.number}`,
-          refType: 'nir',
-          refId: order.id,
-          userId: locals.user.id,
-        });
-      }
-
-      await db.update(purchaseOrders).set({ status: 'received' })
-        .where(and(eq(purchaseOrders.id, id), eq(purchaseOrders.companyId, cid)));
+      // Atomic: all stock-ins + the status flip in one tx, so a retry after a
+      // partial failure can't double-apply stock (status stays not-received).
+      await db.transaction(async (tx) => {
+        for (const l of lines) {
+          if (!l.productId) continue; // stock references products only
+          const qty = Number(l.quantity) || 0;
+          if (qty <= 0) continue;
+          await applyStockIn(cid, warehouseId, l.productId, qty, Math.round(Number(l.unitPriceCents) || 0), {
+            reason: `Comandă furnizor ${order.number}`,
+            refType: 'nir',
+            refId: order.id,
+            userId: locals.user!.id,
+          }, tx);
+        }
+        await tx.update(purchaseOrders).set({ status: 'received' })
+          .where(and(eq(purchaseOrders.id, id), eq(purchaseOrders.companyId, cid)));
+      });
 
       return new Response(JSON.stringify({ ok: true, status: 'received' }), { headers: { 'Content-Type': 'application/json' } });
     } catch {
