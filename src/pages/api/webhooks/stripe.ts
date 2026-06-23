@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../db';
 import { auditLog, transportInvoices, transportInvoicePayments } from '../../../db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { getStripe, isStripeConfigured } from '../../../lib/stripe';
 import { grantLifetime } from '../../../lib/license';
@@ -72,26 +72,33 @@ export const POST: APIRoute = async ({ request }) => {
               .where(and(eq(transportInvoicePayments.invoiceId, invoiceId), eq(transportInvoicePayments.reference, session.id)))
               .limit(1);
             if (existing.length === 0) {
-              const newPaid = Math.min(inv.totalCents, inv.paidCents + amountCents);
-              const fullyPaid = newPaid >= inv.totalCents;
-              await db.insert(transportInvoicePayments).values({
-                id: nanoid(),
-                invoiceId,
-                amountCents,
-                currency: inv.currency,
-                method: 'card',
-                reference: session.id,
-                receivedAt: new Date(),
-                recordedByUserId: null,
-                notes: 'Plată online card (Stripe)',
-              } as any);
-              await db.update(transportInvoices).set({
-                paidCents: newPaid,
-                status: fullyPaid ? 'paid' : 'partial',
-                paidAt: fullyPaid ? new Date() : inv.paidAt,
-                paymentLinkStatus: 'paid',
-                updatedAt: new Date(),
-              } as any).where(eq(transportInvoices.id, invoiceId));
+              // Atomic: insert payment + recompute paidCents from the authoritative
+              // SUM inside one transaction — avoids the stale-read race that lets a
+              // concurrent Netopia/manual payment clobber the amount.
+              await db.transaction(async (tx) => {
+                await tx.insert(transportInvoicePayments).values({
+                  id: nanoid(),
+                  invoiceId,
+                  amountCents,
+                  currency: inv.currency,
+                  method: 'card',
+                  reference: session.id,
+                  receivedAt: new Date(),
+                  recordedByUserId: null,
+                  notes: 'Plată online card (Stripe)',
+                } as any);
+                const [agg] = await tx.select({ sum: sql<number>`COALESCE(SUM(${transportInvoicePayments.amountCents}), 0)` })
+                  .from(transportInvoicePayments).where(eq(transportInvoicePayments.invoiceId, invoiceId));
+                const paid = Math.min(inv.totalCents, Number(agg?.sum) || 0);
+                const fullyPaid = paid >= inv.totalCents;
+                await tx.update(transportInvoices).set({
+                  paidCents: paid,
+                  status: fullyPaid ? 'paid' : 'partial',
+                  paidAt: fullyPaid ? new Date() : inv.paidAt,
+                  paymentLinkStatus: 'paid',
+                  updatedAt: new Date(),
+                } as any).where(eq(transportInvoices.id, invoiceId));
+              });
             }
           }
         } catch (err) {

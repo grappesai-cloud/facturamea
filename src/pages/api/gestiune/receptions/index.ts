@@ -93,45 +93,49 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const receptionId = nanoid();
   try {
-    await db.insert(receptions).values({
-      id: receptionId,
-      companyId: cid,
-      warehouseId,
-      supplierId: body.supplierId ? String(body.supplierId) : null,
-      nirNumber,
-      supplierInvoiceNumber: body.supplierInvoiceNumber?.trim() || null,
-      receptionDate: body.receptionDate || new Date().toISOString().slice(0, 10),
-      netCents,
-      vatCents,
-      totalCents,
-      status,
-      notes: body.notes?.trim() || null,
-      createdByUserId: locals.user.id,
-    } as any);
-
-    for (const l of lines) {
-      await db.insert(receptionLines).values({
-        id: nanoid(),
-        receptionId,
-        productId: l.productId,
-        name: l.name,
-        um: l.um,
-        quantity: l.quantity,
-        unitCostCents: l.unitCostCents,
-        vatRate: l.vatRate,
-        lineTotalCents: l.lineTotalCents,
+    // Atomic: NIR header + lines + stock-in in one transaction, so a partial
+    // reception can't leave wrong stock levels / weighted-avg cost on failure.
+    await db.transaction(async (tx) => {
+      await tx.insert(receptions).values({
+        id: receptionId,
+        companyId: cid,
+        warehouseId,
+        supplierId: body.supplierId ? String(body.supplierId) : null,
+        nirNumber,
+        supplierInvoiceNumber: body.supplierInvoiceNumber?.trim() || null,
+        receptionDate: body.receptionDate || new Date().toISOString().slice(0, 10),
+        netCents,
+        vatCents,
+        totalCents,
+        status,
+        notes: body.notes?.trim() || null,
+        createdByUserId: locals.user!.id,
       } as any);
 
-      // Only post to stock when posted + product is known (stock references products).
-      if (status === 'posted' && l.productId) {
-        await applyStockIn(cid, warehouseId, l.productId, l.quantity, l.unitCostCents, {
-          reason: `NIR ${nirNumber}`,
-          refType: 'nir',
-          refId: receptionId,
-          userId: locals.user.id,
-        });
+      for (const l of lines) {
+        await tx.insert(receptionLines).values({
+          id: nanoid(),
+          receptionId,
+          productId: l.productId,
+          name: l.name,
+          um: l.um,
+          quantity: l.quantity,
+          unitCostCents: l.unitCostCents,
+          vatRate: l.vatRate,
+          lineTotalCents: l.lineTotalCents,
+        } as any);
+
+        // Only post to stock when posted + product is known (stock references products).
+        if (status === 'posted' && l.productId) {
+          await applyStockIn(cid, warehouseId, l.productId, l.quantity, l.unitCostCents, {
+            reason: `NIR ${nirNumber}`,
+            refType: 'nir',
+            refId: receptionId,
+            userId: locals.user!.id,
+          }, tx);
+        }
       }
-    }
+    });
   } catch {
     return new Response(JSON.stringify({ error: 'Eroare la salvarea recepției' }), { status: 500 });
   }

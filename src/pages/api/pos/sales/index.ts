@@ -95,41 +95,45 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const seq = Number(cnt?.n ?? 0) + 1;
     receiptNumber = `BON-${String(seq).padStart(6, '0')}`;
 
-    await db.insert(posSales).values({
-      id: saleId,
-      companyId: cid,
-      warehouseId,
-      receiptNumber,
-      cashierUserId: locals.user.id,
-      paymentMethod,
-      subtotalCents,
-      vatCents,
-      totalCents,
-      cashReceivedCents,
-      changeCents,
-    } as any);
-
-    for (const l of lines) {
-      await db.insert(posSaleLines).values({
-        id: nanoid(),
-        saleId,
-        productId: l.productId,
-        name: l.name,
-        quantity: l.quantity,
-        unitPriceCents: l.unitPriceCents,
-        vatRate: l.vatRate,
-        lineTotalCents: l.lineTotalCents,
+    // Atomic: sale header + lines + stock decrements in one transaction, so a
+    // mid-loop failure can't leave a sale with partial lines / partial stock.
+    await db.transaction(async (tx) => {
+      await tx.insert(posSales).values({
+        id: saleId,
+        companyId: cid,
+        warehouseId,
+        receiptNumber,
+        cashierUserId: locals.user!.id,
+        paymentMethod,
+        subtotalCents,
+        vatCents,
+        totalCents,
+        cashReceivedCents,
+        changeCents,
       } as any);
 
-      if (warehouseId && l.productId) {
-        await applyStockOut(cid, warehouseId, l.productId, l.quantity, l.unitPriceCents, {
-          reason: `Vânzare POS ${receiptNumber}`,
-          refType: 'pos',
-          refId: saleId,
-          userId: locals.user.id,
-        });
+      for (const l of lines) {
+        await tx.insert(posSaleLines).values({
+          id: nanoid(),
+          saleId,
+          productId: l.productId,
+          name: l.name,
+          quantity: l.quantity,
+          unitPriceCents: l.unitPriceCents,
+          vatRate: l.vatRate,
+          lineTotalCents: l.lineTotalCents,
+        } as any);
+
+        if (warehouseId && l.productId) {
+          await applyStockOut(cid, warehouseId, l.productId, l.quantity, l.unitPriceCents, {
+            reason: `Vânzare POS ${receiptNumber}`,
+            refType: 'pos',
+            refId: saleId,
+            userId: locals.user!.id,
+          }, tx);
+        }
       }
-    }
+    });
   } catch {
     return new Response(JSON.stringify({ error: 'Eroare la finalizarea vânzării' }), { status: 500 });
   }

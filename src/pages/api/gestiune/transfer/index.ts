@@ -52,11 +52,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const unitCost = Number(src?.avg) || 0;
 
     const ref = `Transfer ${fromWarehouseId}→${toWarehouseId}`;
-    await applyStockOut(cid, fromWarehouseId, productId, quantity, unitCost, {
-      reason: ref, refType: 'transfer', refId: toWarehouseId, userId: locals.user.id,
-    });
-    await applyStockIn(cid, toWarehouseId, productId, quantity, unitCost, {
-      reason: ref, refType: 'transfer', refId: fromWarehouseId, userId: locals.user.id,
+    // Atomic: OUT from source + IN to destination in one transaction, so a
+    // failure can never decrement the source without crediting the destination.
+    await db.transaction(async (tx) => {
+      await applyStockOut(cid, fromWarehouseId, productId, quantity, unitCost, {
+        reason: ref, refType: 'transfer', refId: toWarehouseId, userId: locals.user!.id,
+      }, tx);
+      await applyStockIn(cid, toWarehouseId, productId, quantity, unitCost, {
+        reason: ref, refType: 'transfer', refId: fromWarehouseId, userId: locals.user!.id,
+      }, tx);
     });
 
     return new Response(JSON.stringify({ ok: true }), { status: 201, headers: { 'Content-Type': 'application/json' } });
