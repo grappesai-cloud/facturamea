@@ -112,7 +112,10 @@ const xmlEscape = (s: string) =>
 const money = (cents: number) => (cents / 100).toFixed(2);
 
 function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCustomerParty'): string {
-  const legalId = party.registrationNumber || (party.vatPayer ? `RO${party.cui}` : party.cui);
+  // PartyLegalEntity/CompanyID. For a NON-VAT-payer there is no PartyTaxScheme, so
+  // the CUI must live here or ANAF can't identify the party ("cui vanzator=0").
+  // VAT payers keep reg.com here (their CUI is in PartyTaxScheme = RO+cui).
+  const legalId = party.vatPayer ? (party.registrationNumber || `RO${party.cui}`) : party.cui;
   const countryCode = party.address.country.slice(0, 2).toUpperCase();
   // BR-RO-110: pentru RO, subdiviziunea = cod ISO 3166-2:RO (ex. RO-CT). București = RO-B.
   const county = countryCode === 'RO' ? resolveCountyCode(party.address) : null;
@@ -156,7 +159,7 @@ function taxCategoryXml(cat: VatCategory, percent: number, exemptionText?: strin
   const reason = exemptionText || ex?.reason;
   return `<cac:TaxCategory>
         <cbc:ID>${cat}</cbc:ID>
-        <cbc:Percent>${percent.toFixed(2)}</cbc:Percent>
+        ${cat === 'O' ? '' : `<cbc:Percent>${percent.toFixed(2)}</cbc:Percent>`}
         ${ex?.code ? `<cbc:TaxExemptionReasonCode>${ex.code}</cbc:TaxExemptionReasonCode>` : ''}
         ${ex && reason ? `<cbc:TaxExemptionReason>${xmlEscape(reason)}</cbc:TaxExemptionReason>` : ''}
         <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
@@ -208,7 +211,7 @@ export function generateEFacturaXml(input: InvoiceInput): string {
       <cbc:Name>${xmlEscape(line.description)}</cbc:Name>
       <cac:ClassifiedTaxCategory>
         <cbc:ID>${cat}</cbc:ID>
-        <cbc:Percent>${percent.toFixed(2)}</cbc:Percent>
+        ${cat === 'O' ? '' : `<cbc:Percent>${percent.toFixed(2)}</cbc:Percent>`}
         <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:ClassifiedTaxCategory>
     </cac:Item>
