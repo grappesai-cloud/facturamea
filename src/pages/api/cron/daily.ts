@@ -4,6 +4,7 @@ import { transportInvoices } from '../../../db/schema';
 import { and, lt, sql } from 'drizzle-orm';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 import { refreshExpiringTokens } from '../../../lib/anaf/tokens';
+import { syncEfacturaStatuses } from '../../../lib/anaf/efactura-sync';
 
 // facturamea — daily maintenance cron (06:00 UTC, see vercel.json).
 // Marks unpaid documents past their due date as overdue, and proactively
@@ -40,7 +41,15 @@ export const GET: APIRoute = async ({ request }) => {
     // Never let the cron hard-fail.
   }
 
-  return new Response(JSON.stringify({ ok: true, overdueMarked, anafRefreshed, anafFailed, ranAt: new Date().toISOString() }), {
+  // e-Factura status sync: advance 'submitted' uploads to 'validated'/'rejected'
+  // per ANAF's stareMesaj, so the platform reflects the real verdict.
+  let efChecked = 0, efValidated = 0, efRejected = 0;
+  try {
+    const r = await syncEfacturaStatuses();
+    efChecked = r.checked; efValidated = r.validated; efRejected = r.rejected;
+  } catch { /* never hard-fail the cron */ }
+
+  return new Response(JSON.stringify({ ok: true, overdueMarked, anafRefreshed, anafFailed, efChecked, efValidated, efRejected, ranAt: new Date().toISOString() }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });
