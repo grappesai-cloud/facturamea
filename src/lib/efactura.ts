@@ -275,8 +275,8 @@ export function generateEFacturaXml(input: InvoiceInput): string {
       <cbc:IssueDate>${input.precedingInvoiceRef.issueDate}</cbc:IssueDate>
     </cac:InvoiceDocumentReference>
   </cac:BillingReference>` : ''}
-  ${partyXml(input.supplier, 'AccountingSupplierParty')}
-  ${partyXml(input.customer, 'AccountingCustomerParty')}${exchangeXml}
+  ${partyXml(input.supplierVatPayer === false ? { ...input.supplier, vatPayer: false } : input.supplier, 'AccountingSupplierParty')}
+  ${partyXml(input.supplierVatPayer === false ? { ...input.customer, vatPayer: false } : input.customer, 'AccountingCustomerParty')}${exchangeXml}
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="${cur}">${money(vatTotalCents)}</cbc:TaxAmount>${subtotalsXml}
   </cac:TaxTotal>${ronTaxTotalXml}
