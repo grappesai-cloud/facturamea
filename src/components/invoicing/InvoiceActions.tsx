@@ -1,8 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat, CreditCard } from 'lucide-react';
+
+// Close a modal on the Escape key (modals already close on backdrop click).
+function useEscapeClose(onClose: () => void) {
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onClose]);
+}
 
 export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId }: {
   invoiceId: string;
@@ -218,6 +227,7 @@ function PaymentModal({ remainingCents, currency, busy, error, onClose, onSubmit
   onClose: () => void;
   onSubmit: (amountCents: number, method: string, reference: string, emitReceipt: boolean) => void;
 }) {
+  useEscapeClose(onClose);
   const [amount, setAmount] = useState((remainingCents / 100).toFixed(2));
   const [method, setMethod] = useState('transfer');
   const [reference, setReference] = useState('');
@@ -267,6 +277,7 @@ function PaymentModal({ remainingCents, currency, busy, error, onClose, onSubmit
 }
 
 function ShareModal({ url, invoiceId, onClose, onRevoke }: { url: string; invoiceId: string; onClose: () => void; onRevoke: () => void }) {
+  useEscapeClose(onClose);
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const copy = async () => {
@@ -298,6 +309,7 @@ function ShareModal({ url, invoiceId, onClose, onRevoke }: { url: string; invoic
 }
 
 function PayLinkModal({ url, onClose }: { url: string; onClose: () => void }) {
+  useEscapeClose(onClose);
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     try { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
@@ -321,6 +333,7 @@ function PayLinkModal({ url, onClose }: { url: string; onClose: () => void }) {
 }
 
 function SendModal({ busy, error, onClose, onSubmit }: { busy: boolean; error: string; onClose: () => void; onSubmit: (email: string) => void }) {
+  useEscapeClose(onClose);
   const [email, setEmail] = useState('');
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>

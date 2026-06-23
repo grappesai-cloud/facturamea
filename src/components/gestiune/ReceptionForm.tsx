@@ -140,6 +140,11 @@ export default function ReceptionForm() {
                 <option value="">Alege gestiunea</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
               </Select>
+              {warehouses.length === 0 && (
+                <p className="text-[12px] text-[#E8A33C] mt-1.5">
+                  Nu ai nicio gestiune. <a href="/app/gestiune/depozite" className="underline font-semibold">Creează un depozit</a> mai întâi.
+                </p>
+              )}
             </div>
             <div>
               <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Furnizor</Label>
