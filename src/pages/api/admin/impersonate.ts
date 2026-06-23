@@ -3,6 +3,7 @@ import { db } from '../../../db';
 import { users } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 import { createSession, setSessionCookie } from '../../../lib/auth';
+import { signImp } from '../../../lib/imp-cookie';
 import { logAction } from '../../../lib/audit';
 
 function ensureAdmin(locals: App.Locals): Response | null {
@@ -34,7 +35,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const headers = new Headers({ 'Content-Type': 'application/json' });
   headers.append('Set-Cookie', setSessionCookie(sessionId));
-  headers.append('Set-Cookie', `th_imp=${adminId}; Path=/; HttpOnly${secure}; SameSite=Lax; Max-Age=3600`);
+  headers.append('Set-Cookie', `th_imp=${signImp(adminId)}; Path=/; HttpOnly${secure}; SameSite=Lax; Max-Age=3600`);
   try { await logAction({ userId: adminId, companyId: target.companyId, action: 'admin.impersonate_start', entityType: 'user', entityId: target.id, request }); } catch {}
 
   return new Response(JSON.stringify({ ok: true }), { headers });

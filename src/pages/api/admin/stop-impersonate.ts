@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createSession, setSessionCookie } from '../../../lib/auth';
+import { verifyImp } from '../../../lib/imp-cookie';
 import { db } from '../../../db';
 import { users } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
@@ -11,7 +12,8 @@ import { logAction } from '../../../lib/audit';
 export const GET: APIRoute = async ({ request }) => {
   const cookie = request.headers.get('cookie') || '';
   const m = cookie.match(/(?:^|;\s*)th_imp=([^;]+)/);
-  const adminId = m ? decodeURIComponent(m[1]) : '';
+  // Verify the HMAC signature — a forged/plaintext cookie yields null and is rejected.
+  const adminId = m ? (verifyImp(decodeURIComponent(m[1])) || '') : '';
 
   const isProd = (import.meta.env.PROD ?? process.env.NODE_ENV === 'production');
   const secure = isProd ? '; Secure' : '';
