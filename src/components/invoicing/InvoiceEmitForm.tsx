@@ -328,9 +328,9 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
     setCuiLookupState('loading');
     setCuiLookupHint('Caut în ANAF...');
     try {
-      const res = await fetch(`/api/tools/lookup-cui?cui=${encodeURIComponent(cleaned)}`);
+      const res = await fetch(`/api/anaf/lookup?cui=${encodeURIComponent(cleaned)}`);
       const data = await res.json();
-      if (!res.ok || !data.found) {
+      if (!res.ok || !data.ok) {
         setCuiLookupState('notfound');
         setCuiLookupHint('CUI negăsit. Continuă manual.');
         return;
