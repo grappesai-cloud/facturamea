@@ -42,7 +42,9 @@ export async function computePaymentReliability(companyId: string): Promise<Reli
   }).from(transportInvoices).where(and(
     eq(transportInvoices.companyId, companyId),
     eq(transportInvoices.kind, 'factura'),
-    sql`${transportInvoices.status} != 'voided'`,
+    // Exclude voided drafts AND storno'd (reversed) invoices — this query is
+    // kind='factura' only, so the negative storno isn't here to net the original.
+    sql`${transportInvoices.status} NOT IN ('voided', 'reversed')`,
     isNotNull(transportInvoices.issuedAt),
   ));
 

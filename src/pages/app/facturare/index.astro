@@ -268,7 +268,7 @@ const statusLabel: Record<string, string> = {
                 <p class="text-[12px] text-[#7C9AB4] mt-1">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO') : '—'}</p>
               </div>
               <div class="shrink-0 flex flex-col items-end gap-1.5">
-                {inv.kind === 'factura' && !['paid', 'voided', 'draft'].includes(inv.status) && (
+                {inv.kind === 'factura' && !['paid', 'voided', 'draft', 'reversed'].includes(inv.status) && (
                   <span class="px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold whitespace-nowrap">Încasează</span>
                 )}
                 <span class="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#9FB8CC] group-hover:text-white transition-colors whitespace-nowrap">Detalii<svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></span>

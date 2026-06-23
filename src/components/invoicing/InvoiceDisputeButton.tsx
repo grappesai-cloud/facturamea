@@ -14,7 +14,7 @@ export default function InvoiceDisputeButton({ invoiceId, kind, status, clientCo
   className?: string;
 }) {
   const [busy, setBusy] = useState(false);
-  const canDispute = kind === 'factura' && !['draft', 'paid', 'voided', 'disputed'].includes(status);
+  const canDispute = kind === 'factura' && !['draft', 'paid', 'voided', 'reversed', 'disputed'].includes(status);
   if (!canDispute) return null;
 
   const run = async () => {
