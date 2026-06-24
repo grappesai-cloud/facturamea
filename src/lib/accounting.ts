@@ -362,7 +362,9 @@ export async function postInvoice(invoiceId: string, createdByUserId?: string | 
       { accountCode: '4111', debitCents: total, creditCents: 0, note: 'Total factură' },
       { accountCode: revenueAccount, debitCents: 0, creditCents: net, note: 'Venit net' },
     ];
-    if (vat > 0) {
+    if (vat !== 0) {
+      // !== 0 (not > 0) so a storno's negative VAT line is also posted, else the
+      // reversal entry is unbalanced (missing the 4427 contra-line).
       // TVA la încasare: at issue the VAT is not yet chargeable, so it credits
       // 4428 (TVA neexigibilă) instead of 4427 (TVA colectată). It is reclassed
       // to 4427 proportionally as the invoice gets paid (see postPayment).
