@@ -133,14 +133,14 @@ function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCus
       ${
         party.vatPayer
           ? `<cac:PartyTaxScheme>
-        <cbc:CompanyID>RO${xmlEscape(party.cui)}</cbc:CompanyID>
+        <cbc:CompanyID>${xmlEscape(countryCode)}${xmlEscape(party.cui)}</cbc:CompanyID>
         <cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme>
       </cac:PartyTaxScheme>`
           : ''
       }
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>${xmlEscape(party.name)}</cbc:RegistrationName>
-        ${countryCode === 'RO' || party.vatPayer ? `<cbc:CompanyID>${xmlEscape(legalId)}</cbc:CompanyID>` : ''}
+        ${countryCode === 'RO' ? `<cbc:CompanyID>${xmlEscape(legalId)}</cbc:CompanyID>` : ''}
       </cac:PartyLegalEntity>
       ${
         party.contact

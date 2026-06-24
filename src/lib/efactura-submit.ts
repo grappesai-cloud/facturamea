@@ -51,9 +51,11 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
       customerStreet = c.address || customerStreet;
     }
   }
-  // Only a Romanian client is a RO VAT payer. A foreign buyer must NOT get its ID
-  // prefixed with "RO" / placed in PartyTaxScheme (ANAF: "CUI cumparator incorect").
-  const customerIsRoVatPayer = customerCountry === 'RO' && !!inv.clientTaxIdSnap;
+  // A buyer with a tax id gets a PartyTaxScheme; the id is prefixed with the buyer's
+  // OWN country code (RO123… for RO, AE…/DE… for foreign) — never hard-coded "RO",
+  // which made ANAF reject a foreign id as an invalid RO CUI.
+  const customerHasTaxId = !!inv.clientTaxIdSnap;
+  const customerIsRo = customerCountry === 'RO';
 
   // Storno: reference the original invoice (BG-3 / BillingReference) so ANAF links them.
   let precedingInvoiceRef: { number: string; issueDate: string } | undefined;
@@ -80,11 +82,12 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
     },
     customer: {
       name: inv.clientNameSnap,
-      // Foreign buyer: keep the raw tax id (UAE/US/etc.); RO buyer: strip to digits.
-      cui: customerIsRoVatPayer
+      // RO buyer: strip to digits (partyXml prefixes "RO"). Foreign: keep raw id
+      // (partyXml prefixes the foreign country code, e.g. AE…).
+      cui: customerIsRo
         ? ((inv.clientTaxIdSnap || '').replace(/^RO/i, '').replace(/\D/g, '') || '')
-        : ((inv.clientTaxIdSnap || '').trim() || ''),
-      vatPayer: customerIsRoVatPayer,
+        : ((inv.clientTaxIdSnap || '').replace(/\s/g, '') || ''),
+      vatPayer: customerHasTaxId,
       address: { street: customerStreet || '—', city: customerCity || '—', country: customerCountry },
     },
     lines: lines.map((l) => ({
