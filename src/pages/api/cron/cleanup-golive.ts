@@ -85,18 +85,19 @@ export const GET: APIRoute = async ({ request }) => {
     await del('test.ledger', () => db.delete(ledgerAccounts).where(eq(ledgerAccounts.companyId, testCo)));
     await del('test.memberships', () => db.delete(userCompanyMemberships).where(eq(userCompanyMemberships.companyId, testCo)));
     await del('test.licenses', () => db.delete(appLicenses).where(eq(appLicenses.companyId, testCo)));
-    // Auth rows reference users.id without cascade — clear them before deleting.
-    const tIds = testUsers.map((u) => u.id);
-    if (tIds.length) {
-      await del('test.sessions', () => db.delete(sessions).where(inArray(sessions.userId, tIds)));
-      await del('test.resetTokens', () => db.delete(passwordResetTokens).where(inArray(passwordResetTokens.userId, tIds)));
-      await del('test.verifyTokens', () => db.delete(emailVerificationTokens).where(inArray(emailVerificationTokens.userId, tIds)));
-      // parentUserId is a plain column (no FK) — null it so neither user blocks the other.
-      await del('test.unparent', () => db.update(users).set({ parentUserId: null } as any).where(inArray(users.id, tIds)));
-    }
-    await del('test.usersUnlink', () => db.update(users).set({ companyId: null } as any).where(eq(users.companyId, testCo)));
-    await del('test.users', () => db.delete(users).where(inArray(users.email, ['test.tva@facturamea.test', 'test.contabil@facturamea.test'])));
     await del('test.company', () => db.delete(companies).where(eq(companies.id, testCo)));
+  }
+
+  // Delete the test users themselves — independent of testCo (on a re-run the
+  // company is already gone). Clear auth rows (no cascade) + memberships first.
+  const tIds = testUsers.map((u) => u.id);
+  if (tIds.length) {
+    await del('test.memberships', () => db.delete(userCompanyMemberships).where(inArray(userCompanyMemberships.userId, tIds)));
+    await del('test.sessions', () => db.delete(sessions).where(inArray(sessions.userId, tIds)));
+    await del('test.resetTokens', () => db.delete(passwordResetTokens).where(inArray(passwordResetTokens.userId, tIds)));
+    await del('test.verifyTokens', () => db.delete(emailVerificationTokens).where(inArray(emailVerificationTokens.userId, tIds)));
+    await del('test.unparent', () => db.update(users).set({ parentUserId: null } as any).where(inArray(users.id, tIds)));
+    await del('test.usersDel', () => db.delete(users).where(inArray(users.id, tIds)));
   }
 
   return new Response(JSON.stringify({ ok: true, solCo, testCo, deleted: log }, null, 2), { status: 200, headers: { 'Content-Type': 'application/json' } });
