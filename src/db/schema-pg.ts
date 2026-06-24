@@ -1232,6 +1232,9 @@ export const transportInvoicePayments = pgTable('transport_invoice_payments', {
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [
   index('idx_invoice_payments_invoice').on(table.invoiceId),
+  // Idempotency: one payment per (invoice, external reference) — prevents a bank
+  // reconciliation / import from applying the same transaction twice.
+  uniqueIndex('uq_invoice_payment_ref').on(table.invoiceId, table.reference).where(sql`reference IS NOT NULL`),
 ]);
 
 // ─── Expeditor module: transport dossiers ────────────────────
@@ -1506,6 +1509,8 @@ export const posSales = pgTable('pos_sales', {
 }, (table) => [
   index('idx_pos_sales_company').on(table.companyId),
   index('idx_pos_sales_created').on(table.companyId, table.createdAt),
+  // One receipt number per company (no duplicate BON under concurrent sales).
+  uniqueIndex('uq_pos_sales_receipt').on(table.companyId, table.receiptNumber),
 ]);
 
 export const posSaleLines = pgTable('pos_sale_lines', {
@@ -1783,6 +1788,9 @@ export const journalEntries = pgTable('journal_entries', {
   index('idx_journal_entries_ref').on(table.refType, table.refId),
   // One journal entry number per company (fiscal numbering integrity).
   uniqueIndex('uq_journal_entries_company_number').on(table.companyId, table.entryNumber),
+  // Idempotency: at most one auto-posted entry per source document — turns the
+  // SELECT-then-INSERT guard into a hard constraint (no duplicate revenue/VAT).
+  uniqueIndex('uq_journal_entries_ref').on(table.companyId, table.refType, table.refId).where(sql`ref_type IS NOT NULL`),
 ]);
 
 export const journalLines = pgTable('journal_lines', {

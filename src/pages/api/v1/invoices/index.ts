@@ -143,39 +143,48 @@ export const POST: APIRoute = async ({ request }) => {
     if (!series) {
       series = await ensureDefaultSeries(cid, kind, clientExternalId ? 'external' : null);
     }
-    const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, INVOICE_NUMBER_FORMAT);
-
     const invoiceId = nanoid();
     const now = new Date();
     const issuedAt = now;
     const dueAt = asString(body.dueDate)
       ? new Date(asString(body.dueDate)!)
       : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const isRon = currency === 'RON';
 
-    await db.insert(transportInvoices).values({
-      id: invoiceId,
-      companyId: cid,
-      seriesId: series.id,
-      sequenceNumber,
-      fullNumber,
-      kind,
-      clientExternalId,
-      clientNameSnap: clientName!,
-      clientTaxIdSnap: clientTaxId,
-      clientAddressSnap: clientAddress,
-      currency,
-      subtotalCents,
-      vatCents,
-      totalCents,
-      paidCents: 0,
-      status: 'issued',
-      issuedAt,
-      dueAt,
+    // Reserve the number + write header + lines in ONE transaction: a failure
+    // rolls back the consumed legal number (no gap) and never leaves a lineless
+    // invoice.
+    let fullNumber = '';
+    await db.transaction(async (tx) => {
+      const r = await nextSeriesNumber(series!.id, INVOICE_NUMBER_FORMAT, tx);
+      fullNumber = r.fullNumber;
+      await tx.insert(transportInvoices).values({
+        id: invoiceId,
+        companyId: cid,
+        seriesId: series!.id,
+        sequenceNumber: r.number,
+        fullNumber: r.fullNumber,
+        kind,
+        clientExternalId,
+        clientNameSnap: clientName!,
+        clientTaxIdSnap: clientTaxId,
+        clientAddressSnap: clientAddress,
+        currency,
+        subtotalCents,
+        vatCents,
+        totalCents,
+        subtotalRonCents: isRon ? subtotalCents : null,
+        vatRonCents: isRon ? vatCents : null,
+        totalRonCents: isRon ? totalCents : null,
+        paidCents: 0,
+        status: 'issued',
+        issuedAt,
+        dueAt,
+      });
+      if (computedLines.length) {
+        await tx.insert(transportInvoiceLines).values(computedLines.map((l) => ({ ...l, invoiceId })));
+      }
     });
-
-    if (computedLines.length) {
-      await db.insert(transportInvoiceLines).values(computedLines.map((l) => ({ ...l, invoiceId })));
-    }
 
     return apiJson({
       id: invoiceId,

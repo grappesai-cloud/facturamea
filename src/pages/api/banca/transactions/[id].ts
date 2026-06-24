@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { bankTransactions, transportInvoices, expenses } from '../../../../db/schema';
+import { bankTransactions, transportInvoices, expenses, transportInvoicePayments } from '../../../../db/schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 
 import { requireRole } from '../../../../lib/require-role';
 const ron = (cents: number) =>
@@ -131,12 +132,24 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       const [inv] = await db.select().from(transportInvoices)
         .where(and(eq(transportInvoices.id, matchId), eq(transportInvoices.companyId, cid)));
       if (!inv) return new Response(JSON.stringify({ error: 'Factură inexistentă' }), { status: 404 });
-      const newPaid = Math.min((inv.paidCents || 0) + pay, inv.totalCents);
-      const fullyPaid = newPaid >= inv.totalCents;
-      applyPayment = (t) => t.update(transportInvoices).set({
-        paidCents: newPaid, status: fullyPaid ? 'paid' : 'partial',
-        paidAt: fullyPaid ? new Date() : inv.paidAt, updatedAt: new Date(),
-      }).where(eq(transportInvoices.id, matchId));
+      applyPayment = async (t) => {
+        // Record a real payment row (idempotent on invoice+reference via the
+        // unique index, reference = bank-tx id), then recompute paidCents from the
+        // SUM — so a later manual payment recompute can't erase this money.
+        await t.insert(transportInvoicePayments).values({
+          id: nanoid(), invoiceId: matchId, amountCents: pay, currency: inv.currency || 'RON',
+          method: 'transfer', reference: id, receivedAt: new Date(),
+          recordedByUserId: locals.user?.id || null,
+        } as any).onConflictDoNothing();
+        const [{ s }] = await t.select({ s: sql<number>`COALESCE(SUM(${transportInvoicePayments.amountCents}), 0)` })
+          .from(transportInvoicePayments).where(eq(transportInvoicePayments.invoiceId, matchId));
+        const sumPaid = Math.min(Number(s) || 0, inv.totalCents);
+        const fullyPaid = sumPaid >= inv.totalCents;
+        await t.update(transportInvoices).set({
+          paidCents: sumPaid, status: fullyPaid ? 'paid' : (sumPaid > 0 ? 'partial' : inv.status),
+          paidAt: fullyPaid ? new Date() : inv.paidAt, updatedAt: new Date(),
+        }).where(eq(transportInvoices.id, matchId));
+      };
     } else {
       const [ex] = await db.select().from(expenses)
         .where(and(eq(expenses.id, matchId), eq(expenses.companyId, cid)));
@@ -187,14 +200,18 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
       const [inv] = await db.select().from(transportInvoices)
         .where(and(eq(transportInvoices.id, tx.matchedId), eq(transportInvoices.companyId, cid)));
       if (inv) {
-        const newPaid = Math.max((inv.paidCents || 0) - refund, 0);
-        const status = newPaid <= 0 ? 'issued' : newPaid >= inv.totalCents ? 'paid' : 'partial';
-        await db.update(transportInvoices).set({
-          paidCents: newPaid,
-          status,
-          paidAt: newPaid >= inv.totalCents ? inv.paidAt : null,
-          updatedAt: new Date(),
-        }).where(eq(transportInvoices.id, tx.matchedId));
+        await db.transaction(async (t) => {
+          // Remove the payment row this reconciliation created, then recompute.
+          await t.delete(transportInvoicePayments).where(and(eq(transportInvoicePayments.invoiceId, tx.matchedId!), eq(transportInvoicePayments.reference, id)));
+          const [{ s }] = await t.select({ s: sql<number>`COALESCE(SUM(${transportInvoicePayments.amountCents}), 0)` })
+            .from(transportInvoicePayments).where(eq(transportInvoicePayments.invoiceId, tx.matchedId!));
+          const sumPaid = Math.min(Number(s) || 0, inv.totalCents);
+          const status = sumPaid <= 0 ? 'issued' : sumPaid >= inv.totalCents ? 'paid' : 'partial';
+          await t.update(transportInvoices).set({
+            paidCents: sumPaid, status,
+            paidAt: sumPaid >= inv.totalCents ? inv.paidAt : null, updatedAt: new Date(),
+          }).where(eq(transportInvoices.id, tx.matchedId!));
+        });
       }
     } else if (tx.matchedType === 'expense' && tx.matchedId) {
       const [ex] = await db.select().from(expenses)

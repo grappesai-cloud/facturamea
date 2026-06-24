@@ -56,6 +56,7 @@ export async function runRecurringInvoices(today: string = new Date().toISOStrin
   for (const r of due) {
     try {
       const out = await emitOneRecurring(r, today);
+      if ((out as any).skipped) continue; // already processed by a concurrent run
       result.generated.push({ recurringId: r.id, invoiceId: out.invoiceId, fullNumber: out.fullNumber });
     } catch (e: any) {
       const msg = e?.message || String(e);
@@ -131,6 +132,13 @@ async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: 
   // AND the schedule is not advanced — so a re-run retries this period instead
   // of skipping it, and a successful run never re-emits the same period.
   const reserved = await db.transaction(async (tx) => {
+    // Claim-lock: re-read the template FOR UPDATE and bail if a concurrent run
+    // already advanced it past today. Without this, two overlapping invocations
+    // both select the same due row and double-bill the client.
+    const [fresh] = await tx.select({ nextRunAt: invoiceRecurring.nextRunAt, isActive: invoiceRecurring.isActive })
+      .from(invoiceRecurring).where(eq(invoiceRecurring.id, r.id)).for('update');
+    if (!fresh || !fresh.isActive || fresh.nextRunAt > today) return { skipped: true as const };
+
     const series = r.seriesId ? { id: r.seriesId } : await ensureDefaultSeries(r.companyId, 'factura', null, tx);
     const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, INVOICE_NUMBER_FORMAT, tx);
 
@@ -168,5 +176,6 @@ async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: 
     return { fullNumber };
   });
 
-  return { invoiceId, fullNumber: reserved.fullNumber };
+  if ((reserved as any).skipped) return { invoiceId: '', fullNumber: '', skipped: true as const };
+  return { invoiceId, fullNumber: (reserved as any).fullNumber };
 }
