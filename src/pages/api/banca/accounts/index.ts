@@ -24,7 +24,19 @@ export const GET: APIRoute = async ({ locals }) => {
       .groupBy(bankTransactions.accountId);
     const byAccount = new Map(counts.map((c) => [c.accountId, Number(c.n)]));
 
-    const out = accounts.map((a) => ({ ...a, unreconciledCount: byAccount.get(a.id) ?? 0 }));
+    // Live balance per account = opening balance + every imported transaction.
+    const sums = await db
+      .select({ accountId: bankTransactions.accountId, s: sql<number>`COALESCE(SUM(${bankTransactions.amountCents}), 0)` })
+      .from(bankTransactions)
+      .where(eq(bankTransactions.companyId, cid))
+      .groupBy(bankTransactions.accountId);
+    const sumByAccount = new Map(sums.map((c) => [c.accountId, Number(c.s)]));
+
+    const out = accounts.map((a) => ({
+      ...a,
+      balanceCents: (a.balanceCents ?? 0) + (sumByAccount.get(a.id) ?? 0),
+      unreconciledCount: byAccount.get(a.id) ?? 0,
+    }));
     return new Response(JSON.stringify({ accounts: out }), { headers: { 'Content-Type': 'application/json' } });
   } catch {
     return new Response(JSON.stringify({ accounts: [] }), { headers: { 'Content-Type': 'application/json' } });

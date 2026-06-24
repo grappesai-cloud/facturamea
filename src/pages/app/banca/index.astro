@@ -22,7 +22,11 @@ try {
     bal: sql<number>`COALESCE(SUM(${bankAccounts.balanceCents}), 0)`,
   }).from(bankAccounts).where(eq(bankAccounts.companyId, companyId));
   accountCount = Number(accRow?.n ?? 0);
-  totalBalance = Number(accRow?.bal ?? 0);
+  // Sold = opening balances + every imported transaction (income positive,
+  // expense negative). The stored balanceCents is only the opening figure.
+  const [txBalRow] = await db.select({ s: sql<number>`COALESCE(SUM(${bankTransactions.amountCents}), 0)` })
+    .from(bankTransactions).where(eq(bankTransactions.companyId, companyId));
+  totalBalance = Number(accRow?.bal ?? 0) + Number(txBalRow?.s ?? 0);
 
   const [txRow] = await db.select({ n: sql<number>`COUNT(*)` })
     .from(bankTransactions)

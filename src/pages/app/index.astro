@@ -114,14 +114,17 @@ const legend = [
   { label: 'De plătit',  colors: ['#E8730C'], display: ron(Math.max(0, yearly.issued - yearly.collected)) },
   { label: 'Cheltuieli', colors: ['#D11149'], display: ron(yearly.expenses) },
 ];
-const netYear = yearly.collected - yearly.expenses;
+// Net income on a consistent accrual basis: invoiced (not cash-collected) minus
+// expenses (themselves accrual totals). Mixing collected revenue with accrued
+// expenses gave a misleading figure.
+const netYear = yearly.issued - yearly.expenses;
 const yearLabel = String(now.getFullYear());
 
 // Extra detail stats.
 const active = months.map((m, i) => ({ m, i })).filter((x) => x.m.venituri > 0);
 const avgInc = active.length ? Math.round(active.reduce((s, x) => s + x.m.venituri, 0) / active.length) : 0;
 const best = active.reduce<{ m: typeof months[number]; i: number } | null>((a, b) => (a && a.m.venituri >= b.m.venituri ? a : b), null);
-const margin = yearly.collected > 0 ? Math.round((netYear / yearly.collected) * 100) : 0;
+const margin = yearly.issued > 0 ? Math.round((netYear / yearly.issued) * 100) : 0;
 const stats = [
   { label: 'Medie lunară', value: ron(avgInc) },
   { label: 'Cea mai bună lună', value: best ? MONTH_FULL[best.i] : '—' },
@@ -205,11 +208,11 @@ const kpiCatalog: KpiDef[] = [
   { key: 'declaratii', label: 'Declarații', kind: 'percent', whole: String(counts.declaratii), dec: '', accent: '#1A759F', icon: ICON.check, info: 'Declarații e-Transport generate.', href: '/app/etransport' },
   { key: 'incasari_luna', label: 'Încasări · luna aceasta', kind: 'money', whole: incomeSplit.whole, dec: incomeSplit.dec, note: `din ${ron(curMonthData.emise)} facturat`, bars: factBars, barLabels: sparkLabels, barValues: factVals, accent: '#76C893', icon: ICON.up, info: 'Banii încasați efectiv luna aceasta (din facturile marcate ca plătite), din totalul facturat.', href: '/app/facturare', extra: [{ label: 'Facturat luna', value: ron(curMonthData.emise) }, { label: 'Încasat anual', value: ron(yearly.collected) }] },
   { key: 'cheltuieli_luna', label: 'Cheltuieli · luna aceasta', kind: 'money', whole: expSplit.whole, dec: expSplit.dec, bars: expBars, barLabels: sparkLabels, barValues: expVals, accent: '#34A0A4', icon: ICON.down, info: 'Totalul cheltuielilor înregistrate luna aceasta.', href: '/app/cheltuieli', extra: [{ label: 'Cheltuieli anuale', value: ron(yearly.expenses) }] },
-  { key: 'venit_net', label: `Venit net · ${yearLabel}`, kind: 'money', whole: netSplit.whole, dec: netSplit.dec, accent: '#B5E48C', icon: ICON.cash, info: `Venitul rămas după cheltuieli pentru ${yearLabel}.`, href: '/app/rapoarte', extra: [{ label: 'Venituri', value: ron(yearly.collected) }, { label: 'Cheltuieli', value: ron(yearly.expenses) }, { label: 'Marjă netă', value: `${margin}%` }] },
+  { key: 'venit_net', label: `Venit net · ${yearLabel}`, kind: 'money', whole: netSplit.whole, dec: netSplit.dec, accent: '#B5E48C', icon: ICON.cash, info: `Facturat minus cheltuieli pentru ${yearLabel}.`, href: '/app/rapoarte', extra: [{ label: 'Facturat', value: ron(yearly.issued) }, { label: 'Cheltuieli', value: ron(yearly.expenses) }, { label: 'Marjă netă', value: `${margin}%` }] },
   { key: 'facturat_an', label: `Facturat · ${yearLabel}`, kind: 'money', whole: splitRon(yearly.issued).whole, dec: splitRon(yearly.issued).dec, accent: '#168AAD', icon: ICON.doc, info: 'Valoarea totală a facturilor emise anul acesta.', href: '/app/facturare', extra: [{ label: 'Încasat', value: ron(yearly.collected) }, { label: 'De plătit', value: ron(deplatitYear) }] },
   { key: 'venituri_an', label: `Venituri încasate · ${yearLabel}`, kind: 'money', whole: splitRon(yearly.collected).whole, dec: splitRon(yearly.collected).dec, accent: '#52B69A', icon: ICON.check, info: 'Totalul încasat din facturi anul acesta.', href: '/app/facturare', extra: [{ label: 'Facturat', value: ron(yearly.issued) }, { label: 'De plătit', value: ron(deplatitYear) }] },
   { key: 'deplatit_an', label: `De plătit · ${yearLabel}`, kind: 'money', whole: splitRon(deplatitYear).whole, dec: splitRon(deplatitYear).dec, accent: '#1A759F', icon: ICON.clock, info: 'Facturi emise dar neîncasate încă.', href: '/app/facturare', extra: [{ label: 'Facturat', value: ron(yearly.issued) }, { label: 'Încasat', value: ron(yearly.collected) }] },
-  { key: 'marja', label: `Marjă netă · ${yearLabel}`, kind: 'percent', whole: `${margin}%`, dec: '', accent: '#99D98C', icon: ICON.pie, info: 'Procentul din venituri rămas ca profit, după cheltuieli.', href: '/app/rapoarte', extra: [{ label: 'Venituri', value: ron(yearly.collected) }, { label: 'Cheltuieli', value: ron(yearly.expenses) }, { label: 'Venit net', value: ron(netYear) }] },
+  { key: 'marja', label: `Marjă netă · ${yearLabel}`, kind: 'percent', whole: `${margin}%`, dec: '', accent: '#99D98C', icon: ICON.pie, info: 'Procentul din facturat rămas ca profit, după cheltuieli.', href: '/app/rapoarte', extra: [{ label: 'Facturat', value: ron(yearly.issued) }, { label: 'Cheltuieli', value: ron(yearly.expenses) }, { label: 'Venit net', value: ron(netYear) }] },
   { key: 'medie', label: 'Medie lunară', kind: 'money', whole: splitRon(avgInc).whole, dec: splitRon(avgInc).dec, accent: '#D9ED92', icon: ICON.bars, info: 'Media încasărilor pe lunile active din an.', href: '/app/rapoarte', extra: [{ label: 'Încasat anual', value: ron(yearly.collected) }, { label: 'Cea mai bună lună', value: bestMonth }] },
 ];
 const defaultKpis = ['facturi', 'incasari_luna', 'cheltuieli_luna', 'venit_net'];

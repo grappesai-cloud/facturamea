@@ -13,7 +13,7 @@ function useEscapeClose(onClose: () => void) {
   }, [onClose]);
 }
 
-export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId }: {
+export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId, efacturaStatus }: {
   invoiceId: string;
   kind: string;
   status: string;
@@ -21,6 +21,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   paidCents: number;
   currency: string;
   clientCompanyId?: string | null;
+  efacturaStatus?: string | null;
 }) {
   const [showPayModal, setShowPayModal] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -28,6 +29,11 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   const [payLinkUrl, setPayLinkUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // App-styled confirm dialog (replaces the native confirm(), which is
+  // inconsistent and blocks automated flows). Promise-based so call sites stay
+  // `if (!(await askConfirm(...))) return;`.
+  const [confirmState, setConfirmState] = useState<{ message: string; resolve: (v: boolean) => void } | null>(null);
+  const askConfirm = (message: string) => new Promise<boolean>((resolve) => setConfirmState({ message, resolve }));
 
   const remaining = totalCents - paidCents;
   // A storno'd (reversed) or voided document is settled: no more money/mutation
@@ -36,7 +42,10 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   const canRecordPayment = kind === 'factura' && status !== 'paid' && !settled && status !== 'draft';
   const canPayLink = kind === 'factura' && remaining > 0 && !settled && status !== 'draft';
   const canSend = status !== 'draft';
-  const canSubmitSpv = (kind === 'factura' || kind === 'storno') && status !== 'draft' && !settled;
+  // Already sent (submitted/validated) → no re-send, to avoid duplicate uploads.
+  // Re-send is allowed only when never sent, or when it failed (rejected/error).
+  const alreadyAtAnaf = efacturaStatus === 'submitted' || efacturaStatus === 'validated';
+  const canSubmitSpv = (kind === 'factura' || kind === 'storno') && status !== 'draft' && !settled && !alreadyAtAnaf;
   const canStorno = kind === 'factura' && status !== 'draft' && !settled;
   const canDispute = kind === 'factura' && !['draft', 'paid', 'voided', 'reversed', 'disputed'].includes(status);
   const canRecur = (kind === 'factura' || kind === 'proforma') && status !== 'draft' && !settled;
@@ -65,7 +74,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   };
 
   const doRecur = async () => {
-    if (!confirm('Creezi un abonament de facturare recurentă pe baza acestei facturi (frecvență lunară)? O poți edita apoi în Recurente.')) return;
+    if (!(await askConfirm('Creezi un abonament de facturare recurentă pe baza acestei facturi (frecvență lunară)? O poți edita apoi în Recurente.'))) return;
     setBusy(true); setError('');
     try {
       const res = await fetch(`/api/invoicing/invoices/${invoiceId}/to-recurring`, {
@@ -81,7 +90,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
     const msg = clientCompanyId
       ? 'Marchezi factura drept neîncasată și deschizi o sesizare de plată către client pe facturamea. Clientul este notificat și are drept de replică; neplata îi afectează scorul de încredere. Continui?'
       : 'Marchezi factura drept neîncasată. Clientul este extern (fără cont facturamea), deci nu se poate deschide o sesizare pe platformă. Continui?';
-    if (!confirm(msg)) return;
+    if (!(await askConfirm(msg))) return;
     setBusy(true); setError('');
     try {
       const res = await fetch(`/api/invoicing/invoices/${invoiceId}/dispute`, { method: 'POST' });
@@ -117,7 +126,7 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   };
 
   const submitStorno = async () => {
-    if (!confirm('Stornează această factură? Operația emite o factură storno cu valori negative și marchează originalul ca anulat.')) return;
+    if (!(await askConfirm('Stornează această factură? Operația emite o factură storno cu valori negative și marchează originalul ca anulat.'))) return;
     setBusy(true); setError('');
     try {
       const res = await fetch(`/api/invoicing/invoices/${invoiceId}/storno`, { method: 'POST' });
@@ -215,6 +224,31 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
           onSubmit={submitSend}
         />
       )}
+      {confirmState && (
+        <ConfirmModal
+          message={confirmState.message}
+          onYes={() => { confirmState.resolve(true); setConfirmState(null); }}
+          onNo={() => { confirmState.resolve(false); setConfirmState(null); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ConfirmModal({ message, onYes, onNo }: { message: string; onYes: () => void; onNo: () => void }) {
+  useEscapeClose(onNo);
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onNo}>
+      <div className="bg-[#0B2236] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start gap-3 mb-5">
+          <AlertTriangle className="w-5 h-5 text-[#E8A33C] shrink-0 mt-0.5" />
+          <p className="text-[14px] text-white leading-relaxed">{message}</p>
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={onNo}>Renunță</Button>
+          <Button className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E]" onClick={onYes}>Confirmă</Button>
+        </div>
+      </div>
     </div>
   );
 }

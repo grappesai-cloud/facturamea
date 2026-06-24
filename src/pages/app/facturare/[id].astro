@@ -79,7 +79,7 @@ const efBadge = !efSendable ? null
         {inv.dueAt && <span class="text-[14px] text-[#7C9AB4]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
       </div>
     </div>
-    <InvoiceActions invoiceId={inv.id} kind={inv.kind} status={inv.status} totalCents={inv.totalCents} paidCents={inv.paidCents} currency={inv.currency} clientCompanyId={inv.clientCompanyId} client:load />
+    <InvoiceActions invoiceId={inv.id} kind={inv.kind} status={inv.status} totalCents={inv.totalCents} paidCents={inv.paidCents} currency={inv.currency} clientCompanyId={inv.clientCompanyId} efacturaStatus={inv.efacturaStatus} client:load />
   </div>
 
   {nudges.length > 0 && (

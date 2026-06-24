@@ -13,9 +13,13 @@ import {
   journalEntries,
   journalLines,
   transportInvoices,
+  transportInvoiceLines,
   transportInvoicePayments,
   expenses,
 } from '../db/schema';
+
+// Units that mark a line as a service (→ revenue account 704 instead of 707).
+const SERVICE_UNITS = new Set(['serviciu', 'oră', 'ora', 'ore', 'abonament', 'lună', 'luna', 'zi', 'an', 'cursă', 'cursa', 'h', 'HUR']);
 import { and, eq, gte, lte, asc, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
@@ -352,10 +356,13 @@ export async function postInvoice(invoiceId: string, createdByUserId?: string | 
     const vat = centsOf(inv.vatCents);
     const total = centsOf(inv.totalCents);
 
-    // Pick the revenue account: services (704) when there is a single non-goods
-    // line is hard to detect here, so default to 707 (mărfuri) and 704 for
-    // service-only invoices when we can infer it. Keep it simple → 707.
-    const revenueAccount = '707';
+    // Revenue account: 704 (servicii) when every line is service-like by unit,
+    // otherwise 707 (mărfuri). The accountant can reclassify if needed.
+    let revenueAccount = '707';
+    try {
+      const ls = await db.select({ unit: transportInvoiceLines.unit }).from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, inv.id));
+      if (ls.length > 0 && ls.every((l) => SERVICE_UNITS.has(String(l.unit || '').toLowerCase()))) revenueAccount = '704';
+    } catch { /* keep 707 on any read issue */ }
     const desc = `Factura ${inv.fullNumber} · ${inv.clientNameSnap}`;
 
     const lines: PostLine[] = [
