@@ -4,6 +4,7 @@
 import type { APIRoute } from 'astro';
 import {
   db, users, companies, appLicenses, userCompanyMemberships,
+  sessions, passwordResetTokens, emailVerificationTokens,
   transportInvoices, transportInvoiceLines, transportInvoicePayments,
   bankAccounts, bankTransactions, expenses, suppliers,
   warehouses, stockLevels, stockMovements, receptions, receptionLines,
@@ -84,6 +85,15 @@ export const GET: APIRoute = async ({ request }) => {
     await del('test.ledger', () => db.delete(ledgerAccounts).where(eq(ledgerAccounts.companyId, testCo)));
     await del('test.memberships', () => db.delete(userCompanyMemberships).where(eq(userCompanyMemberships.companyId, testCo)));
     await del('test.licenses', () => db.delete(appLicenses).where(eq(appLicenses.companyId, testCo)));
+    // Auth rows reference users.id without cascade — clear them before deleting.
+    const tIds = testUsers.map((u) => u.id);
+    if (tIds.length) {
+      await del('test.sessions', () => db.delete(sessions).where(inArray(sessions.userId, tIds)));
+      await del('test.resetTokens', () => db.delete(passwordResetTokens).where(inArray(passwordResetTokens.userId, tIds)));
+      await del('test.verifyTokens', () => db.delete(emailVerificationTokens).where(inArray(emailVerificationTokens.userId, tIds)));
+      // parentUserId is a plain column (no FK) — null it so neither user blocks the other.
+      await del('test.unparent', () => db.update(users).set({ parentUserId: null } as any).where(inArray(users.id, tIds)));
+    }
     await del('test.usersUnlink', () => db.update(users).set({ companyId: null } as any).where(eq(users.companyId, testCo)));
     await del('test.users', () => db.delete(users).where(inArray(users.email, ['test.tva@facturamea.test', 'test.contabil@facturamea.test'])));
     await del('test.company', () => db.delete(companies).where(eq(companies.id, testCo)));
