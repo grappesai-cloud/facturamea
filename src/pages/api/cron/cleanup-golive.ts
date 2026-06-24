@@ -14,6 +14,7 @@ import {
   purchaseOrders, purchaseOrderLines, salesOrders, salesOrderLines,
 } from '../../../db';
 import { and, eq, ne, inArray } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 
 export const GET: APIRoute = async ({ request }) => {
@@ -97,7 +98,21 @@ export const GET: APIRoute = async ({ request }) => {
     await del('test.resetTokens', () => db.delete(passwordResetTokens).where(inArray(passwordResetTokens.userId, tIds)));
     await del('test.verifyTokens', () => db.delete(emailVerificationTokens).where(inArray(emailVerificationTokens.userId, tIds)));
     await del('test.unparent', () => db.update(users).set({ parentUserId: null } as any).where(inArray(users.id, tIds)));
-    await del('test.usersDel', () => db.delete(users).where(inArray(users.id, tIds)));
+    // Try a hard delete; if a foreign key still blocks it, NEUTRALIZE the accounts
+    // (login impossible, tombstoned email, no company) so they are effectively gone.
+    try {
+      await db.delete(users).where(inArray(users.id, tIds));
+      (log as any)['test.usersDel'] = tIds.length;
+    } catch (e) {
+      (log as any)['test.deleteErr'] = String((e as Error).message).slice(0, 140);
+      for (const u of testUsers) {
+        await del(`test.neutralize.${u.id.slice(0, 6)}`, () => db.update(users).set({
+          isActive: false, companyId: null,
+          hashedPassword: `disabled-${nanoid(24)}`,
+          email: `deleted-${nanoid(8)}@removed.invalid`,
+        } as any).where(eq(users.id, u.id)));
+      }
+    }
   }
 
   return new Response(JSON.stringify({ ok: true, solCo, testCo, deleted: log }, null, 2), { status: 200, headers: { 'Content-Type': 'application/json' } });
