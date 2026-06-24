@@ -7,11 +7,13 @@ import { transportInvoices } from '../../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+import { requireRole } from '../../../../../lib/require-role';
 function baseUrl() {
   return process.env.PUBLIC_BASE_URL || 'https://facturamea.com';
 }
 
 export const POST: APIRoute = async ({ params, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
@@ -30,6 +32,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
 };
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });

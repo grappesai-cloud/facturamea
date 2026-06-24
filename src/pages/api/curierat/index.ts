@@ -4,6 +4,7 @@ import { shipments } from '../../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
+import { requireRole } from '../../../lib/require-role';
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -28,6 +29,7 @@ export const GET: APIRoute = async ({ locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
   const cid = locals.user.companyId;
   if (!cid) return json({ error: 'Companie lipsă' }, 400);

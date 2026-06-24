@@ -5,6 +5,7 @@ import { and, eq, desc, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 // Bank accounts owned by the current company (reconciliere bancară).
+import { requireRole } from '../../../../lib/require-role';
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
@@ -44,6 +45,7 @@ export const GET: APIRoute = async ({ locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });

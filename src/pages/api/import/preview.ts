@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { requireRole } from '../../../lib/require-role';
 import {
   parseTabular,
   autoMap,
@@ -16,6 +17,7 @@ const MAX_FILE_BYTES = 15 * 1024 * 1024;
 // Parse an uploaded CSV/XLSX and return detected columns + a suggested mapping
 // + a small preview. No DB writes — this is purely for the mapping step.
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }

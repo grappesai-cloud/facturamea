@@ -5,11 +5,13 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { parseStatement, MAX_STATEMENT_ROWS } from '../../../../lib/bank-parsers';
 
+import { requireRole } from '../../../../lib/require-role';
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 
 // Import a bank statement (extras de cont) into an account.
 // multipart/form-data: accountId + file. Dedupes on (companyId, externalId).
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });

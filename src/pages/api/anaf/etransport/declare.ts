@@ -12,7 +12,9 @@ import { db } from '../../../../db';
 import { orders } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
 
+import { requireRole } from '../../../../lib/require-role';
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
   if (!locals.user.companyId) return new Response(JSON.stringify({ error: 'Fără firmă' }), { status: 400 });
 

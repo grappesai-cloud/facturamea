@@ -12,6 +12,7 @@
 // Requires a session. Degrades to a clear 503 when GoCardless is not configured.
 
 import type { APIRoute } from 'astro';
+import { requireRole } from '../../../../lib/require-role';
 import { db } from '../../../../db';
 import { bankAccounts, bankTransactions } from '../../../../db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
@@ -79,6 +80,7 @@ async function importTransactions(
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
   const cid = locals.user.companyId;
   if (!cid) return json({ error: 'Companie lipsă' }, 400);

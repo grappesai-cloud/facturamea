@@ -3,11 +3,13 @@ import { db } from '../../../db';
 import { integrationConnections } from '../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 
+import { requireRole } from '../../../lib/require-role';
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
 // PATCH: toggle isActive / autoInvoice (only fields the user is allowed to flip).
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
   const cid = locals.user.companyId;
   if (!cid) return json({ error: 'Companie lipsă' }, 400);
@@ -34,6 +36,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 };
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
   const cid = locals.user.companyId;
   if (!cid) return json({ error: 'Companie lipsă' }, 400);

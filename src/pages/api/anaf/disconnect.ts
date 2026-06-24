@@ -3,7 +3,9 @@ import type { APIRoute } from 'astro';
 import { revokeConnection } from '../../../lib/anaf/tokens';
 import { isValidScope } from '../../../lib/anaf/oauth';
 
+import { requireRole } from '../../../lib/require-role';
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
   if (!locals.user.companyId) return new Response(JSON.stringify({ error: 'Fără firmă' }), { status: 400 });
 

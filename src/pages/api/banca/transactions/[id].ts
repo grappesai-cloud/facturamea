@@ -3,6 +3,7 @@ import { db } from '../../../../db';
 import { bankTransactions, transportInvoices, expenses } from '../../../../db/schema';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 
+import { requireRole } from '../../../../lib/require-role';
 const ron = (cents: number) =>
   new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
 
@@ -103,6 +104,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 // body: { matchType: 'invoice' | 'expense', matchId: string }
 // ──────────────────────────────────────────────────────────────────────────
 export const POST: APIRoute = async ({ params, request, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   const id = params.id;
@@ -164,6 +166,7 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
 // body: { reconciled: false }
 // ──────────────────────────────────────────────────────────────────────────
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   const id = params.id;

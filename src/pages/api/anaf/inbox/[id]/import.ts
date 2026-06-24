@@ -15,10 +15,12 @@ import { getAnafStatus } from '../../../../../lib/anaf/tokens';
 import { downloadMessage } from '../../../../../lib/anaf/efactura-client';
 import { extractInvoiceXml, parseEfacturaXml, type ParsedInvoiceFields } from '../../../../../lib/efactura-parse';
 
+import { requireRole } from '../../../../../lib/require-role';
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
 export const POST: APIRoute = async ({ params, locals }) => {
+  const denied = requireRole(locals, 'expense.manage'); if (denied) return denied;
   if (!locals.user) return json({ ok: false, error: 'Neautentificat' }, 401);
   const companyId = locals.user.companyId;
   if (!companyId) return json({ ok: false, error: 'Fără firmă' }, 400);

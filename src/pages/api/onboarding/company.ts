@@ -8,6 +8,7 @@ import { lookupAnaf } from '../../../lib/anaf-lookup';
 
 // Best-effort locality extraction from an ANAF address string, e.g.
 // "JUD. BUZĂU, MUN. BUZĂU, STR. PATRIEI, NR.2" -> "BUZĂU".
+import { requireRole } from '../../../lib/require-role';
 function parseCity(addr: string): string {
   if (!addr) return '';
   const m = addr.match(/(?:MUNICIPIUL|MUN\.?|ORAŞUL|ORASUL|ORAŞUL|ORAŞ|ORAS|COMUNA|COM\.?|SAT)\s+([A-Za-zĂÂÎȘȚăâîșţş][A-Za-zĂÂÎȘȚăâîșţş.\- ]+?)(?:\s*,|\s+SECTOR|\s+STR\.|\s+NR\.|$)/i);
@@ -21,6 +22,7 @@ function parseCity(addr: string): string {
 // default `billing_addresses` row (legal name + reg. com.) so invoices carry
 // the full issuer identity. CIF + address are required to pass the gate.
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   const user = locals.user;
   if (!user || !user.companyId) {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401, headers: { 'Content-Type': 'application/json' } });

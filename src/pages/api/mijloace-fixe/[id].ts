@@ -9,6 +9,7 @@ import { db } from '../../../db';
 import { fixedAssets, depreciationEntries } from '../../../db/schema';
 import { and, eq, desc } from 'drizzle-orm';
 
+import { requireRole } from '../../../lib/require-role';
 const METHODS = ['liniara', 'degresiva', 'accelerata'];
 
 async function loadOwned(cid: string, id: string) {
@@ -37,6 +38,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 };
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
+  const denied = requireRole(locals, 'expense.manage'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
@@ -75,6 +77,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 };
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
+  const denied = requireRole(locals, 'expense.manage'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });

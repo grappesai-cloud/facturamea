@@ -4,6 +4,7 @@ import { db } from '../../../db';
 import { companies } from '../../../db/schema';
 import { eq } from 'drizzle-orm';
 
+import { requireRole } from '../../../lib/require-role';
 export const GET: APIRoute = async ({ locals }) => {
   const cid = locals.user?.companyId;
   if (!cid) return new Response(JSON.stringify({ autoSend: false }), { headers: { 'Content-Type': 'application/json' } });
@@ -16,6 +17,7 @@ export const GET: APIRoute = async ({ locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   const cid = locals.user?.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   // Owner / admin only (operators shouldn't flip fiscal automation).

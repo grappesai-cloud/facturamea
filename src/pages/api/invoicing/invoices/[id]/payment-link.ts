@@ -13,6 +13,7 @@ import { and, eq } from 'drizzle-orm';
 import { getStripe, isStripeConfigured } from '../../../../../lib/stripe';
 import { captureError } from '../../../../../lib/observability';
 
+import { requireRole } from '../../../../../lib/require-role';
 function resolveOrigin(requestUrl: string): string {
   const configured = process.env.PUBLIC_BASE_URL || process.env.PUBLIC_APP_URL;
   if (configured) return configured.replace(/\/+$/, '');
@@ -23,6 +24,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 export const POST: APIRoute = async ({ request, params, locals }) => {
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
   const cid = locals.user.companyId;
   const invoiceId = params.id as string;

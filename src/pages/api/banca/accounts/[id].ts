@@ -3,9 +3,11 @@ import { db } from '../../../../db';
 import { bankAccounts } from '../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 
+import { requireRole } from '../../../../lib/require-role';
 const PATCH_FIELDS = ['name', 'iban', 'bank', 'currency', 'isActive'] as const;
 
 export const PATCH: APIRoute = async ({ params, request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   const id = params.id;
@@ -38,6 +40,7 @@ export const PATCH: APIRoute = async ({ params, request, locals }) => {
 };
 
 export const DELETE: APIRoute = async ({ params, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   const cid = locals.user.companyId;
   const id = params.id;

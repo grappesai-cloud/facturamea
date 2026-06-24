@@ -11,6 +11,7 @@ import { getAnafStatus } from '../../../../lib/anaf/tokens';
 import { listMessages } from '../../../../lib/anaf/efactura-client';
 import { nanoid } from 'nanoid';
 
+import { requireRole } from '../../../../lib/require-role';
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
@@ -25,6 +26,7 @@ function parseMessages(data: any): any[] {
 }
 
 export const POST: APIRoute = async ({ locals }) => {
+  const denied = requireRole(locals, 'expense.manage'); if (denied) return denied;
   if (!locals.user) return json({ ok: false, error: 'Neautentificat' }, 401);
   const companyId = locals.user.companyId;
   if (!companyId) return json({ ok: false, error: 'Fără firmă' }, 400);

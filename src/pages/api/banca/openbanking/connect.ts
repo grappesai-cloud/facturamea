@@ -5,6 +5,7 @@
 // clear 503 when GoCardless credentials are not configured.
 
 import type { APIRoute } from 'astro';
+import { requireRole } from '../../../../lib/require-role';
 import {
   isOpenBankingConfigured,
   listInstitutions,
@@ -36,6 +37,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
 // Create a consent requisition for the chosen bank.
 export const POST: APIRoute = async ({ request, locals }) => {
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
   const cid = locals.user.companyId;
   if (!cid) return json({ error: 'Companie lipsă' }, 400);
