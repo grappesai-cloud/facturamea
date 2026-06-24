@@ -7,6 +7,7 @@ import { db } from '../../../db';
 import { transportInvoices, transportInvoiceLines, invoiceSeries, companies, users, userCompanyMemberships } from '../../../db/schema';
 import { and, eq, or, ilike, sql, desc } from 'drizzle-orm';
 import { isCronAuthorized } from '../../../lib/cron-auth';
+import { listMessages } from '../../../lib/anaf/efactura-client';
 
 export const prerender = false;
 
@@ -15,6 +16,18 @@ export const GET: APIRoute = async ({ request, url }) => {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
   try {
+    // ANAF check: did the original SOL 0105 / Dubai invoice already reach ANAF?
+    if (url.searchParams.get('anafmsgs') === '1') {
+      const [anchor] = await db.select().from(transportInvoices)
+        .where(and(eq(transportInvoices.fullNumber, 'SOL 0104'), eq(transportInvoices.kind, 'factura')));
+      const cid2 = anchor?.companyId;
+      if (!cid2) return json({ ok: false, note: 'nu am găsit compania' });
+      const r = await listMessages(cid2, '54888013', 7);
+      // Surface only sent invoices (FACTURA TRIMISA) + anything mentioning the beneficiary.
+      const msgs = (r.data?.mesaje || []);
+      const sent = msgs.filter((m: any) => /TRIMIS/i.test(m.tip || ''));
+      return json({ anafOk: r.ok, anafError: r.error, totalMessages: msgs.length, sentInvoices: sent, allMessages: msgs });
+    }
     // Find the company that owns SOL 0104 (the real INVA invoice).
     const [anchor] = await db.select().from(transportInvoices)
       .where(and(eq(transportInvoices.fullNumber, 'SOL 0104'), eq(transportInvoices.kind, 'factura')));
