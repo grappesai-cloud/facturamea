@@ -43,6 +43,13 @@
       "when": 1782143185297,
       "tag": "0005_revenue_share",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782320821633,
+      "tag": "0006_dear_meltdown",
+      "breakpoints": true
     }
   ]
 }

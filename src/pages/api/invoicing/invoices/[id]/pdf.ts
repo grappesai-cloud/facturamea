@@ -31,23 +31,20 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
   if (activePdfRenders >= MAX_PDF_CONCURRENCY) {
     return new Response('Prea multe descărcări PDF simultane. Reîncearcă în câteva secunde.', { status: 429, headers: { 'Retry-After': '5' } });
   }
-  activePdfRenders++;
 
   // Resolve the URL of the print page on the same host so cookies pass through
   const url = new URL(request.url);
   const printUrl = `${url.origin}/app/facturare/${invoiceId}/print`;
-
-  // Forward the user's session cookie to Puppeteer so it can render the
-  // authenticated page. We pass every cookie the browser sent us — the
-  // session lib decides which ones it actually needs.
   const cookieHeader = request.headers.get('cookie') || '';
 
-  // Heavy deps loaded lazily so they don't bloat unrelated functions
-  const chromium = (await import('@sparticuz/chromium')).default;
-  const puppeteer = (await import('puppeteer-core')).default;
-
   let browser: any = null;
+  // Increment INSIDE the try so the finally always decrements even if the lazy
+  // chromium/puppeteer import throws (otherwise the slot leaks → permanent 429).
+  activePdfRenders++;
   try {
+    // Heavy deps loaded lazily so they don't bloat unrelated functions
+    const chromium = (await import('@sparticuz/chromium')).default;
+    const puppeteer = (await import('puppeteer-core')).default;
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: { width: 1240, height: 1754 }, // A4 @ 150 DPI

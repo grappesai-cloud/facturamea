@@ -36,7 +36,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   return new Response(JSON.stringify({ results }), { headers: { 'Content-Type': 'application/json' } });
 };
 
-interface LineInput { description: string; quantity: number; unit?: string; unitPriceCents: number; vatRate: number; code?: string }
+interface LineInput { description: string; quantity: number; unit?: string; unitPriceCents: number; vatRate: number; code?: string; productId?: string }
 
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
@@ -225,7 +225,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (stockWarehouseId) {
       for (const l of computedLines) {
         if (l.productId && stockedSet.has(l.productId) && l.quantity > 0) {
-          await applyStockOut(cid, stockWarehouseId, l.productId, l.quantity, l.unitPriceCents, { reason: `Factură ${fullNumber}`, refType: 'invoice', refId: invoiceId, userId: locals.user!.id }, tx);
+          // null cost → applyStockOut records the product's current avg cost (COGS),
+          // not the selling price, so a later storno reversal can't inflate avg cost.
+          await applyStockOut(cid, stockWarehouseId, l.productId, l.quantity, null, { reason: `Factură ${fullNumber}`, refType: 'invoice', refId: invoiceId, userId: locals.user!.id }, tx);
         }
       }
     }

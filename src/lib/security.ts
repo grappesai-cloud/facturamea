@@ -157,8 +157,12 @@ export function getClientIp(request: Request): string {
   // so we never use it. Vercel edge sets x-vercel-forwarded-for; Traefik/Coolify
   // sets x-real-ip (overwriting any client value). As a last resort use the LAST
   // x-forwarded-for hop (appended by our own reverse proxy), never the first.
-  const vercel = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
-  if (vercel) return vercel;
+  // x-vercel-forwarded-for is only trustworthy when actually behind Vercel's edge;
+  // on the Coolify/Node target it is a plain client-settable header (spoofable).
+  if (process.env.DEPLOY_TARGET !== 'node') {
+    const vercel = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+    if (vercel) return vercel;
+  }
   const real = request.headers.get('x-real-ip')?.trim();
   if (real) return real;
   const xff = request.headers.get('x-forwarded-for');

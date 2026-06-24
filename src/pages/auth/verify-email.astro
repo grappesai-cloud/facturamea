@@ -3,6 +3,7 @@ import AuthLayout from '../../layouts/AuthLayout.astro';
 import { db } from '../../db';
 import { emailVerificationTokens, users } from '../../db/schema';
 import { and, eq, gt, isNull } from 'drizzle-orm';
+import { hashToken } from '../../lib/auth';
 
 // Public page reached from the confirmation email link. Flips emailVerified
 // on a valid, unused, unexpired token. Soft verification: the account already
@@ -14,7 +15,7 @@ if (token) {
   const now = new Date();
   const [t] = await db.select().from(emailVerificationTokens)
     .where(and(
-      eq(emailVerificationTokens.token, token),
+      eq(emailVerificationTokens.token, hashToken(token)),
       isNull(emailVerificationTokens.usedAt),
       gt(emailVerificationTokens.expiresAt, now),
     ))

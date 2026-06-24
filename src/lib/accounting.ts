@@ -458,8 +458,12 @@ export async function postPayment(paymentId: string, createdByUserId?: string | 
 
     await ensureChart(inv.companyId);
 
-    const amount = centsOf(pay.amountCents);
-    if (amount <= 0) return { ok: false, error: 'Sumă încasare invalidă.' };
+    // The ledger is in RON: convert a foreign-currency payment at the invoice's
+    // frozen BNR rate so 4111 clears against the RON amount postInvoice debited.
+    const payCents = centsOf(pay.amountCents); // invoice currency
+    if (payCents <= 0) return { ok: false, error: 'Sumă încasare invalidă.' };
+    const fxRate = inv.currency && inv.currency !== 'RON' ? (Number(inv.bnrRate) || 1) : 1;
+    const amount = Math.round(payCents * fxRate); // RON
 
     // Cash methods land in Casa (5311); everything else in bancă (5121).
     const cashAccount = pay.method === 'cash' ? '5311' : '5121';
@@ -475,14 +479,14 @@ export async function postPayment(paymentId: string, createdByUserId?: string | 
     // (colectată). This is an extra balanced pair (debit 4428 / credit 4427),
     // independent of the cash/411 stinging above, so the entry stays balanced.
     const cashVat = !!inv.vatAtCollection || inv.vatRegime === 'tva_la_incasare';
-    const total = centsOf(inv.totalCents);
-    const vat = centsOf(inv.vatCents);
-    if (cashVat && vat > 0 && total > 0) {
-      // Proportional VAT in this payment, capped so cumulative reclass never
-      // exceeds the invoice VAT (handles rounding on the final payment).
-      const paidBefore = centsOf((inv as any).paidCents) - amount;
-      const reclassedBefore = Math.round((Math.max(0, paidBefore) * vat) / total);
-      const reclassedToDate = Math.min(vat, Math.round((Math.max(0, paidBefore) + amount) * vat / total));
+    const total = centsOf(inv.totalCents);      // invoice currency (used only for the ratio, which cancels)
+    const vatRon = invoiceRonCents(inv).vat;    // RON VAT — the reclass amount is in RON
+    if (cashVat && vatRon > 0 && total > 0) {
+      // Proportional VAT in this payment (ratio in invoice currency, amount in RON),
+      // capped so cumulative reclass never exceeds the invoice's RON VAT.
+      const paidBefore = centsOf((inv as any).paidCents) - payCents;
+      const reclassedBefore = Math.round((Math.max(0, paidBefore) * vatRon) / total);
+      const reclassedToDate = Math.min(vatRon, Math.round((Math.max(0, paidBefore) + payCents) * vatRon / total));
       const vatPortion = Math.max(0, reclassedToDate - reclassedBefore);
       if (vatPortion > 0) {
         lines.push({ accountCode: '4428', debitCents: vatPortion, creditCents: 0, note: 'TVA devenită exigibilă' });

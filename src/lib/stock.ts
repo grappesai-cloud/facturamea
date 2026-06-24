@@ -93,7 +93,7 @@ export async function applyStockOut(
   warehouseId: string,
   productId: string,
   qty: number,
-  unitCostCents: number,
+  unitCostCents: number | null,
   ref: StockRef = {},
   executor: DbLike = db,
 ): Promise<void> {

@@ -86,13 +86,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const saleId = nanoid();
   let receiptNumber = `BON-${Date.now()}`;
-  try {
-    // Per-company sequential receipt number.
-    const [cnt] = await db
-      .select({ n: sql<number>`COUNT(*)` })
+  const MAX_RECEIPT_ATTEMPTS = 6;
+  for (let attempt = 0; attempt < MAX_RECEIPT_ATTEMPTS; attempt++) {
+   try {
+    // Per-company sequential receipt number from the current MAX suffix (+ attempt)
+    // so a concurrent collision on uq_pos_sales_receipt retries instead of 500'ing.
+    const [maxRow] = await db
+      .select({ m: sql<number>`COALESCE(MAX(CAST(NULLIF(REGEXP_REPLACE(${posSales.receiptNumber}, '\\D', '', 'g'), '') AS INTEGER)), 0)` })
       .from(posSales)
       .where(eq(posSales.companyId, cid));
-    const seq = Number(cnt?.n ?? 0) + 1;
+    const seq = Number(maxRow?.m ?? 0) + 1 + attempt;
     receiptNumber = `BON-${String(seq).padStart(6, '0')}`;
 
     // Atomic: sale header + lines + stock decrements in one transaction, so a
@@ -125,7 +128,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         } as any);
 
         if (warehouseId && l.productId) {
-          await applyStockOut(cid, warehouseId, l.productId, l.quantity, l.unitPriceCents, {
+          await applyStockOut(cid, warehouseId, l.productId, l.quantity, null, {
             reason: `Vânzare POS ${receiptNumber}`,
             refType: 'pos',
             refId: saleId,
@@ -134,8 +137,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       }
     });
-  } catch {
-    return new Response(JSON.stringify({ error: 'Eroare la finalizarea vânzării' }), { status: 500 });
+    break; // success
+   } catch (e: any) {
+     if (e?.code === '23505' && attempt < MAX_RECEIPT_ATTEMPTS - 1) continue; // receipt collision → retry
+     return new Response(JSON.stringify({ error: 'Eroare la finalizarea vânzării' }), { status: 500 });
+   }
   }
 
   return new Response(

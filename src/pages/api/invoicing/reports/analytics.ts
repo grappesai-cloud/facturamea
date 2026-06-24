@@ -10,6 +10,7 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { transportInvoices, transportInvoiceLines, expenses } from '../../../../db/schema';
 import { and, eq, gte, lte, ne, inArray } from 'drizzle-orm';
+import { invoiceRonCents } from '../../../../lib/invoicing';
 
 interface MonthCents { month: string; cents: number; }
 interface NamedCents { name: string; cents: number; }
@@ -66,8 +67,11 @@ export const GET: APIRoute = async ({ url, locals }) => {
   for (const inv of invoices) {
     if (inv.kind === 'chitanta') continue; // receipts aren't sales documents
     const mk = monthKey(inv.issuedAt ? new Date(inv.issuedAt) : (inv.createdAt ? new Date(inv.createdAt) : null));
-    const total = inv.totalCents || 0;
-    const paid = inv.paidCents || 0;
+    // All figures in RON so mixed-currency invoices don't distort the analytics.
+    const ron = invoiceRonCents(inv);
+    const fx = inv.currency && inv.currency !== 'RON' ? (inv.bnrRate || 1) : 1;
+    const total = ron.total;
+    const paid = Math.round((inv.paidCents || 0) * fx);
     if (mk) {
       monthlyInvoicedMap.set(mk, (monthlyInvoicedMap.get(mk) || 0) + total);
       monthlyCollectedMap.set(mk, (monthlyCollectedMap.get(mk) || 0) + paid);
@@ -78,7 +82,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const bucket = statusMap.get(st) || { count: 0, cents: 0 };
     bucket.count += 1; bucket.cents += total;
     statusMap.set(st, bucket);
-    revenueCents += inv.subtotalCents || 0;
+    revenueCents += ron.subtotal;
   }
 
   // Top products — aggregate invoice lines for the period's invoices.

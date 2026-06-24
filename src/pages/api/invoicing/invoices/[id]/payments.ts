@@ -48,7 +48,7 @@ export const POST: APIRoute = async ({ request, params, locals }) => {
       receivedAt: body.receivedAt ? new Date(body.receivedAt) : new Date(),
       recordedByUserId: locals.user!.id,
       notes: body.notes || null,
-    });
+    }).onConflictDoNothing(); // idempotent on (invoice, reference) — no 500 on a duplicate OP/ref
 
     const [agg] = await tx
       .select({ sum: sql<number>`COALESCE(SUM(${transportInvoicePayments.amountCents}), 0)` })

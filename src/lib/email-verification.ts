@@ -3,6 +3,7 @@ import { emailVerificationTokens } from '../db/schema';
 import { nanoid } from 'nanoid';
 import { sendEmail } from './notifications';
 import { emailVerificationEmail } from './email-templates';
+import { hashToken } from './auth';
 
 const EXPIRES_HOURS = 24;
 
@@ -18,7 +19,7 @@ export async function createAndSendVerification(
   await db.insert(emailVerificationTokens).values({
     id: nanoid(),
     userId,
-    token,
+    token: hashToken(token), // store hash; raw token travels only in the email link
     expiresAt: new Date(Date.now() + EXPIRES_HOURS * 60 * 60 * 1000),
   });
   const verifyUrl = `${origin.replace(/\/+$/, '')}/auth/verify-email?token=${token}`;

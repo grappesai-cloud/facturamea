@@ -20,7 +20,7 @@ const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 const API_PAYWALL_EXEMPT = [
   '/api/auth/', '/api/checkout', '/api/webhooks/', '/api/cron/', '/api/public/',
   '/api/blog/', '/api/locale', '/api/demo', '/api/onboarding/', '/api/companies/',
-  '/api/me/', '/api/admin/', '/api/settings/', '/api/notifications', '/api/push/',
+  '/api/me/', '/api/admin/', '/api/settings/profile', '/api/notifications', '/api/push/',
 ];
 
 // ─── CORS for the decoupled frontend (token Bearer auth) ────────────────

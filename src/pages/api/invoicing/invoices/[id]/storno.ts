@@ -8,7 +8,7 @@ import { db } from '../../../../../db';
 import { transportInvoices, transportInvoiceLines, stockMovements } from '../../../../../db/schema';
 import { eq, asc, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { ensureDefaultSeries, nextSeriesNumber } from '../../../../../lib/invoicing';
+import { ensureDefaultSeries, nextSeriesNumber, invoiceRonCents } from '../../../../../lib/invoicing';
 import { applyStockIn } from '../../../../../lib/stock';
 import { requireRole } from '../../../../../lib/require-role';
 
@@ -36,8 +36,14 @@ export const POST: APIRoute = async ({ params, locals }) => {
   // Reserve number + insert storno header/lines + flip the parent's status in a
   // single transaction so a failure rolls back the reserved series number
   // (avoids gaps) and never leaves a storno without its parent reversal.
+  const pRon = invoiceRonCents(parent);
   let stornoFull = '';
-  await db.transaction(async (tx) => {
+  try {
+   await db.transaction(async (tx) => {
+    // Lock the parent + re-check status: two concurrent storno requests must not
+    // both create a reversal (double negative in declarations + double stock add).
+    const [fresh] = await tx.select({ status: transportInvoices.status }).from(transportInvoices).where(eq(transportInvoices.id, parent.id)).for('update');
+    if (!fresh || fresh.status === 'voided' || fresh.status === 'reversed') throw new Error('ALREADY_REVERSED');
     const series = await ensureDefaultSeries(parent.companyId, 'storno', null, tx);
     const { fullNumber, number: sequenceNumber } = await nextSeriesNumber(series.id, {}, tx);
     stornoFull = fullNumber;
@@ -63,6 +69,9 @@ export const POST: APIRoute = async ({ params, locals }) => {
       subtotalCents: -parent.subtotalCents,
       vatCents: -parent.vatCents,
       totalCents: -parent.totalCents,
+      subtotalRonCents: -pRon.subtotal,
+      vatRonCents: -pRon.vat,
+      totalRonCents: -pRon.total,
       paidCents: 0,
       status: 'issued',
       issuedAt: now,
@@ -102,7 +111,13 @@ export const POST: APIRoute = async ({ params, locals }) => {
     await tx.update(transportInvoices)
       .set({ status: 'reversed', updatedAt: now })
       .where(eq(transportInvoices.id, parent.id));
-  });
+   });
+  } catch (e) {
+    if ((e as Error).message === 'ALREADY_REVERSED') {
+      return new Response(JSON.stringify({ error: 'Factura e deja stornată/anulată' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
+    throw e;
+  }
 
   return new Response(JSON.stringify({ id: stornoId, fullNumber: stornoFull }), {
     status: 201, headers: { 'Content-Type': 'application/json' },

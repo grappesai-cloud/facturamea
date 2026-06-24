@@ -73,7 +73,7 @@ export async function runRecurringInvoices(today: string = new Date().toISOStrin
   return result;
 }
 
-async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: string): Promise<{ invoiceId: string; fullNumber: string }> {
+async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: string): Promise<{ invoiceId: string; fullNumber: string; skipped?: true }> {
   // Resolve client snapshot.
   let clientName = '', clientTaxId: string | null = null, clientAddress: string | null = null;
   if (r.clientCompanyId) {
@@ -110,9 +110,16 @@ async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: 
   });
   const totalCents = subtotalCents + vatCents;
 
-  // BNR snapshot if non-RON.
+  // BNR snapshot if non-RON. No rate → SKIP this run (don't advance the schedule)
+  // so it retries next time, rather than issuing a foreign-currency invoice that
+  // would be declared 1:1 as RON to ANAF.
   const currency = (r.currency || 'RON').toUpperCase().slice(0, 5);
-  const bnr = await captureBnrSnapshot(today, currency).catch(() => null);
+  const isRon = currency === 'RON';
+  const bnr = isRon ? null : await captureBnrSnapshot(today, currency).catch(() => null);
+  if (!isRon && !(bnr && (bnr.rate as number) > 0)) {
+    return { invoiceId: '', fullNumber: '', skipped: true as const };
+  }
+  const fxRate = isRon ? 1 : (bnr!.rate as number);
 
   // Pull TVA-la-încasare default off the issuer company.
   const [issuer] = await db.select({ tva: companies.tvaAtCollection }).from(companies).where(eq(companies.id, r.companyId)).limit(1);
@@ -155,6 +162,9 @@ async function emitOneRecurring(r: typeof invoiceRecurring.$inferSelect, today: 
       clientAddressSnap: clientAddress,
       currency, vatRegime: r.vatRegime || 'standard',
       subtotalCents, vatCents, totalCents, paidCents: 0,
+      subtotalRonCents: Math.round(subtotalCents * fxRate),
+      vatRonCents: Math.round(vatCents * fxRate),
+      totalRonCents: Math.round(totalCents * fxRate),
       status: 'issued', issuedAt, dueAt,
       bnrRate: bnr?.rate ?? null,
       bnrRateDate: bnr?.rateDate ?? null,

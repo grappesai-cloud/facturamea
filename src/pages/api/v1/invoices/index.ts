@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { requireApiKey, apiUnauthorized, apiJson } from '../../../../lib/api-keys';
 import { apiBadRequest, apiServerError, readJson, parsePaging, asString, asInt, asNumber } from '../../../../lib/api-v1';
 import { ensureDefaultSeries, nextSeriesNumber, INVOICE_NUMBER_FORMAT, type InvoiceKind } from '../../../../lib/invoicing';
+import { captureBnrSnapshot } from '../../../../lib/bnr-fx';
 
 const VALID_KINDS: InvoiceKind[] = ['factura', 'proforma', 'storno', 'chitanta'];
 
@@ -151,6 +152,14 @@ export const POST: APIRoute = async ({ request }) => {
       : new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
     const isRon = currency === 'RON';
 
+    // Foreign currency: capture the BNR rate + freeze the RON value (declarations
+    // report in RON). No rate → refuse rather than declare currency 1:1 as RON.
+    const bnr = isRon ? null : await captureBnrSnapshot(issuedAt.toISOString().slice(0, 10), currency).catch(() => null);
+    if (!isRon && !(bnr && (bnr.rate as number) > 0)) {
+      return apiBadRequest(`Nu am putut obține cursul BNR ${currency}/RON. Emite factura în RON sau reîncearcă.`);
+    }
+    const fxRate = isRon ? 1 : (bnr!.rate as number);
+
     // Reserve the number + write header + lines in ONE transaction: a failure
     // rolls back the consumed legal number (no gap) and never leaves a lineless
     // invoice.
@@ -173,9 +182,11 @@ export const POST: APIRoute = async ({ request }) => {
         subtotalCents,
         vatCents,
         totalCents,
-        subtotalRonCents: isRon ? subtotalCents : null,
-        vatRonCents: isRon ? vatCents : null,
-        totalRonCents: isRon ? totalCents : null,
+        subtotalRonCents: Math.round(subtotalCents * fxRate),
+        vatRonCents: Math.round(vatCents * fxRate),
+        totalRonCents: Math.round(totalCents * fxRate),
+        bnrRate: bnr?.rate ?? null,
+        bnrRateDate: bnr?.rateDate ?? null,
         paidCents: 0,
         status: 'issued',
         issuedAt,

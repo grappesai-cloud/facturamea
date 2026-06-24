@@ -45,6 +45,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
+  const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
   const companyId = locals.user.companyId;
   if (!companyId) {
     return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
