@@ -4,8 +4,8 @@
 //   ?confirm=DELETE    -> delete ONLY the test proforma (PF 0001 / Audit Test Client).
 import type { APIRoute } from 'astro';
 import { db } from '../../../db';
-import { transportInvoices, transportInvoiceLines, invoiceSeries } from '../../../db/schema';
-import { and, eq, or, ilike, sql } from 'drizzle-orm';
+import { transportInvoices, transportInvoiceLines, invoiceSeries, companies, users, userCompanyMemberships } from '../../../db/schema';
+import { and, eq, or, ilike, sql, desc } from 'drizzle-orm';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 
 export const prerender = false;
@@ -56,7 +56,21 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     const [{ c }] = await db.select({ c: sql<number>`count(*)` }).from(transportInvoices);
 
-    return json({ anchorCompany: cid, invoicesOnCompany: onCompany, dubaiSearch, series, totalInvoicesWholeDb: Number(c) });
+    // Full dump of every invoice in the DB so we can eyeball the Dubai one under ANY name/company.
+    const allInvoices = await db.select({
+      n: transportInvoices.fullNumber, k: transportInvoices.kind, s: transportInvoices.status,
+      client: transportInvoices.clientNameSnap, cur: transportInvoices.currency,
+      total: transportInvoices.totalCents, company: transportInvoices.companyId,
+      created: transportInvoices.createdAt,
+    }).from(transportInvoices).orderBy(desc(transportInvoices.createdAt));
+
+    // Companies the solaastech user belongs to.
+    const [u] = await db.select({ id: users.id, companyId: users.companyId }).from(users).where(eq(users.email, 'solaastech@gmail.com'));
+    const memberships = u ? await db.select({ companyId: userCompanyMemberships.companyId }).from(userCompanyMemberships).where(eq(userCompanyMemberships.userId, u.id)) : [];
+    const companyIds = Array.from(new Set([u?.companyId, ...memberships.map((m) => m.companyId)].filter(Boolean)));
+    const myCompanies = companyIds.length ? await db.select({ id: companies.id, name: companies.name }).from(companies).where(or(...companyIds.map((x) => eq(companies.id, x as string)))) : [];
+
+    return json({ anchorCompany: cid, invoicesOnCompany: onCompany, dubaiSearch, series, totalInvoicesWholeDb: Number(c), userActiveCompany: u?.companyId, myCompanies, allInvoices });
   } catch (e: any) {
     return json({ ok: false, error: e?.message || String(e) }, 500);
   }
