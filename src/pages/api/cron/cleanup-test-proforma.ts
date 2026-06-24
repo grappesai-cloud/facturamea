@@ -17,6 +17,28 @@ export const GET: APIRoute = async ({ request, url }) => {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
   try {
+    // FINAL cleanup: clear SOL 0105's failed e-Factura state (out-of-scope export,
+    // e-Factura not required) + delete the leftover test proforma PF 0001.
+    if (url.searchParams.get('finalclean') === '1') {
+      const out: Record<string, unknown> = {};
+      // 1) Clear e-Factura status on SOL 0105 (keep it a valid issued invoice).
+      const ef = await db.update(transportInvoices)
+        .set({ efacturaStatus: null, efacturaError: null, efacturaAnafId: null, updatedAt: new Date() } as any)
+        .where(and(eq(transportInvoices.fullNumber, 'SOL 0105'), eq(transportInvoices.kind, 'factura')));
+      out.sol0105Cleared = (ef as any)?.rowCount ?? 'ok';
+      // 2) Delete the test proforma PF 0001 (Audit Test Client) + its lines.
+      const [pf] = await db.select().from(transportInvoices).where(and(
+        eq(transportInvoices.kind, 'proforma'), eq(transportInvoices.fullNumber, 'PF 0001'),
+        eq(transportInvoices.clientNameSnap, 'Audit Test Client'),
+      ));
+      if (pf) {
+        await db.delete(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, pf.id));
+        await db.delete(transportInvoices).where(eq(transportInvoices.id, pf.id));
+        out.deletedProforma = 'PF 0001';
+      } else out.deletedProforma = '(nu există)';
+      return json(out);
+    }
+
     // Dump the stored e-Factura XML (customer party) for a given invoice number.
     const xmlfor = url.searchParams.get('xmlfor');
     if (xmlfor) {
