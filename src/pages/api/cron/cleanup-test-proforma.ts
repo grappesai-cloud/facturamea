@@ -7,7 +7,8 @@ import { db } from '../../../db';
 import { transportInvoices, transportInvoiceLines, invoiceSeries, companies, users, userCompanyMemberships } from '../../../db/schema';
 import { and, eq, or, ilike, sql, desc } from 'drizzle-orm';
 import { isCronAuthorized } from '../../../lib/cron-auth';
-import { listMessages } from '../../../lib/anaf/efactura-client';
+import { listMessages, downloadMessage } from '../../../lib/anaf/efactura-client';
+import { unzipSync, strFromU8 } from 'fflate';
 
 export const prerender = false;
 
@@ -16,6 +17,23 @@ export const GET: APIRoute = async ({ request, url }) => {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
   try {
+    // Download + unzip an ANAF message (e.g. an error message) to read its content.
+    const errdl = url.searchParams.get('errdl');
+    if (errdl) {
+      const [anchor] = await db.select().from(transportInvoices)
+        .where(and(eq(transportInvoices.fullNumber, 'SOL 0104'), eq(transportInvoices.kind, 'factura')));
+      const cid3 = anchor?.companyId;
+      const dl = await downloadMessage(cid3!, errdl);
+      if (!dl.ok || !dl.bytes) return json({ ok: false, error: dl.error });
+      try {
+        const files = unzipSync(new Uint8Array(dl.bytes));
+        const out: Record<string, string> = {};
+        for (const name of Object.keys(files)) out[name] = strFromU8(files[name]).slice(0, 4000);
+        return json({ ok: true, files: out });
+      } catch {
+        return json({ ok: true, note: 'nu e zip', raw: Buffer.from(dl.bytes).toString('utf8').slice(0, 3000) });
+      }
+    }
     // ANAF check: did the original SOL 0105 / Dubai invoice already reach ANAF?
     if (url.searchParams.get('anafmsgs') === '1') {
       const [anchor] = await db.select().from(transportInvoices)
