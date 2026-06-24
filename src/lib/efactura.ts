@@ -140,7 +140,7 @@ function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCus
       }
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>${xmlEscape(party.name)}</cbc:RegistrationName>
-        <cbc:CompanyID>${xmlEscape(legalId)}</cbc:CompanyID>
+        ${countryCode === 'RO' || party.vatPayer ? `<cbc:CompanyID>${xmlEscape(legalId)}</cbc:CompanyID>` : ''}
       </cac:PartyLegalEntity>
       ${
         party.contact
