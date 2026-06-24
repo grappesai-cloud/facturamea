@@ -9,7 +9,7 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { transportInvoices, transportInvoiceLines, expenses } from '../../../../db/schema';
-import { and, eq, gte, lte, ne } from 'drizzle-orm';
+import { and, eq, gte, lte, ne, inArray } from 'drizzle-orm';
 
 interface MonthCents { month: string; cents: number; }
 interface NamedCents { name: string; cents: number; }
@@ -85,13 +85,13 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const productMap = new Map<string, number>();
   try {
     const invoiceIds = invoices.map((i) => i.id);
-    if (invoiceIds.length > 0) {
-      // Fetch lines per invoice (kept simple + guarded; companies rarely have
-      // huge volumes in a period for a small-business invoicing tool).
-      const allLines = await db.select().from(transportInvoiceLines);
-      const idSet = new Set(invoiceIds);
-      for (const ln of allLines) {
-        if (!idSet.has(ln.invoiceId)) continue;
+    // Scope to THIS period's invoices (chunked) instead of scanning every tenant's
+    // lines and filtering in JS — that was a cross-tenant full-table read.
+    for (let i = 0; i < invoiceIds.length; i += 1000) {
+      const chunk = invoiceIds.slice(i, i + 1000);
+      const lines = await db.select({ description: transportInvoiceLines.description, lineTotalCents: transportInvoiceLines.lineTotalCents })
+        .from(transportInvoiceLines).where(inArray(transportInvoiceLines.invoiceId, chunk));
+      for (const ln of lines) {
         const key = (ln.description || 'Produs').slice(0, 80);
         productMap.set(key, (productMap.get(key) || 0) + (ln.lineTotalCents || 0));
       }

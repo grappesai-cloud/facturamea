@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../db';
-import { transportInvoices } from '../../../db/schema';
-import { and, lt, sql } from 'drizzle-orm';
+import { transportInvoices, users } from '../../../db/schema';
+import { and, lt, sql, isNotNull, ne } from 'drizzle-orm';
+import { nanoid } from 'nanoid';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 import { refreshExpiringTokens } from '../../../lib/anaf/tokens';
 import { syncEfacturaStatuses } from '../../../lib/anaf/efactura-sync';
@@ -50,7 +51,21 @@ export const GET: APIRoute = async ({ request }) => {
     efChecked = r.checked; efValidated = r.validated; efRejected = r.rejected;
   } catch { /* never hard-fail the cron */ }
 
-  return new Response(JSON.stringify({ ok: true, overdueMarked, anafRefreshed, anafFailed, efChecked, efValidated, efRejected, ranAt: new Date().toISOString() }), {
+  // GDPR right-to-erasure: scrub residual PII from accounts soft-deleted >30 days
+  // ago (name/phone/credentials/2FA/avatar). Fiscally-mandated documents stay; the
+  // person is no longer identifiable. (A hard row delete is blocked by FKs.)
+  let gdprPurged = 0;
+  try {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const res = await db.update(users).set({
+      name: 'Cont șters', phone: null, avatarUrl: null,
+      hashedPassword: `purged-${nanoid(24)}`, totpSecret: null, totpRecoveryCodes: null,
+      totpEnabled: false, isActive: false,
+    } as any).where(and(isNotNull(users.deletedAt), lt(users.deletedAt, cutoff), ne(users.name, 'Cont șters')));
+    gdprPurged = (res as any)?.rowCount ?? 0;
+  } catch (e) { console.error('gdpr purge failed:', e); }
+
+  return new Response(JSON.stringify({ ok: true, overdueMarked, anafRefreshed, anafFailed, efChecked, efValidated, efRejected, gdprPurged, ranAt: new Date().toISOString() }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
 // POST /api/v1/clients — create an external client.
 export const POST: APIRoute = async ({ request }) => {
-  const auth = await requireApiKey(request);
+  const auth = await requireApiKey(request, { write: true });
   if (!auth) return apiUnauthorized();
 
   const body = await readJson(request);

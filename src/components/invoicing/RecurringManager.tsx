@@ -34,7 +34,7 @@ const FREQ_LABEL: Record<string, string> = {
   monthly: 'Lunar', quarterly: 'Trimestrial', yearly: 'Anual',
 };
 
-const newLine = (): SnapshotLine => ({ description: '', quantity: 1, unit: 'cursă', unitPriceCents: 0, vatRate: 19 });
+const newLine = (): SnapshotLine => ({ description: '', quantity: 1, unit: 'buc', unitPriceCents: 0, vatRate: 21 });
 
 export default function RecurringManager({ initial, internalClients, externalClients }: {
   initial: Item[]; internalClients: ClientOpt[]; externalClients: ClientOpt[];
@@ -233,7 +233,7 @@ export default function RecurringManager({ initial, internalClients, externalCli
                   </div>
                   <div className="col-span-1">
                     <select value={l.vatRate} onChange={(e) => updateLine(idx, { vatRate: Number(e.target.value) })} className="w-full rounded-xl bg-white/10 px-3 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
-                      <option value={0}>0%</option><option value={5}>5%</option><option value={9}>9%</option><option value={19}>19%</option>
+                      <option value={21}>21%</option><option value={11}>11%</option><option value={9}>9%</option><option value={5}>5%</option><option value={0}>0%</option>
                     </select>
                   </div>
                   <div className="col-span-2 text-right tabular-nums text-sm pr-2 text-white">

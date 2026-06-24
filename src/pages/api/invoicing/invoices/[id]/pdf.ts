@@ -15,12 +15,23 @@ import { captureError } from '../../../../../lib/observability';
 export const prerender = false;
 export const config = { runtime: 'nodejs', maxDuration: 60 } as const;
 
+// Each render launches a full Chromium. On the single Coolify container a handful
+// of concurrent downloads OOM-kill the process, so cap concurrency and shed load
+// with a 429 instead of crashing the whole app.
+let activePdfRenders = 0;
+const MAX_PDF_CONCURRENCY = Number(process.env.PDF_MAX_CONCURRENCY) || 2;
+
 export const GET: APIRoute = async ({ params, locals, request }) => {
   if (!locals.user?.companyId) return new Response('Unauthorized', { status: 401 });
   const invoiceId = params.id as string;
 
   const [inv] = await db.select().from(transportInvoices).where(eq(transportInvoices.id, invoiceId)).limit(1);
   if (!inv || inv.companyId !== locals.user.companyId) return new Response('Not found', { status: 404 });
+
+  if (activePdfRenders >= MAX_PDF_CONCURRENCY) {
+    return new Response('Prea multe descărcări PDF simultane. Reîncearcă în câteva secunde.', { status: 429, headers: { 'Retry-After': '5' } });
+  }
+  activePdfRenders++;
 
   // Resolve the URL of the print page on the same host so cookies pass through
   const url = new URL(request.url);
@@ -86,5 +97,6 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
     });
   } finally {
     if (browser) await browser.close().catch(() => {});
+    activePdfRenders--;
   }
 };

@@ -43,7 +43,7 @@ interface LineInput { name?: string; description?: string; quantity?: number; un
 
 // POST /api/v1/invoices — create + (by default) issue an invoice.
 export const POST: APIRoute = async ({ request }) => {
-  const auth = await requireApiKey(request);
+  const auth = await requireApiKey(request, { write: true });
   if (!auth) return apiUnauthorized();
   const cid = auth.companyId;
 

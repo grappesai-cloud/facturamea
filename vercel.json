@@ -4,9 +4,5 @@
   "buildCommand": "astro build",
   "installCommand": "npm install",
   "regions": ["fra1"],
-  "crons": [
-    { "path": "/api/cron/daily", "schedule": "0 6 * * *" },
-    { "path": "/api/cron/recurring-invoices", "schedule": "0 7 * * *" },
-    { "path": "/api/cron/reminders", "schedule": "0 8 * * *" }
-  ]
+  "_note": "facturamea is deployed on Coolify (DEPLOY_TARGET=node), NOT Vercel. Cron jobs are Coolify Scheduled Tasks — see infra/CRON_SETUP.md. The previous Vercel `crons` block here never ran on Coolify and was removed."
 }

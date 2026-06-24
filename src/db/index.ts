@@ -20,6 +20,13 @@ const isLocal = /^(postgres(ql)?:\/\/)[^@]*@(localhost|127\.0\.0\.1)/.test(conne
 const pool = new pg.Pool({
   connectionString,
   ssl: isLocal ? false : { rejectUnauthorized: false },
+  // Sizing: the default (max 10, connectionTimeout 0 = wait forever) lets a dozen
+  // concurrent report/dashboard users saturate the pool and hang every later
+  // request indefinitely. Bound the wait + cap runaway queries.
+  max: Number(process.env.PG_POOL_MAX) || 20,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5_000,
+  statement_timeout: 30_000,
 });
 
 export const db = drizzle(pool, { schema });

@@ -26,7 +26,7 @@ export const GET: APIRoute = async ({ request, params }) => {
 
 // PATCH /api/v1/products/:id — partial update.
 export const PATCH: APIRoute = async ({ request, params }) => {
-  const auth = await requireApiKey(request);
+  const auth = await requireApiKey(request, { write: true });
   if (!auth) return apiUnauthorized();
   const id = params.id;
   if (!id) return apiNotFound();
@@ -62,7 +62,7 @@ export const PATCH: APIRoute = async ({ request, params }) => {
 
 // DELETE /api/v1/products/:id
 export const DELETE: APIRoute = async ({ request, params }) => {
-  const auth = await requireApiKey(request);
+  const auth = await requireApiKey(request, { write: true });
   if (!auth) return apiUnauthorized();
   const id = params.id;
   if (!id) return apiNotFound();
