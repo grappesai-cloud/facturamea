@@ -19,9 +19,11 @@ Reguli stricte:
 - Limba română, ton clar și profesionist, pe înțelesul unui antreprenor/PFA fără cunoștințe contabile avansate.
 - NU folosi NICIODATĂ liniuța lungă (—); folosește virgulă, punct sau două puncte.
 - Corectitudine fiscală: nu inventa cifre/termene; dacă un detaliu depinde de an sau de situație, spune-o explicit. Contextul e România, anul 2026.
-- Structură SEO: introducere scurtă, apoi secțiuni cu <h2> și <h3>, paragrafe <p>, liste <ul><li>, cuvinte cheie naturale, fără keyword stuffing.
+- Structură SEO: introducere scurtă care răspunde direct la întrebarea-cheie, apoi secțiuni cu <h2> și <h3>, paragrafe <p>, liste <ul><li>.
+- Cuvinte cheie: folosește NATURAL cuvintele cheie țintă PLUS variații, sinonime și termeni înrudiți (LSI) în titlul primului <h2>, în primul paragraf și pe parcurs. Acoperă întrebări conexe ("ce este", "cum se face", "cine, când, cât"). Fără keyword stuffing.
+- Încheie OBLIGATORIU cu o secțiune <h2>Întrebări frecvente</h2> cu 3-4 perechi: întrebare ca <h3> (formulată ca o căutare reală, long-tail) + răspuns scurt ca <p>. Ajută la featured snippets.
 - Menționează facturamea natural, de maximum 1-2 ori, ca soluție practică (ex: "într-un program ca facturamea poți..."), fără să sune ca reclamă.
-- Lungime: 800-1300 cuvinte.
+- Lungime: 1000-1500 cuvinte.
 - Output: DOAR HTML pentru corpul articolului (fără <html>, <head>, <h1>, fără markdown). Permise: <h2> <h3> <p> <ul> <ol> <li> <strong> <em> <a>. Fără stiluri inline, fără clase.
 Răspunde EXCLUSIV cu un obiect JSON valid, fără text în plus, de forma:
 {"title":"...","description":"...(max 155 caractere, meta description)","keywords":"kw1, kw2, kw3","bodyHtml":"<h2>...</h2><p>...</p>...","readMinutes":6}`;

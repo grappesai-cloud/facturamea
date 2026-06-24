@@ -49,7 +49,15 @@ export const GET: APIRoute = async ({ request }) => {
       readMinutes: article.readMinutes, status: 'published',
     } as any);
 
-    return new Response(JSON.stringify({ ok: true, published: { slug: topic.slug, title: article.title, words: article.bodyHtml.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length } }, null, 2), {
+    // Auto-submit the new URL to search engines via IndexNow (Bing/Yandex/Seznam).
+    const url = `https://facturamea.com/blog/${topic.slug}`;
+    let indexnow = 0;
+    try {
+      const r = await fetch(`https://api.indexnow.org/indexnow?url=${encodeURIComponent(url)}&key=f8e3a1c7b94d2e6f05a8c3b1d7e09f42`);
+      indexnow = r.status;
+    } catch { /* best effort */ }
+
+    return new Response(JSON.stringify({ ok: true, published: { slug: topic.slug, title: article.title, words: article.bodyHtml.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length, indexnow } }, null, 2), {
       status: 200, headers: { 'Content-Type': 'application/json' },
     });
   } catch (e) {

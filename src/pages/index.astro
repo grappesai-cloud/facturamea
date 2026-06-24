@@ -6,6 +6,7 @@ export const prerender = true;
 import LandingLayout from '../layouts/LandingLayout.astro';
 import PhoneFrame from '../components/PhoneFrame.astro';
 import StoreBadges from '../components/StoreBadges.astro';
+import BlogPreview from '../components/BlogPreview.tsx';
 
 const homeJsonLd = [
   {
@@ -317,6 +318,21 @@ const journeySteps = [
           <span class="text-left leading-tight"><span class="block text-[10px] text-[#9FB8CC]">Disponibil pe</span><span class="block text-[15px] font-bold">Google Play</span></span>
         </a>
       </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════ BLOG PREVIEW ═══════════════ -->
+  <section id="blog" class="relative px-4 sm:px-6 py-16 sm:py-20 scroll-mt-24">
+    <div class="mx-auto max-w-[1180px]">
+      <div class="flex items-end justify-between gap-4 mb-8">
+        <div>
+          <p class="text-[13px] font-semibold uppercase tracking-wide text-[#34A0A4] mb-2">Blog</p>
+          <h2 class="text-3xl lg:text-4xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.05]">Ghiduri de facturare și fiscalitate</h2>
+        </div>
+        <a href="/blog" class="hidden sm:inline-block shrink-0 px-5 py-2.5 rounded-full bg-[#0A2238] text-white font-bold text-[14px] hover:bg-[#143049] transition-colors">Vezi toate</a>
+      </div>
+      <BlogPreview client:visible />
+      <a href="/blog" class="sm:hidden mt-6 inline-block px-5 py-2.5 rounded-full bg-[#0A2238] text-white font-bold text-[14px]">Vezi toate articolele</a>
     </div>
   </section>
 
