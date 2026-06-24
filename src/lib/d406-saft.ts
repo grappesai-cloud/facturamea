@@ -84,6 +84,9 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
       .orderBy(asc(transportInvoiceLines.position));
     const payments = await db.select().from(transportInvoicePayments).where(eq(transportInvoicePayments.invoiceId, inv.id));
 
+    // SAF-T reports in RON: convert each line (and payment) at the invoice rate so
+    // the line amounts reconcile with the RON DocumentTotals below.
+    const fx = inv.currency && inv.currency !== 'RON' ? (Number(inv.bnrRate) || 1) : 1;
     const lineBlocks = lines.map((l) => `
       <Line>
         <LineNumber>${l.position + 1}</LineNumber>
@@ -91,7 +94,7 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
         <ProductDescription>${esc(l.description)}</ProductDescription>
         <Quantity>${l.quantity}</Quantity>
         <UnitOfMeasure>${esc(l.unit)}</UnitOfMeasure>
-        <UnitPrice>${cents(l.unitPriceCents)}</UnitPrice>
+        <UnitPrice>${cents(Math.round(l.unitPriceCents * fx))}</UnitPrice>
         <TaxPointDate>${(inv.issuedAt || new Date()).toISOString().slice(0, 10)}</TaxPointDate>
         <References><Reference><Description>Factura ${esc(inv.fullNumber)}</Description></Reference></References>
         <DebitCreditIndicator>${l.lineTotalCents >= 0 ? 'D' : 'C'}</DebitCreditIndicator>
@@ -99,15 +102,15 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
           <TaxType>VAT</TaxType>
           <TaxCode>${l.vatRate === 0 ? 'SDD' : l.vatRate === 9 ? 'Redusa' : l.vatRate === 5 ? 'Redusa5' : 'Normala'}</TaxCode>
           <TaxPercentage>${l.vatRate}</TaxPercentage>
-          <TaxAmount>${cents(Math.round(l.lineTotalCents * l.vatRate / (100 + l.vatRate)))}</TaxAmount>
+          <TaxAmount>${cents(Math.round(l.lineTotalCents * fx * l.vatRate / (100 + l.vatRate)))}</TaxAmount>
         </Tax>
-        <LineAmount>${cents(l.lineTotalCents)}</LineAmount>
+        <LineAmount>${cents(Math.round(l.lineTotalCents * fx))}</LineAmount>
       </Line>`).join('');
 
     const paymentBlocks = payments.map((p) => `
       <Payment>
         <PaymentMechanism>${esc(p.method || 'transfer')}</PaymentMechanism>
-        <PaymentAmount>${cents(p.amountCents)}</PaymentAmount>
+        <PaymentAmount>${cents(Math.round(p.amountCents * fx))}</PaymentAmount>
         <PaymentDate>${new Date(p.receivedAt).toISOString().slice(0, 10)}</PaymentDate>
       </Payment>`).join('');
 

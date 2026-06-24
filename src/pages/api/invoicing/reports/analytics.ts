@@ -10,7 +10,7 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { transportInvoices, transportInvoiceLines, expenses } from '../../../../db/schema';
 import { and, eq, gte, lte, ne, inArray } from 'drizzle-orm';
-import { invoiceRonCents } from '../../../../lib/invoicing';
+import { invoiceRonCents, expenseRonCents } from '../../../../lib/invoicing';
 
 interface MonthCents { month: string; cents: number; }
 interface NamedCents { name: string; cents: number; }
@@ -110,7 +110,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       gte(expenses.issueDate, range.from),
       lte(expenses.issueDate, range.to),
     ));
-    for (const e of exp) costCents += e.netCents || 0;
+    for (const e of exp) costCents += expenseRonCents(e).net; // RON (revenue is RON too)
   } catch { /* skip cost */ }
 
   // Build a continuous month axis from `from` to `to` so the chart has no gaps.

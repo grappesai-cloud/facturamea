@@ -1467,6 +1467,7 @@ export const expenses = pgTable('expenses', {
   issueDate: date('issue_date', { mode: 'string' }),
   dueDate: date('due_date', { mode: 'string' }),
   currency: varchar('currency', { length: 5 }).default('RON'),
+  bnrRate: doublePrecision('bnr_rate'), // BNR rate to RON for non-RON expenses (declarations report in RON)
   netCents: integer('net_cents').notNull().default(0),
   vatCents: integer('vat_cents').notNull().default(0),
   totalCents: integer('total_cents').notNull().default(0),

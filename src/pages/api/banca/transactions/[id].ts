@@ -132,6 +132,11 @@ export const POST: APIRoute = async ({ params, request, locals }) => {
       const [inv] = await db.select().from(transportInvoices)
         .where(and(eq(transportInvoices.id, matchId), eq(transportInvoices.companyId, cid)));
       if (!inv) return new Response(JSON.stringify({ error: 'Factură inexistentă' }), { status: 404 });
+      // Don't record a payment in the wrong currency: paidCents is tracked in the
+      // invoice currency. On a mismatch, require a manual entry with the exact amount.
+      if ((tx.currency || 'RON') !== (inv.currency || 'RON')) {
+        return new Response(JSON.stringify({ error: `Moneda tranzacției (${tx.currency || 'RON'}) diferă de moneda facturii (${inv.currency || 'RON'}). Înregistrează plata manual, cu suma exactă în moneda facturii.` }), { status: 422, headers: { 'Content-Type': 'application/json' } });
+      }
       applyPayment = async (t) => {
         // Record a real payment row (idempotent on invoice+reference via the
         // unique index, reference = bank-tx id), then recompute paidCents from the

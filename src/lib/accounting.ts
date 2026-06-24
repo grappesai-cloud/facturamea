@@ -329,8 +329,21 @@ export async function postEntry(companyId: string, input: PostEntryInput): Promi
         return { ok: true, entryId, entryNumber };
       } catch (err: any) {
         lastErr = err;
-        // 23505 = unique_violation → number was taken concurrently; retry with next.
-        if (err?.code === '23505') continue;
+        if (err?.code === '23505') {
+          // Could be the ref-unique index (a concurrent post of the SAME document):
+          // if the entry now exists, return an idempotent skip instead of futilely
+          // retrying the number against an unchanged ref. Otherwise it's an
+          // entry-number collision → retry with the next number.
+          if (input.refType && input.refId) {
+            const [exists] = await db
+              .select({ id: journalEntries.id, entryNumber: journalEntries.entryNumber })
+              .from(journalEntries)
+              .where(and(eq(journalEntries.companyId, companyId), eq(journalEntries.refType, input.refType), eq(journalEntries.refId, input.refId)))
+              .limit(1);
+            if (exists) return { ok: true, skipped: true, entryId: exists.id, entryNumber: exists.entryNumber ?? undefined };
+          }
+          continue;
+        }
         throw err;
       }
     }

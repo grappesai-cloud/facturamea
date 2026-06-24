@@ -5,6 +5,7 @@ import { expenses, suppliers } from '../../../../db/schema';
 import { and, eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireRole } from '../../../../lib/require-role';
+import { captureBnrSnapshot } from '../../../../lib/bnr-fx';
 
 const DOC_TYPES = ['factura', 'bon', 'chitanta', 'extras'];
 const STATUSES = ['unpaid', 'partial', 'paid'];
@@ -69,6 +70,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const paidCents = Math.max(0, Math.round(Number(body.paidCents) || 0));
   const status = paidCents >= totalCents && totalCents > 0 ? 'paid' : paidCents > 0 ? 'partial' : 'unpaid';
   const documentType = DOC_TYPES.includes(body.documentType) ? body.documentType : 'factura';
+  const currency = (body.currency || 'RON').toUpperCase().slice(0, 5);
+  const issueDate = body.issueDate || new Date().toISOString().slice(0, 10);
+  // Freeze the BNR rate for non-RON expenses so declarations (D300/D394/D390)
+  // report the base + VAT in RON, not at face value.
+  const bnr = currency !== 'RON' ? await captureBnrSnapshot(issueDate, currency).catch(() => null) : null;
 
   const id = nanoid();
   try {
@@ -80,9 +86,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       category: body.category?.trim() || null,
       documentType,
       documentNumber: body.documentNumber?.trim() || null,
-      issueDate: body.issueDate || new Date().toISOString().slice(0, 10),
+      issueDate,
       dueDate: body.dueDate || null,
-      currency: (body.currency || 'RON').toUpperCase().slice(0, 5),
+      currency,
+      bnrRate: bnr?.rate ?? null,
       netCents,
       vatCents,
       totalCents,

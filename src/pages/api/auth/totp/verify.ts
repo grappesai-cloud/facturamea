@@ -77,7 +77,9 @@ export const POST: APIRoute = async ({ request }) => {
     request,
   });
 
-  return new Response(JSON.stringify({ success: true, usedRecovery, recoveryCodesRemaining: usedRecovery ? (u.totpRecoveryCodes ? JSON.parse(u.totpRecoveryCodes).length - 1 : 0) : null }), {
+  // `token` lets Bearer/Capacitor clients (which can't use the cookie) complete
+  // 2FA login; web clients ignore it and rely on the Set-Cookie.
+  return new Response(JSON.stringify({ success: true, token: sessionId, usedRecovery, recoveryCodesRemaining: usedRecovery ? (u.totpRecoveryCodes ? JSON.parse(u.totpRecoveryCodes).length - 1 : 0) : null }), {
     status: 200,
     headers: {
       'Content-Type': 'application/json',

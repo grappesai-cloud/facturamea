@@ -131,3 +131,17 @@ export function invoiceRonCents(inv: {
     total: c(inv.totalRonCents, inv.totalCents),
   };
 }
+
+// RON-equivalent of an expense (achiziție) for declarations. Non-RON expenses are
+// converted at their frozen BNR rate; RON expenses pass through 1:1.
+export function expenseRonCents(exp: {
+  currency?: string | null; bnrRate?: number | null;
+  netCents?: number | null; vatCents?: number | null; totalCents?: number | null;
+}): { net: number; vat: number; total: number } {
+  const rate = exp.currency && exp.currency !== 'RON' ? (Number(exp.bnrRate) || 1) : 1;
+  return {
+    net: Math.round((exp.netCents || 0) * rate),
+    vat: Math.round((exp.vatCents || 0) * rate),
+    total: Math.round((exp.totalCents || 0) * rate),
+  };
+}

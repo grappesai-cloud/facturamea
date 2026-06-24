@@ -14,7 +14,7 @@ import { db } from '../../../../db';
 import { transportInvoices, transportInvoiceLines, expenses, invoiceClients, suppliers, companies, billingAddresses } from '../../../../db/schema';
 import { and, eq, gte, lte, ne } from 'drizzle-orm';
 import { resolvePeriod, escapeXml, centsToStr, normalizeCui } from '../../../../lib/declaratii';
-import { invoiceRonCents } from '../../../../lib/invoicing';
+import { invoiceRonCents, expenseRonCents } from '../../../../lib/invoicing';
 
 // Intra-EU operation type: 'L'=goods deliveries, 'P'=service supplies. We infer
 // services when every line's unit is service-like (no goods units present).
@@ -165,7 +165,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
       if (!euCode) continue;
       const { code, number } = splitVat(s.vat, euCode);
       if (!code || !number) continue;
-      addLine(code, number, 'A', exp.netCents);
+      addLine(code, number, 'A', expenseRonCents(exp).net);
     }
   } catch { /* skip achizitii */ }
 

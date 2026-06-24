@@ -10,7 +10,7 @@
 // checked against the latest ANAF XSD/PDF-inteligent before submission.
 
 import { db } from '../db';
-import { invoiceRonCents } from './invoicing';
+import { invoiceRonCents, expenseRonCents } from './invoicing';
 import {
   transportInvoices,
   expenses,
@@ -178,11 +178,12 @@ export async function collectDeclaratieData(companyId: string, period: Declarati
         line = { cui, name: name || 'Furnizor', baseCents: 0, vatCents: 0, docCount: 0 };
         achizitiiMap.set(key, line);
       }
-      line.baseCents += exp.netCents;
-      line.vatCents += exp.vatCents;
+      const er = expenseRonCents(exp);
+      line.baseCents += er.net;
+      line.vatCents += er.vat;
       line.docCount += 1;
-      achizitiiTotals.baseCents += exp.netCents;
-      achizitiiTotals.vatCents += exp.vatCents;
+      achizitiiTotals.baseCents += er.net;
+      achizitiiTotals.vatCents += er.vat;
       achizitiiTotals.docCount += 1;
     }
   } catch { /* empty achizitii */ }
