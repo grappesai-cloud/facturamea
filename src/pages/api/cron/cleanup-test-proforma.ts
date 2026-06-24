@@ -1,36 +1,67 @@
-// TEMP one-shot: delete the leftover AUDIT TEST proforma (PF 0001 / "Audit Test
-// Client") + its lines. Surgical exact-match so nothing real is touched.
-// CRON_SECRET-guarded. Delete this file right after running.
+// TEMP diagnostic + one-shot cleanup. CRON_SECRET-guarded. Delete after use.
+//   ?diag=1            -> dump ALL invoices + series for the company that owns
+//                         SOL 0104, and search globally for the Dubai invoice.
+//   ?confirm=DELETE    -> delete ONLY the test proforma (PF 0001 / Audit Test Client).
 import type { APIRoute } from 'astro';
 import { db } from '../../../db';
-import { transportInvoices, transportInvoiceLines } from '../../../db/schema';
-import { and, eq } from 'drizzle-orm';
+import { transportInvoices, transportInvoiceLines, invoiceSeries } from '../../../db/schema';
+import { and, eq, or, ilike, sql } from 'drizzle-orm';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 
 export const prerender = false;
 
-export const GET: APIRoute = async ({ request }) => {
+export const GET: APIRoute = async ({ request, url }) => {
   if (!isCronAuthorized(request)) {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
   try {
-    // Match ONLY the test proforma: kind=proforma + fullNumber='PF 0001' +
-    // clientNameSnap='Audit Test Client'. Refuse if it doesn't match exactly.
-    const rows = await db.select().from(transportInvoices).where(and(
-      eq(transportInvoices.kind, 'proforma'),
-      eq(transportInvoices.fullNumber, 'PF 0001'),
-      eq(transportInvoices.clientNameSnap, 'Audit Test Client'),
-    ));
-    if (rows.length !== 1) {
-      return new Response(JSON.stringify({ ok: false, matched: rows.length, note: 'nu am găsit exact 1 proformă test; nu șterg nimic' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    // Find the company that owns SOL 0104 (the real INVA invoice).
+    const [anchor] = await db.select().from(transportInvoices)
+      .where(and(eq(transportInvoices.fullNumber, 'SOL 0104'), eq(transportInvoices.kind, 'factura')));
+    const cid = anchor?.companyId || null;
+
+    if (url.searchParams.get('confirm') === 'DELETE') {
+      const rows = await db.select().from(transportInvoices).where(and(
+        eq(transportInvoices.kind, 'proforma'),
+        eq(transportInvoices.fullNumber, 'PF 0001'),
+        eq(transportInvoices.clientNameSnap, 'Audit Test Client'),
+      ));
+      if (rows.length !== 1) return json({ ok: false, matched: rows.length, note: 'nu șterg, nu e exact 1' });
+      await db.delete(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, rows[0].id));
+      await db.delete(transportInvoices).where(eq(transportInvoices.id, rows[0].id));
+      return json({ ok: true, deleted: 'PF 0001', id: rows[0].id });
     }
-    const inv = rows[0];
-    await db.delete(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, inv.id));
-    await db.delete(transportInvoices).where(eq(transportInvoices.id, inv.id));
-    return new Response(JSON.stringify({ ok: true, deleted: inv.fullNumber, id: inv.id, companyId: inv.companyId }), {
-      status: 200, headers: { 'Content-Type': 'application/json' },
-    });
+
+    // Diagnostic: every invoice on that company + everything that looks like the Dubai doc.
+    const onCompany = cid ? await db.select({
+      n: transportInvoices.fullNumber, k: transportInvoices.kind, s: transportInvoices.status,
+      client: transportInvoices.clientNameSnap, cur: transportInvoices.currency,
+      total: transportInvoices.totalCents, created: transportInvoices.createdAt,
+    }).from(transportInvoices).where(eq(transportInvoices.companyId, cid)) : [];
+
+    const dubaiSearch = await db.select({
+      n: transportInvoices.fullNumber, k: transportInvoices.kind, s: transportInvoices.status,
+      client: transportInvoices.clientNameSnap, cur: transportInvoices.currency,
+      company: transportInvoices.companyId, total: transportInvoices.totalCents,
+    }).from(transportInvoices).where(or(
+      eq(transportInvoices.fullNumber, 'SOL 0105'),
+      ilike(transportInvoices.clientNameSnap, '%DNA%'),
+      ilike(transportInvoices.clientNameSnap, '%Music%'),
+      ilike(transportInvoices.clientNameSnap, '%FZ%'),
+      ilike(transportInvoices.clientNameSnap, '%Dubai%'),
+    ));
+
+    const series = cid ? await db.select({ prefix: invoiceSeries.prefix, kind: invoiceSeries.kind, next: invoiceSeries.nextNumber })
+      .from(invoiceSeries).where(eq(invoiceSeries.companyId, cid)) : [];
+
+    const [{ c }] = await db.select({ c: sql<number>`count(*)` }).from(transportInvoices);
+
+    return json({ anchorCompany: cid, invoicesOnCompany: onCompany, dubaiSearch, series, totalInvoicesWholeDb: Number(c) });
   } catch (e: any) {
-    return new Response(JSON.stringify({ ok: false, error: e?.message || String(e) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return json({ ok: false, error: e?.message || String(e) }, 500);
   }
 };
+
+function json(d: unknown, status = 200) {
+  return new Response(JSON.stringify(d, null, 2), { status, headers: { 'Content-Type': 'application/json' } });
+}
