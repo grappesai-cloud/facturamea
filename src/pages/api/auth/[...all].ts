@@ -91,6 +91,21 @@ export const POST: APIRoute = async ({ request, url }) => {
         await logAction({ userId: result.userId, companyId: result.companyId, action: 'auth.terms_accepted', entityType: 'user', entityId: result.userId, metadata: { version: '1.1' }, request });
       } catch {}
 
+      // Comp lifetime allowlist — specific emails get a free lifetime license on
+      // signup (no Stripe charge). Configurable via FREE_LIFETIME_EMAILS (comma
+      // separated, case-insensitive); defaults to the cofounder/QA address.
+      try {
+        const allow = (import.meta.env.FREE_LIFETIME_EMAILS || process.env.FREE_LIFETIME_EMAILS || 'gyorgyalbertrobert@gmail.com')
+          .split(',').map((e: string) => e.trim().toLowerCase()).filter(Boolean);
+        if (result.companyId && allow.includes(email.trim().toLowerCase())) {
+          const { grantLifetime } = await import('../../../lib/license');
+          await grantLifetime(result.companyId, { amountCents: 0 });
+          await logAction({ userId: result.userId, companyId: result.companyId, action: 'license.comp_granted', entityType: 'company', entityId: result.companyId, metadata: { reason: 'free_lifetime_allowlist' }, request });
+        }
+      } catch (e) {
+        console.warn('comp lifetime grant failed at register', e);
+      }
+
       // Optional depot — if user has one, persist as a companyLocation of type 'warehouse'.
       if (result.companyId && depot && typeof depot === 'object' && depot.city) {
         try {
