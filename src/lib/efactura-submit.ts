@@ -46,11 +46,14 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
   if (inv.clientExternalId) {
     const [c] = await db.select().from(invoiceClients).where(eq(invoiceClients.id, inv.clientExternalId)).limit(1);
     if (c) {
-      customerCountry = (c.country || 'Romania').toLowerCase().startsWith('rom') ? 'RO' : c.country!.slice(0, 2).toUpperCase();
+      customerCountry = countryToIso(c.country);
       customerCity = c.city || '';
       customerStreet = c.address || customerStreet;
     }
   }
+  // Only a Romanian client is a RO VAT payer. A foreign buyer must NOT get its ID
+  // prefixed with "RO" / placed in PartyTaxScheme (ANAF: "CUI cumparator incorect").
+  const customerIsRoVatPayer = customerCountry === 'RO' && !!inv.clientTaxIdSnap;
 
   // Storno: reference the original invoice (BG-3 / BillingReference) so ANAF links them.
   let precedingInvoiceRef: { number: string; issueDate: string } | undefined;
@@ -77,8 +80,11 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
     },
     customer: {
       name: inv.clientNameSnap,
-      cui: ((inv.clientTaxIdSnap || '').replace(/^RO/i, '').replace(/\D/g, '') || ''),
-      vatPayer: !!inv.clientTaxIdSnap,
+      // Foreign buyer: keep the raw tax id (UAE/US/etc.); RO buyer: strip to digits.
+      cui: customerIsRoVatPayer
+        ? ((inv.clientTaxIdSnap || '').replace(/^RO/i, '').replace(/\D/g, '') || '')
+        : ((inv.clientTaxIdSnap || '').trim() || ''),
+      vatPayer: customerIsRoVatPayer,
       address: { street: customerStreet || '—', city: customerCity || '—', country: customerCountry },
     },
     lines: lines.map((l) => ({
@@ -114,4 +120,40 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
     updatedAt: new Date(),
   }).where(eq(transportInvoices.id, invoiceId));
   return { ok: false, error: result.error || 'unknown', reason: 'anaf' };
+}
+
+// Resolve a free-text country (name or code) to an ISO 3166-1 alpha-2 code.
+// ANAF (BR-CL-14) requires a valid ISO code; e.g. "United Arab Emirates" -> "AE",
+// never "UN" (the old naive slice(0,2)). Already-2-letter codes pass through.
+function countryToIso(raw: string | null | undefined): string {
+  const s = (raw || '').trim();
+  if (!s) return 'RO';
+  if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  const k = s.toLowerCase().replace(/[.\-_]/g, ' ').replace(/\s+/g, ' ').trim();
+  const MAP: Record<string, string> = {
+    'romania': 'RO', 'românia': 'RO',
+    'united arab emirates': 'AE', 'emiratele arabe unite': 'AE', 'uae': 'AE', 'emirates': 'AE',
+    'united states': 'US', 'united states of america': 'US', 'usa': 'US', 'statele unite': 'US',
+    'united kingdom': 'GB', 'great britain': 'GB', 'uk': 'GB', 'marea britanie': 'GB', 'anglia': 'GB',
+    'switzerland': 'CH', 'elvetia': 'CH', 'elveția': 'CH',
+    'germany': 'DE', 'germania': 'DE', 'deutschland': 'DE',
+    'france': 'FR', 'franta': 'FR', 'franța': 'FR',
+    'italy': 'IT', 'italia': 'IT', 'spain': 'ES', 'spania': 'ES', 'espana': 'ES',
+    'netherlands': 'NL', 'olanda': 'NL', 'belgium': 'BE', 'belgia': 'BE',
+    'austria': 'AT', 'poland': 'PL', 'polonia': 'PL', 'portugal': 'PT', 'portugalia': 'PT',
+    'ireland': 'IE', 'irlanda': 'IE', 'greece': 'GR', 'grecia': 'GR', 'sweden': 'SE', 'suedia': 'SE',
+    'denmark': 'DK', 'danemarca': 'DK', 'finland': 'FI', 'finlanda': 'FI', 'norway': 'NO', 'norvegia': 'NO',
+    'hungary': 'HU', 'ungaria': 'HU', 'bulgaria': 'BG', 'czechia': 'CZ', 'czech republic': 'CZ', 'cehia': 'CZ',
+    'slovakia': 'SK', 'slovacia': 'SK', 'slovenia': 'SI', 'croatia': 'HR', 'croatia ': 'HR', 'croația': 'HR',
+    'luxembourg': 'LU', 'luxemburg': 'LU', 'cyprus': 'CY', 'cipru': 'CY', 'malta': 'MT',
+    'estonia': 'EE', 'latvia': 'LV', 'letonia': 'LV', 'lithuania': 'LT', 'lituania': 'LT',
+    'moldova': 'MD', 'republica moldova': 'MD', 'ukraine': 'UA', 'ucraina': 'UA', 'turkey': 'TR', 'turcia': 'TR',
+    'canada': 'CA', 'australia': 'AU', 'china': 'CN', 'japan': 'JP', 'japonia': 'JP', 'india': 'IN',
+    'saudi arabia': 'SA', 'arabia saudita': 'SA', 'qatar': 'QA', 'kuwait': 'KW', 'bahrain': 'BH', 'oman': 'OM',
+    'israel': 'IL', 'egypt': 'EG', 'egipt': 'EG', 'singapore': 'SG', 'hong kong': 'HK',
+  };
+  if (MAP[k]) return MAP[k];
+  if (k.startsWith('rom')) return 'RO';
+  if (k.includes('arab emirates') || k.includes('emirat')) return 'AE';
+  return s.slice(0, 2).toUpperCase(); // last-resort (legacy behaviour)
 }
