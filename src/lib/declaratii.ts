@@ -10,6 +10,7 @@
 // checked against the latest ANAF XSD/PDF-inteligent before submission.
 
 import { db } from '../db';
+import { invoiceRonCents } from './invoicing';
 import {
   transportInvoices,
   expenses,
@@ -133,11 +134,12 @@ export async function collectDeclaratieData(companyId: string, period: Declarati
         line = { cui, name: inv.clientNameSnap, baseCents: 0, vatCents: 0, docCount: 0 };
         livrariMap.set(key, line);
       }
-      line.baseCents += inv.subtotalCents;
-      line.vatCents += inv.vatCents;
+      const ron = invoiceRonCents(inv);
+      line.baseCents += ron.subtotal;
+      line.vatCents += ron.vat;
       line.docCount += 1;
-      livrariTotals.baseCents += inv.subtotalCents;
-      livrariTotals.vatCents += inv.vatCents;
+      livrariTotals.baseCents += ron.subtotal;
+      livrariTotals.vatCents += ron.vat;
       livrariTotals.docCount += 1;
     }
   } catch { /* empty livrari */ }

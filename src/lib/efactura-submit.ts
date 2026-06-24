@@ -14,10 +14,15 @@ export type SubmitResult =
   | { ok: false; error: string; reason?: 'precondition' | 'anaf' };
 
 // Submit a single invoice to ANAF SPV. Caller is responsible for auth/ownership.
-export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: string }): Promise<SubmitResult> {
+export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: string; force?: boolean }): Promise<SubmitResult> {
   const [inv] = await db.select().from(transportInvoices).where(eq(transportInvoices.id, invoiceId)).limit(1);
   if (!inv) return { ok: false, error: 'Factura nu există', reason: 'precondition' };
   if (inv.kind !== 'factura' && inv.kind !== 'storno') return { ok: false, error: 'Doar facturile/storno se trimit la SPV', reason: 'precondition' };
+  // Server-side duplicate-submission guard (the UI button is not enough — a direct
+  // API call could re-upload). Re-send only from a failed state, or when forced.
+  if (!opts.force && (inv.efacturaStatus === 'submitted' || inv.efacturaStatus === 'validated')) {
+    return { ok: false, error: 'Factura a fost deja trimisă la ANAF.', reason: 'precondition' };
+  }
 
   const lines = await db.select().from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, invoiceId)).orderBy(asc(transportInvoiceLines.position));
   const [supplierAddr] = await db.select().from(billingAddresses).where(eq(billingAddresses.companyId, inv.companyId)).limit(1);

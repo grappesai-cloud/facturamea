@@ -3,9 +3,12 @@
 
 import type { APIRoute } from 'astro';
 import { generateD406Xml } from '../../../../lib/d406-saft';
+import { SAFT_D406_ENABLED, FEATURE_PENDING_MESSAGE } from '../../../../lib/feature-flags';
 
 export const GET: APIRoute = async ({ url, locals }) => {
   if (!locals.user?.companyId) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
+  // Gated until the D406 nomenclature/MasterFiles are validated with DUK Integrator.
+  if (!SAFT_D406_ENABLED) return new Response(JSON.stringify({ error: FEATURE_PENDING_MESSAGE, code: 'feature_pending' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
 
   const from = url.searchParams.get('from');
   const to = url.searchParams.get('to');

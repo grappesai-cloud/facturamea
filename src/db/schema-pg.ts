@@ -1162,6 +1162,13 @@ export const transportInvoices = pgTable('transport_invoices', {
   // BNR exchange rate snapshot — captured at issueDate when currency ≠ RON.
   bnrRate: doublePrecision('bnr_rate'),
   bnrRateDate: date('bnr_rate_date', { mode: 'string' }),
+  // RON-converted amounts frozen at issue (currency===RON → equal to *_cents;
+  // else round(cents * bnrRate)). Declarations (D300/D394/D390/SAF-T) and the
+  // ledger MUST aggregate THESE, never the raw foreign-currency cents, or VAT is
+  // misstated to ANAF (1.000 EUR would be declared as 1.000 RON).
+  subtotalRonCents: integer('subtotal_ron_cents'),
+  vatRonCents: integer('vat_ron_cents'),
+  totalRonCents: integer('total_ron_cents'),
   // TVA la încasare snapshot (regime where VAT is owed only on payment, not issue).
   vatAtCollection: boolean('vat_at_collection').default(false),
   // Chitanță → factură linkback (when kind='chitanta').

@@ -92,9 +92,16 @@ export function parseEfacturaXml(xml: string): ParseResult {
 
   const lmt = root?.LegalMonetaryTotal ?? {};
   const netCents = toCents(txt(lmt?.TaxExclusiveAmount));
-  let vatCents = 0;
+  // A foreign-currency e-Factura carries TWO TaxTotal blocks (the document
+  // currency + a RON BT-111 copy). Summing both double-counts VAT (over-claimed
+  // deductible VAT into D300/D394). Take only the document-currency block.
   const taxTotals = Array.isArray(root?.TaxTotal) ? root.TaxTotal : root?.TaxTotal ? [root.TaxTotal] : [];
-  for (const t of taxTotals) vatCents += toCents(txt(t?.TaxAmount));
+  const docTax = taxTotals.find((t: any) => {
+    const ta = t?.TaxAmount;
+    const cur = ta && typeof ta === 'object' ? (ta['@_currencyID'] ?? ta.currencyID ?? ta['@currencyID']) : null;
+    return !cur || String(cur).toUpperCase() === currency;
+  }) ?? taxTotals[0];
+  const vatCents = toCents(txt(docTax?.TaxAmount));
   let totalCents = toCents(txt(lmt?.TaxInclusiveAmount)) || toCents(txt(lmt?.PayableAmount));
   if (totalCents === 0 && (netCents > 0 || vatCents > 0)) totalCents = netCents + vatCents;
 

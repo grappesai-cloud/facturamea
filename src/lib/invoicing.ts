@@ -111,3 +111,23 @@ export async function ensureDefaultSeries(
   });
   return { id, prefix: defaults[kind].prefix };
 }
+
+// RON value of an invoice's amounts. Declarations (D300/D394/D390/SAF-T) and the
+// double-entry ledger MUST report in RON, so callers aggregate THESE, never the
+// raw foreign-currency cents. Uses the frozen RON snapshot when present, else
+// converts the currency cents at the captured BNR rate (RON invoices convert 1:1;
+// legacy non-RON rows with no rate fall back to face value).
+export function invoiceRonCents(inv: {
+  currency?: string | null; bnrRate?: number | null;
+  subtotalRonCents?: number | null; vatRonCents?: number | null; totalRonCents?: number | null;
+  subtotalCents?: number | null; vatCents?: number | null; totalCents?: number | null;
+}): { subtotal: number; vat: number; total: number } {
+  const rate = inv.currency && inv.currency !== 'RON' ? (inv.bnrRate || 1) : 1;
+  const c = (snap: number | null | undefined, cents: number | null | undefined) =>
+    snap != null ? snap : Math.round((cents || 0) * rate);
+  return {
+    subtotal: c(inv.subtotalRonCents, inv.subtotalCents),
+    vat: c(inv.vatRonCents, inv.vatCents),
+    total: c(inv.totalRonCents, inv.totalCents),
+  };
+}

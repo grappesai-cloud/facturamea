@@ -22,6 +22,7 @@ import {
 const SERVICE_UNITS = new Set(['serviciu', 'oră', 'ora', 'ore', 'abonament', 'lună', 'luna', 'zi', 'an', 'cursă', 'cursa', 'h', 'HUR']);
 import { and, eq, gte, lte, asc, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { invoiceRonCents } from './invoicing';
 
 // ─── Types ───────────────────────────────────────────────────────────────
 // Account type, Romanian style: A=Activ, P=Pasiv, B=Bifuncțional, V=Venit, C=Cheltuială.
@@ -352,9 +353,12 @@ export async function postInvoice(invoiceId: string, createdByUserId?: string | 
 
     await ensureChart(inv.companyId);
 
-    const net = centsOf(inv.subtotalCents);
-    const vat = centsOf(inv.vatCents);
-    const total = centsOf(inv.totalCents);
+    // The ledger is kept in RON: a foreign-currency invoice posts its RON value
+    // (frozen at issue / converted at the BNR rate), never the raw currency cents.
+    const ron = invoiceRonCents(inv);
+    const net = ron.subtotal;
+    const vat = ron.vat;
+    const total = ron.total;
 
     // Revenue account: 704 (servicii) when every line is service-like by unit,
     // otherwise 707 (mărfuri). The accountant can reclassify if needed.

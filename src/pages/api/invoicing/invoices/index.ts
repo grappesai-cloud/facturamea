@@ -131,6 +131,17 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const issueIso = (issuedAt || now).toISOString().slice(0, 10);
   const bnr = currency !== 'RON' ? await captureBnrSnapshot(issueIso, currency).catch(() => null) : null;
 
+  // A non-RON invoice cannot be issued without a BNR rate: every declaration
+  // (D300/D394/D390/SAF-T) and the ledger report in RON, so we freeze the RON
+  // value here. No rate → refuse rather than misstate VAT to ANAF.
+  if (currency !== 'RON' && !(bnr && (bnr.rate as number) > 0)) {
+    return new Response(JSON.stringify({ error: `Nu am putut obține cursul BNR ${currency}/RON pentru ${issueIso}. Reîncearcă sau emite factura în RON.` }), { status: 422, headers: { 'Content-Type': 'application/json' } });
+  }
+  const fxRate = currency === 'RON' ? 1 : (bnr!.rate as number);
+  const subtotalRonCents = Math.round(subtotalCents * fxRate);
+  const vatRonCents = Math.round(vatCents * fxRate);
+  const totalRonCents = Math.round(totalCents * fxRate);
+
   // TVA la încasare snapshot: per-invoice override from caller, fallback to company default.
   let vatAtCollection = body.vatAtCollection === true;
   if (body.vatAtCollection === undefined) {
@@ -169,6 +180,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       subtotalCents,
       vatCents,
       totalCents,
+      subtotalRonCents,
+      vatRonCents,
+      totalRonCents,
       paidCents: 0,
       status,
       issuedAt,

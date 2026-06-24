@@ -11,9 +11,20 @@
 
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { transportInvoices, expenses, invoiceClients, suppliers, companies, billingAddresses } from '../../../../db/schema';
+import { transportInvoices, transportInvoiceLines, expenses, invoiceClients, suppliers, companies, billingAddresses } from '../../../../db/schema';
 import { and, eq, gte, lte, ne } from 'drizzle-orm';
 import { resolvePeriod, escapeXml, centsToStr, normalizeCui } from '../../../../lib/declaratii';
+import { invoiceRonCents } from '../../../../lib/invoicing';
+
+// Intra-EU operation type: 'L'=goods deliveries, 'P'=service supplies. We infer
+// services when every line's unit is service-like (no goods units present).
+const SERVICE_UNITS = new Set(['serviciu', 'oră', 'ora', 'ore', 'abonament', 'lună', 'luna', 'zi', 'an', 'h', 'HUR', '%']);
+async function isServiceInvoice(invoiceId: string): Promise<boolean> {
+  try {
+    const ls = await db.select({ unit: transportInvoiceLines.unit }).from(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, invoiceId));
+    return ls.length > 0 && ls.every((l) => SERVICE_UNITS.has(String(l.unit || '').toLowerCase()));
+  } catch { return false; }
+}
 
 // EU member-state ISO-2 codes (VAT prefixes; EL = Greece for VAT). RO excluded
 // because it's the declarant's own country.
@@ -57,7 +68,7 @@ function splitVat(rawVat: string | null | undefined, fallbackCode: string | null
 interface RecapLine {
   code: string;       // partner country ISO-2
   vat: string;        // partner VAT number (without country prefix)
-  type: 'L' | 'A';    // operation type
+  type: 'L' | 'A' | 'P' | 'T';    // L=goods deliv, P=service deliv, A=goods acq, T=service acq
   baseCents: number;
   docCount: number;
 }
@@ -85,7 +96,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   const toDate = new Date(period.to + 'T23:59:59Z');
 
   const linesMap = new Map<string, RecapLine>();
-  const addLine = (code: string, vat: string, type: 'L' | 'A', baseCents: number) => {
+  const addLine = (code: string, vat: string, type: 'L' | 'A' | 'P' | 'T', baseCents: number) => {
     const key = `${type}|${code}|${vat}`;
     let line = linesMap.get(key);
     if (!line) { line = { code, vat, type, baseCents: 0, docCount: 0 }; linesMap.set(key, line); }
@@ -126,7 +137,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
       if (!euCode) continue; // not an intra-EU partner
       const { code, number } = splitVat(vatRaw, euCode);
       if (!code || !number) continue;
-      addLine(code, number, 'L', inv.subtotalCents);
+      const opType = (await isServiceInvoice(inv.id)) ? 'P' : 'L'; // P = services, L = goods
+      addLine(code, number, opType, invoiceRonCents(inv).subtotal);
     }
   } catch { /* skip livrari */ }
 

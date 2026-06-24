@@ -185,12 +185,17 @@ export function generateEFacturaXml(input: InvoiceInput): string {
 
   const linesXml = input.lines
     .map((line, i) => {
-      const lineNetCents = Math.round(line.quantity * line.unitPriceCents);
+      // BR-CO-10: LineExtensionAmount must equal round(printed quantity × price).
+      // Round the quantity to 4 decimals (EN16931 max) and use that SAME value for
+      // both the net computation and the printed InvoicedQuantity, so they reconcile
+      // exactly even for fractional quantities.
+      const qRounded = Math.round(line.quantity * 1e4) / 1e4;
+      const lineNetCents = Math.round(qRounded * line.unitPriceCents);
       netTotalCents += lineNetCents;
       // BR-27: prețul unitar (BT-146) nu poate fi negativ. La storno (preț negativ)
       // mutăm semnul pe cantitate: preț pozitiv, cantitate negativă, net neschimbat.
       const priceCents = Math.abs(line.unitPriceCents);
-      const qty = line.unitPriceCents < 0 ? -line.quantity : line.quantity;
+      const qty = line.unitPriceCents < 0 ? -qRounded : qRounded;
       const unitCode = mapUnitCode(line.unit);
       // Emitent neplătitor de TVA: toate liniile sunt categoria O (neimpozabil), 0%.
       const cat: VatCategory = input.supplierVatPayer === false
@@ -205,7 +210,7 @@ export function generateEFacturaXml(input: InvoiceInput): string {
       return `
   <cac:InvoiceLine>
     <cbc:ID>${i + 1}</cbc:ID>
-    <cbc:InvoicedQuantity unitCode="${xmlEscape(unitCode)}">${qty.toFixed(2)}</cbc:InvoicedQuantity>
+    <cbc:InvoicedQuantity unitCode="${xmlEscape(unitCode)}">${qty.toFixed(4)}</cbc:InvoicedQuantity>
     <cbc:LineExtensionAmount currencyID="${cur}">${money(lineNetCents)}</cbc:LineExtensionAmount>
     <cac:Item>
       <cbc:Name>${xmlEscape(line.description)}</cbc:Name>

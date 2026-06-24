@@ -15,6 +15,7 @@
 import { db } from '../db';
 import { transportInvoices, transportInvoiceLines, transportInvoicePayments, companies, billingAddresses, invoiceClients } from '../db/schema';
 import { and, eq, gte, lte, ne, asc, inArray } from 'drizzle-orm';
+import { invoiceRonCents } from './invoicing';
 
 interface D406Args {
   companyId: string;
@@ -110,8 +111,11 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
         <PaymentDate>${new Date(p.receivedAt).toISOString().slice(0, 10)}</PaymentDate>
       </Payment>`).join('');
 
-    const isCredit = inv.totalCents < 0;
-    if (isCredit) totalCredit += Math.abs(inv.totalCents); else totalDebit += inv.totalCents;
+    // SAF-T totals are in the company default currency (RON), with the original
+    // currency + ExchangeRate shown in the Currency element below.
+    const ron = invoiceRonCents(inv);
+    const isCredit = ron.total < 0;
+    if (isCredit) totalCredit += Math.abs(ron.total); else totalDebit += ron.total;
 
     invoiceBlocks.push(`
     <Invoice>
@@ -127,9 +131,9 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
       </Currency>
       ${lineBlocks}
       <DocumentTotals>
-        <TaxPayable>${cents(inv.vatCents)}</TaxPayable>
-        <NetTotal>${cents(inv.subtotalCents)}</NetTotal>
-        <GrossTotal>${cents(inv.totalCents)}</GrossTotal>
+        <TaxPayable>${cents(ron.vat)}</TaxPayable>
+        <NetTotal>${cents(ron.subtotal)}</NetTotal>
+        <GrossTotal>${cents(ron.total)}</GrossTotal>
         ${paymentBlocks}
       </DocumentTotals>
     </Invoice>`);

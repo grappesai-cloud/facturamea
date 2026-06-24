@@ -13,8 +13,11 @@ import { orders } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
 
 import { requireRole } from '../../../../lib/require-role';
+import { ETRANSPORT_ENABLED, FEATURE_PENDING_MESSAGE } from '../../../../lib/feature-flags';
 export const POST: APIRoute = async ({ request, locals }) => {
   const denied = requireRole(locals, 'invoice.create'); if (denied) return denied;
+  // Gated until the e-Transport XML is validated against ANAF's v2 XSD.
+  if (!ETRANSPORT_ENABLED) return new Response(JSON.stringify({ error: FEATURE_PENDING_MESSAGE, code: 'feature_pending' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautentificat' }), { status: 401 });
   if (!locals.user.companyId) return new Response(JSON.stringify({ error: 'Fără firmă' }), { status: 400 });
 
