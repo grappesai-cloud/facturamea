@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { transportInvoices, transportInvoiceLines, invoiceClients, companies, invoiceSeries, users } from '../../../../db/schema';
-import { and, eq, desc, gte, ilike, or } from 'drizzle-orm';
+import { transportInvoices, transportInvoiceLines, invoiceClients, companies, invoiceSeries, users, warehouses, stockLevels } from '../../../../db/schema';
+import { and, eq, desc, gte, ilike, or, inArray } from 'drizzle-orm';
+import { applyStockOut } from '../../../../lib/stock';
 import { nanoid } from 'nanoid';
 import { ensureDefaultSeries, nextSeriesNumber, INVOICE_NUMBER_FORMAT, type InvoiceKind } from '../../../../lib/invoicing';
 import { validateBody, invoiceCreateSchema } from '../../../../lib/validation';
@@ -93,6 +94,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return {
       id: nanoid(),
       position: idx,
+      productId: (l.productId && String(l.productId)) || null,
       code: l.code?.trim() || null,
       description: l.description?.trim() || '',
       quantity: q,
@@ -149,6 +151,23 @@ export const POST: APIRoute = async ({ request, locals }) => {
     vatAtCollection = !!issuerCompany?.tva;
   }
 
+  // Stock-out preparation: an issued *factura* with stocked products draws them
+  // down from the default warehouse. We pre-resolve the warehouse + which line
+  // products are actually stocked (have a level) so services don't create stock.
+  const stockableLineProducts = computedLines.filter((l) => l.productId).map((l) => l.productId as string);
+  let stockWarehouseId: string | null = null;
+  const stockedSet = new Set<string>();
+  if (kind === 'factura' && status === 'issued' && stockableLineProducts.length) {
+    const [wh] = await db.select({ id: warehouses.id }).from(warehouses)
+      .where(eq(warehouses.companyId, cid)).orderBy(desc(warehouses.isDefault)).limit(1);
+    if (wh) {
+      stockWarehouseId = wh.id;
+      const levels = await db.select({ productId: stockLevels.productId }).from(stockLevels)
+        .where(and(eq(stockLevels.companyId, cid), eq(stockLevels.warehouseId, wh.id), inArray(stockLevels.productId, stockableLineProducts)));
+      for (const lv of levels) stockedSet.add(lv.productId);
+    }
+  }
+
   // Reserve the series number and write the invoice header + lines inside a
   // single transaction. If any insert fails, the consumed number is rolled
   // back too — so a failed creation never burns a legal sequence number (gap).
@@ -199,6 +218,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     if (computedLines.length) {
       await tx.insert(transportInvoiceLines).values(computedLines.map((l) => ({ ...l, invoiceId })));
+    }
+
+    // Draw stocked products down from the default warehouse (same tx → level +
+    // movement + invoice stay consistent; storno reverses this on reversal).
+    if (stockWarehouseId) {
+      for (const l of computedLines) {
+        if (l.productId && stockedSet.has(l.productId) && l.quantity > 0) {
+          await applyStockOut(cid, stockWarehouseId, l.productId, l.quantity, l.unitPriceCents, { reason: `Factură ${fullNumber}`, refType: 'invoice', refId: invoiceId, userId: locals.user!.id }, tx);
+        }
+      }
     }
 
     return { fullNumber };

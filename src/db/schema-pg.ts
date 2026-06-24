@@ -1205,6 +1205,7 @@ export const transportInvoiceLines = pgTable('transport_invoice_lines', {
   id: text('id').primaryKey(),
   invoiceId: text('invoice_id').notNull().references(() => transportInvoices.id, { onDelete: 'cascade' }),
   position: integer('position').notNull().default(0),
+  productId: text('product_id'), // catalogue link (drives stock-out when the item is stocked)
   code: varchar('code', { length: 64 }), // optional product/service code (Oblio "Cod")
   description: text('description').notNull(),
   quantity: doublePrecision('quantity').notNull().default(1),

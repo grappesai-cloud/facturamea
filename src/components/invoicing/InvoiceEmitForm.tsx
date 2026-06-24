@@ -61,6 +61,7 @@ function seriesNumberPreview(s: Series): string {
 }
 
 interface Line {
+  productId?: string; // catalogue link (drives stock-out); set when a product is picked
   code: string;
   description: string;
   quantity: string;
@@ -272,8 +273,9 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
     const p = products.find((x) => x.id === productId);
     if (!p) return;
     setLines((ls) => ls.map((x, j) => j === i ? {
+      productId: p.id,
       code: p.code || x.code,
-      description: p.description ? `${p.name} — ${p.description}` : p.name,
+      description: p.description ? `${p.name}, ${p.description}` : p.name,
       quantity: x.quantity || '1',
       unit: p.defaultUm || x.unit,
       unitPrice: p.defaultUnitPriceCents != null ? (p.defaultUnitPriceCents / 100).toFixed(2) : x.unitPrice,
@@ -521,6 +523,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
           sendEfactura: kind === 'factura' ? sendEfactura : false,
           notes: notes || null,
           lines: lines.map((l) => ({
+            productId: l.productId || null,
             code: l.code.trim() || null,
             description: l.description.trim(),
             quantity: parseFloat(l.quantity) || 0,

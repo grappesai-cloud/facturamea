@@ -5,10 +5,11 @@
 
 import type { APIRoute } from 'astro';
 import { db } from '../../../../../db';
-import { transportInvoices, transportInvoiceLines } from '../../../../../db/schema';
-import { eq, asc } from 'drizzle-orm';
+import { transportInvoices, transportInvoiceLines, stockMovements } from '../../../../../db/schema';
+import { eq, asc, and } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { ensureDefaultSeries, nextSeriesNumber } from '../../../../../lib/invoicing';
+import { applyStockIn } from '../../../../../lib/stock';
 import { requireRole } from '../../../../../lib/require-role';
 
 export const POST: APIRoute = async ({ params, locals }) => {
@@ -83,6 +84,15 @@ export const POST: APIRoute = async ({ params, locals }) => {
         vatRate: l.vatRate,
         lineTotalCents: -l.lineTotalCents,
       })));
+    }
+
+    // Reverse any stock the original invoice drew down — add it back to the same
+    // warehouse(s)/quantities, recorded against the storno.
+    const outMoves = await tx.select().from(stockMovements)
+      .where(and(eq(stockMovements.refType, 'invoice'), eq(stockMovements.refId, parent.id), eq(stockMovements.kind, 'out')));
+    for (const m of outMoves) {
+      if (!m.productId || !m.warehouseId) continue;
+      await applyStockIn(parent.companyId, m.warehouseId, m.productId, Number(m.quantity) || 0, Number(m.unitCostCents) || 0, { reason: `Storno ${stornoFull}`, refType: 'invoice', refId: stornoId, userId: locals.user!.id }, tx);
     }
 
     // Mark the parent 'reversed' (NOT 'voided'): the original stays a valid fiscal
