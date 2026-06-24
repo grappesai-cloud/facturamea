@@ -17,6 +17,16 @@ export const GET: APIRoute = async ({ request, url }) => {
     return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
   }
   try {
+    // Dump the stored e-Factura XML (customer party) for a given invoice number.
+    const xmlfor = url.searchParams.get('xmlfor');
+    if (xmlfor) {
+      const [iv] = await db.select({ xml: transportInvoices.efacturaXml, status: transportInvoices.efacturaStatus })
+        .from(transportInvoices).where(and(eq(transportInvoices.fullNumber, xmlfor), eq(transportInvoices.kind, 'factura')));
+      const xml = iv?.xml || '';
+      const cust = xml.match(/<cac:AccountingCustomerParty>[\s\S]*?<\/cac:AccountingCustomerParty>/)?.[0] || '(fără customer party)';
+      return json({ status: iv?.status, customerParty: cust, fullXmlLen: xml.length });
+    }
+
     // Download + unzip an ANAF message (e.g. an error message) to read its content.
     const errdl = url.searchParams.get('errdl');
     if (errdl) {
