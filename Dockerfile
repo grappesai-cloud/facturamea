@@ -24,6 +24,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=4321
+# Mark the runtime as the Node/Coolify target so security code (e.g. getClientIp)
+# never trusts the spoofable x-vercel-forwarded-for header here.
+ENV DEPLOY_TARGET=node
 
 # Chromium for Puppeteer (ONLY transport-hub needs PDFs). Harmless elsewhere;
 # delete these 3 lines for apps without Puppeteer to slim the image.

@@ -43,7 +43,24 @@ function reqWith(headers: Record<string, string>): Request {
 }
 
 describe('getClientIp', () => {
-  it('prefers x-vercel-forwarded-for', () => {
+  it('ignores spoofable x-vercel-forwarded-for off Vercel, trusts x-real-ip', () => {
+    // On the Node/Coolify target (DEPLOY_TARGET !== 'vercel') the Vercel header is
+    // client-settable and must NOT be trusted — fall through to x-real-ip.
+    const prev = process.env.DEPLOY_TARGET;
+    delete process.env.DEPLOY_TARGET;
+    expect(
+      getClientIp(reqWith({
+        'x-vercel-forwarded-for': '9.9.9.9',
+        'x-real-ip': '2.2.2.2',
+        'x-forwarded-for': '3.3.3.3',
+      }))
+    ).toBe('2.2.2.2');
+    process.env.DEPLOY_TARGET = prev;
+  });
+
+  it('trusts x-vercel-forwarded-for only when explicitly on Vercel', () => {
+    const prev = process.env.DEPLOY_TARGET;
+    process.env.DEPLOY_TARGET = 'vercel';
     expect(
       getClientIp(reqWith({
         'x-vercel-forwarded-for': '9.9.9.9',
@@ -51,6 +68,7 @@ describe('getClientIp', () => {
         'x-forwarded-for': '3.3.3.3',
       }))
     ).toBe('9.9.9.9');
+    if (prev === undefined) delete process.env.DEPLOY_TARGET; else process.env.DEPLOY_TARGET = prev;
   });
 
   it('does NOT trust spoofable cf-connecting-ip (we deploy behind Vercel, not Cloudflare)', () => {
