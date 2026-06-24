@@ -12,6 +12,13 @@ function hashSession(raw: string): string {
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
+// Generic at-rest token hash (password-reset + team-join codes). Store the hash,
+// hand the user the raw value, look up by hash on redeem — a DB leak then can't
+// be replayed into a password reset or a team takeover.
+export function hashToken(raw: string): string {
+  return crypto.createHash('sha256').update(String(raw)).digest('hex');
+}
+
 const SESSION_COOKIE = 'th_session';
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 // OWASP 2025 recommends ≥12 for bcrypt. Older hashes at cost 10 stay

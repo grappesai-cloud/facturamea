@@ -3,6 +3,14 @@ import { generateSync as totpGenerate } from 'otplib';
 import QRCode from 'qrcode';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
+import { encryptSecret, decryptSecret } from './crypto';
+
+// TOTP secrets are encrypted at rest (AES-256-GCM, same key as ANAF tokens) so a
+// DB leak cannot reconstruct a user's 2FA. Seal on enroll, open on every verify.
+export function sealTotpSecret(secret: string): string { return encryptSecret(secret); }
+export function openTotpSecret(stored: string): string {
+  try { return decryptSecret(stored); } catch { return stored; } // grandfather legacy plaintext
+}
 
 // otplib v13+ functional API. Defaults: SHA1, 6 digits, 30s step,
 // ±1 step verification window — matches every standard authenticator

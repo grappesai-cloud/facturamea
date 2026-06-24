@@ -33,17 +33,28 @@ export default defineConfig({
   },
 
   vite: {
-    plugins: [tailwindcss()],
+    plugins: [
+      tailwindcss(),
+      {
+        // Drop console.*/debugger ONLY from the CLIENT bundle. The SSR server
+        // build MUST keep console so production logging (logger.ts emit,
+        // cron catch-blocks, captureError) actually reaches the container logs.
+        // A global esbuild.drop was silencing all prod observability.
+        name: 'facturamea:drop-console-client-only',
+        apply: 'build',
+        config(_conf, env) {
+          if (env.isSsrBuild || _conf.build?.ssr) return {};
+          return { esbuild: { drop: ['console', 'debugger'] } };
+        },
+      },
+    ],
     build: {
       // Strip source maps in production — makes reverse-engineering minified
-      // bundles meaningfully harder, and stops accidental leaks of original
-      // file paths / inline comments via Vercel's CDN.
+      // bundles harder and avoids leaking original paths/comments.
       sourcemap: false,
-      // Drop console.* and debugger statements in prod bundles.
       minify: 'esbuild',
     },
     esbuild: {
-      drop: ['console', 'debugger'],
       legalComments: 'none',
     },
   },

@@ -152,16 +152,21 @@ export async function rateLimitAsync(
 }
 
 export function getClientIp(request: Request): string {
-  // We deploy behind Vercel (not Cloudflare). The trustworthy client IP is the
-  // one Vercel sets at its edge. We do NOT trust cf-connecting-ip: when we are
-  // not actually behind Cloudflare it is a plain request header an attacker can
-  // set to rotate rate-limit / lockout keys at will and bypass throttling.
-  return (
-    request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim() ||
-    request.headers.get('x-real-ip') ||
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    'unknown'
-  );
+  // Trust ONLY proxy-set headers. The FIRST x-forwarded-for hop is client-supplied
+  // and spoofable — an attacker rotates it to bypass IP-keyed rate-limit/lockout —
+  // so we never use it. Vercel edge sets x-vercel-forwarded-for; Traefik/Coolify
+  // sets x-real-ip (overwriting any client value). As a last resort use the LAST
+  // x-forwarded-for hop (appended by our own reverse proxy), never the first.
+  const vercel = request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+  if (vercel) return vercel;
+  const real = request.headers.get('x-real-ip')?.trim();
+  if (real) return real;
+  const xff = request.headers.get('x-forwarded-for');
+  if (xff) {
+    const parts = xff.split(',').map((s) => s.trim()).filter(Boolean);
+    if (parts.length) return parts[parts.length - 1];
+  }
+  return 'unknown';
 }
 
 // Country code from Cloudflare edge (ISO-3166-1 alpha-2). Returns null

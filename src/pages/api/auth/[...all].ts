@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { registerUser, loginUser, setSessionCookie, clearSessionCookie, hashPassword, verifyAndMaybeRehash, createSession, revokeAllSessionsForUser, deleteSessionByRawToken } from '../../../lib/auth';
+import { registerUser, loginUser, setSessionCookie, clearSessionCookie, hashPassword, verifyAndMaybeRehash, createSession, revokeAllSessionsForUser, deleteSessionByRawToken, hashToken } from '../../../lib/auth';
 import { db } from '../../../db';
 import { users, passwordResetTokens, totpPendingLogins } from '../../../db/schema';
 import { nanoid } from 'nanoid';
@@ -332,7 +332,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         await db.insert(passwordResetTokens).values({
           id: nanoid(),
           userId: user.id,
-          token,
+          token: hashToken(token), // store hash; raw token goes only in the email link
           expiresAt,
         });
 
@@ -366,7 +366,7 @@ export const POST: APIRoute = async ({ request, url }) => {
       if (!norm || !password || String(password).length < 8) {
         return new Response(JSON.stringify({ error: 'Cod și parolă obligatorii (parola minim 8 caractere).' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
-      const [tok] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, norm));
+      const [tok] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, hashToken(norm)));
       if (!tok || tok.usedAt || new Date(tok.expiresAt) < new Date()) {
         return new Response(JSON.stringify({ error: 'Cod invalid sau expirat. Cere administratorului un cod nou.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
       }
@@ -392,7 +392,7 @@ export const POST: APIRoute = async ({ request, url }) => {
         });
       }
 
-      const [resetToken] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+      const [resetToken] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, hashToken(token)));
 
       if (!resetToken || resetToken.usedAt) {
         return new Response(JSON.stringify({ error: 'Link invalid sau expirat' }), {

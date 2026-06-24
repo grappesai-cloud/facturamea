@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { users } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
-import { verifyTotp } from '../../../../lib/totp';
+import { verifyTotp, openTotpSecret } from '../../../../lib/totp';
 import { verifyPassword, revokeAllSessionsForUser } from '../../../../lib/auth';
 import { logAction } from '../../../../lib/audit';
 
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   let ok = false;
-  if (code && verifyTotp(u.totpSecret, code)) ok = true;
+  if (code && verifyTotp(openTotpSecret(u.totpSecret), code)) ok = true;
   else if (password && await verifyPassword(password, u.hashedPassword)) ok = true;
 
   if (!ok) {

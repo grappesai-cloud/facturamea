@@ -7,7 +7,7 @@ import { nanoid, customAlphabet } from 'nanoid';
 // Readable code, no ambiguous chars (no 0/O/1/I). 10 chars ≈ 50 bits.
 const genJoinCode = customAlphabet('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', 10);
 import { generatePlatformId } from '../../../../lib/platform-id';
-import { hashPassword } from '../../../../lib/auth';
+import { hashPassword, hashToken } from '../../../../lib/auth';
 import { isValidRole, normalizeRole, ROLE_LABELS } from '../../../../lib/permissions-roles';
 import { requireRole } from '../../../../lib/require-role';
 import { sendEmail } from '../../../../lib/notifications';
@@ -140,7 +140,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     try {
       code = genJoinCode(); // e.g. "K7M2PQR9TX"
       const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      await db.insert(passwordResetTokens).values({ id: nanoid(), userId, token: code, expiresAt } as any);
+      await db.insert(passwordResetTokens).values({ id: nanoid(), userId, token: hashToken(code), expiresAt } as any);
       const [co] = await db.select({ name: companies.name }).from(companies).where(eq(companies.id, companyId)).limit(1);
       const companyName = co?.name || 'compania';
       const inviter = locals.user.name || 'Administratorul';

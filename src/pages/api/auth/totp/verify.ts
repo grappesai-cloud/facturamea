@@ -3,7 +3,7 @@ import { db } from '../../../../db';
 import { users, totpPendingLogins } from '../../../../db/schema';
 import { and, eq, gt } from 'drizzle-orm';
 import { createSession, setSessionCookie } from '../../../../lib/auth';
-import { verifyTotp, consumeRecoveryCode, hashRecoveryCodes } from '../../../../lib/totp';
+import { verifyTotp, consumeRecoveryCode, hashRecoveryCodes, openTotpSecret } from '../../../../lib/totp';
 import { logAction } from '../../../../lib/audit';
 import { rateLimitAsync, getClientIp } from '../../../../lib/security';
 
@@ -46,7 +46,7 @@ export const POST: APIRoute = async ({ request }) => {
   let ok = false;
   let usedRecovery = false;
 
-  if (code && verifyTotp(u.totpSecret, code)) {
+  if (code && verifyTotp(openTotpSecret(u.totpSecret), code)) {
     ok = true;
   } else if (recoveryCode && u.totpRecoveryCodes) {
     let hashes: string[] = [];

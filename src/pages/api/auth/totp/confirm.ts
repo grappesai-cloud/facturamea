@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { users } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
-import { verifyTotp } from '../../../../lib/totp';
+import { verifyTotp, openTotpSecret } from '../../../../lib/totp';
 import { revokeAllSessionsForUser } from '../../../../lib/auth';
 import { logAction } from '../../../../lib/audit';
 
@@ -28,7 +28,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: '2FA este deja activat' }), { status: 400 });
   }
 
-  if (!verifyTotp(u.totpSecret, code)) {
+  if (!verifyTotp(openTotpSecret(u.totpSecret), code)) {
     return new Response(JSON.stringify({ error: 'Cod incorect. Verifică ora telefonului şi încearcă din nou.' }), { status: 400 });
   }
 

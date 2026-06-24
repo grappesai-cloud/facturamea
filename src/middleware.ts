@@ -13,6 +13,16 @@ import { isAllowedFeOrigin } from './lib/fe-origins';
 
 const MUTATING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE']);
 
+// Paid-feature paywall: mutating /api/* calls require an active lifetime license,
+// EXCEPT these prefixes (auth, payment, account setup/management, webhooks, cron,
+// public, notifications) which must work without a paid license. The /app pages
+// are gated separately (redirect to onboarding). v1 API is gated in requireApiKey.
+const API_PAYWALL_EXEMPT = [
+  '/api/auth/', '/api/checkout', '/api/webhooks/', '/api/cron/', '/api/public/',
+  '/api/blog/', '/api/locale', '/api/demo', '/api/onboarding/', '/api/companies/',
+  '/api/me/', '/api/admin/', '/api/settings/', '/api/notifications', '/api/push/',
+];
+
 // ─── CORS for the decoupled frontend (token Bearer auth) ────────────────
 // Token-auth requests are not cookie-based, so CORS is safe. Allowlist lives
 // in lib/fe-origins (shared with the OAuth token-handoff routes).
@@ -315,22 +325,33 @@ export const onRequest = defineMiddleware(async (context, next) => {
           role: await resolveCompanyRole(user.id, user.companyId, user.parentUserId || null),
         } : null;
 
-        // License / paywall gate (only for /app page navigations).
-        if (pathname.startsWith('/app')) {
+        // License / paywall gate. Enforced on /app page navigations AND on
+        // mutating /api/* calls to paid features (so the API + Capacitor Bearer
+        // path can't bypass the 700 RON paywall — a real revenue hole otherwise).
+        const needsApiLicense = pathname.startsWith('/api/')
+          && MUTATING_METHODS.has(method)
+          && !API_PAYWALL_EXEMPT.some((p) => pathname.startsWith(p));
+        if (pathname.startsWith('/app') || needsApiLicense) {
           try {
             const st = await licenseState(user.companyId);
             context.locals.license = { plan: st.plan, status: st.status, active: st.active, trialDaysLeft: st.trialDaysLeft };
-            // Activation gate: a company must have a complete fiscal profile
-            // (CIF + address + city) AND a paid lifetime license. Until then,
-            // every /app page is funneled into the onboarding wizard. No trial.
+            // Activation: a company needs a complete fiscal profile (CIF + address)
+            // AND a paid lifetime license. No trial.
             const companyComplete = !!(company && company.cui && company.address);
-            const exempt = pathname.startsWith('/app/onboarding')
-              || pathname.startsWith('/app/setari/abonament')
-              || pathname === '/app/logout';
-            if ((!companyComplete || !st.active) && !exempt && !isAdmin) {
-              return context.redirect('/app/onboarding');
+            if ((!companyComplete || !st.active) && !isAdmin) {
+              if (needsApiLicense) {
+                return new Response(JSON.stringify({ error: 'Licență inactivă. Activează abonamentul pentru a folosi această funcție.', code: 'license_inactive' }), {
+                  status: 402, headers: { 'Content-Type': 'application/json', ...(cors || {}) },
+                });
+              }
+              const exempt = pathname.startsWith('/app/onboarding')
+                || pathname.startsWith('/app/setari/abonament')
+                || pathname === '/app/logout';
+              if (!exempt) return context.redirect('/app/onboarding');
             }
           } catch { /* DB not ready — don't lock out */ }
+        }
+        if (pathname.startsWith('/app')) {
           try { context.locals.anafConnected = await isAnafConnected(user.companyId); } catch {}
         }
       } else {

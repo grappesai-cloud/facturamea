@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
 import { users } from '../../../../db/schema';
 import { eq } from 'drizzle-orm';
-import { generateSecret, buildOtpAuthUrl, buildQrDataUrl, generateRecoveryCodes, hashRecoveryCodes } from '../../../../lib/totp';
+import { generateSecret, buildOtpAuthUrl, buildQrDataUrl, generateRecoveryCodes, hashRecoveryCodes, sealTotpSecret } from '../../../../lib/totp';
 
 // Step 1 of enrollment. Generates a fresh secret + QR code + recovery codes.
 // The secret is stored on the user row but totp_enabled stays false until
@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ locals }) => {
 
   await db.update(users)
     .set({
-      totpSecret: secret,
+      totpSecret: sealTotpSecret(secret),
       totpRecoveryCodes: JSON.stringify(hashedRecovery),
       // explicitly NOT setting totpEnabled — that happens after /confirm
     })

@@ -64,8 +64,10 @@ describe('getClientIp', () => {
     expect(getClientIp(reqWith({ 'x-real-ip': '2.2.2.2', 'x-forwarded-for': '3.3.3.3' }))).toBe('2.2.2.2');
   });
 
-  it('falls back to first x-forwarded-for entry', () => {
-    expect(getClientIp(reqWith({ 'x-forwarded-for': '3.3.3.3, 4.4.4.4' }))).toBe('3.3.3.3');
+  it('uses the LAST x-forwarded-for hop (proxy-appended), never the spoofable first', () => {
+    // The first hop is client-supplied and forgeable; the proxy appends the real
+    // peer as the last hop. getClientIp must not trust the first entry.
+    expect(getClientIp(reqWith({ 'x-forwarded-for': '3.3.3.3, 4.4.4.4' }))).toBe('4.4.4.4');
   });
 
   it('returns "unknown" when no header present', () => {
