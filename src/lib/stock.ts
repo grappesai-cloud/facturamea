@@ -10,7 +10,7 @@
 
 import { db } from '../db';
 import { stockLevels, stockMovements } from '../db/schema';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -53,30 +53,20 @@ export async function applyStockIn(
   if (quantity <= 0) return;
   const cost = Math.max(0, Math.round(Number(unitCostCents) || 0));
 
-  const existing = await getLevel(executor, companyId, warehouseId, productId);
-  if (existing) {
-    const prevQty = Number(existing.quantity) || 0;
-    const prevAvg = Number(existing.avgCostCents) || 0;
-    const newQty = prevQty + quantity;
-    // Weighted average; guard against division by zero.
-    const newAvg = newQty > 0
-      ? Math.round((prevQty * prevAvg + quantity * cost) / newQty)
-      : cost;
-    await executor
-      .update(stockLevels)
-      .set({ quantity: newQty, avgCostCents: newAvg, updatedAt: new Date() })
-      .where(and(eq(stockLevels.id, existing.id), eq(stockLevels.companyId, companyId)));
-  } else {
-    await executor.insert(stockLevels).values({
-      id: nanoid(),
-      companyId,
-      warehouseId,
-      productId,
-      quantity,
-      avgCostCents: cost,
-      minQuantity: 0,
-    } as any);
-  }
+  // Atomic upsert on the (warehouse, product) unique key. The weighted-average is
+  // recomputed inside the UPDATE from the row's own values, so concurrent stock
+  // ops can't lose quantity or corrupt avg cost (the previous SELECT-then-write
+  // had a lost-update + first-write race).
+  await executor.insert(stockLevels).values({
+    id: nanoid(), companyId, warehouseId, productId, quantity, avgCostCents: cost, minQuantity: 0,
+  } as any).onConflictDoUpdate({
+    target: [stockLevels.warehouseId, stockLevels.productId],
+    set: {
+      quantity: sql`${stockLevels.quantity} + ${quantity}`,
+      avgCostCents: sql`CASE WHEN (${stockLevels.quantity} + ${quantity}) > 0 THEN ROUND((${stockLevels.quantity} * ${stockLevels.avgCostCents} + ${quantity} * ${cost})::numeric / (${stockLevels.quantity} + ${quantity})) ELSE ${cost} END`,
+      updatedAt: new Date(),
+    },
+  });
 
   await executor.insert(stockMovements).values({
     id: nanoid(),
@@ -110,29 +100,21 @@ export async function applyStockOut(
   const quantity = Number(qty) || 0;
   if (quantity <= 0) return;
 
-  const existing = await getLevel(executor, companyId, warehouseId, productId);
+  // Cost for the movement ledger only (informational — the decrement is atomic
+  // below regardless). Use the caller-provided cost, else the current avg cost.
+  const existing = unitCostCents != null ? null : await getLevel(executor, companyId, warehouseId, productId);
   const cost = unitCostCents != null
     ? Math.max(0, Math.round(Number(unitCostCents) || 0))
     : (existing ? Number(existing.avgCostCents) || 0 : 0);
 
-  if (existing) {
-    const newQty = (Number(existing.quantity) || 0) - quantity;
-    await executor
-      .update(stockLevels)
-      .set({ quantity: newQty, updatedAt: new Date() })
-      .where(and(eq(stockLevels.id, existing.id), eq(stockLevels.companyId, companyId)));
-  } else {
-    // No prior level — create one going negative so the ledger reconciles.
-    await executor.insert(stockLevels).values({
-      id: nanoid(),
-      companyId,
-      warehouseId,
-      productId,
-      quantity: -quantity,
-      avgCostCents: cost,
-      minQuantity: 0,
-    } as any);
-  }
+  // Atomic decrement on the unique key (creates a negative level if none exists,
+  // so the ledger always reconciles). No SELECT-then-write race.
+  await executor.insert(stockLevels).values({
+    id: nanoid(), companyId, warehouseId, productId, quantity: -quantity, avgCostCents: cost, minQuantity: 0,
+  } as any).onConflictDoUpdate({
+    target: [stockLevels.warehouseId, stockLevels.productId],
+    set: { quantity: sql`${stockLevels.quantity} - ${quantity}`, updatedAt: new Date() },
+  });
 
   await executor.insert(stockMovements).values({
     id: nanoid(),

@@ -44,7 +44,10 @@ export const POST: APIRoute = async ({ params, locals, request }) => {
     return new Response(JSON.stringify({ error: 'Eroare trimitere email' }), { status: 502 });
   }
 
-  await db.update(transportInvoices).set({ status: 'sent', sentAt: new Date(), updatedAt: new Date() }).where(eq(transportInvoices.id, invoiceId));
+  // Only advance draft/issued → sent. Never clobber paid/partial/reversed/voided/
+  // overdue (it corrupts receivables + fiscal-period reporting); just record sentAt.
+  const sentStatus = (inv.status === 'draft' || inv.status === 'issued') ? 'sent' : inv.status;
+  await db.update(transportInvoices).set({ status: sentStatus, sentAt: new Date(), updatedAt: new Date() }).where(eq(transportInvoices.id, invoiceId));
 
   // In-app notification when the recipient is a TH-registered company — so the
   // document also lands inside the platform, not only in their inbox.

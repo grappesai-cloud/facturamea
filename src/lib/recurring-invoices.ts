@@ -16,14 +16,25 @@ import { captureBnrSnapshot } from './bnr-fx';
 
 export type RecurringFrequency = 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'yearly';
 
+// Add `n` months, clamping the day to the last valid day of the target month.
+// Naively doing setUTCMonth(+1) on Jan 31 overflows into March (February skipped);
+// here Jan 31 +1mo => Feb 28/29.
+function addMonthsClamped(d: Date, n: number): void {
+  const day = d.getUTCDate();
+  d.setUTCDate(1);
+  d.setUTCMonth(d.getUTCMonth() + n);
+  const lastDay = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+  d.setUTCDate(Math.min(day, lastDay));
+}
+
 export function advanceDate(currentIso: string, freq: RecurringFrequency): string {
   const d = new Date(currentIso + 'T00:00:00Z');
   switch (freq) {
     case 'weekly':    d.setUTCDate(d.getUTCDate() + 7); break;
     case 'biweekly':  d.setUTCDate(d.getUTCDate() + 14); break;
-    case 'monthly':   d.setUTCMonth(d.getUTCMonth() + 1); break;
-    case 'quarterly': d.setUTCMonth(d.getUTCMonth() + 3); break;
-    case 'yearly':    d.setUTCFullYear(d.getUTCFullYear() + 1); break;
+    case 'monthly':   addMonthsClamped(d, 1); break;
+    case 'quarterly': addMonthsClamped(d, 3); break;
+    case 'yearly':    addMonthsClamped(d, 12); break;
   }
   return d.toISOString().slice(0, 10);
 }
