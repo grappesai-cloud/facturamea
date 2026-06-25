@@ -31,6 +31,12 @@ const METHOD_LABELS: Record<string, string> = {
 
 const now = new Date();
 const defaultPeriod = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+// RO month names so the period picker never falls back to the browser-locale
+// display (native <input type="month"> rendered "June" on a non-RO browser).
+const RO_MONTHS = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+const curMonthNum = now.getUTCMonth() + 1;
+const curYearNum = now.getUTCFullYear();
+const yearChoices = [curYearNum - 2, curYearNum - 1, curYearNum, curYearNum + 1];
 ---
 
 <AppLayout title="Mijloace fixe" activeTab="mijloace-fixe">
@@ -66,9 +72,22 @@ const defaultPeriod = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).p
     </div>
     <div class="flex items-end gap-2 rounded-2xl p-5 bg-white/5">
       <div>
-        <label for="dep-period" class="block text-[13px] font-medium text-[#9FB8CC] mb-1.5">Perioada</label>
-        <input id="dep-period" type="month" value={defaultPeriod}
-          class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none [color-scheme:dark]" />
+        <label for="dep-month" class="block text-[13px] font-medium text-[#9FB8CC] mb-1.5">Perioada</label>
+        <input type="hidden" id="dep-period" value={defaultPeriod} />
+        <div class="flex gap-2">
+          <select id="dep-month" aria-label="Luna"
+            class="rounded-xl bg-white/5 px-3 py-2.5 text-[14px] text-white focus:outline-none [color-scheme:dark]">
+            {RO_MONTHS.map((m, i) => (
+              <option value={String(i + 1).padStart(2, '0')} selected={i + 1 === curMonthNum}>{m}</option>
+            ))}
+          </select>
+          <select id="dep-year" aria-label="Anul"
+            class="rounded-xl bg-white/5 px-3 py-2.5 text-[14px] text-white focus:outline-none [color-scheme:dark]">
+            {yearChoices.map((y) => (
+              <option value={String(y)} selected={y === curYearNum}>{y}</option>
+            ))}
+          </select>
+        </div>
       </div>
       <button id="run-dep" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
         Rulează amortizarea lunii
@@ -148,7 +167,17 @@ const defaultPeriod = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).p
     (function () {
       const btn = document.getElementById('run-dep');
       const periodEl = document.getElementById('dep-period');
+      const monthEl = document.getElementById('dep-month');
+      const yearEl = document.getElementById('dep-year');
       const msg = document.getElementById('dep-msg');
+
+      // Keep the hidden YYYY-MM value in sync with the RO month + year selects.
+      function syncPeriod() {
+        if (periodEl && monthEl && yearEl) periodEl.value = yearEl.value + '-' + monthEl.value;
+      }
+      monthEl?.addEventListener('change', syncPeriod);
+      yearEl?.addEventListener('change', syncPeriod);
+      syncPeriod();
 
       function show(text, ok) {
         msg.textContent = text;
