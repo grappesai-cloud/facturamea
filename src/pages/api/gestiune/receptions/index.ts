@@ -150,7 +150,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       }
     });
-  } catch {
+  } catch (err) {
+    console.error('[receptions] save failed:', err instanceof Error ? `${err.name}: ${err.message}` : err);
     return new Response(JSON.stringify({ error: 'Eroare la salvarea recepției' }), { status: 500 });
   }
 
