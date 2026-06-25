@@ -4,7 +4,7 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
-import { Plus, Trash2, AlertCircle, Search, Save, Check, BookmarkPlus, BookmarkCheck } from 'lucide-react';
+import { Plus, AlertCircle, Search, Save, Check, BookmarkPlus, BookmarkCheck } from 'lucide-react';
 
 const PRODUCT_TYPES = ['Servicii', 'Marfuri', 'Produs finit', 'Materii prime', 'Semifabricate', 'Obiecte de inventar', 'Ambalaje'];
 
@@ -628,7 +628,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                   autoComplete="off"
                 />
                 {dropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-[#0B2236] ring-1 ring-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-2xl overflow-hidden">
                     {clients.length > 0 ? (
                       <>
                         <p className="px-3.5 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7C9AB4]">
@@ -768,10 +768,11 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                           type="button"
                           onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}
                           disabled={lines.length === 1}
-                          className="w-8 h-8 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] disabled:opacity-30 transition-colors"
+                          className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] disabled:opacity-30 transition-colors"
                           aria-label="Șterge linia"
+                          title="Șterge linia"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
 
                         {nomenIdx === i && (

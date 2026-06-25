@@ -3,7 +3,7 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Trash2, Loader2, KeyRound, Copy, Check, AlertTriangle } from 'lucide-react';
+import { Plus, X, Loader2, KeyRound, Copy, Check, AlertTriangle } from 'lucide-react';
 
 interface ApiKey {
   id: string;
@@ -172,7 +172,7 @@ export default function ApiKeysManager() {
               {(showAll ? keys : keys.slice(0, 3)).map((k) => {
                 const revoked = !!k.revokedAt;
                 return (
-                  <li key={k.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors">
+                  <li key={k.id} className="group flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className={`text-sm font-semibold truncate ${revoked ? 'text-[#7C9AB4] line-through' : 'text-white'}`}>{k.name}</p>
@@ -188,8 +188,8 @@ export default function ApiKeysManager() {
                       </p>
                     </div>
                     {!revoked && (
-                      <button onClick={() => revoke(k.id)} title="Revocă cheia" className="p-1.5 text-[#7C9AB4] hover:text-[#DC4B41]">
-                        <Trash2 className="w-4 h-4" />
+                      <button onClick={() => revoke(k.id)} title="Revocă cheia" className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:text-[#DC4B41] hover:bg-white/10 transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+                        <X className="w-4 h-4" />
                       </button>
                     )}
                   </li>

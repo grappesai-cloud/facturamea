@@ -1,6 +1,6 @@
 // Organizes the customizable KPI widgets — swipe to reveal, add/remove, read charts.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Info, Trash2, Plus, ArrowRight } from 'lucide-react';
+import { Info, X, Plus, ArrowRight } from 'lucide-react';
 
 export interface KpiDef {
   key: string;
@@ -66,14 +66,17 @@ function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () =
     const snap = () => { card.classList.remove('dragging'); card.style.transform = ''; };
     const swipeOut = () => { card.classList.remove('dragging'); card.style.transform = 'translateY(100%)'; onClose(); };
 
+    const isMouse = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
     let pd = false, psy = 0, pdy = 0;
     const onPDown = (e: PointerEvent) => { pd = true; psy = e.clientY; pdy = 0; card.classList.add('dragging'); handle?.setPointerCapture?.(e.pointerId); };
     const onPMove = (e: PointerEvent) => { if (!pd) return; pdy = Math.max(0, e.clientY - psy); card.style.transform = `translateY(${pdy}px)`; };
     const onPUp = () => { if (!pd) return; pd = false; if (pdy > threshold()) swipeOut(); else snap(); };
-    handle?.addEventListener('pointerdown', onPDown);
-    handle?.addEventListener('pointermove', onPMove);
-    handle?.addEventListener('pointerup', onPUp);
-    handle?.addEventListener('pointercancel', onPUp);
+    if (!isMouse && handle) {
+      handle.addEventListener('pointerdown', onPDown);
+      handle.addEventListener('pointermove', onPMove);
+      handle.addEventListener('pointerup', onPUp);
+      handle.addEventListener('pointercancel', onPUp);
+    }
 
     let sy = 0, ss = 0, act = false, dy = 0, onH = false;
     const onTStart = (e: TouchEvent) => { if (e.touches.length !== 1) return; onH = !!handle && handle.contains(e.target as Node); sy = e.touches[0].clientY; ss = card.scrollTop; act = false; dy = 0; };
@@ -94,34 +97,17 @@ function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () =
     card.addEventListener('touchend', onTEnd);
     card.addEventListener('touchcancel', onTEnd);
 
-    // Trackpad swipe-down to close (desktop) — overscroll past the top, same as the menus.
-    let wdist = 0, wTimer = 0;
-    const snapW = () => { wdist = 0; card.classList.remove('dragging'); card.style.transform = ''; };
-    const onWheel = (e: WheelEvent) => {
-      const atTop = card.scrollTop <= 0;
-      const noScroll = card.scrollHeight <= card.clientHeight + 2;
-      if (!(e.deltaY < 0 && (atTop || noScroll))) { if (wdist > 0) snapW(); return; }
-      e.preventDefault();
-      if (wdist === 0) card.classList.add('dragging');
-      wdist += Math.abs(e.deltaY);
-      card.style.transform = `translateY(${Math.min(wdist * 0.5, 220)}px)`;
-      window.clearTimeout(wTimer);
-      if (wdist > 150) { wdist = 0; swipeOut(); return; }
-      wTimer = window.setTimeout(snapW, 160);
-    };
-    card.addEventListener('wheel', onWheel, { passive: false });
-
     return () => {
-      handle?.removeEventListener('pointerdown', onPDown);
-      handle?.removeEventListener('pointermove', onPMove);
-      handle?.removeEventListener('pointerup', onPUp);
-      handle?.removeEventListener('pointercancel', onPUp);
+      if (!isMouse && handle) {
+        handle.removeEventListener('pointerdown', onPDown);
+        handle.removeEventListener('pointermove', onPMove);
+        handle.removeEventListener('pointerup', onPUp);
+        handle.removeEventListener('pointercancel', onPUp);
+      }
       card.removeEventListener('touchstart', onTStart);
       card.removeEventListener('touchmove', onTMove);
       card.removeEventListener('touchend', onTEnd);
       card.removeEventListener('touchcancel', onTEnd);
-      card.removeEventListener('wheel', onWheel);
-      window.clearTimeout(wTimer);
     };
   }, [mounted]);
 
@@ -129,7 +115,15 @@ function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () =
   return (
     <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
       <div ref={cardRef} className="app-sheet-card w-full sm:max-w-[520px] max-h-[88vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]" onClick={(e) => e.stopPropagation()}>
-        <div ref={handleRef} className="flex justify-center pt-3.5 pb-1 touch-none select-none cursor-grab active:cursor-grabbing"><span className="w-10 h-1.5 rounded-full fm-grab" /></div>
+        <div className="flex items-center px-3 pt-3.5 pb-1 select-none">
+          <div className="flex-1" />
+          <div ref={handleRef} className="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span className="w-10 h-1.5 rounded-full fm-grab pointer-events-none" /></div>
+          <div className="flex-1 flex justify-end">
+            <button type="button" onClick={onClose} aria-label="Închide" className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
         {children}
       </div>
     </div>
@@ -243,16 +237,16 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
 
   return (
     <div
-      className="relative rounded-3xl overflow-hidden h-full transition-all duration-300 ease-out"
+      className="group relative rounded-3xl overflow-hidden h-full transition-all duration-300 ease-out"
       style={removing ? { opacity: 0, transform: 'scale(0.88)', filter: 'blur(1px)', pointerEvents: 'none' } : undefined}
     >
-      {/* revealed actions — circular, icon-only (sit behind the card) */}
+      {/* revealed actions — circular, icon-only (sit behind the card, swipe-reveal on mobile) */}
       <div className="absolute inset-y-0 right-0 w-[120px] flex items-center justify-center gap-2.5">
         <button type="button" aria-label="Info" onClick={() => { openRef.current = false; setOpen(false); onInfo(); }} className="w-11 h-11 rounded-full bg-white/10 text-white grid place-items-center hover:bg-white/15 transition-colors">
           <Info className="w-5 h-5" />
         </button>
         <button type="button" aria-label="Șterge" onClick={startRemove} className="w-11 h-11 rounded-full bg-[#DC4B41] text-white grid place-items-center hover:brightness-110 transition">
-          <Trash2 className="w-5 h-5" />
+          <X className="w-5 h-5" />
         </button>
       </div>
 
@@ -264,9 +258,20 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
       >
         <div className="flex items-start justify-between gap-2">
           <p className="text-[13px] font-medium text-[#7C9AB4]">{def.label}</p>
-          <span className="w-8 h-8 rounded-full grid place-items-center shrink-0" style={{ background: def.accent + '26', color: def.accent }}>
-            <Glyph d={def.icon} className="w-4 h-4" />
-          </span>
+          <div className="flex items-center gap-1 shrink-0">
+            {/* desktop-only hover X to remove the KPI card */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); startRemove(); }}
+              title="Elimină"
+              className="hidden lg:grid w-7 h-7 place-items-center rounded-full text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+            <span className="w-8 h-8 rounded-full grid place-items-center" style={{ background: def.accent + '26', color: def.accent }}>
+              <Glyph d={def.icon} className="w-4 h-4" />
+            </span>
+          </div>
         </div>
         {activeBar !== null && def.barValues && def.barLabels ? (
           <>
@@ -361,7 +366,7 @@ export default function DashboardKpis({ catalog, initialSelected }: { catalog: K
 
   return (
     <div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 auto-rows-fr">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 auto-rows-fr">
         {selected.map((key) => {
           const def = byKey.get(key);
           if (!def) return null;

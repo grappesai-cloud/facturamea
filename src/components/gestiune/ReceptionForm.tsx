@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Trash2, Loader2, Check } from 'lucide-react';
+import { Plus, X, Loader2, Check } from 'lucide-react';
 
 interface Warehouse { id: string; name: string; }
 interface Supplier { id: string; name: string; }
@@ -203,7 +203,7 @@ export default function ReceptionForm() {
                   <Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={l.vatRate} onChange={(e) => updateLine(i, { vatRate: e.target.value })} />
                 </div>
                 <div className="md:col-span-1 flex justify-end">
-                  <button onClick={() => setLines((ls) => ls.length > 1 ? ls.filter((_, idx) => idx !== i) : ls)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => setLines((ls) => ls.length > 1 ? ls.filter((_, idx) => idx !== i) : ls)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge linia"><X className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}

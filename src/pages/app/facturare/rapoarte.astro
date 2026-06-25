@@ -258,25 +258,32 @@ const TABS: { id: TabId; label: string }[] = [
     <p class="text-[14px] text-[#9FB8CC] mt-1">Sumar rapid pe perioada selectată — vânzări, încasări, TVA și restanțe dintr-o privire.</p>
   </div>
 
-  <!-- ── Quick-read summary ── -->
-  <section class="mb-8">
+  <!-- ── Quick-read summary (customizable, like the dashboard) ── -->
+  <section id="rep-summary" class="mb-8">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-[16px] font-bold text-white">Sumar rapid</h2>
+      <button type="button" id="rep-edit" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/10 text-white text-[12.5px] font-semibold hover:bg-white/15 transition-colors">
+        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        <span data-rep-edit-label>Personalizează</span>
+      </button>
+    </div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
-      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <div data-rep-widget="vanzari" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
         <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Vânzări (facturat)</p>
         <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(summary.facturat)} <span class="text-[13px] sm:text-[15px] text-[#7C9AB4] font-semibold">RON</span></p>
         <p class="text-[12px] text-[#7C9AB4] mt-1">{summary.count} facturi · {summary.paidCount} plătite</p>
       </div>
-      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <div data-rep-widget="incasat" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
         <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Încasat</p>
         <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#2E9E6A] mt-1.5 whitespace-nowrap">{fmt(summary.incasat)} <span class="text-[13px] sm:text-[15px] text-[#2E9E6A]/70 font-semibold">RON</span></p>
         <p class="text-[12px] text-[#7C9AB4] mt-1">Rată încasare {collectRatePct}%</p>
       </div>
-      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <div data-rep-widget="deincasat" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
         <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">De încasat</p>
         <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-1.5 whitespace-nowrap">{fmt(deIncasat)} <span class="text-[13px] sm:text-[15px] text-[#E8A33C]/70 font-semibold">RON</span></p>
         <p class="text-[12px] text-[#E8A33C]/80 mt-1">{summary.restanteCount} restante · {fmt(summary.restante)}</p>
       </div>
-      <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <div data-rep-widget="tva" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
         <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">TVA colectată</p>
         <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E1FB15] mt-1.5 whitespace-nowrap">{fmt(summary.tva)} <span class="text-[13px] sm:text-[15px] text-[#E1FB15]/70 font-semibold">RON</span></p>
         <p class="text-[12px] text-[#7C9AB4] mt-1">Bază impozabilă {fmt(summary.baza)}</p>
@@ -285,7 +292,7 @@ const TABS: { id: TabId; label: string }[] = [
 
     <div class="grid lg:grid-cols-2 gap-3 mt-3">
       <!-- Top clients -->
-      <div class="rounded-2xl p-5 bg-white/5">
+      <div data-rep-widget="clienti" class="relative rounded-2xl p-5 bg-white/5">
         <h3 class="text-[15px] font-bold text-white mb-3">Top clienți · facturat</h3>
         {topClients.length === 0 ? (
           <p class="text-[13px] text-[#9FB8CC]">Niciun client în perioada selectată.</p>
@@ -305,7 +312,7 @@ const TABS: { id: TabId; label: string }[] = [
       </div>
 
       <!-- More report types -->
-      <div class="rounded-2xl p-5 bg-white/5">
+      <div data-rep-widget="more" class="relative rounded-2xl p-5 bg-white/5">
         <h3 class="text-[15px] font-bold text-white mb-3">Mai multe rapoarte</h3>
         <div class="grid sm:grid-cols-2 gap-2.5">
           <a href="/app/rapoarte/analitice" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
@@ -339,53 +346,6 @@ const TABS: { id: TabId; label: string }[] = [
       </button>
     ))}
   </div>
-
-  <!-- KPI cards — first, per tab (toggled with the tabs) -->
-  {TABS.map(({ id }) => {
-    const { totals } = panels[id];
-    const rest = Math.max(0, totals.sum - totals.paid);
-    const isDoc = id === 'facturi' || id === 'proforma';
-    const collectRate = totals.sum > 0 ? Math.round((totals.paid / totals.sum) * 100) : 0;
-    const avgPayment = totals.count > 0 ? Math.round(totals.sum / totals.count) : 0;
-    return (
-      <div data-kpis={id} class:list={['grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6', id === tab ? '' : 'hidden']}>
-        {id !== 'spv' && (
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
-            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">{id === 'incasari' ? 'Total încasat' : 'Total facturat'}</p>
-            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(totals.sum)} <span class="text-[13px] sm:text-[15px] text-[#7C9AB4] font-semibold">RON</span></p>
-          </div>
-        )}
-        {isDoc && (
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
-            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Încasat</p>
-            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#2E9E6A] mt-1.5 whitespace-nowrap">{fmt(totals.paid)} <span class="text-[13px] sm:text-[15px] text-[#2E9E6A]/70 font-semibold">RON</span></p>
-          </div>
-        )}
-        {isDoc && (
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
-            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">De încasat</p>
-            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-1.5 whitespace-nowrap">{fmt(rest)} <span class="text-[13px] sm:text-[15px] text-[#E8A33C]/70 font-semibold">RON</span></p>
-          </div>
-        )}
-        {isDoc ? (
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
-            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Rată încasare</p>
-            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E1FB15] mt-1.5">{collectRate}<span class="text-[15px] text-[#E1FB15]/70">%</span></p>
-          </div>
-        ) : id === 'incasari' ? (
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
-            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Medie / încasare</p>
-            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(avgPayment)} <span class="text-[13px] sm:text-[15px] text-[#7C9AB4] font-semibold">RON</span></p>
-          </div>
-        ) : (
-          <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
-            <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Documente trimise</p>
-            <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5">{totals.count}</p>
-          </div>
-        )}
-      </div>
-    );
-  })}
 
   <!-- Filters toggle (collapsed by default, below the KPIs) -->
   <div class="mb-4">
@@ -602,5 +562,58 @@ const TABS: { id: TabId; label: string }[] = [
       fBtn.querySelector('[data-chev]')?.classList.toggle('rotate-180', show);
       fBtn.classList.toggle('bg-white/15', show);
     });
+  </script>
+
+  <script is:inline>
+    (function () {
+      var sec = document.getElementById('rep-summary');
+      var btn = document.getElementById('rep-edit');
+      if (!sec || !btn) return;
+      var KEY = 'fm-rep-hidden';
+      var hidden;
+      try { hidden = new Set(JSON.parse(localStorage.getItem(KEY) || '[]')); } catch (e) { hidden = new Set(); }
+      var label = btn.querySelector('[data-rep-edit-label]');
+      var widgets = Array.prototype.slice.call(sec.querySelectorAll('[data-rep-widget]'));
+      var editing = false;
+      function save() { try { localStorage.setItem(KEY, JSON.stringify(Array.from(hidden))); } catch (e) {} }
+      function render() {
+        if (label) label.textContent = editing ? 'Gata' : 'Personalizează';
+        btn.classList.toggle('bg-[#E1FB15]', editing);
+        btn.classList.toggle('text-[#0A2238]', editing);
+        btn.classList.toggle('bg-white/10', !editing);
+        btn.classList.toggle('text-white', !editing);
+        widgets.forEach(function (w) {
+          var k = w.getAttribute('data-rep-widget');
+          var isHidden = hidden.has(k);
+          var ctrl = w.querySelector('[data-rep-hidebtn]');
+          if (editing) {
+            w.classList.remove('hidden');
+            w.style.opacity = isHidden ? '0.4' : '1';
+            if (!ctrl) {
+              ctrl = document.createElement('button');
+              ctrl.setAttribute('data-rep-hidebtn', '');
+              ctrl.type = 'button';
+              ctrl.className = 'absolute top-2 right-2 z-20 w-7 h-7 inline-flex items-center justify-center rounded-full bg-white/10 text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors';
+              ctrl.addEventListener('click', function (e) {
+                e.preventDefault(); e.stopPropagation();
+                if (hidden.has(k)) hidden.delete(k); else hidden.add(k);
+                save(); render();
+              });
+              w.appendChild(ctrl);
+            }
+            ctrl.innerHTML = isHidden
+              ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>'
+              : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M5 12h14" stroke-linecap="round"/></svg>';
+            ctrl.title = isHidden ? 'Adaugă înapoi' : 'Ascunde';
+          } else {
+            if (ctrl) ctrl.remove();
+            w.style.opacity = '';
+            w.classList.toggle('hidden', isHidden);
+          }
+        });
+      }
+      btn.addEventListener('click', function () { editing = !editing; render(); });
+      render();
+    })();
   </script>
 </AppLayout>

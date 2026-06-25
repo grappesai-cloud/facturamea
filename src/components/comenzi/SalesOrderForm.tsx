@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Trash2, Loader2, Check } from 'lucide-react';
+import { Plus, X, Loader2, Check } from 'lucide-react';
 
 interface Client { id: string; name: string; }
 interface Product { id: string; name: string; defaultUnitPriceCents: number | null; defaultVatRate: number | null; }
@@ -181,7 +181,7 @@ export default function SalesOrderForm() {
                   <Input className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={l.vatRate} onChange={(e) => updateLine(i, { vatRate: e.target.value })} />
                 </div>
                 <div className="md:col-span-1 flex justify-end">
-                  <button onClick={() => setLines((ls) => ls.length > 1 ? ls.filter((_, idx) => idx !== i) : ls)} className="p-2 text-[#7C9AB4] hover:text-[#DC4B41]"><Trash2 className="w-4 h-4" /></button>
+                  <button onClick={() => setLines((ls) => ls.length > 1 ? ls.filter((_, idx) => idx !== i) : ls)} className="w-9 h-9 rounded-full grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] transition-colors" title="Șterge linia"><X className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}

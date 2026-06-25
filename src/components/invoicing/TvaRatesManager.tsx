@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Star, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Star, X, Loader2 } from 'lucide-react';
 
 interface Rate { id: string; name: string; percent: number; regime: string; description: string | null; isDefault: boolean; isActive: boolean; position: number }
 
@@ -71,18 +71,20 @@ export default function TvaRatesManager() {
 
         <ul className="space-y-2">
           {(showAll ? rates : rates.slice(0, 3)).map((r) => (
-            <li key={r.id} className={`flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors ${!r.isActive ? 'opacity-50' : ''}`}>
+            <li key={r.id} className={`group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors ${!r.isActive ? 'opacity-50' : ''}`}>
               <span className="font-mono text-xs px-2 py-0.5 bg-white/10 rounded-full text-white tabular-nums w-14 text-center">{r.percent}%</span>
               <span className="text-[15px] text-white font-bold">{r.name}</span>
               {r.description && <span className="text-xs text-[#9FB8CC] hidden md:inline flex-1 truncate">{r.description}</span>}
               {!r.description && <span className="flex-1" />}
-              {r.isDefault ? (
-                <span className="text-xs px-2 py-0.5 bg-[#E8A33C]/15 text-[#E8A33C] rounded-full font-semibold flex items-center gap-1"><Star className="w-3 h-3 fill-[#E8A33C]" /> implicit</span>
-              ) : (
-                <button onClick={() => patch(r.id, { isDefault: true })} className="text-xs text-[#9FB8CC] hover:text-white underline">implicit</button>
-              )}
-              <button onClick={() => patch(r.id, { isActive: !r.isActive })} className="text-xs text-[#9FB8CC] hover:text-white underline">{r.isActive ? 'dezactivează' : 'activează'}</button>
-              <button onClick={() => remove(r.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-white/15 hover:text-[#DC4B41]"><Trash2 className="w-3.5 h-3.5" /></button>
+              <div className="flex items-center gap-2 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                {r.isDefault ? (
+                  <span className="text-xs px-2 py-0.5 bg-[#E8A33C]/15 text-[#E8A33C] rounded-full font-semibold flex items-center gap-1"><Star className="w-3 h-3 fill-[#E8A33C]" /> implicit</span>
+                ) : (
+                  <button onClick={() => patch(r.id, { isDefault: true })} className="text-xs text-[#9FB8CC] hover:text-white underline">implicit</button>
+                )}
+                <button onClick={() => patch(r.id, { isActive: !r.isActive })} className="text-xs text-[#9FB8CC] hover:text-white underline">{r.isActive ? 'dezactivează' : 'activează'}</button>
+                <button onClick={() => remove(r.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41]" title="Șterge"><X className="w-4 h-4" /></button>
+              </div>
             </li>
           ))}
         </ul>

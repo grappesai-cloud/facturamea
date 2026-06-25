@@ -89,9 +89,9 @@ export async function recomputeCompanyPaymentScore(companyId: string): Promise<P
 
 // Human-readable tier for a score (used for badges + colours).
 export function scoreTier(score: number | null): { label: string; tone: string } {
-  if (score == null) return { label: 'Fără istoric', tone: 'bg-[#F0F0EC] text-[#6B6B68]' };
+  if (score == null) return { label: 'Fără istoric', tone: 'bg-[#E3EAF1] text-[#46627A]' };
   if (score >= 90) return { label: 'Excelent', tone: 'bg-[#D1FAE5] text-[#065F46]' };
-  if (score >= 75) return { label: 'Bun', tone: 'bg-[#DBEAFE] text-[#1E3A8A]' };
+  if (score >= 75) return { label: 'Bun', tone: 'bg-[#E9F3F8] text-[#145d7e]' };
   if (score >= 50) return { label: 'Mediu', tone: 'bg-[#FEF3C7] text-[#B45309]' };
   return { label: 'Risc ridicat', tone: 'bg-[#FEE2E2] text-[#B91C1C]' };
 }

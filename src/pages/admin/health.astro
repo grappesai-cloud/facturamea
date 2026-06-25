@@ -103,24 +103,24 @@ const okCount = checks.filter((c) => c.ok).length;
   <div class="mb-6 flex items-end justify-between">
     <div>
       <h2 class="text-[22px] font-bold tracking-[-0.02em]">System health</h2>
-      <p class="text-[13px] text-[#6B6B68] mt-1">Verificare live a integrărilor critice. {okCount}/{total} OK.</p>
+      <p class="text-[13px] text-[#46627A] mt-1">Verificare live a integrărilor critice. {okCount}/{total} OK.</p>
     </div>
-    <button onclick="window.location.reload()" class="px-4 py-2 bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[13px] font-medium rounded-xl transition-colors">↻ Re-rulează</button>
+    <button onclick="window.location.reload()" class="px-4 py-2 bg-white border border-[#E3EAF1] hover:border-[#0A2238] text-[13px] font-medium rounded-xl transition-colors">↻ Re-rulează</button>
   </div>
 
-  <div class="bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
-    <div class="divide-y divide-[#E8E8E4]">
+  <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
+    <div class="divide-y divide-[#E3EAF1]">
       {checks.map((c) => (
         <div class="px-5 py-3 flex items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
             <span class:list={['w-2 h-2 rounded-full shrink-0', c.ok ? 'bg-[#15803D]' : 'bg-[#B91C1C]']}></span>
             <div class="min-w-0">
               <p class="text-[13px] font-medium">{c.name}</p>
-              {c.detail && <p class="text-[11px] text-[#6B6B68] truncate">{c.detail}</p>}
+              {c.detail && <p class="text-[11px] text-[#46627A] truncate">{c.detail}</p>}
             </div>
           </div>
           <div class="text-right shrink-0">
-            {c.latencyMs != null && <p class="text-[12px] tabular-nums text-[#6B6B68]">{c.latencyMs} ms</p>}
+            {c.latencyMs != null && <p class="text-[12px] tabular-nums text-[#46627A]">{c.latencyMs} ms</p>}
             <p class:list={['text-[10px] uppercase tracking-wider font-semibold', c.ok ? 'text-[#15803D]' : 'text-[#B91C1C]']}>{c.ok ? 'OK' : 'DOWN'}</p>
           </div>
         </div>

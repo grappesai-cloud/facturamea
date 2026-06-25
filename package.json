@@ -2,6 +2,9 @@
   "name": "facturamea",
   "type": "module",
   "version": "0.0.1",
+  "private": true,
+  "author": "Robert Gyorgy (Gyorgy Albert-Robert PFA)",
+  "license": "SEE LICENSE IN LICENSE.md",
   "engines": {
     "node": "22.x"
   },

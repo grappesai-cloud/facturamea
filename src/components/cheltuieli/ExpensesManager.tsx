@@ -1,10 +1,63 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Trash2, Loader2, Check } from 'lucide-react';
+import { Plus, X, Loader2, Check, ChevronDown } from 'lucide-react';
+
+function PillSelect({ value, onChange, options, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const selected = options.find((o) => o.value === value);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1.5 h-10 pl-4 pr-3 rounded-full text-[13px] font-semibold transition-colors ${value ? 'bg-[#E1FB15]/15 text-[#E1FB15]' : 'bg-white/10 text-white hover:bg-white/15'}`}
+      >
+        <span className="whitespace-nowrap">{selected?.label ?? placeholder}</span>
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1.5 bg-[#071828] rounded-2xl ring-1 ring-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.5)] py-1.5 z-50 min-w-[160px]">
+          <button
+            type="button"
+            className={`w-full text-left px-4 py-2 text-[13px] rounded-xl transition-colors ${!value ? 'text-[#E1FB15] font-semibold' : 'text-[#9FB8CC] hover:text-white hover:bg-white/5'}`}
+            onClick={() => { onChange(''); setOpen(false); }}
+          >
+            {placeholder}
+          </button>
+          {options.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              className={`w-full text-left px-4 py-2 text-[13px] rounded-xl transition-colors ${value === o.value ? 'text-[#E1FB15] font-semibold' : 'text-[#9FB8CC] hover:text-white hover:bg-white/5'}`}
+              onClick={() => { onChange(o.value); setOpen(false); }}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface Expense {
   id: string; supplierNameSnap: string | null; supplierName: string | null;
@@ -116,17 +169,23 @@ export default function ExpensesManager() {
       {error && <p className="text-sm text-[#DC4B41]">{error}</p>}
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-0">
-          <Select className="flex-1 sm:flex-none sm:w-[170px]" value={fStatus} onChange={(e) => { setFStatus(e.target.value); refresh(e.target.value, fCategory); }}>
-            <option value="">Toate statusurile</option>
-            <option value="unpaid">Neplătit</option>
-            <option value="partial">Parțial</option>
-            <option value="paid">Plătit</option>
-          </Select>
-          <Select className="flex-1 sm:flex-none sm:w-[180px]" value={fCategory} onChange={(e) => { setFCategory(e.target.value); refresh(fStatus, e.target.value); }}>
-            <option value="">Toate categoriile</option>
-            {CATEGORIES.map((c) => <option key={c} value={c}>{CAT_LABELS[c]}</option>)}
-          </Select>
+        <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+          <PillSelect
+            value={fStatus}
+            onChange={(v) => { setFStatus(v); refresh(v, fCategory); }}
+            placeholder="Toate statusurile"
+            options={[
+              { value: 'unpaid', label: 'Neplătit' },
+              { value: 'partial', label: 'Parțial' },
+              { value: 'paid', label: 'Plătit' },
+            ]}
+          />
+          <PillSelect
+            value={fCategory}
+            onChange={(v) => { setFCategory(v); refresh(fStatus, v); }}
+            placeholder="Toate categoriile"
+            options={CATEGORIES.map((c) => ({ value: c, label: CAT_LABELS[c] }))}
+          />
         </div>
         <Button className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none w-full sm:w-auto justify-center shrink-0" onClick={() => setForm({ ...emptyForm })}><Plus className="w-4 h-4 mr-1" /> Cheltuială nouă</Button>
       </div>
@@ -139,7 +198,7 @@ export default function ExpensesManager() {
           {(showAll ? items : items.slice(0, 3)).map((e) => {
             const st = STATUS_BADGE[e.status] || STATUS_BADGE.unpaid;
             return (
-              <li key={e.id} className="flex items-center gap-3 p-4 rounded-2xl bg-white/5">
+              <li key={e.id} className="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
@@ -150,11 +209,11 @@ export default function ExpensesManager() {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="text-[15px] font-bold tabular-nums text-white">{ron(e.totalCents)}</p>
-                  <div className="flex items-center justify-end gap-1 mt-1">
+                  <div className="flex items-center justify-end gap-1 mt-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     {e.status !== 'paid' && (
                       <button onClick={() => markPaid(e.id)} title="Marchează plătit" className="w-8 h-8 grid place-items-center rounded-full bg-white/10 text-[#9FB8CC] hover:text-[#2E9E6A] hover:bg-white/15 transition-colors"><Check className="w-4 h-4" /></button>
                     )}
-                    <button onClick={() => remove(e.id)} title="Șterge" className="w-8 h-8 grid place-items-center rounded-full bg-white/10 text-[#9FB8CC] hover:text-[#DC4B41] hover:bg-white/15 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => remove(e.id)} title="Șterge" className="w-8 h-8 grid place-items-center rounded-full bg-white/10 text-[#9FB8CC] hover:text-[#DC4B41] hover:bg-white/15 transition-colors"><X className="w-4 h-4" /></button>
                   </div>
                 </div>
               </li>

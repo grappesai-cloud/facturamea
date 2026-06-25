@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Pause, Play, Trash2 } from 'lucide-react';
+import { Plus, Pause, Play, X } from 'lucide-react';
 
 interface Item {
   id: string;
@@ -240,7 +240,9 @@ export default function RecurringManager({ initial, internalClients, externalCli
                     {((l.quantity * l.unitPriceCents) / 100 * (1 + l.vatRate / 100)).toLocaleString('ro-RO', { minimumFractionDigits: 2 })}
                   </div>
                   {lines.length > 1 && (
-                    <button onClick={() => removeLine(idx)} className="text-[#DC4B41] text-xs">×</button>
+                    <button onClick={() => removeLine(idx)} className="w-7 h-7 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge rândul">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                   )}
                 </div>
               ))}
@@ -276,7 +278,7 @@ export default function RecurringManager({ initial, internalClients, externalCli
           <tbody>
             {items.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-[#7C9AB4]">Niciun abonament. Adaugă unul ca să generezi automat facturi.</td></tr>}
             {(showAll ? items : items.slice(0, 3)).map((i) => (
-              <tr key={i.id} className="hover:bg-white/5">
+              <tr key={i.id} className="group hover:bg-white/5">
                 <td className="py-3 px-4 font-medium text-white">{i.name}</td>
                 <td className="py-3 px-4 text-[#9FB8CC]">{i.clientName}</td>
                 <td className="py-3 px-4 text-white">{FREQ_LABEL[i.frequency] || i.frequency}</td>
@@ -288,11 +290,11 @@ export default function RecurringManager({ initial, internalClients, externalCli
                     : <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">pauzat</span>}
                 </td>
                 <td className="py-3 px-4 text-right">
-                  <div className="flex justify-end gap-1">
-                    <button onClick={() => toggle(i.id, !!i.isActive)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/15" title={i.isActive ? 'Pune pe pauză' : 'Repornește'}>
+                  <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => toggle(i.id, !!i.isActive)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/15 transition-colors" title={i.isActive ? 'Pune pe pauză' : 'Repornește'}>
                       {i.isActive ? <Pause className="w-3.5 h-3.5 text-[#9FB8CC]" /> : <Play className="w-3.5 h-3.5 text-[#2E9E6A]" />}
                     </button>
-                    <button onClick={() => remove(i.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#DC4B41] hover:bg-white/15" title="Dezactivează permanent"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => remove(i.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează permanent"><X className="w-4 h-4" /></button>
                   </div>
                 </td>
               </tr>

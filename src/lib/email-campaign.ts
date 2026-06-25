@@ -3,11 +3,11 @@ import { users, appLicenses } from '../db/schema';
 import { and, eq, isNull, isNotNull, ne } from 'drizzle-orm';
 
 // Brand palette (inlined everywhere; email clients strip <style> blocks).
-const ORANGE = '#FF5C00';
-const INK = '#0A0A0A';
-const CREAM = '#FAFAF8';
-const MUTED = '#6B6B68';
-const BORDER = '#E8E8E4';
+const ORANGE = '#1A759F';
+const INK = '#0A2238';
+const CREAM = '#EDF1F5';
+const MUTED = '#46627A';
+const BORDER = '#E3EAF1';
 
 export type Audience = 'all' | 'trial' | 'lifetime' | 'custom';
 export interface Recipient {
@@ -32,7 +32,7 @@ export function ctaButton(label: string, url: string): string {
   return `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
   <tr>
     <td align="center" bgcolor="${ORANGE}" style="border-radius:12px;">
-      <a href="${escapeHtml(safeUrl)}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:'Inter',Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background-color:${ORANGE};">${safeLabel}</a>
+      <a href="${escapeHtml(safeUrl)}" target="_blank" style="display:inline-block;padding:14px 28px;font-family:'Outfit',Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background-color:${ORANGE};">${safeLabel}</a>
     </td>
   </tr>
 </table>`;
@@ -40,12 +40,12 @@ export function ctaButton(label: string, url: string): string {
 
 /** Section heading helper the composer can inject. */
 export function emailHeading(text: string): string {
-  return `<h2 style="margin:28px 0 12px;font-family:'Inter',Arial,sans-serif;font-size:20px;font-weight:700;line-height:1.3;color:${INK};letter-spacing:-0.02em;">${escapeHtml(text)}</h2>`;
+  return `<h2 style="margin:28px 0 12px;font-family:'Outfit',Arial,sans-serif;font-size:20px;font-weight:700;line-height:1.3;color:${INK};letter-spacing:-0.02em;">${escapeHtml(text)}</h2>`;
 }
 
 /** Paragraph helper the composer can inject. */
 export function emailParagraph(text: string): string {
-  return `<p style="margin:0 0 16px;font-family:'Inter',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">${escapeHtml(text)}</p>`;
+  return `<p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">${escapeHtml(text)}</p>`;
 }
 
 function escapeHtml(s: string): string {
@@ -92,7 +92,7 @@ export function wrapEmailHtml({ subject, preheader, bodyHtml }: WrapInput): stri
           <!-- Header -->
           <tr>
             <td class="px" style="padding:28px 40px;border-bottom:1px solid ${BORDER};">
-              <span style="font-family:'Inter',Arial,sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.03em;color:${INK};">factura<span style="color:${ORANGE};">mea</span></span>
+              <span style="font-family:'Outfit',Arial,sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.03em;color:${INK};">factura<span style="color:${ORANGE};">mea</span></span>
             </td>
           </tr>
           <!-- Body -->
@@ -104,10 +104,10 @@ export function wrapEmailHtml({ subject, preheader, bodyHtml }: WrapInput): stri
           <!-- Footer -->
           <tr>
             <td class="px" style="padding:24px 40px 32px;border-top:1px solid ${BORDER};">
-              <p style="margin:0 0 6px;font-family:'Inter',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">
+              <p style="margin:0 0 6px;font-family:'Outfit',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">
                 facturamea · Platformă de facturare pentru transport și logistică
               </p>
-              <p style="margin:0;font-family:'Inter',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">
+              <p style="margin:0;font-family:'Outfit',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">
                 Ai primit acest email pentru că ai un cont facturamea.
                 <a href="{{unsubscribe_url}}" style="color:${MUTED};text-decoration:underline;">Dezabonează-te</a>.
               </p>

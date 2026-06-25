@@ -213,7 +213,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
                 <p className="text-[12px] uppercase tracking-wider text-[#7C9AB4]">Factură primită</p>
                 <h3 className="text-[18px] font-bold text-white mt-0.5 truncate">{selected.supplierName || selected.fromCif || 'Furnizor necunoscut'}</h3>
               </div>
-              <button type="button" onClick={() => setSelected(null)} aria-label="Închide" className="shrink-0 w-9 h-9 grid place-items-center rounded-full text-[#9FB8CC] hover:bg-white/10 hover:text-white">✕</button>
+              <button type="button" onClick={() => setSelected(null)} aria-label="Închide" className="shrink-0 w-9 h-9 grid place-items-center rounded-full text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] transition-colors"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div className="px-6 py-5 space-y-3">
               {([

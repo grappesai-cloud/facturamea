@@ -317,10 +317,10 @@ ${button(data.conversationUrl, t.cta)}`;
 // Cream / orange themed shell to match the new landing page,
 // independent of the navy app shell used for transactional emails.
 const WAITLIST = {
-  bg: '#FAFAF8',
-  ink: '#0A0A0A',
+  bg: '#EDF1F5',
+  ink: '#0A2238',
   mute: '#5a5a5a',
-  signal: '#FF5C00',
+  signal: '#1A759F',
   border: 'rgba(10,10,10,0.12)',
 };
 
@@ -332,7 +332,7 @@ function waitlistShell(content: string, preheader: string): string {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>facturamea — Acces anticipat</title>
 </head>
-<body style="margin:0;padding:0;background:${WAITLIST.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Inter,sans-serif;color:${WAITLIST.ink}">
+<body style="margin:0;padding:0;background:${WAITLIST.bg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:${WAITLIST.ink}">
 <div style="display:none;max-height:0;overflow:hidden;color:transparent">${preheader}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${WAITLIST.bg};padding:40px 16px">
   <tr><td align="center">
@@ -367,7 +367,7 @@ export function waitlistThankYouEmail(data: WaitlistThankYouData): { subject: st
   }[data.companyType];
 
   const content = `
-<h1 style="margin:0 0 16px;font-family:Inter,sans-serif;font-size:28px;font-weight:800;color:${WAITLIST.ink};letter-spacing:-0.5px;line-height:1.2">Mulțumim, ${data.name}.</h1>
+<h1 style="margin:0 0 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:28px;font-weight:800;color:${WAITLIST.ink};letter-spacing:-0.5px;line-height:1.2">Mulțumim, ${data.name}.</h1>
 <p style="margin:0 0 16px;font-size:15px;line-height:1.7;color:${WAITLIST.ink}">Te-am adăugat pe lista de acces anticipat ca <strong>${roleLabel}</strong>.</p>
 <p style="margin:0 0 24px;font-size:15px;line-height:1.7;color:${WAITLIST.mute}">
   facturamea se construiește pentru a deveni prima bursă din România unde seriozitatea și transparența devin standard. Estimăm că prima versiune va fi disponibilă <strong style="color:${WAITLIST.ink}">la jumătatea lunii mai – început de iunie</strong>.
@@ -439,18 +439,18 @@ export function dailyDigestEmail(data: DailyDigestData, locale: EmailLocale = 'r
 
   const itemsHtml = items.map((i) => `
     <tr>
-      <td style="padding:12px 0;border-bottom:1px solid #E8E8E4;color:#0A0A0A;font-size:14px">${i.label}</td>
-      <td style="padding:12px 0;border-bottom:1px solid #E8E8E4;text-align:right;color:#FF5C00;font-weight:700;font-size:18px;font-variant-numeric:tabular-nums">${i.n}</td>
+      <td style="padding:12px 0;border-bottom:1px solid #E3EAF1;color:#0A2238;font-size:14px">${i.label}</td>
+      <td style="padding:12px 0;border-bottom:1px solid #E3EAF1;text-align:right;color:#1A759F;font-weight:700;font-size:18px;font-variant-numeric:tabular-nums">${i.n}</td>
     </tr>`).join('');
 
   const content = `
-<p style="margin:0 0 24px;color:#6B6B68;font-size:14px;line-height:1.5">${t.intro}</p>
+<p style="margin:0 0 24px;color:#46627A;font-size:14px;line-height:1.5">${t.intro}</p>
 <table style="width:100%;border-collapse:collapse;margin:0 0 24px">${itemsHtml}</table>
 <p style="margin:0 0 16px;text-align:center">
-  <a href="${data.appUrl}" style="display:inline-block;background:#FF5C00;color:#fff;padding:12px 28px;border-radius:6px;font-weight:600;text-decoration:none;font-size:14px">${t.cta} →</a>
+  <a href="${data.appUrl}" style="display:inline-block;background:#1A759F;color:#fff;padding:12px 28px;border-radius:6px;font-weight:600;text-decoration:none;font-size:14px">${t.cta} →</a>
 </p>
-<p style="margin:32px 0 0;color:#A8A8A4;font-size:11px;text-align:center">
-  <a href="${data.appUrl}/setari/notifications" style="color:#A8A8A4;text-decoration:underline">${t.footer}</a>
+<p style="margin:32px 0 0;color:#9FB8CC;font-size:11px;text-align:center">
+  <a href="${data.appUrl}/setari/notifications" style="color:#9FB8CC;text-decoration:underline">${t.footer}</a>
 </p>`;
 
   const text = `${t.intro}\n\n${items.map(i => `  ${i.label}: ${i.n}`).join('\n')}\n\n${t.cta}: ${data.appUrl}\n\n${t.footer}: ${data.appUrl}/setari/notifications`;

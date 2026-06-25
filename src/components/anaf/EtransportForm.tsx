@@ -137,10 +137,11 @@ export default function EtransportForm() {
                 <label className="text-[13px] text-[#9FB8CC]">Valoare (RON, fără TVA)</label>
                 <input className={inputCls} value={g.value} onChange={(e) => setLine(i, { value: e.target.value })} inputMode="decimal" placeholder="0" />
               </div>
-              <div className="sm:col-span-2 flex gap-2">
+              <div className="sm:col-span-2 flex justify-end items-end pb-0.5">
                 <button type="button" onClick={() => removeLine(i)} disabled={goods.length === 1}
-                  className="w-full py-2.5 rounded-full bg-white/10 text-white hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] text-[14px] font-semibold disabled:opacity-40">
-                  Șterge
+                  className="w-10 h-10 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors disabled:opacity-40"
+                  title="Șterge rândul">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             </div>

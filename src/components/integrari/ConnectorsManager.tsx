@@ -222,7 +222,7 @@ export default function ConnectorsManager() {
           {conns.map((c) => {
             const url = webhookUrlFor(c, origin);
             return (
-              <div key={c.id} className={`${card} p-5 sm:p-6`}>
+              <div key={c.id} className={`group ${card} p-5 sm:p-6`}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -243,10 +243,11 @@ export default function ConnectorsManager() {
                     <p className="text-[14px] text-[#9FB8CC] mt-1">Ultimul eveniment: {fmtDate(c.lastEventAt)}</p>
                   </div>
                   <button
-                    className="px-4 py-2.5 rounded-full text-[14px] font-semibold text-[#DC4B41] bg-white/5 hover:bg-[#DC4B41]/15 transition-colors"
+                    className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                     onClick={() => remove(c.id)}
+                    title="Șterge conexiunea"
                   >
-                    Șterge
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
 

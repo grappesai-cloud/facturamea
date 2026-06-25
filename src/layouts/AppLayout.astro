@@ -1,5 +1,6 @@
 ---
 // Glassmorphic app shell — floating navbar, dock, sheets and theming.
+// route-map integrity (sha2-512): a8896f90025e8be2277bb2fc03378afd77cec0783794e39d27b4831be5e6e63775065454b729202ec82bcf94641cb10970b94505252ee9b6202db1210e35b623
 import BaseLayout from './BaseLayout.astro';
 import CompanySwitcher from '../components/CompanySwitcher';
 import { NAV_MODULES } from '../lib/nav-modules';
@@ -36,16 +37,18 @@ const groups: { label: string; items: typeof NAV_MODULES }[] = [
 ];
 
 // Flat solid card colours from the Meadow ramp. fg = heading text, sub = description.
+// Medium-dark tiles so the WHITE title + subtitle read crisply on every card,
+// consistent with the dashboard quick-access cards.
 const TILE = [
-  { bg: '#D9ED92', fg: '#1C3A22', sub: '#3C5A33' },              // Lime Cream
-  { bg: '#B5E48C', fg: '#1B3A24', sub: '#395A33' },              // Light Green
-  { bg: '#99D98C', fg: '#163A26', sub: '#2F5638' },              // Willow
-  { bg: '#76C893', fg: '#0F3A28', sub: '#235340' },              // Emerald
-  { bg: '#52B69A', fg: '#06322A', sub: '#0F4A3C' },              // Ocean Mist
-  { bg: '#34A0A4', fg: '#06272B', sub: '#0C3E44' },              // Tropical Teal
-  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Bondi Blue
-  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Cerulean
-  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Baltic Blue
+  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Cerulean
+  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Bondi Blue
+  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Baltic Blue
+  { bg: '#2D8A6E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Pine Green
+  { bg: '#2A7B9B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Ocean
+  { bg: '#1D6E8C', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Deep Teal
+  { bg: '#357A6B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Spruce
+  { bg: '#246A93', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Steel Blue
+  { bg: '#155E75', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Dark Cerulean
 ];
 const tileFor = (key: string) => TILE[Math.max(0, NAV_MODULES.findIndex((m) => m.key === key)) % TILE.length];
 
@@ -211,13 +214,21 @@ const navMobile = navSections.filter((s) => s.mobile);
     /* App shell + content */
     html.th-light [data-app-shell] { background-color: #EEF2F6 !important; color: #11253A; }
     html.th-light [data-app-shell] .text-white, html.th-light [data-app-shell] .text-\[\#EAF2F8\] { color: #11253A !important; }
+    /* Module tiles (dashboard quick-access + Meniu) keep WHITE text in light mode —
+       they sit on coloured backgrounds where dark-flipped text would vanish. */
+    html.th-light [data-app-shell] .tile-text,
+    html.th-light [data-app-shell] .tile-text * { color: #fff !important; }
     html.th-light [data-app-shell] .text-\[\#C8DAE8\] { color: #3A4F63 !important; }
+    html.th-light [data-app-shell] .text-\[\#D7E5F0\] { color: #1F3346 !important; }
+    html.th-light [data-app-shell] .text-\[\#EAF2F8\] { color: #11253A !important; }
     html.th-light [data-app-shell] .text-\[\#9FB8CC\] { color: #4F6478 !important; }
     html.th-light [data-app-shell] .text-\[\#7C9AB4\] { color: #5E7385 !important; }
     html.th-light [data-app-shell] .border-white\/10  { border-color: rgba(17,37,58,0.10) !important; }
     html.th-light [data-app-shell] .border-white\/20  { border-color: rgba(17,37,58,0.18) !important; }
     html.th-light [data-app-shell] .bg-white\/5 { background-color: #FFFFFF !important; border-color: transparent !important; box-shadow: 0 1px 2px rgba(16,32,56,0.05), 0 12px 32px -18px rgba(16,32,56,0.20) !important; }
     html.th-light [data-app-shell] .bg-white\/10      { background-color: #E7ECF3 !important; }
+    html.th-light [data-app-shell] .hover\:bg-white\/15:hover { background-color: rgba(17,37,58,0.10) !important; }
+    html.th-light [data-app-shell] .hover\:bg-white\/20:hover { background-color: rgba(17,37,58,0.13) !important; }
     html.th-light [data-app-shell] .border-white\/10  { border-color: transparent !important; }
     /* "Adaugă o acțiune" picker (rendered inside the shell) */
     html.th-light [data-app-shell] .bg-\[\#0A2238\]   { background-color: #FFFFFF !important; }
@@ -244,6 +255,15 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light #settings-card .bg-white\/25        { background-color: rgba(17,37,58,0.20) !important; }
     html.th-light #settings-card .border-white\/10    { border-color: rgba(17,37,58,0.10) !important; }
     html.th-light #settings-card .hover\:bg-white\/20:hover { background-color: rgba(17,37,58,0.08) !important; }
+    html.th-light #settings-card .hover\:text-white:hover  { color: #11253A !important; }
+    html.th-light #settings-card .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(17,37,58,0.05) !important; }
+    html.th-light #settings-card .bg-\[\#071828\]          { background-color: #FFFFFF !important; box-shadow: 0 4px 20px rgba(16,32,56,0.12) !important; }
+    html.th-light #settings-card .text-\[\#D7E5F0\]        { color: #1F3346 !important; }
+    html.th-light #settings-card .text-\[\#8AA0B4\]        { color: #4A6478 !important; }
+    html.th-light #settings-card .bg-white\/10             { background-color: rgba(17,37,58,0.06) !important; }
+    html.th-light #settings-card .hover\:bg-white\/5:hover { background-color: rgba(17,37,58,0.04) !important; }
+    html.th-light #settings-card .ring-white\/10           { --tw-ring-color: rgba(17,37,58,0.12) !important; }
+    html.th-light #settings-card .border-white\/10         { border-color: rgba(17,37,58,0.10) !important; }
 
     /* Acțiuni sheet — light */
     html.th-light #menu-card { background-color: #EEF2F6 !important; }
@@ -259,6 +279,14 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light #help-card .bg-\[\#0A2238\]   { background-color: #E7ECF1 !important; }
     html.th-light #help-card .bg-white\/25      { background-color: rgba(17,37,58,0.18) !important; }
     html.th-light #help-card .border-white\/10  { border-color: rgba(17,37,58,0.10) !important; }
+
+    /* React components (client:load) that hardcode [color-scheme:dark] on selects/inputs
+       need to be flipped in light mode so native select dropdowns render light. */
+    html.th-light [data-app-shell] .\[color-scheme\:dark\] { color-scheme: light !important; }
+    html.th-light [data-app-shell] select.\[color-scheme\:dark\] {
+      background-color: #F5F7FA !important;
+      color: #11253A !important;
+    }
 
     /* Pin toggle buttons (on the meadow tiles) — light */
     html.th-light .dash-pin { background-color: rgba(255,255,255,0.92) !important; color: #1C3A22 !important; }
@@ -277,6 +305,122 @@ const navMobile = navSections.filter((s) => s.mobile);
     html [data-app-shell] .border-\[\#1A759F\] { border-color: #E1FB15 !important; }
     html [data-app-shell] .ring-\[\#1A759F\] { --tw-ring-color: #E1FB15 !important; }
     html.th-app-dark [data-app-shell] .text-\[\#1A759F\] { color: #9FE6B5 !important; }
+
+    /* ── Lime text (#E1FB15) → dark readable green in light mode ─────────────
+       Lime on white has <2:1 contrast ratio — replace with dark forest green. */
+    html.th-light [data-app-shell] .text-\[\#E1FB15\]                  { color: #4D8A1A !important; }
+    html.th-light [data-app-shell] .text-\[\#E1FB15\]\/70              { color: rgba(77,138,26,0.70) !important; }
+    html.th-light [data-app-shell] .text-\[\#D9ED92\]                  { color: #4D8A1A !important; }
+    html.th-light [data-app-shell] .hover\:text-\[\#E1FB15\]:hover     { color: #4D8A1A !important; }
+    html.th-light [data-app-shell] .hover\:border-\[\#E1FB15\]\/60:hover { border-color: rgba(77,138,26,0.60) !important; }
+
+    /* ── Dark dropdown panels (#071828) → white card in light mode ──────────
+       Replaces the old #0B2236 which was too close to the shell background.
+       Used in CompanySwitcher, EntryForm, InvoiceEmitForm, InvoiceActions. */
+    html.th-light [data-app-shell] .bg-\[\#071828\],
+    html.th-light [data-app-nav]   .bg-\[\#071828\] {
+      background-color: #FFFFFF !important;
+      box-shadow: 0 4px 24px rgba(16,32,56,0.14) !important;
+    }
+
+    /* ── CompanySwitcher: text + hover + bg fixes in navbar light mode ───────
+       The trigger row uses text-[#D7E5F0] (light blue, invisible on white) and
+       hover:text-white + hover:bg-white/[0.07] which we neutralise here. */
+    html.th-light [data-app-nav] .text-\[\#D7E5F0\]                  { color: #1F3346 !important; }
+    html.th-light [data-app-nav] .text-\[\#8AA0B4\]                  { color: #4A6478 !important; }
+    html.th-light [data-app-nav] .text-\[\#7E97AC\]                  { color: #5E7385 !important; }
+    html.th-light [data-app-nav] .hover\:text-white:hover            { color: #11253A !important; }
+    html.th-light [data-app-nav] .hover\:bg-white\/\[0\.07\]:hover   { background-color: rgba(17,37,58,0.05) !important; }
+    html.th-light [data-app-nav] .bg-white\/10                       { background-color: rgba(17,37,58,0.07) !important; }
+    html.th-light [data-app-nav] .hover\:bg-white\/5:hover           { background-color: rgba(17,37,58,0.04) !important; }
+    html.th-light [data-app-nav] .ring-white\/10                     { --tw-ring-color: rgba(17,37,58,0.12) !important; }
+    html.th-light [data-app-nav] .border-white\/10                   { border-color: rgba(17,37,58,0.10) !important; }
+    html.th-light [data-app-nav] .bg-white\/15                        { background-color: rgba(17,37,58,0.10) !important; }
+
+    /* ── Static white-alpha backgrounds not covered by hover variants ─────── */
+    html.th-light [data-app-shell] .bg-white\/15 { background-color: rgba(17,37,58,0.08) !important; }
+    html.th-light [data-app-shell] .bg-white\/20 { background-color: rgba(17,37,58,0.13) !important; }
+
+    /* ── Uncovered text colors in light mode ──────────────────────────────── */
+    html.th-light [data-app-shell] .text-\[\#8AA0B4\] { color: #4A6478 !important; }
+    html.th-light [data-app-shell] .text-\[\#E8C98C\] { color: #7B4A0A !important; }
+
+    /* ── Static lime border (active tab indicators) ───────────────────────── */
+    html.th-light [data-app-shell] .border-\[\#E1FB15\] { border-color: #4D8A1A !important; }
+
+    /* ── Focus rings: lime/40 and lime/60 → dark green in light mode ─────── */
+    html.th-light [data-app-shell] .focus\:ring-\[\#E1FB15\]\/40:focus { --tw-ring-color: rgba(52,102,15,0.55) !important; }
+    html.th-light [data-app-shell] .focus\:ring-\[\#E1FB15\]\/60:focus { --tw-ring-color: rgba(52,102,15,0.65) !important; }
+
+    /* ── Input ring-white variants in light mode (setari inputs) ──────────── */
+    html.th-light [data-app-shell] .ring-white\/15 { --tw-ring-color: rgba(17,37,58,0.18) !important; }
+    html.th-light [data-app-shell] .hover\:ring-white\/25:hover { --tw-ring-color: rgba(17,37,58,0.30) !important; }
+
+    /* ── hover:text-white and group-hover:text-white in app shell ─────────── */
+    html.th-light [data-app-shell] .hover\:text-white:hover { color: #11253A !important; }
+    html.th-light [data-app-shell] .group:hover .group-hover\:text-white { color: #11253A !important; }
+
+    /* ── Dark navy modals inside app shell (e.g. InboxManager detail panel) ─ */
+    html.th-light [data-app-shell] .bg-\[\#0E2A45\] { background-color: #FFFFFF !important; box-shadow: 0 4px 24px rgba(16,32,56,0.14) !important; }
+
+    /* ── Fractional white-alpha backgrounds in app shell ──────────────────── */
+    html.th-light [data-app-shell] .bg-white\/\[0\.06\] { background-color: rgba(17,37,58,0.04) !important; }
+    html.th-light [data-app-shell] .bg-white\/\[0\.03\] { background-color: rgba(17,37,58,0.02) !important; }
+    html.th-light [data-app-shell] .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(17,37,58,0.05) !important; }
+    html.th-light [data-app-shell] .hover\:bg-white\/\[0\.08\]:hover { background-color: rgba(17,37,58,0.06) !important; }
+
+    /* ── Muted blue-gray text (onboarding helper / step indicators) ──────── */
+    html.th-light [data-app-shell] .text-\[\#8FA8BE\] { color: #4A6478 !important; }
+
+    /* ── Input placeholder text — darken for light background ────────────── */
+    html.th-light [data-app-shell] .placeholder\:text-\[\#7C9AB4\]::placeholder { color: #5E7385 !important; }
+    html.th-light [data-app-shell] .placeholder\:text-\[\#8FA8BE\]::placeholder { color: #4A6478 !important; }
+
+    /* ── Static lime ring (#E1FB15/30) → dark green in light mode ─────────── */
+    html.th-light [data-app-shell] .ring-\[\#E1FB15\]\/30 { --tw-ring-color: rgba(77,138,26,0.40) !important; }
+
+    /* ── active:bg-white/10 in app shell (nav-like active states) ─────────── */
+    html.th-light [data-app-shell] .active\:bg-white\/10:active { background-color: rgba(17,37,58,0.08) !important; }
+
+    /* ── Ring-white/10 in app shell (modal outer rings, table rings) ─────── */
+    html.th-light [data-app-shell] .ring-white\/10 { --tw-ring-color: rgba(17,37,58,0.12) !important; }
+
+    /* ── Light-green text → dark green in light mode ─────────────────────── */
+    html.th-light [data-app-shell] .text-\[\#76C893\] { color: #1F7A3E !important; }
+    html.th-light #help-card .text-\[\#76C893\]       { color: #1F7A3E !important; }
+
+    /* ── Remove OS chrome from all <select> in the app — uniform custom chevron ── */
+    [data-app-shell] select,
+    [data-app-nav] select,
+    #menu-card select,
+    #settings-card select,
+    #help-card select {
+      -webkit-appearance: none;
+      appearance: none;
+      color-scheme: dark;
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%237C9AB4%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E") !important;
+      background-repeat: no-repeat !important;
+      background-position: right 12px center !important;
+      background-size: 17px !important;
+      padding-right: 36px !important;
+    }
+    html.th-light [data-app-shell] select,
+    html.th-light [data-app-nav] select {
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%234A6478%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E") !important;
+    }
+
+    /* ── Force dark color-scheme on all native date inputs so the OS calendar popup is dark ── */
+    [data-app-shell] input[type="date"],
+    [data-app-nav] input[type="date"],
+    #menu-card input[type="date"],
+    #settings-card input[type="date"],
+    #help-card input[type="date"] {
+      color-scheme: dark;
+    }
+    html.th-light [data-app-shell] input[type="date"],
+    html.th-light [data-app-nav] input[type="date"] {
+      color-scheme: light;
+    }
   </style>
 
   <!-- ───────── Floating navbar (glass) — body-level so nothing can break `fixed` ───────── -->
@@ -323,8 +467,16 @@ const navMobile = navSections.filter((s) => s.mobile);
           <div id="settings-menu" class="app-sheet hidden fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
             <div id="settings-card" class="app-sheet-card sheet-content w-full sm:max-w-[440px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#0B2741] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
 
-              <!-- grab handle (mobile) — drag down to dismiss -->
-              <div id="settings-handle" class="flex justify-center pt-3.5 pb-2 touch-none select-none cursor-grab active:cursor-grabbing"><span class="w-10 h-1.5 rounded-full fm-grab"></span></div>
+              <!-- header: grab pill (mobile) + close button (all screen sizes) -->
+              <div class="flex items-center px-3 pt-3.5 pb-2 select-none">
+                <div class="flex-1"></div>
+                <div id="settings-handle" class="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span class="w-10 h-1.5 rounded-full fm-grab pointer-events-none"></span></div>
+                <div class="flex-1 flex justify-end">
+                  <button id="settings-close-btn" type="button" aria-label="Închide" class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
 
               <!-- Brand -->
               <a href="/app" class="flex items-center gap-2.5 px-5 pt-5 pb-1">
@@ -478,7 +630,16 @@ const navMobile = navSections.filter((s) => s.mobile);
   <!-- ───────── Meniu overlay (quick actions) ───────── -->
   <div id="menu-overlay" class="app-sheet hidden fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <div id="menu-card" class="app-sheet-card w-full sm:max-w-[820px] max-h-[94vh] sm:max-h-[92vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
-      <div id="menu-handle" class="flex justify-center pt-3.5 pb-1 touch-none select-none cursor-grab active:cursor-grabbing"><span class="w-10 h-1.5 rounded-full fm-grab"></span></div>
+      <!-- header: grab pill (mobile) + close button -->
+      <div class="flex items-center px-3 pt-3.5 pb-1 select-none">
+        <div class="flex-1"></div>
+        <div id="menu-handle" class="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span class="w-10 h-1.5 rounded-full fm-grab pointer-events-none"></span></div>
+        <div class="flex-1 flex justify-end">
+          <button id="menu-close-btn" type="button" aria-label="Închide" class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
       <div class="sheet-content px-4 sm:px-7 pt-3 sm:pt-7 pb-7">
       <div class="mb-6">
         <h2 class="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-white">Ce vrei să faci?</h2>
@@ -492,12 +653,15 @@ const navMobile = navSections.filter((s) => s.mobile);
               const canPin = isPinnable(m.key, m.primary);
               return (
                 <div class="relative h-full">
-                  <a href={m.href} class={`group relative overflow-hidden flex h-full items-center gap-3 p-4 ${canPin ? 'pr-12' : ''} rounded-2xl transition-transform hover:-translate-y-0.5`} style={`background:${t.bg}`}>
-                    <span class="absolute inset-0 bg-black/25 pointer-events-none"></span>
-                    <svg class="relative w-7 h-7 shrink-0 text-[#ffffff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
-                    <span class="relative min-w-0 flex-1">
-                      <span class="block text-[15.5px] font-semibold leading-tight truncate text-[#ffffff]">{m.label}</span>
-                      <span class="block text-[12.5px] mt-0.5 leading-snug line-clamp-2 text-[#ffffff]/75">{m.desc}</span>
+                  <a href={m.href} class={`group relative overflow-hidden flex flex-col justify-end h-full min-h-[104px] p-4 ${canPin ? 'pr-12' : ''} rounded-2xl transition-transform hover:-translate-y-0.5`} style={`background:${t.bg}`}>
+                    {/* large icon watermark behind the text, centered */}
+                    <span class="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                      <svg class="w-[130%] h-[130%] text-white/[0.10]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="0.9"><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
+                    </span>
+                    {/* title + subtitle — use inline colour so CSS overrides can't invert them */}
+                    <span class="tile-text relative z-10 w-full">
+                      <span class="block w-full text-[15.5px] font-bold leading-tight" style={`color:${t.fg}`}>{m.label}</span>
+                      <span class="block w-full text-[12.5px] mt-1 leading-snug line-clamp-2" style={`color:${t.sub}`}>{m.desc}</span>
                     </span>
                   </a>
                   {canPin && (
@@ -519,7 +683,16 @@ const navMobile = navSections.filter((s) => s.mobile);
   <!-- ───────── Ajutor sheet ───────── -->
   <div id="help-modal" class="app-sheet hidden fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <div id="help-card" class="app-sheet-card w-full sm:max-w-[520px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#123455] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/15 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
-      <div id="help-handle" class="flex justify-center pt-3.5 pb-1 touch-none select-none cursor-grab active:cursor-grabbing"><span class="w-10 h-1.5 rounded-full fm-grab"></span></div>
+      <!-- header: grab pill (mobile) + close button -->
+      <div class="flex items-center px-3 pt-3.5 pb-1 select-none">
+        <div class="flex-1"></div>
+        <div id="help-handle" class="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span class="w-10 h-1.5 rounded-full fm-grab pointer-events-none"></span></div>
+        <div class="flex-1 flex justify-end">
+          <button id="help-close-btn" type="button" aria-label="Închide" class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+      </div>
       <div class="px-5 pt-3 sm:pt-6 pb-1">
         <h3 class="text-[20px] font-bold text-white">Ajutor</h3>
       </div>
@@ -580,9 +753,9 @@ const navMobile = navSections.filter((s) => s.mobile);
 
       const dismissThreshold = () => Math.min(110, (card ? card.offsetHeight : 600) * 0.2);
 
-      // (1) Drag the grab handle — works with mouse AND touch, because the handle
-      //     has touch-action:none so the browser never steals the gesture.
-      if (handle && card) {
+      // (1) Drag the grab handle — touch devices only (not mouse/trackpad).
+      const isMouse = window.matchMedia('(pointer: fine)').matches;
+      if (!isMouse && handle && card) {
         let dragging = false, hSy = 0, hDy = 0;
         handle.addEventListener('pointerdown', (e: PointerEvent) => {
           dragging = true; hSy = e.clientY; hDy = 0;
@@ -636,30 +809,6 @@ const navMobile = navSections.filter((s) => s.mobile);
         card.addEventListener('touchcancel', endTouch);
       }
 
-      // (3) Wheel / trackpad smooth close — ONLY in the mobile sheet layout
-      //     (< 640px, incl. the device sandbox). Overscroll past the top drags the
-      //     sheet and animates it closed. 'dragging' is toggled ONCE per gesture and
-      //     we preventDefault while we own it, so there's no transition flip-flop or
-      //     competing native scroll — i.e. no jitter.
-      if (card) {
-        const mqMobile = window.matchMedia('(max-width: 639px)');
-        let dist = 0, wTimer = 0;
-        const snapBack = () => { dist = 0; card.classList.remove('dragging'); card.style.transform = ''; };
-        card.addEventListener('wheel', (e: WheelEvent) => {
-          if (!mqMobile.matches) return; // desktop layout: no scroll-to-close
-          const atTop = card.scrollTop <= 0;
-          const noScroll = card.scrollHeight <= card.clientHeight + 2;
-          // Dismiss by swiping the sheet down (negative deltaY w/ natural scroll) at the top.
-          if (!(e.deltaY < 0 && (atTop || noScroll))) { if (dist > 0) snapBack(); return; }
-          e.preventDefault();                              // own the gesture (no native scroll)
-          if (dist === 0) card.classList.add('dragging');  // start once → smooth follow
-          dist += Math.abs(e.deltaY);
-          card.style.transform = `translateY(${Math.min(dist * 0.5, 220)}px)`;
-          window.clearTimeout(wTimer);
-          if (dist > 150) { dist = 0; close(); return; }
-          wTimer = window.setTimeout(snapBack, 160);
-        }, { passive: false });
-      }
       return { open, close, toggle, isOpen };
     }
 
@@ -678,6 +827,9 @@ const navMobile = navSections.filter((s) => s.mobile);
     bind('menu-open', menu.open); bind('menu-open-bottom', menu.open);
     bind('help-open', help.open); bind('help-open-2', help.open);
     bind('help-open-settings', () => { settings.close(); setTimeout(() => help.open(), 120); });
+    document.getElementById('settings-close-btn')?.addEventListener('click', settings.close);
+    document.getElementById('menu-close-btn')?.addEventListener('click', menu.close);
+    document.getElementById('help-close-btn')?.addEventListener('click', help.close);
     settingsBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       settings.toggle();

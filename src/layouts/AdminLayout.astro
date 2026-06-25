@@ -40,29 +40,29 @@ const opsNav = [
 ];
 ---
 
-<BaseLayout title={`Admin — ${title}`} themeColor="#0A0A0A">
+<BaseLayout title={`Admin — ${title}`} themeColor="#0A2238">
   {requireTotpSetup && !isOnSecurityPage && (
-    <div class="min-h-screen flex items-center justify-center bg-[#FAFAF8] text-[#0A0A0A] px-6" style="font-family:'Inter',sans-serif">
-      <div class="max-w-md w-full p-8 bg-white border border-[#E8E8E4] rounded-xl text-center">
+    <div class="min-h-screen flex items-center justify-center bg-[#EDF1F5] text-[#0A2238] px-6" style="font-family:'Outfit',sans-serif">
+      <div class="max-w-md w-full p-8 bg-white border border-[#E3EAF1] rounded-xl text-center">
         <div class="inline-block w-12 h-12 bg-[#1A759F]/10 rounded-full flex items-center justify-center mb-4">
           <span class="text-[#1A759F] text-[20px] font-bold">!</span>
         </div>
         <h1 class="text-[20px] font-bold tracking-[-0.02em]">2FA obligatoriu pentru admini</h1>
-        <p class="text-[13px] text-[#6B6B68] mt-2 leading-relaxed">
+        <p class="text-[13px] text-[#46627A] mt-2 leading-relaxed">
           Nu poţi accesa panoul admin fără autentificare în 2 paşi. Risc de compromis prea mare. Activează 2FA acum — durează 60 secunde.
         </p>
         <a href="/app/setari/securitate" class="inline-block mt-5 px-6 py-3 bg-[#1A759F] hover:bg-[#168AAD] text-white font-semibold rounded-xl text-[13px] transition-colors">
           Activează 2FA →
         </a>
-        <p class="text-[11px] text-[#6B6B68] mt-4">Vei reveni automat aici după activare.</p>
+        <p class="text-[11px] text-[#46627A] mt-4">Vei reveni automat aici după activare.</p>
       </div>
     </div>
   )}
   {!requireTotpSetup && (
-  <div class="min-h-screen flex bg-[#FAFAF8] text-[#0A0A0A]" style="font-family:'Inter',ui-sans-serif,system-ui,sans-serif">
+  <div class="min-h-screen flex bg-[#EDF1F5] text-[#0A2238]" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <!-- Sidebar -->
-    <aside class="w-[240px] bg-white border-r border-[#E8E8E4] flex flex-col shrink-0 sticky top-0 h-screen">
-      <div class="px-5 py-5 border-b border-[#E8E8E4]">
+    <aside class="w-[240px] bg-white border-r border-[#E3EAF1] flex flex-col shrink-0 sticky top-0 h-screen">
+      <div class="px-5 py-5 border-b border-[#E3EAF1]">
         <a href="/admin" class="flex items-center gap-2.5">
           <div class="w-7 h-7 bg-[#1A759F] rounded-xl flex items-center justify-center">
             <span class="text-white font-bold text-[11px]">fm</span>
@@ -75,7 +75,7 @@ const opsNav = [
       </div>
 
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8A8A4] font-medium px-3 mb-2">Conţinut</p>
+        <p class="text-[10px] uppercase tracking-[0.18em] text-[#9FB8CC] font-medium px-3 mb-2">Conţinut</p>
         {navItems.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -83,8 +83,8 @@ const opsNav = [
               href={item.href}
               class:list={[
                 'flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl text-[13px] transition-colors relative',
-                active ? 'text-[#0A0A0A] font-semibold bg-[#F0F0EC]'
-                       : 'text-[#6B6B68] hover:text-[#0A0A0A] hover:bg-[#F4F4F0] font-medium',
+                active ? 'text-[#0A2238] font-semibold bg-[#E3EAF1]'
+                       : 'text-[#46627A] hover:text-[#0A2238] hover:bg-[#F4F4F0] font-medium',
               ]}
             >
               {active && <span class="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#1A759F] rounded-r-sm"></span>}
@@ -93,7 +93,7 @@ const opsNav = [
           );
         })}
 
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8A8A4] font-medium px-3 mt-6 mb-2">Operaţiuni</p>
+        <p class="text-[10px] uppercase tracking-[0.18em] text-[#9FB8CC] font-medium px-3 mt-6 mb-2">Operaţiuni</p>
         {opsNav.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -101,8 +101,8 @@ const opsNav = [
               href={item.href}
               class:list={[
                 'flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl text-[13px] transition-colors relative',
-                active ? 'text-[#0A0A0A] font-semibold bg-[#F0F0EC]'
-                       : 'text-[#6B6B68] hover:text-[#0A0A0A] hover:bg-[#F4F4F0] font-medium',
+                active ? 'text-[#0A2238] font-semibold bg-[#E3EAF1]'
+                       : 'text-[#46627A] hover:text-[#0A2238] hover:bg-[#F4F4F0] font-medium',
               ]}
             >
               {active && <span class="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#1A759F] rounded-r-sm"></span>}
@@ -112,18 +112,18 @@ const opsNav = [
         })}
       </nav>
 
-      <div class="p-3 border-t border-[#E8E8E4]">
-        <a href="/app" class="block px-4 py-2 text-[12px] text-[#6B6B68] hover:text-[#0A0A0A] transition-colors">← Înapoi la platformă</a>
+      <div class="p-3 border-t border-[#E3EAF1]">
+        <a href="/app" class="block px-4 py-2 text-[12px] text-[#46627A] hover:text-[#0A2238] transition-colors">← Înapoi la platformă</a>
       </div>
     </aside>
 
     <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0">
-      <header class="h-14 border-b border-[#E8E8E4] flex items-center justify-between px-6 bg-white sticky top-0 z-10">
+      <header class="h-14 border-b border-[#E3EAF1] flex items-center justify-between px-6 bg-white sticky top-0 z-10">
         <h1 class="text-[15px] font-semibold">{title}</h1>
         <div class="flex items-center gap-3">
-          <span class="text-[12px] text-[#6B6B68]">{user?.name}</span>
-          <span class="px-2 py-0.5 bg-[#0A0A0A] text-white text-[10px] font-bold uppercase tracking-wider rounded">Admin</span>
+          <span class="text-[12px] text-[#46627A]">{user?.name}</span>
+          <span class="px-2 py-0.5 bg-[#0A2238] text-white text-[10px] font-bold uppercase tracking-wider rounded">Admin</span>
         </div>
       </header>
 

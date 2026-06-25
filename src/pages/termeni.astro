@@ -3,155 +3,62 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 
 Astro.response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
 Astro.response.headers.set('Vary', 'Cookie');
-
-const h2 = 'text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-9 mb-3';
-const p = 'text-[#1C3A52] leading-relaxed mb-3';
 ---
 
-<PublicLayout title="Termeni și Condiții" description="Termenii și Condițiile de utilizare ale platformei de facturare facturamea, operată de SOLAAS TECH S.R.L.">
+<PublicLayout title="Termeni și condiții" description="Termenii de utilizare ai aplicației de facturare facturamea.">
   <article class="max-w-none">
-    <h1 class="text-3xl font-bold text-[#0A2238] tracking-[-0.02em] mb-1">Termeni și Condiții</h1>
-    <p class="text-sm text-[#46627A] mb-6">Platforma de facturare facturamea · Versiunea 1.1 · în vigoare de la 22 iunie 2026</p>
+    <h1 class="text-3xl font-bold text-[#0A2238] tracking-[-0.02em] mb-2">Termeni și condiții</h1>
+    <p class="text-sm text-[#46627A] mb-8">Ultima actualizare: 11 iunie 2026</p>
 
-    <div class="p-5 bg-[#F5F8FB] rounded-2xl ring-1 ring-black/[0.05] mb-8">
-      <h2 class="text-base font-bold text-[#0A2238] mb-2">Informații despre operatorul platformei</h2>
-      <p class={p}>Platforma facturamea, accesibilă la adresa <strong>https://facturamea.com</strong> („Platforma" sau „facturamea"), este deținută și operată de:</p>
-      <p class="text-[#1C3A52] leading-relaxed">
-        <strong>SOLAAS TECH S.R.L.</strong><br />
-        Sediu social: municipiul Constanța, str. Prieteniei nr. 7, bl. P, sc. B, et. 2, ap. 26, județul Constanța, România<br />
-        Înregistrată la Oficiul Registrului Comerțului Constanța sub nr. J2026038411001<br />
-        Cod unic de înregistrare (CUI): 54888013<br />
-        Reprezentată legal prin Solomon Dragoș-Cristian, în calitate de administrator<br />
-        E-mail de contact: contact@facturamea.com
-      </p>
-      <p class="text-[#1C3A52] leading-relaxed mt-3">denumită în continuare „Furnizorul", „Operatorul", „noi" sau „facturamea".</p>
-    </div>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">1. Definiții</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      <strong>"Aplicația"</strong> se referă la facturamea, accesibilă la <code>facturamea.com</code>, subdomeniile asociate și aplicațiile mobile iOS și Android.
+      <strong>"Utilizator"</strong> este orice persoană fizică sau juridică ce folosește Aplicația.
+      <strong>"Conținut"</strong> include facturile, proformele, avizele, chitanțele, datele de companie, produsele, clienții și orice alt material introdus de Utilizatori.
+    </p>
 
-    <p class={p}>Prezentul document („Termenii și Condițiile" sau „Termenii") reglementează raporturile dintre Furnizor și orice persoană fizică sau juridică ce creează un cont și utilizează Platforma („Utilizatorul", „Clientul" sau „dumneavoastră"). Vă rugăm să citiți cu atenție acești Termeni înainte de a crea un cont și de a utiliza Platforma.</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">2. Eligibilitate</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      Aplicația este destinată firmelor și persoanelor autorizate care emit documente fiscale în România. La înregistrare, Utilizatorul declară pe propria răspundere că datele furnizate sunt corecte și că deține autoritatea legală pentru a reprezenta entitatea pentru care emite documente.
+    </p>
 
-    <h2 class={h2}>1. Acceptarea Termenilor și crearea contului</h2>
-    <p class={p}>1.1. Crearea unui cont pe facturamea și utilizarea Platformei presupun citirea, înțelegerea și acceptarea integrală și necondiționată a prezenților Termeni și Condiții, precum și a Politicii de Confidențialitate, care face parte integrantă din aceștia.</p>
-    <p class={p}>1.2. La crearea contului, Utilizatorul este obligat să bifeze în mod expres căsuța „Am citit și sunt de acord cu Termenii și Condițiile și cu Politica de Confidențialitate". Fără această bifă, contul nu poate fi creat, iar accesul la Platformă nu este permis. Bifarea căsuței și finalizarea înregistrării au valoarea unui acord ferm, echivalent unei semnături electronice în sensul legislației aplicabile.</p>
-    <p class={p}>1.3. Dacă nu sunteți de acord cu oricare dintre prevederile prezenților Termeni, nu creați un cont și nu utilizați Platforma.</p>
-    <p class={p}>1.4. Furnizorul își rezervă dreptul de a modifica Termenii în condițiile Capitolului 18. Continuarea utilizării Platformei după intrarea în vigoare a unei versiuni modificate constituie acceptarea acelei versiuni.</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">3. Cont și securitate</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      Utilizatorul este responsabil pentru păstrarea confidențialității credențialelor de acces. Orice activitate efectuată prin contul său este considerată autorizată. Suspectarea unei breșe trebuie raportată imediat la <a href="mailto:support@facturamea.com" class="text-[#1A759F] hover:underline">support@facturamea.com</a>.
+    </p>
 
-    <h2 class={h2}>2. Definiții</h2>
-    <p class={p}><strong>Platforma:</strong> aplicația web facturamea și toate funcționalitățile, modulele și serviciile asociate, puse la dispoziție prin https://facturamea.com.</p>
-    <p class={p}><strong>Cont:</strong> spațiul individual, protejat prin date de autentificare, prin care Utilizatorul accesează Platforma.</p>
-    <p class={p}><strong>Utilizator:</strong> persoana fizică autorizată, persoana fizică ce reprezintă o entitate, sau persoana juridică ce a creat un cont și utilizează Platforma.</p>
-    <p class={p}><strong>Acces pe viață (lifetime):</strong> dreptul de utilizare a Platformei, dobândit printr-o plată unică, în condițiile și pe durata prevăzute la Capitolele 6 și 14.</p>
-    <p class={p}><strong>ANAF:</strong> Agenția Națională de Administrare Fiscală, inclusiv sistemele sale electronice (e-Factura, e-Transport, SPV).</p>
-    <p class={p}><strong>Conținutul Utilizatorului:</strong> toate datele introduse sau încărcate de Utilizator (date despre firmă, clienți, produse, facturi, documente și altele asemenea).</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">4. Licență și plată</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      facturamea se oferă cu o licență pe viață, contra unei plăți unice de 700 RON. Plata se efectuează din interiorul aplicației și acordă acces la funcțiile incluse, fără abonament recurent. Plata unică nu este, de regulă, rambursabilă după activarea licenței, cu excepția cazurilor prevăzute de lege.
+    </p>
 
-    <h2 class={h2}>3. Obiectul și descrierea serviciului</h2>
-    <p class={p}>3.1. facturamea este o platformă software de tip SaaS (software pus la dispoziție ca serviciu) destinată emiterii și gestiunii documentelor financiar-contabile pentru firme din România, incluzând, fără a se limita la: facturi, proforme, avize, chitanțe, facturi storno, facturare recurentă, gestiunea clienților și a produselor, gestiunea stocurilor, evidența cheltuielilor, rapoarte și integrarea cu sistemele electronice ale ANAF (e-Factura, e-Transport, SPV).</p>
-    <p class={p}>3.2. Furnizorul pune la dispoziția Utilizatorului Platforma în starea în care aceasta se află la momentul utilizării („as is") și depune eforturi rezonabile pentru funcționarea ei corectă și pentru actualizarea conformității cu cerințele legale aplicabile.</p>
-    <p class={p}>3.3. facturamea este un instrument software. Furnizorul nu prestează servicii de contabilitate, de consultanță fiscală sau juridică, iar utilizarea Platformei nu înlocuiește serviciile unui contabil, expert contabil sau consultant fiscal autorizat.</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">5. Documente fiscale și conformitate</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      Aplicația oferă instrumente pentru emiterea facturilor și transmiterea acestora către ANAF prin e-Factura, e-Transport și generarea SAF-T D406. Utilizatorul rămâne responsabil pentru corectitudinea datelor introduse, pentru respectarea termenelor fiscale și pentru conformitatea documentelor emise cu legislația aplicabilă.
+    </p>
 
-    <h2 class={h2}>4. Eligibilitate și conturi de utilizator</h2>
-    <p class={p}>4.1. Pentru a crea un cont, Utilizatorul trebuie să aibă capacitate deplină de exercițiu și, în cazul reprezentării unei entități, să dețină dreptul de a o reprezenta și de a o obliga.</p>
-    <p class={p}>4.2. Utilizatorul este obligat să furnizeze date reale, corecte, complete și actuale la înregistrare și să le mențină actualizate.</p>
-    <p class={p}>4.3. Utilizatorul este singurul responsabil pentru păstrarea confidențialității datelor de autentificare și pentru toate activitățile desfășurate prin contul său. Orice utilizare neautorizată a contului trebuie notificată Furnizorului fără întârziere.</p>
-    <p class={p}>4.4. Un cont este destinat unei singure entități (firmă). Utilizatorul poate adăuga membri de echipă cu roluri și permisiuni distincte, rămânând răspunzător pentru activitatea acestora.</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">6. Conținut și utilizare</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      Utilizatorul garantează că folosește Aplicația în scopuri legale și că datele introduse nu încalcă drepturi ale terților. facturamea își rezervă dreptul de a suspenda conturi cu activitate frauduloasă, abuzivă sau care pune în pericol integritatea serviciului.
+    </p>
 
-    <h2 class={h2}>5. Prețul, plata și accesul pe viață</h2>
-    <p class={p}>5.1. <strong>Plată unică, acces pe viață.</strong> Accesul la Platformă se acordă printr-o plată unică (o singură dată), care conferă Utilizatorului acces pe viață la funcționalitățile incluse, în condițiile prezenților Termeni. facturamea nu funcționează pe bază de abonament și nu percepe taxe recurente de utilizare a Platformei.</p>
-    <p class={p}>5.2. <strong>Preț.</strong> Prețul standard al accesului pe viață este de 700 RON (șapte sute lei), plată unică.</p>
-    <p class={p}>5.3. <strong>Cod de reducere.</strong> În cazul aplicării unui cod de reducere valabil la momentul achiziției, prețul accesului pe viață este de 600 RON (șase sute lei), plată unică. Codurile de reducere sunt valabile în limita condițiilor și a perioadei comunicate de Furnizor și nu pot fi cumulate decât dacă se prevede expres altfel.</p>
-    <p class={p}>5.4. Prețurile sunt exprimate în lei (RON). Dacă Furnizorul este plătitor de TVA la momentul facturării, prețul se înțelege conform regimului fiscal aplicabil, menționat pe factura emisă.</p>
-    <p class={p}>5.5. Plata se efectuează integral, în avans, prin modalitățile de plată puse la dispoziție în Platformă (de exemplu procesatorul de plăți online). Accesul complet la funcționalitățile incluse se activează după confirmarea plății.</p>
-    <p class={p}>5.6. Pentru fiecare plată, Furnizorul emite factura corespunzătoare, în conformitate cu legislația fiscală în vigoare.</p>
-    <p class={p}>5.7. Anumite funcționalități care depind de servicii ale terților (de exemplu costuri de procesare a plăților percepute de terți, servicii premium, nume de domeniu proprii sau alte servicii opționale) pot genera costuri separate, care vor fi comunicate în prealabil și suportate de Utilizator numai cu acordul său. Plata unică pentru accesul pe viață nu acoperă astfel de costuri ale terților.</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">7. Limitarea răspunderii</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      Aplicația este oferită "ca atare". facturamea nu răspunde pentru pierderi indirecte, întreruperi temporare ale serviciului, indisponibilitatea sistemelor ANAF sau prejudicii rezultate din date introduse greșit de Utilizator. Răspunderea totală a facturamea se limitează la suma plătită de Utilizator pentru licență.
+    </p>
 
-    <h2 class={h2}>6. Licența de utilizare</h2>
-    <p class={p}>6.1. În schimbul plății prevăzute la Capitolul 5, Furnizorul acordă Utilizatorului un drept de utilizare neexclusiv, netransferabil și nesublicențiabil asupra Platformei, limitat la desfășurarea activității proprii a Utilizatorului și pe durata prevăzută la Capitolul 14.</p>
-    <p class={p}>6.2. Utilizatorului îi este interzis: să copieze, să decompileze, să dezasambleze sau să încerce să obțină codul-sursă al Platformei; să revândă, să închirieze sau să pună la dispoziția terților accesul la Platformă în nume propriu; să utilizeze Platforma în scopuri ilegale sau contrare prezenților Termeni; să afecteze securitatea, integritatea sau disponibilitatea Platformei.</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">8. Modificări</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      facturamea poate modifica acești Termeni oricând. Utilizatorii vor fi notificați cu cel puțin 7 zile înainte de modificările materiale. Continuarea utilizării după acea dată constituie acceptarea modificărilor.
+    </p>
 
-    <h2 class={h2}>7. Integrarea cu ANAF și răspunderea fiscală</h2>
-    <p class={p}>7.1. Platforma permite conectarea contului Utilizatorului la sistemele electronice ale ANAF (e-Factura, e-Transport, SPV) prin mecanismul oficial de autorizare (OAuth). Conectarea se realizează de către Utilizator, pe propria răspundere, folosind certificatul digital calificat al acestuia sau al reprezentantului său autorizat, înrolat în SPV pentru codul fiscal al Utilizatorului.</p>
-    <p class={p}>7.2. Furnizorul nu deține și nu poate obține acces la ANAF în numele Utilizatorului fără autorizarea expresă a acestuia. Utilizatorul este responsabil pentru obținerea, valabilitatea și reînnoirea certificatului digital calificat și a accesului în SPV.</p>
-    <p class={p}>7.3. Utilizatorul este singurul responsabil pentru corectitudinea, realitatea și conformitatea datelor introduse în documentele emise (date de identificare, sume, cote de TVA, descrieri, termene și altele asemenea), precum și pentru respectarea obligațiilor sale fiscale și de raportare.</p>
-    <p class={p}>7.4. Furnizorul depune eforturi rezonabile pentru ca documentele generate (de exemplu fișierele în format electronic transmise către e-Factura) să respecte specificațiile tehnice publicate de ANAF. Cu toate acestea, Furnizorul nu garantează acceptarea fiecărui document de către ANAF și nu răspunde pentru respingeri, întârzieri sau indisponibilități cauzate de sistemele ANAF, de modificări ale acestora ori de erori în datele introduse de Utilizator.</p>
-    <p class={p}>7.5. facturamea nu constituie consultanță fiscală. Pentru interpretarea și aplicarea corectă a legislației fiscale, Utilizatorul se adresează unui specialist autorizat.</p>
+    <h2 class="text-xl font-bold text-[#0A2238] tracking-[-0.02em] mt-8 mb-3">9. Legea aplicabilă</h2>
+    <p class="text-[#0A2238] leading-relaxed mb-4">
+      Termenii sunt guvernați de legea română. Litigiile vor fi soluționate amiabil sau, în lipsa unui acord, de instanțele competente din România.
+    </p>
 
-    <h2 class={h2}>8. Obligațiile Utilizatorului</h2>
-    <ul class="list-disc pl-5 space-y-1.5 text-[#1C3A52] leading-relaxed mb-3">
-      <li>să utilizeze Platforma cu bună-credință și în conformitate cu legislația aplicabilă și cu prezenții Termeni;</li>
-      <li>să furnizeze și să mențină date reale, corecte și actuale;</li>
-      <li>să păstreze confidențialitatea datelor de autentificare și să răspundă pentru activitatea din contul său;</li>
-      <li>să garanteze că deține toate drepturile asupra Conținutului Utilizatorului introdus în Platformă;</li>
-      <li>să nu utilizeze Platforma pentru emiterea de documente fictive, frauduloase sau în alte scopuri ilicite;</li>
-      <li>să suporte costurile serviciilor terților prevăzute la art. 5.7, atunci când este cazul.</li>
-    </ul>
-
-    <h2 class={h2}>9. Disponibilitatea serviciului, mentenanță și suport</h2>
-    <p class={p}>9.1. Furnizorul depune eforturi rezonabile pentru a asigura disponibilitatea Platformei într-un regim continuu. Cu toate acestea, Platforma poate fi temporar indisponibilă din motive de mentenanță, actualizări, incidente tehnice sau cauze independente de Furnizor (inclusiv servicii ale terților).</p>
-    <p class={p}>9.2. Furnizorul nu garantează un nivel de disponibilitate (uptime) determinat și nu răspunde pentru prejudicii rezultate din indisponibilități temporare, sub rezerva limitărilor de la Capitolul 12.</p>
-    <p class={p}>9.3. Furnizorul poate efectua actualizări, îmbunătățiri și corecții ale Platformei, inclusiv pentru menținerea conformității cu cerințele legale. Astfel de actualizări sunt incluse în accesul pe viață, în limita funcționalităților echivalente celor existente la momentul achiziției.</p>
-    <p class={p}>9.4. Suportul tehnic se acordă prin canalele indicate în Platformă sau la adresa de e-mail de contact, într-un termen rezonabil.</p>
-
-    <h2 class={h2}>10. Durata accesului pe viață și încetarea activității Operatorului</h2>
-    <p class={p}>10.1. Accesul pe viață înseamnă dreptul de utilizare a Platformei pe toată durata în care societatea Furnizorului, SOLAAS TECH S.R.L., există și funcționează ca persoană juridică activă. Accesul este inclus în plata unică prevăzută la Capitolul 5 și nu generează costuri recurente de utilizare pe durata menționată.</p>
-    <p class={p}>10.2. În situația în care Furnizorul își încetează activitatea, intră în procedură de dizolvare, lichidare, insolvență sau radiere, ori decide întreruperea definitivă a Platformei, Furnizorul va notifica Utilizatorii cu cel puțin 30 (treizeci) de zile înainte.</p>
-    <p class={p}>10.3. În termenul de notificare prevăzut la art. 10.2, Furnizorul va pune la dispoziția Utilizatorului posibilitatea de a-și exporta Conținutul Utilizatorului (facturi, clienți, produse și alte date) în formate uzuale (de exemplu CSV, XML, PDF) și va acorda sprijin rezonabil pentru migrarea către o altă soluție aleasă de Utilizator.</p>
-    <p class={p}>10.4. Încetarea Platformei în condițiile art. 10.2, ca urmare a încetării activității Furnizorului, nu dă naștere unei obligații de rambursare a plății unice, aceasta fiind acordată pentru accesul pe durata existenței și funcționării Operatorului, sub rezerva dispozițiilor legale imperative aplicabile consumatorilor.</p>
-    <p class={p}>10.5. <strong>Dependența de sisteme și servicii ale terților.</strong> Părțile recunosc și acceptă în mod expres că funcționarea anumitor module ale Platformei, în special cele de interconectare cu sistemele informatice ale ANAF (e-Factura, e-Transport, SPV) prin protocolul de autorizare OAuth ori prin orice mecanism succesor sau echivalent, este condiționată în mod esențial și determinant de menținerea, de către ANAF și/sau de către orice altă autoritate publică ori terț furnizor, a disponibilității, a compatibilității tehnice, a specificațiilor și a continuității respectivelor interfețe, protocoale și mecanisme de autorizare. În ipoteza în care ANAF ori oricare asemenea terț, din orice cauză și indiferent de natura ori imputabilitatea acesteia (incluzând, fără a se limita la: modificări legislative sau de reglementare, modificări ori incompatibilități tehnice, schimbări ale politicii de acces, retragerea, dezactivarea, suspendarea ori încetarea furnizării mecanismului de autorizare OAuth sau a interfețelor aferente), încetează, suspendă, restrânge, condiționează ori modifică furnizarea respectivelor servicii astfel încât prestarea, integrală sau parțială, a Platformei devine imposibilă, nepracticabilă din punct de vedere tehnic sau economic ori contrară legii, Furnizorul este îndreptățit, la libera și suverana sa apreciere și fără ca prin aceasta să i se poată angaja vreo formă de răspundere, să suspende, să limiteze ori să înceteze, temporar sau definitiv, funcționalitățile afectate sau, după caz, Platforma în integralitatea sa, o atare măsură neputând fi calificată drept neexecutare culpabilă a obligațiilor asumate. O asemenea încetare se realizează, în măsura în care este obiectiv posibil, cu respectarea termenului de notificare și a mecanismului de export prevăzute la art. 10.2 și 10.3, fără a da naștere, sub rezerva dispozițiilor legale imperative aplicabile consumatorilor, vreunei obligații de rambursare, dezdăunare, despăgubire ori compensare de orice fel, în acord cu art. 10.4 și cu Capitolul 12.</p>
-
-    <h2 class={h2}>11. Protecția datelor cu caracter personal (GDPR)</h2>
-    <p class={p}>11.1. Furnizorul prelucrează datele cu caracter personal cu respectarea Regulamentului (UE) 2016/679 (GDPR) și a legislației naționale aplicabile. Detaliile privind prelucrarea sunt cuprinse în Politica de Confidențialitate.</p>
-    <p class={p}>11.2. În ceea ce privește datele cu caracter personal cuprinse în Conținutul Utilizatorului (de exemplu datele clienților Utilizatorului), Utilizatorul are calitatea de operator de date, iar Furnizorul are calitatea de persoană împuternicită de operator, prelucrând aceste date numai în scopul furnizării serviciului și conform instrucțiunilor Utilizatorului. La cererea Utilizatorului, Părțile pot încheia un acord de prelucrare a datelor (DPA).</p>
-    <p class={p}>11.3. Fiecare parte aplică măsuri tehnice și organizatorice adecvate pentru protejarea datelor cu caracter personal.</p>
-
-    <h2 class={h2}>12. Limitarea răspunderii</h2>
-    <p class={p}>12.1. Platforma este pusă la dispoziție în starea în care se află. În limita maximă permisă de lege, Furnizorul nu oferă garanții implicite privind potrivirea Platformei pentru un anumit scop, dincolo de descrierea funcționalităților incluse.</p>
-    <p class={p}>12.2. În măsura permisă de lege, răspunderea totală a Furnizorului față de Utilizator, pentru orice pretenție decurgând din sau în legătură cu utilizarea Platformei, este limitată la valoarea sumei efectiv plătite de Utilizator pentru accesul la Platformă.</p>
-    <p class={p}>12.3. Furnizorul nu răspunde pentru prejudicii indirecte, beneficii nerealizate, pierderi de date cauzate de Utilizator sau de terți, sancțiuni fiscale rezultate din datele ori operațiunile Utilizatorului, ori pentru întreruperi sau erori datorate sistemelor ANAF, procesatorilor de plăți, furnizorilor de găzduire sau altor terți.</p>
-    <p class={p}>12.4. Furnizorul nu răspunde pentru conținutul documentelor emise de Utilizator prin intermediul Platformei și nici pentru legalitatea datelor și materialelor furnizate de acesta.</p>
-    <p class={p}>12.6. <strong>Exonerare privind integritatea și disponibilitatea datelor.</strong> În limita maximă îngăduită de legislația aplicabilă și sub rezerva dispozițiilor legale imperative care nu pot fi înlăturate pe cale convențională, Furnizorul nu garantează și nu își asumă nicio răspundere, fie ea contractuală, delictuală, precontractuală ori de orice altă natură, pentru alterarea, coruperea, indisponibilitatea temporară sau definitivă, degradarea, ștergerea, pierderea, divulgarea accidentală ori imposibilitatea recuperării, totală sau parțială, a Conținutului Utilizatorului ori a oricăror date, fișiere sau documente stocate, prelucrate, generate sau transmise prin intermediul Platformei, indiferent dacă acestea sunt cauzate de incidente sau defecțiuni tehnice, erori ori întreruperi hardware sau software, erori de configurare ori de operare, fapte, omisiuni sau utilizări necorespunzătoare ale Utilizatorului ori ale membrilor echipei sale, acțiuni ale terților, atacuri ori incidente de securitate informatică, evenimente de forță majoră ori caz fortuit, ori de acțiunile sau omisiunile furnizorilor de găzduire, de infrastructură, de stocare, de comunicații electronice sau ale oricăror alți terți. Utilizatorul își asumă în mod integral și exclusiv riscul aferent datelor sale și are obligația proprie, continuă și neîntreruptă de a constitui și păstra copii de siguranță independente, în conformitate cu art. 14.1, orice eventuală răspundere a Furnizorului care nu poate fi exclusă potrivit legii rămânând, în orice caz și în mod cumulativ, limitată potrivit art. 12.2.</p>
-
-    <h2 class={h2}>13. Proprietate intelectuală</h2>
-    <p class={p}>13.1. Platforma, codul-sursă, structura, interfața, elementele de design, mărcile, denumirea „facturamea" și toate componentele tehnice sunt și rămân proprietatea exclusivă a Furnizorului sau a licențiatorilor săi. Plata accesului pe viață nu transferă Utilizatorului niciun drept de proprietate asupra acestora, ci doar dreptul de utilizare prevăzut la Capitolul 6.</p>
-    <p class={p}>13.2. Conținutul Utilizatorului rămâne proprietatea exclusivă a Utilizatorului. Furnizorul nu dobândește drepturi asupra acestuia, cu excepția dreptului limitat de a-l prelucra și stoca strict în scopul furnizării serviciului.</p>
-
-    <h2 class={h2}>14. Datele Utilizatorului, backup și export</h2>
-    <p class={p}>14.1. Furnizorul aplică măsuri rezonabile de securitate și de salvare a datelor. Cu toate acestea, Utilizatorul este încurajat să își exporte și să își păstreze periodic copii ale documentelor și datelor importante.</p>
-    <p class={p}>14.2. Utilizatorul își poate exporta Conținutul în orice moment, prin funcționalitățile de export puse la dispoziție în Platformă.</p>
-
-    <h2 class={h2}>15. Dreptul de retragere și politica de rambursare</h2>
-    <p class={p}>15.1. Pentru Utilizatorii care au calitatea de consumator în sensul legii, se aplică dreptul de retragere de 14 zile prevăzut de O.U.G. nr. 34/2014. Întrucât accesul la Platformă reprezintă furnizarea de conținut digital și servicii online care încep imediat după achiziție, prin acceptarea prezenților Termeni și prin începerea utilizării Platformei, consumatorul solicită în mod expres începerea executării și ia la cunoștință că își pierde dreptul de retragere odată ce serviciul a fost executat integral.</p>
-    <p class={p}>15.2. Pentru Utilizatorii persoane juridice sau profesioniști, dreptul legal de retragere de 14 zile nu este aplicabil.</p>
-    <p class={p}>15.3. Furnizorul poate analiza, de la caz la caz și cu titlu comercial, cereri de rambursare justificate (de exemplu imposibilitatea tehnică majoră de utilizare a Platformei, imputabilă Furnizorului și neremediată într-un termen rezonabil).</p>
-
-    <h2 class={h2}>16. Suspendarea și încetarea contului</h2>
-    <p class={p}>16.1. Furnizorul poate suspenda sau închide un cont, cu notificare prealabilă rezonabilă, în cazul încălcării prezenților Termeni, al utilizării frauduloase sau ilegale a Platformei, ori al unor activități care afectează securitatea sau buna funcționare a Platformei.</p>
-    <p class={p}>16.2. Utilizatorul poate solicita în orice moment închiderea contului. Înainte de închidere, Utilizatorul are responsabilitatea de a-și exporta datele.</p>
-    <p class={p}>16.3. Obligațiile legale de păstrare a documentelor financiar-contabile revin Utilizatorului, potrivit legislației aplicabile.</p>
-
-    <h2 class={h2}>17. Forța majoră</h2>
-    <p class={p}>17.1. Niciuna dintre părți nu răspunde pentru neexecutarea obligațiilor cauzată de un eveniment de forță majoră sau caz fortuit, astfel cum sunt definite de lege, pe durata și în măsura în care acesta împiedică executarea.</p>
-
-    <h2 class={h2}>18. Modificarea Termenilor și a serviciului</h2>
-    <p class={p}>18.1. Furnizorul poate modifica prezenții Termeni, de exemplu pentru a reflecta modificări legislative, tehnice sau ale serviciului. Versiunea actualizată va fi publicată în Platformă, cu menționarea datei intrării în vigoare.</p>
-    <p class={p}>18.2. Modificările substanțiale vor fi comunicate Utilizatorilor printr-un mijloc rezonabil (de exemplu e-mail sau notificare în Platformă). Continuarea utilizării Platformei după intrarea în vigoare a modificărilor constituie acceptarea acestora. Dacă Utilizatorul nu este de acord, poate înceta utilizarea Platformei.</p>
-    <p class={p}>18.3. Furnizorul poate adăuga, modifica sau retrage funcționalități, cu menținerea, în limite rezonabile, a funcționalităților esențiale incluse în accesul pe viață la momentul achiziției.</p>
-
-    <h2 class={h2}>19. Soluționarea litigiilor și legea aplicabilă</h2>
-    <p class={p}>19.1. Prezenții Termeni sunt guvernați de legea română.</p>
-    <p class={p}>19.2. Părțile vor încerca soluționarea pe cale amiabilă a oricărui diferend. În caz contrar, litigiul este de competența instanțelor judecătorești competente potrivit legii.</p>
-    <p class={p}>19.3. Consumatorii pot apela la Autoritatea Națională pentru Protecția Consumatorilor (ANPC, www.anpc.ro) și la platforma europeană de soluționare online a litigiilor (SOL), disponibilă la ec.europa.eu/consumers/odr.</p>
-
-    <h2 class={h2}>20. Dispoziții finale</h2>
-    <p class={p}>20.1. Dacă o clauză a prezenților Termeni este declarată nulă sau inaplicabilă, celelalte clauze rămân pe deplin valabile.</p>
-    <p class={p}>20.2. Prezenții Termeni, împreună cu Politica de Confidențialitate, reprezintă întregul acord dintre părți cu privire la utilizarea Platformei.</p>
-    <p class={p}>20.3. Comunicările se realizează în scris, prin e-mail sau prin notificări în Platformă.</p>
-
-    <div class="mt-9 pt-5 border-t border-black/[0.08]">
-      <h2 class="text-base font-bold text-[#0A2238] mb-2">Contact</h2>
-      <p class="text-[#1C3A52] leading-relaxed">
-        Pentru întrebări privind prezenții Termeni și Condiții sau utilizarea Platformei:<br />
-        <strong>SOLAAS TECH S.R.L.</strong> · E-mail: contact@facturamea.com · Web: https://facturamea.com
-      </p>
-      <p class="text-[12px] text-[#46627A] mt-4">Termeni și Condiții facturamea, versiunea 1.1. SOLAAS TECH S.R.L., CUI 54888013, J2026038411001. În vigoare de la 22 iunie 2026.</p>
-    </div>
+    <p class="text-sm text-[#46627A] mt-10 italic">
+      Pentru întrebări despre acești termeni, contactează-ne la <a href="mailto:contact@facturamea.com" class="text-[#1A759F] hover:underline">contact@facturamea.com</a>.
+    </p>
   </article>
 </PublicLayout>

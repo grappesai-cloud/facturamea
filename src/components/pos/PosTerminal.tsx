@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Minus, Trash2, Loader2, Search, Printer, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, X, Loader2, Search, Printer, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { isFiscalEnabled, getFiscalConfig, printReceipt as fiscalPrint, type FiscalSale } from '../../lib/fiscal';
 
 interface Product {
@@ -268,10 +268,10 @@ export default function PosTerminal() {
                       <p className="font-medium text-white truncate">{l.name}</p>
                       <p className="text-xs text-[#9FB8CC]">{ron(l.unitPriceCents)} · TVA {l.vatRate}%</p>
                     </div>
-                    <button onClick={() => setQty(i, -1)} className="p-1 text-[#9FB8CC] hover:text-white"><Minus className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => setQty(i, -1)} className="p-1 text-[#9FB8CC] hover:text-[#DC4B41] transition-colors"><Minus className="w-3.5 h-3.5" /></button>
                     <Input className="w-12 h-8 text-center px-1 bg-white/10 text-white placeholder:text-[#7C9AB4] border-0 [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" value={l.quantity} onChange={(e) => setQtyExact(i, Number(e.target.value))} />
                     <button onClick={() => setQty(i, 1)} className="p-1 text-[#9FB8CC] hover:text-white"><Plus className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => removeLine(i)} className="p-1 text-[#7C9AB4] hover:text-[#DC4B41]"><Trash2 className="w-3.5 h-3.5" /></button>
+                    <button onClick={() => removeLine(i)} className="p-1 text-[#9FB8CC] hover:text-[#DC4B41] transition-colors" title="Elimină"><X className="w-3.5 h-3.5" /></button>
                   </li>
                 ))}
               </ul>

@@ -12,6 +12,7 @@ export interface DatePickerProps {
 }
 
 const MONTHS = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+const MONTHS_SHORT = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const WEEKDAYS = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -34,6 +35,7 @@ function formatHuman(s: string): string {
 export function DatePicker({ value, onChange, placeholder = 'Alege data', className, disabled, min, max }: DatePickerProps) {
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const [open, setOpen] = React.useState(false);
+  const [headerMode, setHeaderMode] = React.useState<null | 'month' | 'year'>(null);
 
   const today = new Date();
   const sel = parseISO(value);
@@ -49,7 +51,7 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
   }, [value]);
 
   React.useEffect(() => {
-    if (!open) return;
+    if (!open) { setHeaderMode(null); return; }
     const onDoc = (e: MouseEvent) => { if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false); };
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     document.addEventListener('mousedown', onDoc);
@@ -75,8 +77,12 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
   const shift = (delta: number) => {
     const m = view.m + delta;
     setView({ y: view.y + Math.floor(m / 12), m: ((m % 12) + 12) % 12 });
+    setHeaderMode(null);
   };
   const choose = (d: number) => { onChange(toISO(view.y, view.m, d)); setOpen(false); };
+
+  // Year range: 10 years back, 10 years forward
+  const yearRange = Array.from({ length: 21 }, (_, i) => today.getFullYear() - 10 + i);
 
   return (
     <div ref={wrapRef} className="fm-cal relative">
@@ -98,39 +104,103 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
 
       {open && (
         <div className="fm-cal-pop absolute left-0 z-50 mt-1.5 w-[300px] max-w-[88vw] rounded-2xl p-3">
+
+          {/* ── Header: prev arrow | month dropdown | year dropdown | next arrow ── */}
           <div className="flex items-center justify-between mb-2">
             <button type="button" onClick={() => shift(-1)} className="fm-cal-nav w-8 h-8 grid place-items-center rounded-lg" aria-label="Luna anterioară">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="m15 18-6-6 6-6" /></svg>
             </button>
-            <span className="text-[14px] font-bold fm-cal-title">{MONTHS[view.m]} {view.y}</span>
+
+            <div className="flex items-center gap-1">
+              {/* Month selector */}
+              <button
+                type="button"
+                onClick={() => setHeaderMode(headerMode === 'month' ? null : 'month')}
+                className={cn('fm-cal-title px-2 py-1 rounded-lg text-[14px] font-bold transition-colors hover:bg-white/10', headerMode === 'month' && 'bg-white/10')}
+              >
+                {MONTHS[view.m]}
+              </button>
+              {/* Year selector */}
+              <button
+                type="button"
+                onClick={() => setHeaderMode(headerMode === 'year' ? null : 'year')}
+                className={cn('fm-cal-title px-2 py-1 rounded-lg text-[14px] font-bold transition-colors hover:bg-white/10', headerMode === 'year' && 'bg-white/10')}
+              >
+                {view.y}
+              </button>
+            </div>
+
             <button type="button" onClick={() => shift(1)} className="fm-cal-nav w-8 h-8 grid place-items-center rounded-lg" aria-label="Luna următoare">
               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="m9 18 6-6-6-6" /></svg>
             </button>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 mb-1">
-            {WEEKDAYS.map((w) => <span key={w} className="fm-cal-dow text-center text-[11px] font-semibold py-1">{w}</span>)}
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {cells.map((d, i) => d === 0
-              ? <span key={i} />
-              : (
+          {/* ── Month picker grid ── */}
+          {headerMode === 'month' && (
+            <div className="grid grid-cols-3 gap-1 mb-2">
+              {MONTHS_SHORT.map((label, i) => (
                 <button
                   key={i}
                   type="button"
-                  disabled={!!outOfRange(d)}
-                  onClick={() => choose(d)}
-                  className={cn('fm-cal-day h-9 rounded-lg text-[13px] tabular-nums', isToday(d) && 'is-today', isSel(d) && 'is-selected')}
+                  onClick={() => { setView({ ...view, m: i }); setHeaderMode(null); }}
+                  className={cn(
+                    'py-2 rounded-lg text-[13px] font-medium transition-colors',
+                    view.m === i ? 'bg-[#E1FB15] text-[#0A2238] font-bold' : 'fm-cal-day hover:bg-white/8',
+                  )}
                 >
-                  {d}
+                  {label}
                 </button>
               ))}
-          </div>
+            </div>
+          )}
 
-          <div className="flex items-center justify-between mt-2 pt-2 fm-cal-foot">
-            <button type="button" onClick={() => { const n = new Date(); onChange(toISO(n.getFullYear(), n.getMonth(), n.getDate())); setOpen(false); }} className="fm-cal-action text-[12px] font-semibold px-2 py-1 rounded-lg">Azi</button>
-            {value && <button type="button" onClick={() => { onChange(''); setOpen(false); }} className="fm-cal-action text-[12px] font-semibold px-2 py-1 rounded-lg">Șterge</button>}
-          </div>
+          {/* ── Year picker list ── */}
+          {headerMode === 'year' && (
+            <div className="max-h-[168px] overflow-y-auto mb-2 space-y-0.5 pr-0.5" style={{ scrollbarWidth: 'thin' }}>
+              {yearRange.map((y) => (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => { setView({ ...view, y }); setHeaderMode(null); }}
+                  className={cn(
+                    'w-full text-center py-1.5 rounded-lg text-[13px] font-medium transition-colors',
+                    view.y === y ? 'bg-[#E1FB15] text-[#0A2238] font-bold' : 'fm-cal-day hover:bg-white/8',
+                  )}
+                >
+                  {y}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Day grid (hidden when month/year picker is open) ── */}
+          {!headerMode && (
+            <>
+              <div className="grid grid-cols-7 gap-1 mb-1">
+                {WEEKDAYS.map((w) => <span key={w} className="fm-cal-dow text-center text-[11px] font-semibold py-1">{w}</span>)}
+              </div>
+              <div className="grid grid-cols-7 gap-1">
+                {cells.map((d, i) => d === 0
+                  ? <span key={i} />
+                  : (
+                    <button
+                      key={i}
+                      type="button"
+                      disabled={!!outOfRange(d)}
+                      onClick={() => choose(d)}
+                      className={cn('fm-cal-day h-9 rounded-lg text-[13px] tabular-nums', isToday(d) && 'is-today', isSel(d) && 'is-selected')}
+                    >
+                      {d}
+                    </button>
+                  ))}
+              </div>
+
+              <div className="flex items-center justify-between mt-2 pt-2 fm-cal-foot">
+                <button type="button" onClick={() => { const n = new Date(); onChange(toISO(n.getFullYear(), n.getMonth(), n.getDate())); setOpen(false); }} className="fm-cal-action text-[12px] font-semibold px-2 py-1 rounded-lg">Azi</button>
+                {value && <button type="button" onClick={() => { onChange(''); setOpen(false); }} className="fm-cal-action text-[12px] font-semibold px-2 py-1 rounded-lg">Șterge</button>}
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

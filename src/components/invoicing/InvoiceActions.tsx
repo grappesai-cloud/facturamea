@@ -239,7 +239,7 @@ function ConfirmModal({ message, onYes, onNo }: { message: string; onYes: () => 
   useEscapeClose(onNo);
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onNo}>
-      <div className="bg-[#0B2236] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start gap-3 mb-5">
           <AlertTriangle className="w-5 h-5 text-[#E8A33C] shrink-0 mt-0.5" />
           <p className="text-[14px] text-white leading-relaxed">{message}</p>
@@ -268,7 +268,7 @@ function PaymentModal({ remainingCents, currency, busy, error, onClose, onSubmit
   const [emitReceipt, setEmitReceipt] = useState(true);
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0B2236] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Receipt className="w-5 h-5" /> Înregistrează încasare
         </h3>
@@ -324,7 +324,7 @@ function ShareModal({ url, invoiceId, onClose, onRevoke }: { url: string; invoic
   };
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0B2236] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2"><Share2 className="w-5 h-5" /> Link public</h3>
         <p className="text-xs text-[#9FB8CC] mb-4">Oricine are acest link poate vedea documentul (doar citire). Poți revoca oricând.</p>
         <div className="flex gap-2">
@@ -350,7 +350,7 @@ function PayLinkModal({ url, onClose }: { url: string; onClose: () => void }) {
   };
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0B2236] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2"><CreditCard className="w-5 h-5" /> Link de plată online</h3>
         <p className="text-xs text-[#9FB8CC] mb-4">Trimite acest link clientului ca să plătească factura cu cardul. Încasarea se înregistrează automat când plata reușește.</p>
         <div className="flex gap-2">
@@ -371,7 +371,7 @@ function SendModal({ busy, error, onClose, onSubmit }: { busy: boolean; error: s
   const [email, setEmail] = useState('');
   return (
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0B2236] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Mail className="w-5 h-5" /> Trimite documentul pe email
         </h3>

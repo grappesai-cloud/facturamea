@@ -14,11 +14,11 @@ function Bar({ value, max, label, suffix }: { value: number; max: number; label:
   const pct = max > 0 ? Math.max((value / max) * 100, 2) : 0;
   return (
     <div className="flex items-center gap-3 text-sm">
-      <div className="w-32 shrink-0 truncate text-[#0A0A0A]">{label}</div>
-      <div className="flex-1 h-6 bg-[#F0F0EC] rounded-xl overflow-hidden">
+      <div className="w-32 shrink-0 truncate text-[#0A2238]">{label}</div>
+      <div className="flex-1 h-6 bg-[#E3EAF1] rounded-xl overflow-hidden">
         <div className="h-full bg-[#1A759F]" style={{ width: `${pct}%` }} />
       </div>
-      <div className="w-16 text-right text-[#0A0A0A] font-medium tabular-nums">{value.toLocaleString()}{suffix}</div>
+      <div className="w-16 text-right text-[#0A2238] font-medium tabular-nums">{value.toLocaleString()}{suffix}</div>
     </div>
   );
 }
@@ -47,13 +47,13 @@ export default function AnalyticsDashboard() {
   const maxStatus = Math.max(...data.orderStatuses.map((s) => s.count), 1);
 
   return (
-    <div className="space-y-6 text-[#0A0A0A]">
+    <div className="space-y-6 text-[#0A2238]">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <Card><CardContent className="p-4"><div className="text-xs text-[#6B6B68]">Utilizatori</div><div className="text-2xl font-bold">{data.totals.users}</div><div className="text-[11px] text-emerald-600">+{data.last30.newUsers} (30 zile)</div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="text-xs text-[#6B6B68]">Companii</div><div className="text-2xl font-bold">{data.totals.companies}</div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="text-xs text-[#6B6B68]">Marfă postată</div><div className="text-2xl font-bold">{data.totals.freight}</div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="text-xs text-[#6B6B68]">Comenzi</div><div className="text-2xl font-bold">{data.totals.orders}</div><div className="text-[11px] text-emerald-600">+{data.last30.newOrders} (30 zile)</div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="text-xs text-[#6B6B68]">Incidente</div><div className="text-2xl font-bold">{data.totals.incidents}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs text-[#46627A]">Utilizatori</div><div className="text-2xl font-bold">{data.totals.users}</div><div className="text-[11px] text-emerald-600">+{data.last30.newUsers} (30 zile)</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs text-[#46627A]">Companii</div><div className="text-2xl font-bold">{data.totals.companies}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs text-[#46627A]">Marfă postată</div><div className="text-2xl font-bold">{data.totals.freight}</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs text-[#46627A]">Comenzi</div><div className="text-2xl font-bold">{data.totals.orders}</div><div className="text-[11px] text-emerald-600">+{data.last30.newOrders} (30 zile)</div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="text-xs text-[#46627A]">Incidente</div><div className="text-2xl font-bold">{data.totals.incidents}</div></CardContent></Card>
       </div>
 
       <Card>
@@ -61,7 +61,7 @@ export default function AnalyticsDashboard() {
           <h3 className="font-semibold mb-3">Comenzi pe lună (ultimele 6)</h3>
           <div className="space-y-2">
             {data.ordersPerMonth.length === 0 ? (
-              <div className="text-sm text-[#6B6B68]">Date insuficiente.</div>
+              <div className="text-sm text-[#46627A]">Date insuficiente.</div>
             ) : data.ordersPerMonth.map((m) => (
               <Bar key={m.month} label={m.month} value={m.count} max={maxOrders} />
             ))}
@@ -75,7 +75,7 @@ export default function AnalyticsDashboard() {
             <h3 className="font-semibold mb-3">Top țări încărcare (30 zile)</h3>
             <div className="space-y-2">
               {data.topLoadingCountries.length === 0 ? (
-                <div className="text-sm text-[#6B6B68]">Date insuficiente.</div>
+                <div className="text-sm text-[#46627A]">Date insuficiente.</div>
               ) : data.topLoadingCountries.map((c) => (
                 <Bar key={c.country} label={c.country || '—'} value={c.count} max={maxCountry} />
               ))}
@@ -87,7 +87,7 @@ export default function AnalyticsDashboard() {
             <h3 className="font-semibold mb-3">Comenzi după status</h3>
             <div className="space-y-2">
               {data.orderStatuses.length === 0 ? (
-                <div className="text-sm text-[#6B6B68]">Date insuficiente.</div>
+                <div className="text-sm text-[#46627A]">Date insuficiente.</div>
               ) : data.orderStatuses.map((s) => (
                 <Bar key={s.status} label={STATUS_LABELS[s.status] ?? s.status} value={s.count} max={maxStatus} />
               ))}

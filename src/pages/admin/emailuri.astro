@@ -40,7 +40,7 @@ const audienceLabels: Record<string, string> = {
 };
 
 const statusMeta: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Schiță', cls: 'bg-[#F0F0EC] text-[#6B6B68]' },
+  draft: { label: 'Schiță', cls: 'bg-[#E3EAF1] text-[#46627A]' },
   sending: { label: 'Se trimite', cls: 'bg-[#1A759F]/10 text-[#1A759F]' },
   sent: { label: 'Trimis', cls: 'bg-[#15803D]/10 text-[#15803D]' },
   failed: { label: 'Eșuat', cls: 'bg-[#B91C1C]/10 text-[#B91C1C]' },
@@ -52,24 +52,24 @@ const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
 <AdminLayout title="Emailuri" activeTab="emailuri">
   <div class="mb-6">
     <h2 class="text-[22px] font-bold tracking-[-0.02em]">Campanii email</h2>
-    <p class="text-[13px] text-[#6B6B68] mt-1">
+    <p class="text-[13px] text-[#46627A] mt-1">
       Compune un email HTML branded, alege audiența, previzualizează, trimite un test și apoi campania prin Resend.
     </p>
   </div>
 
   <EmailComposer client:load adminEmail={user.email} />
 
-  <div class="mt-8 bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
-    <div class="px-5 py-3 border-b border-[#E8E8E4]">
-      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Istoric campanii</p>
+  <div class="mt-8 bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
+    <div class="px-5 py-3 border-b border-[#E3EAF1]">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Istoric campanii</p>
     </div>
     {campaigns.length === 0 ? (
-      <div class="px-5 py-10 text-center text-[12px] text-[#6B6B68]">Nicio campanie încă.</div>
+      <div class="px-5 py-10 text-center text-[12px] text-[#46627A]">Nicio campanie încă.</div>
     ) : (
       <div class="overflow-x-auto">
         <table class="w-full text-[13px]">
           <thead>
-            <tr class="text-left text-[11px] uppercase tracking-[0.12em] text-[#A8A8A4] border-b border-[#E8E8E4]">
+            <tr class="text-left text-[11px] uppercase tracking-[0.12em] text-[#9FB8CC] border-b border-[#E3EAF1]">
               <th class="px-5 py-3 font-medium">Subiect</th>
               <th class="px-5 py-3 font-medium">Audiență</th>
               <th class="px-5 py-3 font-medium">Status</th>
@@ -78,26 +78,26 @@ const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
               <th class="px-5 py-3 font-medium">Trimis</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[#E8E8E4]">
+          <tbody class="divide-y divide-[#E3EAF1]">
             {campaigns.map((c: any) => {
-              const sm = statusMeta[c.status] ?? { label: c.status, cls: 'bg-[#F0F0EC] text-[#6B6B68]' };
+              const sm = statusMeta[c.status] ?? { label: c.status, cls: 'bg-[#E3EAF1] text-[#46627A]' };
               return (
                 <tr>
                   <td class="px-5 py-3 max-w-[280px]">
                     <span class="font-medium truncate block">{c.subject}</span>
-                    <span class="text-[11px] text-[#A8A8A4]">{c.createdByName ?? 'admin'}</span>
+                    <span class="text-[11px] text-[#9FB8CC]">{c.createdByName ?? 'admin'}</span>
                   </td>
-                  <td class="px-5 py-3 text-[#6B6B68]">{audienceLabels[c.audience] ?? c.audience}</td>
+                  <td class="px-5 py-3 text-[#46627A]">{audienceLabels[c.audience] ?? c.audience}</td>
                   <td class="px-5 py-3">
                     <span class={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${sm.cls}`}>{sm.label}</span>
                   </td>
-                  <td class="px-5 py-3 text-[#6B6B68]">
+                  <td class="px-5 py-3 text-[#46627A]">
                     {c.status === 'sent' || c.status === 'failed'
                       ? `${c.sentCount ?? 0} / ${c.failedCount ?? 0}${c.totalRecipients ? ` (din ${c.totalRecipients})` : ''}`
                       : '-'}
                   </td>
-                  <td class="px-5 py-3 text-[11px] text-[#A8A8A4]">{fmt(c.createdAt)}</td>
-                  <td class="px-5 py-3 text-[11px] text-[#A8A8A4]">{fmt(c.sentAt)}</td>
+                  <td class="px-5 py-3 text-[11px] text-[#9FB8CC]">{fmt(c.createdAt)}</td>
+                  <td class="px-5 py-3 text-[11px] text-[#9FB8CC]">{fmt(c.sentAt)}</td>
                 </tr>
               );
             })}

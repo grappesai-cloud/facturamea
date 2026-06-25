@@ -65,7 +65,7 @@ export function reminderEmailHtml(input: ReminderEmailInput): string {
     case 'before':
       headline = 'Reminder: factură cu scadența în curând';
       intro = `Vă reamintim că factura <strong>${esc(fullNumber)}</strong> are scadența pe <strong>${esc(dueStr)}</strong>.`;
-      accent = '#1D4ED8';
+      accent = '#1A759F';
       break;
     case 'due':
       headline = 'Factura este scadentă astăzi';
@@ -83,27 +83,27 @@ export function reminderEmailHtml(input: ReminderEmailInput): string {
   return `<!DOCTYPE html>
 <html lang="ro">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F6F6F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0A0A0A;">
+<body style="margin:0;padding:0;background:#F6F6F2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0A2238;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F6F6F2;padding:24px 0;">
     <tr><td align="center">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #E8E8E4;border-radius:16px;overflow:hidden;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border:1px solid #E3EAF1;border-radius:16px;overflow:hidden;">
         <tr><td style="height:4px;background:${accent};"></td></tr>
         <tr><td style="padding:28px 28px 8px 28px;">
-          <p style="margin:0 0 4px 0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#8A8A85;">facturamea</p>
-          <h1 style="margin:0;font-size:20px;font-weight:700;color:#0A0A0A;">${esc(headline)}</h1>
+          <p style="margin:0 0 4px 0;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;color:#7C9AB4;">facturamea</p>
+          <h1 style="margin:0;font-size:20px;font-weight:700;color:#0A2238;">${esc(headline)}</h1>
         </td></tr>
-        <tr><td style="padding:12px 28px 0 28px;font-size:15px;line-height:1.6;color:#3D3D3A;">
+        <tr><td style="padding:12px 28px 0 28px;font-size:15px;line-height:1.6;color:#26415A;">
           <p style="margin:0 0 12px 0;">Bună ziua${clientName ? ', ' + esc(clientName) : ''},</p>
           <p style="margin:0 0 16px 0;">${intro}</p>
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAFAF8;border:1px solid #F0F0EC;border-radius:12px;margin:8px 0 16px 0;">
-            <tr><td style="padding:14px 16px;font-size:14px;color:#6B6B68;">Factură</td><td style="padding:14px 16px;font-size:14px;font-weight:600;text-align:right;color:#0A0A0A;">${esc(fullNumber)}</td></tr>
-            <tr><td style="padding:0 16px 14px 16px;font-size:14px;color:#6B6B68;">Scadență</td><td style="padding:0 16px 14px 16px;font-size:14px;font-weight:600;text-align:right;color:#0A0A0A;">${esc(dueStr)}</td></tr>
-            <tr><td style="padding:0 16px 16px 16px;font-size:15px;color:#0A0A0A;">Sumă de plată</td><td style="padding:0 16px 16px 16px;font-size:18px;font-weight:700;text-align:right;color:${accent};">${esc(ron(amount, currency))}</td></tr>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EDF1F5;border:1px solid #E3EAF1;border-radius:12px;margin:8px 0 16px 0;">
+            <tr><td style="padding:14px 16px;font-size:14px;color:#46627A;">Factură</td><td style="padding:14px 16px;font-size:14px;font-weight:600;text-align:right;color:#0A2238;">${esc(fullNumber)}</td></tr>
+            <tr><td style="padding:0 16px 14px 16px;font-size:14px;color:#46627A;">Scadență</td><td style="padding:0 16px 14px 16px;font-size:14px;font-weight:600;text-align:right;color:#0A2238;">${esc(dueStr)}</td></tr>
+            <tr><td style="padding:0 16px 16px 16px;font-size:15px;color:#0A2238;">Sumă de plată</td><td style="padding:0 16px 16px 16px;font-size:18px;font-weight:700;text-align:right;color:${accent};">${esc(ron(amount, currency))}</td></tr>
           </table>
           <p style="margin:0 0 16px 0;">Dacă plata a fost deja efectuată, vă rugăm să ignorați acest mesaj. Vă mulțumim.</p>
         </td></tr>
         <tr><td style="padding:0 28px 28px 28px;">
-          <p style="margin:0;font-size:12px;color:#A8A8A4;line-height:1.5;">Acest mesaj a fost trimis automat de facturamea ca reminder de încasare.</p>
+          <p style="margin:0;font-size:12px;color:#9FB8CC;line-height:1.5;">Acest mesaj a fost trimis automat de facturamea ca reminder de încasare.</p>
         </td></tr>
       </table>
     </td></tr>

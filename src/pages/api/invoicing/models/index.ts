@@ -29,8 +29,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
   await db.insert(invoiceModels).values({
     id, companyId: cid,
     name: body.name.trim(),
-    layoutKey: body.layoutKey === 'accent' ? 'accent' : 'classic',
-    brandColor: body.brandColor || '#0A0A0A',
+    layoutKey: ['classic', 'modern', 'minimal', 'bold', 'elegant', 'accent'].includes(body.layoutKey) ? body.layoutKey : 'classic',
+    brandColor: body.brandColor || '#0A2238',
     logoUrl: body.logoUrl || null,
     footerText: body.footerText || null,
     showQr: !!body.showQr,
@@ -54,7 +54,7 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
 
   const update: any = {};
   if (typeof body.name === 'string' && body.name.trim()) update.name = body.name.trim();
-  if (body.layoutKey === 'classic' || body.layoutKey === 'accent') update.layoutKey = body.layoutKey;
+  if (['classic', 'modern', 'minimal', 'bold', 'elegant', 'accent'].includes(body.layoutKey)) update.layoutKey = body.layoutKey;
   if (typeof body.brandColor === 'string') update.brandColor = body.brandColor;
   if (typeof body.logoUrl === 'string' || body.logoUrl === null) update.logoUrl = body.logoUrl || null;
   if (typeof body.footerText === 'string' || body.footerText === null) update.footerText = body.footerText || null;

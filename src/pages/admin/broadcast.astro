@@ -27,25 +27,25 @@ const segments = [
   { value: 'tier:sprinter', label: 'Abonament Sprinter' },
 ];
 
-const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E8E8E4] rounded-xl text-[13px] focus:border-[#0A0A0A] focus:outline-none transition-colors';
+const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#0A2238] focus:outline-none transition-colors';
 const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO') : '—';
 ---
 
 <AdminLayout title="Broadcast" activeTab="broadcast">
   <div class="mb-6">
     <h2 class="text-[22px] font-bold tracking-[-0.02em]">Broadcast notificări</h2>
-    <p class="text-[13px] text-[#6B6B68] mt-1">Trimite o notificare în-app (şi opţional email) către un segment de utilizatori.</p>
+    <p class="text-[13px] text-[#46627A] mt-1">Trimite o notificare în-app (şi opţional email) către un segment de utilizatori.</p>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <form id="broadcast-form" class="lg:col-span-2 space-y-4 p-6 bg-white border border-[#E8E8E4] rounded-xl">
+    <form id="broadcast-form" class="lg:col-span-2 space-y-4 p-6 bg-white border border-[#E3EAF1] rounded-xl">
       <div id="broadcast-banner" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl text-[13px]"></div>
       <div>
         <label class="block text-[12px] font-medium mb-1.5">Segment</label>
         <select name="segment" required class={inputCls}>
           {segments.map((s) => <option value={s.value}>{s.label}</option>)}
         </select>
-        <p id="recipient-preview" class="text-[11px] text-[#6B6B68] mt-1.5">Estimare destinatari: —</p>
+        <p id="recipient-preview" class="text-[11px] text-[#46627A] mt-1.5">Estimare destinatari: —</p>
       </div>
       <div>
         <label class="block text-[12px] font-medium mb-1.5">Titlu (max 200)</label>
@@ -62,25 +62,25 @@ const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO') : '—';
         </label>
       </div>
       <div class="pt-2">
-        <button type="submit" id="send-btn" class="px-6 py-3 bg-[#0A0A0A] hover:bg-[#1A1A1A] disabled:bg-[#A8A8A4] text-white font-semibold rounded-xl text-[13px] transition-colors">
+        <button type="submit" id="send-btn" class="px-6 py-3 bg-[#0A2238] hover:bg-[#1A1A1A] disabled:bg-[#9FB8CC] text-white font-semibold rounded-xl text-[13px] transition-colors">
           Trimite broadcast
         </button>
-        <p class="text-[11px] text-[#6B6B68] mt-2">⚠️ Acţiunea e ireversibilă şi notifică oameni reali.</p>
+        <p class="text-[11px] text-[#46627A] mt-2">⚠️ Acţiunea e ireversibilă şi notifică oameni reali.</p>
       </div>
     </form>
 
-    <div class="bg-white border border-[#E8E8E4] rounded-xl overflow-hidden h-fit">
-      <div class="px-5 py-3 border-b border-[#E8E8E4]"><p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Istoric (ultimele 20)</p></div>
-      <div class="divide-y divide-[#E8E8E4] max-h-[600px] overflow-y-auto">
+    <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden h-fit">
+      <div class="px-5 py-3 border-b border-[#E3EAF1]"><p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Istoric (ultimele 20)</p></div>
+      <div class="divide-y divide-[#E3EAF1] max-h-[600px] overflow-y-auto">
         {recent.length === 0 ? (
-          <div class="px-5 py-8 text-center text-[12px] text-[#6B6B68]">Fără broadcast-uri</div>
+          <div class="px-5 py-8 text-center text-[12px] text-[#46627A]">Fără broadcast-uri</div>
         ) : recent.map((b) => (
           <div class="px-5 py-3">
             <p class="text-[13px] font-semibold truncate">{b.title}</p>
-            <p class="text-[11px] text-[#6B6B68] mt-1">
+            <p class="text-[11px] text-[#46627A] mt-1">
               {b.segment} · {b.recipientsCount ?? '?'} destinatari{b.sendEmail ? ' · email' : ''}
             </p>
-            <p class="text-[10px] text-[#A8A8A4] mt-1">{fmt(b.sentAt)} · {b.sentByName ?? 'admin'}</p>
+            <p class="text-[10px] text-[#9FB8CC] mt-1">{fmt(b.sentAt)} · {b.sentByName ?? 'admin'}</p>
           </div>
         ))}
       </div>

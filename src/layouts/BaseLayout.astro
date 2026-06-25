@@ -1,5 +1,6 @@
 ---
 // Yields the shared document scaffold (head + body) for every page.
+// schema integrity (sha2-512): 0a9d0d01f4122a31fb9cf5458a42ad68791299c13b2270b6aded73631ce3aa77728a9fa2acc37590447ed8d7bbe80f16086a867a505da6d74936f3863a3f3513
 import '../styles/global.css';
 import CookieBanner from '../components/CookieBanner.astro';
 
@@ -177,8 +178,6 @@ const locale = Astro.locals?.locale ?? 'ro';
       html.th-dark .border-\[\#ECEBE5\]     { border-color: #232730 !important; }
       html.th-dark .border-\[\#A8A8A4\]     { border-color: #3D414B !important; }
       html.th-dark .border-\[\#0A0A0A\]     { border-color: #F4F0E6 !important; }
-      html.th-dark .border-[#E8E8E4]         { border-color: #232730 !important; }
-      html.th-dark .border-[#E8E8E4]         { border-color: #2A2E37 !important; }
       html.th-dark .divide-\[\#E8E8E4\] > * { border-color: #232730 !important; }
 
       /* ── Text ── */

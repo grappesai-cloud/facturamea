@@ -89,7 +89,7 @@ export default function CompanySwitcher({ currentCompanyId, currentCompanyName }
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 mt-1 bg-[#0B2236] rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/10 py-1 z-50 max-h-72 overflow-y-auto">
+        <div className="absolute left-0 right-0 mt-1 bg-[#071828] rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/10 py-1 z-50 max-h-72 overflow-y-auto">
           <div className="px-3 py-2 border-b border-white/10">
             <p className="text-[10px] uppercase tracking-[0.14em] text-[#7C9AB4] font-semibold">Companie activă</p>
             <p className="text-[13px] font-semibold text-white mt-0.5 truncate">{currentCompanyName}</p>

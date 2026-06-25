@@ -15,6 +15,10 @@ local.db
 /ios/
 /android/
 
+# License signing keys — NEVER commit the private key
+secrets/
+*.license.key
+
 # macOS
 .DS_Store
 **/.DS_Store

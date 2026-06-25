@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Star, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Star, X, Loader2 } from 'lucide-react';
 
 const INVOICE_KINDS = [
   { id: 'factura', label: 'Facturi' },
@@ -79,7 +79,7 @@ export default function SeriesManager({ kinds = INVOICE_KINDS }: { kinds?: { id:
               ) : (
                 <ul className="space-y-2">
                   {(expanded[k.id] ? list : list.slice(0, 3)).map((s) => (
-                    <li key={s.id} className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                    <li key={s.id} className="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                       <span className="font-mono text-xs px-2 py-0.5 bg-white/10 rounded-full text-white">{s.prefix}</span>
                       <span className="text-[15px] text-white font-bold flex-1 truncate">{s.name}</span>
                       <span className="text-xs text-[#9FB8CC] hidden md:inline">scope: {s.scope ?? 'oricare'}</span>
@@ -87,10 +87,10 @@ export default function SeriesManager({ kinds = INVOICE_KINDS }: { kinds?: { id:
                       {s.isDefault ? (
                         <span className="text-xs px-2 py-0.5 bg-[#E8A33C]/15 text-[#E8A33C] rounded-full font-semibold flex items-center gap-1"><Star className="w-3 h-3 fill-[#E8A33C]" /> implicit</span>
                       ) : (
-                        <button onClick={() => setDefault(s.id)} className="text-xs text-[#9FB8CC] hover:text-white underline">setează implicit</button>
+                        <button onClick={() => setDefault(s.id)} className="text-xs text-[#9FB8CC] hover:text-white underline opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">setează implicit</button>
                       )}
-                      <button onClick={() => removeSeries(s.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-white/15 hover:text-[#DC4B41]">
-                        <Trash2 className="w-3.5 h-3.5" />
+                      <button onClick={() => removeSeries(s.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity" title="Șterge">
+                        <X className="w-4 h-4" />
                       </button>
                     </li>
                   ))}

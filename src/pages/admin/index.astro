@@ -46,18 +46,18 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
 <AdminLayout title="Tablou de bord" activeTab="dashboard">
   <!-- Hero: lifetime revenue -->
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
-    <div class="lg:col-span-2 p-5 bg-white border border-[#E8E8E4] rounded-2xl">
-      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Venit licențe lifetime</p>
-      <p class="text-[36px] font-bold mt-2 leading-none tabular-nums text-[#0A0A0A]">{revenue}</p>
-      <p class="text-[12px] text-[#6B6B68] mt-1.5">{lifetimeActive[0]?.c ?? 0} licențe lifetime active</p>
+    <div class="lg:col-span-2 p-5 bg-white border border-[#E3EAF1] rounded-2xl">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Venit licențe lifetime</p>
+      <p class="text-[36px] font-bold mt-2 leading-none tabular-nums text-[#0A2238]">{revenue}</p>
+      <p class="text-[12px] text-[#46627A] mt-1.5">{lifetimeActive[0]?.c ?? 0} licențe lifetime active</p>
     </div>
-    <div class="p-5 bg-white border border-[#E8E8E4] rounded-2xl">
-      <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Acțiuni rapide</p>
+    <div class="p-5 bg-white border border-[#E3EAF1] rounded-2xl">
+      <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Acțiuni rapide</p>
       <div class="mt-3 space-y-2">
-        <a href="/admin/licente" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Acordă licență lifetime</a>
-        <a href="/admin/companies" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Vezi companiile</a>
-        <a href="/admin/analytics" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Analiză platformă</a>
-        <a href="/admin/audit" class="block text-[13px] text-[#0A0A0A] hover:text-[#1A759F] transition-colors">→ Jurnal audit</a>
+        <a href="/admin/licente" class="block text-[13px] text-[#0A2238] hover:text-[#1A759F] transition-colors">→ Acordă licență lifetime</a>
+        <a href="/admin/companies" class="block text-[13px] text-[#0A2238] hover:text-[#1A759F] transition-colors">→ Vezi companiile</a>
+        <a href="/admin/analytics" class="block text-[13px] text-[#0A2238] hover:text-[#1A759F] transition-colors">→ Analiză platformă</a>
+        <a href="/admin/audit" class="block text-[13px] text-[#0A2238] hover:text-[#1A759F] transition-colors">→ Jurnal audit</a>
       </div>
     </div>
   </div>
@@ -65,30 +65,30 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
   <!-- KPI grid -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
     {stats.map((s) => (
-      <div class="bg-white border border-[#E8E8E4] rounded-2xl p-4">
-        <p class="text-[11px] uppercase tracking-[0.12em] text-[#8A8A85] font-medium">{s.label}</p>
-        <p class="text-[24px] font-bold text-[#0A0A0A] mt-2 leading-none tabular-nums">{s.value}</p>
+      <div class="bg-white border border-[#E3EAF1] rounded-2xl p-4">
+        <p class="text-[11px] uppercase tracking-[0.12em] text-[#7C9AB4] font-medium">{s.label}</p>
+        <p class="text-[24px] font-bold text-[#0A2238] mt-2 leading-none tabular-nums">{s.value}</p>
       </div>
     ))}
   </div>
 
   <!-- Recent companies -->
-  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
-    <div class="px-5 py-3.5 border-b border-[#F0F0EC] flex items-center justify-between">
-      <h2 class="text-[14px] font-semibold text-[#0A0A0A]">Companii recente</h2>
-      <a href="/admin/companies" class="text-[12px] font-medium text-[#6B6B68] hover:text-[#0A0A0A]">Vezi toate →</a>
+  <div class="bg-white border border-[#E3EAF1] rounded-2xl overflow-hidden">
+    <div class="px-5 py-3.5 border-b border-[#E3EAF1] flex items-center justify-between">
+      <h2 class="text-[14px] font-semibold text-[#0A2238]">Companii recente</h2>
+      <a href="/admin/companies" class="text-[12px] font-medium text-[#46627A] hover:text-[#0A2238]">Vezi toate →</a>
     </div>
     {recentCompanies.length === 0 ? (
-      <div class="px-5 py-12 text-center text-[14px] text-[#6B6B68]">Nicio companie încă.</div>
+      <div class="px-5 py-12 text-center text-[14px] text-[#46627A]">Nicio companie încă.</div>
     ) : (
-      <div class="divide-y divide-[#F0F0EC]">
+      <div class="divide-y divide-[#E3EAF1]">
         {recentCompanies.map((c) => (
           <div class="px-5 py-3 flex items-center justify-between gap-3">
             <div class="min-w-0">
-              <p class="text-[13px] font-medium text-[#0A0A0A] truncate">{c.name}</p>
-              <p class="text-[11px] text-[#6B6B68] truncate">{c.cui ? `CUI ${c.cui}` : 'fără CUI'}{c.city ? ` · ${c.city}` : ''}</p>
+              <p class="text-[13px] font-medium text-[#0A2238] truncate">{c.name}</p>
+              <p class="text-[11px] text-[#46627A] truncate">{c.cui ? `CUI ${c.cui}` : 'fără CUI'}{c.city ? ` · ${c.city}` : ''}</p>
             </div>
-            <p class="text-[11px] text-[#A8A8A4] shrink-0">{fmt(c.createdAt)}</p>
+            <p class="text-[11px] text-[#9FB8CC] shrink-0">{fmt(c.createdAt)}</p>
           </div>
         ))}
       </div>

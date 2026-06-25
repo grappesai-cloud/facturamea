@@ -31,6 +31,12 @@ const pool = new pg.Pool({
 
 export const db = drizzle(pool, { schema });
 
+// True when a real Postgres connection is configured. In this build we always reach
+// here with a live connection (we throw above otherwise), so it is always true.
+// Consumed by the frontend (LandingLayout CTA, dashboard empty-state) to decide
+// between the real-backend path and the no-DB display fallback.
+export const dbAvailable = true;
+
 // Re-export the schema module so callers that currently do `import { users } from '../db'`
 // (via index → schema) keep working.
 export * from './schema-pg';

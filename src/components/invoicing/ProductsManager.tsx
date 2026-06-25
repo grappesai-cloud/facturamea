@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Trash2, Edit2, Save, X, Search } from 'lucide-react';
+import { Plus, Edit2, Save, X, Search } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -169,7 +169,7 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
         <>
         <ul className="space-y-2.5">
           {(showAll ? filtered : filtered.slice(0, 3)).map((p) => (
-            <li key={p.id} className="flex items-center gap-3 p-4 rounded-2xl bg-white/5">
+            <li key={p.id} className="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-white truncate">{p.name}</span>
@@ -182,9 +182,9 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
                 </p>
               </div>
               <p className="text-[15px] font-bold tabular-nums text-white shrink-0">{fmtPrice(p.defaultUnitPriceCents, p.defaultCurrency)}</p>
-              <div className="flex items-center gap-1 shrink-0">
-                <button onClick={() => startEdit(p)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/15 transition-colors" title="Editează"><Edit2 className="w-3.5 h-3.5" /></button>
-                {p.isActive && <button onClick={() => remove(p.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#DC4B41] hover:bg-white/15 transition-colors" title="Dezactivează"><Trash2 className="w-3.5 h-3.5" /></button>}
+              <div className="flex items-center gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                <button onClick={() => startEdit(p)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-white/15 hover:text-white transition-colors" title="Editează"><Edit2 className="w-3.5 h-3.5" /></button>
+                {p.isActive && <button onClick={() => remove(p.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează"><X className="w-4 h-4" /></button>}
               </div>
             </li>
           ))}

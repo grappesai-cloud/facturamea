@@ -290,7 +290,7 @@ export default function BankManager() {
             {accounts.map((a) => (
               <div key={a.id}
                 onClick={() => setActiveId(a.id)}
-                className={`flex items-center gap-4 px-5 sm:px-6 py-4 cursor-pointer transition-colors ${activeId === a.id ? 'bg-white/10' : 'hover:bg-white/5'}`}>
+                className={`group flex items-center gap-4 px-5 sm:px-6 py-4 cursor-pointer transition-colors ${activeId === a.id ? 'bg-white/10' : 'hover:bg-white/5'}`}>
                 <span className={`shrink-0 w-3 h-3 rounded-full ${activeId === a.id ? 'bg-[#E1FB15]' : 'bg-white/20'}`} />
                 <span className="flex-1 min-w-0">
                   <span className="block text-[16px] font-semibold truncate text-white">{a.name}</span>
@@ -305,8 +305,8 @@ export default function BankManager() {
                 )}
                 <span className="shrink-0 text-[16px] font-bold tabular-nums text-white">{ron(a.balanceCents || 0, a.currency)}</span>
                 <button onClick={(e) => { e.stopPropagation(); deleteAccount(a); }}
-                  className="shrink-0 w-9 h-9 rounded-full border-0 bg-white/10 text-[#DC4B41] hover:bg-white/15 flex items-center justify-center" title="Șterge contul">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}><path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" /></svg>
+                  className="shrink-0 w-9 h-9 rounded-full border-0 bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Șterge contul">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
             ))}

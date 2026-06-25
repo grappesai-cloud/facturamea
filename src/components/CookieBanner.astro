@@ -1,45 +1,168 @@
 ---
-// facturamea uses ONLY strictly-necessary cookies (login session, language
-// preference, CSRF/rate-limit security). No analytics, no marketing/ad
-// tracking, no third-party chat — so the banner is a short honest notice, not
-// a consent manager. If tracking is added later, reintroduce categories here
-// and gate the scripts on consent.
+import { tFn } from '../lib/i18n';
+const t = tFn(Astro.locals?.locale ?? 'ro');
 ---
 
+<!-- Slim banner: shown until user makes a choice -->
 <div id="cookie-banner" class="hidden fixed bottom-5 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-[80] bg-white rounded-[22px] ring-1 ring-black/[0.06] shadow-[0_24px_60px_-28px_rgba(16,42,67,0.45)] p-6" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
-  <h4 class="font-bold text-[15px] text-[#0A2238] tracking-[-0.01em]">Folosim cookies</h4>
+  <h4 class="font-bold text-[15px] text-[#0A2238] tracking-[-0.01em]">{t('cookies.title')}</h4>
   <p class="text-[13px] text-[#46627A] leading-relaxed mt-2 mb-5">
-    Folosim doar cookies strict necesare pentru funcţionarea platformei (sesiune de login, limbă, securitate). Nu folosim tracking publicitar şi nu partajăm date cu terţi.
-    <a href="/confidentialitate" class="text-[#1A759F] font-semibold underline-offset-2 hover:underline transition-colors">Politica de confidenţialitate</a>.
+    {t('cookies.text')} <a href="/confidentialitate" class="text-[#1A759F] font-semibold underline-offset-2 hover:underline transition-colors">{t('cookies.link')}</a>.
   </p>
-  <button id="cookie-accept" class="w-full px-5 py-3 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#0A2238] text-[13px] font-bold transition-colors">
-    Am înţeles
-  </button>
+  <div class="flex flex-col gap-2.5">
+    <button id="cookie-accept-all" class="w-full px-5 py-3 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#0A2238] text-[13px] font-bold transition-colors">
+      Accept toate
+    </button>
+    <div class="flex gap-2.5">
+      <button id="cookie-reject-all" class="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-white ring-1 ring-black/[0.08] hover:bg-black/[0.03] text-[#0A2238] text-[13px] font-semibold transition-colors">
+        Doar necesare
+      </button>
+      <button id="cookie-customize" class="flex-1 min-w-0 px-4 py-2.5 rounded-full bg-white ring-1 ring-black/[0.08] hover:bg-black/[0.03] text-[#0A2238] text-[13px] font-semibold transition-colors">
+        Personalizează
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Detailed modal: only shown when user clicks "Personalizează" -->
+<div id="cookie-modal" class="hidden fixed inset-0 z-[90] bg-[#0A2238]/50 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+  <div class="bg-white w-full md:max-w-lg rounded-t-[26px] md:rounded-[26px] shadow-[0_30px_80px_-20px_rgba(16,42,67,0.5)] max-h-[88vh] overflow-y-auto overscroll-contain">
+    <div class="px-6 py-5 border-b border-black/[0.07] flex items-center justify-between">
+      <h3 class="font-bold text-lg text-[#0A2238] tracking-[-0.015em]">Preferințe cookies</h3>
+      <button id="cookie-modal-close" class="w-9 h-9 grid place-items-center rounded-full text-[#7C9AB4] hover:bg-black/[0.05] hover:text-[#0A2238] transition-colors" aria-label="Închide">✕</button>
+    </div>
+
+    <div class="px-6 py-5 space-y-4">
+      <p class="text-[13px] text-[#46627A] leading-relaxed">
+        Folosim cookies pentru funcţionare, măsurare şi îmbunătăţire. Alege ce categorii accepţi. Le poţi schimba oricând din această pagină.
+      </p>
+
+      <!-- Necessary -->
+      <div class="p-4 bg-[#F5F8FB] rounded-2xl ring-1 ring-black/[0.04]">
+        <div class="flex items-center justify-between mb-1">
+          <h4 class="font-bold text-[14px] text-[#0A2238]">Necesare</h4>
+          <span class="text-[11px] text-[#7C9AB4] uppercase tracking-wider font-semibold">Mereu activ</span>
+        </div>
+        <p class="text-[12.5px] text-[#46627A] leading-relaxed">Sesiune login, preferinţe limbă, securitate (CSRF, rate-limit). Fără ele, platforma nu funcţionează.</p>
+      </div>
+
+      <!-- Analytics -->
+      <label class="block p-4 bg-white rounded-2xl ring-1 ring-black/[0.06] cursor-pointer hover:ring-black/[0.14] transition">
+        <div class="flex items-center justify-between mb-1">
+          <h4 class="font-bold text-[14px] text-[#0A2238]">Analytics</h4>
+          <input type="checkbox" id="cookie-analytics" class="w-4 h-4 accent-[#168AAD]" />
+        </div>
+        <p class="text-[12.5px] text-[#46627A] leading-relaxed">Vercel Analytics, statistici de utilizare anonime. Ne ajută să prioritizăm îmbunătăţiri.</p>
+      </label>
+
+      <!-- Marketing -->
+      <label class="block p-4 bg-white rounded-2xl ring-1 ring-black/[0.06] cursor-pointer hover:ring-black/[0.14] transition">
+        <div class="flex items-center justify-between mb-1">
+          <h4 class="font-bold text-[14px] text-[#0A2238]">Marketing</h4>
+          <input type="checkbox" id="cookie-marketing" class="w-4 h-4 accent-[#168AAD]" />
+        </div>
+        <p class="text-[12.5px] text-[#46627A] leading-relaxed">Tracking pentru remarketing şi conversii (campanii Google Ads / Meta). Necesar pentru reclame personalizate.</p>
+      </label>
+
+      <!-- Support chat -->
+      <label class="block p-4 bg-white rounded-2xl ring-1 ring-black/[0.06] cursor-pointer hover:ring-black/[0.14] transition">
+        <div class="flex items-center justify-between mb-1">
+          <h4 class="font-bold text-[14px] text-[#0A2238]">Chat asistenţă</h4>
+          <input type="checkbox" id="cookie-support" class="w-4 h-4 accent-[#168AAD]" />
+        </div>
+        <p class="text-[12.5px] text-[#46627A] leading-relaxed">Widget Crisp pentru asistenţă în timp real. Activează-l doar dacă vrei să poţi vorbi cu noi din browser.</p>
+      </label>
+    </div>
+
+    <div class="px-6 py-4 border-t border-black/[0.07] flex flex-wrap gap-2.5 justify-end">
+      <button id="cookie-modal-reject" class="px-5 py-2.5 rounded-full bg-white ring-1 ring-black/[0.08] hover:bg-black/[0.03] text-[#0A2238] text-[13px] font-semibold transition-colors">
+        Doar necesare
+      </button>
+      <button id="cookie-modal-save" class="px-6 py-2.5 rounded-full bg-[#0A2238] hover:bg-[#14304b] text-white text-[13px] font-bold transition-colors">
+        Salvează preferinţele
+      </button>
+    </div>
+  </div>
 </div>
 
 <script>
+  // Persisted shape: { necessary: true, analytics: bool, marketing: bool, support: bool, decidedAt: ISO }
   const STORAGE_KEY = 'th-cookie-consent';
   const banner = document.getElementById('cookie-banner');
+  const modal = document.getElementById('cookie-modal');
 
-  function loadConsent() {
+  // Lock the page behind the modal so scrolling stays inside the options list.
+  // On the landing, ScrollSmoother's normalizeScroll hijacks wheel/touch, so we
+  // ask it to pause/release via the hook LandingLayout exposes. Elsewhere the
+  // html overflow lock is enough.
+  function lockBackground(lock: boolean) {
+    try { (window as any).__lpScrollLock?.(lock); } catch {}
+    document.documentElement.style.overflow = lock ? 'hidden' : '';
+  }
+
+  type Consent = { necessary: true; analytics: boolean; marketing: boolean; support: boolean; decidedAt: string };
+
+  function loadConsent(): Consent | null {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return null;
       const parsed = JSON.parse(raw);
-      return (typeof parsed === 'object' && parsed.decidedAt) ? parsed : null;
+      if (typeof parsed !== 'object' || !parsed.decidedAt) return null;
+      return parsed as Consent;
     } catch { return null; }
   }
 
-  function acknowledge() {
-    // Only necessary cookies are used; this just records that the notice was seen.
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ necessary: true, decidedAt: new Date().toISOString() }));
+  function saveConsent(c: Omit<Consent, 'necessary' | 'decidedAt'>) {
+    const final: Consent = { necessary: true, ...c, decidedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(final));
+    document.dispatchEvent(new CustomEvent('cookie-consent-updated', { detail: final }));
     banner?.classList.add('hidden');
+    modal?.classList.add('hidden');
+    lockBackground(false);
   }
 
-  document.getElementById('cookie-accept')?.addEventListener('click', acknowledge);
+  function showBannerIfNeeded() {
+    if (!loadConsent()) {
+      setTimeout(() => banner?.classList.remove('hidden'), 600);
+    }
+  }
 
-  // Synchronous query helper kept for compatibility.
+  function openModal() {
+    const current = loadConsent();
+    (document.getElementById('cookie-analytics') as HTMLInputElement).checked = !!current?.analytics;
+    (document.getElementById('cookie-marketing') as HTMLInputElement).checked = !!current?.marketing;
+    (document.getElementById('cookie-support') as HTMLInputElement).checked = !!current?.support;
+    banner?.classList.add('hidden');
+    modal?.classList.remove('hidden');
+    lockBackground(true);
+  }
+
+  document.getElementById('cookie-accept-all')?.addEventListener('click', () =>
+    saveConsent({ analytics: true, marketing: true, support: true })
+  );
+  document.getElementById('cookie-reject-all')?.addEventListener('click', () =>
+    saveConsent({ analytics: false, marketing: false, support: false })
+  );
+  document.getElementById('cookie-customize')?.addEventListener('click', openModal);
+  document.getElementById('cookie-modal-close')?.addEventListener('click', () => {
+    modal?.classList.add('hidden');
+    banner?.classList.remove('hidden');
+    lockBackground(false);
+  });
+  document.getElementById('cookie-modal-reject')?.addEventListener('click', () =>
+    saveConsent({ analytics: false, marketing: false, support: false })
+  );
+  document.getElementById('cookie-modal-save')?.addEventListener('click', () => {
+    saveConsent({
+      analytics: (document.getElementById('cookie-analytics') as HTMLInputElement).checked,
+      marketing: (document.getElementById('cookie-marketing') as HTMLInputElement).checked,
+      support: (document.getElementById('cookie-support') as HTMLInputElement).checked,
+    });
+  });
+
+  // Allow other scripts to query the consent state synchronously
   (window as any).__thCookieConsent = () => loadConsent();
+  (window as any).__thOpenCookieModal = openModal;
 
-  if (!loadConsent()) setTimeout(() => banner?.classList.remove('hidden'), 600);
+  showBannerIfNeeded();
 </script>

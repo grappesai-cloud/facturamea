@@ -3,7 +3,7 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Trash2, Loader2, Pencil, Search } from 'lucide-react';
+import { Plus, X, Loader2, Pencil, Search } from 'lucide-react';
 
 interface Supplier {
   id: string; name: string; cui: string | null; regCom: string | null;
@@ -90,7 +90,7 @@ export default function SuppliersManager() {
             <>
             <ul className="divide-y divide-white/5">
               {(showAll ? items : items.slice(0, 3)).map((s) => (
-                <li key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors">
+                <li key={s.id} className="group flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{s.name}</p>
                     <p className="text-xs text-[#9FB8CC] truncate">
@@ -99,8 +99,10 @@ export default function SuppliersManager() {
                       {s.email && <span className="ml-2">· {s.email}</span>}
                     </p>
                   </div>
-                  <button onClick={() => setEditing({ ...empty, ...s, cui: s.cui || '', country: s.country || 'Romania' } as any)} className="p-1.5 text-[#7C9AB4] hover:text-white"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => remove(s.id)} className="p-1.5 text-[#7C9AB4] hover:text-[#DC4B41]"><Trash2 className="w-4 h-4" /></button>
+                  <div className="flex items-center gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setEditing({ ...empty, ...s, cui: s.cui || '', country: s.country || 'Romania' } as any)} className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-white transition-colors" title="Editează"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => remove(s.id)} className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] transition-colors" title="Șterge"><X className="w-4 h-4" /></button>
+                  </div>
                 </li>
               ))}
             </ul>

@@ -51,16 +51,16 @@ try {
 } catch {}
 
 const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
-const inputCls = 'h-9 px-3 bg-white border border-[#E8E8E4] rounded-xl text-[13px] focus:border-[#0A0A0A] focus:outline-none transition-colors';
+const inputCls = 'h-9 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#0A2238] focus:outline-none transition-colors';
 ---
 
 <AdminLayout title="Jurnal audit" activeTab="audit">
   <div class="mb-6">
     <h2 class="text-[22px] font-bold tracking-[-0.02em]">Jurnal audit</h2>
-    <p class="text-[13px] text-[#6B6B68] mt-1">Toate acţiunile importante (login, post, bid, status change, admin).</p>
+    <p class="text-[13px] text-[#46627A] mt-1">Toate acţiunile importante (login, post, bid, status change, admin).</p>
   </div>
 
-  <form method="GET" class="flex flex-wrap gap-2 mb-4 p-3 bg-white border border-[#E8E8E4] rounded-xl">
+  <form method="GET" class="flex flex-wrap gap-2 mb-4 p-3 bg-white border border-[#E3EAF1] rounded-xl">
     <select name="action" class={inputCls + ' min-w-[180px]'}>
       <option value="">Toate acţiunile</option>
       {actions.map((a) => <option value={a} selected={action === a}>{a}</option>)}
@@ -69,15 +69,15 @@ const inputCls = 'h-9 px-3 bg-white border border-[#E8E8E4] rounded-xl text-[13p
     <select name="days" class={inputCls}>
       {[1, 7, 30, 90].map((d) => <option value={d} selected={days === d}>Ultimele {d} {d === 1 ? 'zi' : 'zile'}</option>)}
     </select>
-    <button type="submit" class="h-9 px-4 bg-[#0A0A0A] hover:bg-[#1A1A1A] text-white text-[13px] font-semibold rounded-xl transition-colors">Filtrează</button>
-    <a href={`/api/admin/audit?days=${days}&action=${action}&format=csv`} class="h-9 px-4 bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] text-[13px] font-medium rounded-xl transition-colors flex items-center">CSV</a>
+    <button type="submit" class="h-9 px-4 bg-[#0A2238] hover:bg-[#1A1A1A] text-white text-[13px] font-semibold rounded-xl transition-colors">Filtrează</button>
+    <a href={`/api/admin/audit?days=${days}&action=${action}&format=csv`} class="h-9 px-4 bg-white border border-[#E3EAF1] hover:border-[#0A2238] text-[#0A2238] text-[13px] font-medium rounded-xl transition-colors flex items-center">CSV</a>
   </form>
 
-  <p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium mb-3">{rows.length} {rows.length === 1 ? 'eveniment' : 'evenimente'}</p>
+  <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium mb-3">{rows.length} {rows.length === 1 ? 'eveniment' : 'evenimente'}</p>
 
-  <div class="bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
+  <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
     <table class="w-full text-[12px]">
-      <thead class="bg-[#FAFAF8] text-[10px] uppercase tracking-wider text-[#6B6B68]">
+      <thead class="bg-[#EDF1F5] text-[10px] uppercase tracking-wider text-[#46627A]">
         <tr>
           <th class="px-4 py-2 text-left">Când</th>
           <th class="px-4 py-2 text-left">Acţiune</th>
@@ -87,19 +87,19 @@ const inputCls = 'h-9 px-3 bg-white border border-[#E8E8E4] rounded-xl text-[13p
           <th class="px-4 py-2 text-left">Metadata</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-[#E8E8E4]">
+      <tbody class="divide-y divide-[#E3EAF1]">
         {rows.map((r) => (
           <tr class="hover:bg-[#FCFCFA]">
-            <td class="px-4 py-2 font-mono text-[#6B6B68] whitespace-nowrap">{fmt(r.createdAt)}</td>
-            <td class="px-4 py-2 font-mono text-[#0A0A0A]">{r.action}</td>
-            <td class="px-4 py-2">{r.userName ?? <span class="text-[#A8A8A4]">—</span>}</td>
-            <td class="px-4 py-2 text-[#6B6B68]">{r.entityType ? `${r.entityType}/${(r.entityId || '').slice(0, 12)}…` : '—'}</td>
-            <td class="px-4 py-2 font-mono text-[#A8A8A4]">{r.ipAddress ?? '—'}</td>
-            <td class="px-4 py-2 text-[#6B6B68] truncate max-w-[260px]">{r.metadata ?? ''}</td>
+            <td class="px-4 py-2 font-mono text-[#46627A] whitespace-nowrap">{fmt(r.createdAt)}</td>
+            <td class="px-4 py-2 font-mono text-[#0A2238]">{r.action}</td>
+            <td class="px-4 py-2">{r.userName ?? <span class="text-[#9FB8CC]">—</span>}</td>
+            <td class="px-4 py-2 text-[#46627A]">{r.entityType ? `${r.entityType}/${(r.entityId || '').slice(0, 12)}…` : '—'}</td>
+            <td class="px-4 py-2 font-mono text-[#9FB8CC]">{r.ipAddress ?? '—'}</td>
+            <td class="px-4 py-2 text-[#46627A] truncate max-w-[260px]">{r.metadata ?? ''}</td>
           </tr>
         ))}
         {rows.length === 0 && (
-          <tr><td colspan="6" class="px-4 py-12 text-center text-[#6B6B68]">Niciun eveniment găsit pentru filtrele selectate.</td></tr>
+          <tr><td colspan="6" class="px-4 py-12 text-center text-[#46627A]">Niciun eveniment găsit pentru filtrele selectate.</td></tr>
         )}
       </tbody>
     </table>

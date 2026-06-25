@@ -60,17 +60,17 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
 <AdminLayout title="Utilizatori" activeTab="users">
   <div class="mb-6">
     <form method="GET" class="flex gap-3 max-w-xl">
-      <input type="text" name="q" value={q} placeholder="Caută după nume, email sau ID platformă..." class="flex-1 h-11 px-4 bg-white border border-[#E8E8E4] rounded-full text-[14px] text-[#0A0A0A] placeholder:text-[#A8A8A4] focus:border-[#0A0A0A] focus:outline-none transition-colors" />
+      <input type="text" name="q" value={q} placeholder="Caută după nume, email sau ID platformă..." class="flex-1 h-11 px-4 bg-white border border-[#E3EAF1] rounded-full text-[14px] text-[#0A2238] placeholder:text-[#9FB8CC] focus:border-[#0A2238] focus:outline-none transition-colors" />
       <button type="submit" class="h-11 px-6 bg-[#1A759F] hover:bg-[#168AAD] text-white font-semibold rounded-xl text-[13px] transition-colors">Caută</button>
     </form>
-    <p class="text-[13px] text-[#6B6B68] mt-2">{total.count} utilizatori</p>
+    <p class="text-[13px] text-[#46627A] mt-2">{total.count} utilizatori</p>
   </div>
 
-  <div class="bg-white border border-[#E8E8E4] rounded-2xl overflow-hidden">
+  <div class="bg-white border border-[#E3EAF1] rounded-2xl overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-[13px]">
         <thead>
-          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8A8A85] border-b border-[#F0F0EC]">
+          <tr class="text-left text-[11px] uppercase tracking-wider text-[#7C9AB4] border-b border-[#E3EAF1]">
             <th class="px-5 py-2.5 font-medium">Utilizator</th>
             <th class="px-5 py-2.5 font-medium">ID</th>
             <th class="px-5 py-2.5 font-medium">Tip</th>
@@ -82,24 +82,24 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
         </thead>
         <tbody>
           {userList.map((u) => (
-            <tr class="border-b border-[#F6F6F2] hover:bg-[#FAFAF8] transition-colors">
+            <tr class="border-b border-[#F6F6F2] hover:bg-[#EDF1F5] transition-colors">
               <td class="px-5 py-3">
-                <p class="font-medium text-[#0A0A0A]">{u.name}</p>
-                <p class="text-[11px] text-[#6B6B68]">{u.email}</p>
+                <p class="font-medium text-[#0A2238]">{u.name}</p>
+                <p class="text-[11px] text-[#46627A]">{u.email}</p>
               </td>
-              <td class="px-5 py-3 font-mono text-[12px] text-[#6B6B68]">
+              <td class="px-5 py-3 font-mono text-[12px] text-[#46627A]">
                 {u.platformId}
-                {u.isAdmin && <span class="ml-1 inline-block px-1.5 py-0.5 rounded-md bg-[#0A0A0A] text-white text-[9px] font-bold uppercase tracking-wider">Admin</span>}
+                {u.isAdmin && <span class="ml-1 inline-block px-1.5 py-0.5 rounded-md bg-[#0A2238] text-white text-[9px] font-bold uppercase tracking-wider">Admin</span>}
               </td>
-              <td class="px-5 py-3 text-[#6B6B68]">{typeLabel[u.userType] || u.userType}</td>
-              <td class="px-5 py-3 text-[#6B6B68]">{u.companyName || '-'}</td>
+              <td class="px-5 py-3 text-[#46627A]">{typeLabel[u.userType] || u.userType}</td>
+              <td class="px-5 py-3 text-[#46627A]">{u.companyName || '-'}</td>
               <td class="px-5 py-3">
                 <span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${u.isActive ? 'bg-[#E7F7EC] text-[#15803D]' : 'bg-[#FDECEC] text-[#B91C1C]'}`}>{u.isActive ? 'Activ' : 'Inactiv'}</span>
               </td>
-              <td class="px-5 py-3 text-[#6B6B68]">{fmt(u.createdAt)}</td>
+              <td class="px-5 py-3 text-[#46627A]">{fmt(u.createdAt)}</td>
               <td class="px-5 py-3 text-right">
                 <div class="flex items-center justify-end gap-2">
-                  <button data-user-id={u.id} data-action={u.isActive ? 'deactivate' : 'activate'} class="admin-action-btn px-2.5 py-1 text-[12px] font-medium rounded-lg border border-[#E8E8E4] text-[#6B6B68] hover:text-[#0A0A0A] hover:border-[#0A0A0A] transition-colors">
+                  <button data-user-id={u.id} data-action={u.isActive ? 'deactivate' : 'activate'} class="admin-action-btn px-2.5 py-1 text-[12px] font-medium rounded-lg border border-[#E3EAF1] text-[#46627A] hover:text-[#0A2238] hover:border-[#0A2238] transition-colors">
                     {u.isActive ? 'Dezactivează' : 'Activează'}
                   </button>
                   {!u.isAdmin && (
@@ -111,17 +111,17 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
             </tr>
           ))}
           {userList.length === 0 && (
-            <tr><td colspan="7" class="px-5 py-12 text-center text-[14px] text-[#6B6B68]">Niciun utilizator găsit.</td></tr>
+            <tr><td colspan="7" class="px-5 py-12 text-center text-[14px] text-[#46627A]">Niciun utilizator găsit.</td></tr>
           )}
         </tbody>
       </table>
     </div>
 
     {total.count > limit && (
-      <div class="px-6 py-4 border-t border-[#F0F0EC] flex items-center justify-center gap-3">
-        {page > 1 && <a href={`/admin/users?q=${q}&page=${page - 1}`} class="px-3 py-1 text-[13px] border border-[#E8E8E4] rounded-lg text-[#6B6B68] hover:text-[#0A0A0A]">Anterior</a>}
-        <span class="text-[13px] text-[#6B6B68]">Pagina {page}</span>
-        {userList.length >= limit && <a href={`/admin/users?q=${q}&page=${page + 1}`} class="px-3 py-1 text-[13px] border border-[#E8E8E4] rounded-lg text-[#6B6B68] hover:text-[#0A0A0A]">Următor</a>}
+      <div class="px-6 py-4 border-t border-[#E3EAF1] flex items-center justify-center gap-3">
+        {page > 1 && <a href={`/admin/users?q=${q}&page=${page - 1}`} class="px-3 py-1 text-[13px] border border-[#E3EAF1] rounded-lg text-[#46627A] hover:text-[#0A2238]">Anterior</a>}
+        <span class="text-[13px] text-[#46627A]">Pagina {page}</span>
+        {userList.length >= limit && <a href={`/admin/users?q=${q}&page=${page + 1}`} class="px-3 py-1 text-[13px] border border-[#E3EAF1] rounded-lg text-[#46627A] hover:text-[#0A2238]">Următor</a>}
       </div>
     )}
   </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Loader2, Trash2, UserPlus } from 'lucide-react';
+import { Loader2, X, UserPlus } from 'lucide-react';
 
 type Role = 'owner' | 'accountant' | 'operator' | 'viewer';
 
@@ -183,7 +183,7 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
         ) : (
           <div className="divide-y divide-white/10">
             {members.map((m) => (
-              <div key={m.userId} className="px-5 py-3.5 flex items-center justify-between gap-3">
+              <div key={m.userId} className="group px-5 py-3.5 flex items-center justify-between gap-3 hover:bg-white/5 transition-colors rounded-xl">
                 <div className="min-w-0">
                   <p className="text-[14px] font-medium text-white truncate">
                     {m.name}
@@ -210,10 +210,10 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
                     <button
                       onClick={() => removeMember(m.userId)}
                       disabled={busyId === m.userId}
-                      className="p-1.5 text-[#DC4B41] hover:bg-white/10 rounded-lg transition-colors disabled:opacity-60"
+                      className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:text-[#DC4B41] hover:bg-white/10 transition-colors disabled:opacity-60 opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                       title="Elimină membru"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>

@@ -139,7 +139,8 @@ export default function DashboardShortcuts({
       window.setTimeout(() => setPicker(false), 420);
     };
 
-    // (1) Pointer drag on the grab handle — works with mouse AND touch.
+    // (1) Pointer drag on the grab handle — touch devices only.
+    const isMouse = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
     let pd = false, psy = 0, pdy = 0;
     const onPDown = (e: PointerEvent) => {
       pd = true; psy = e.clientY; pdy = 0;
@@ -152,10 +153,12 @@ export default function DashboardShortcuts({
       card.style.transform = `translateY(${pdy}px)`;
     };
     const onPUp = () => { if (!pd) return; pd = false; if (pdy > threshold()) swipeOut(); else snap(); };
-    handle?.addEventListener('pointerdown', onPDown);
-    handle?.addEventListener('pointermove', onPMove);
-    handle?.addEventListener('pointerup', onPUp);
-    handle?.addEventListener('pointercancel', onPUp);
+    if (!isMouse && handle) {
+      handle.addEventListener('pointerdown', onPDown);
+      handle.addEventListener('pointermove', onPMove);
+      handle.addEventListener('pointerup', onPUp);
+      handle.addEventListener('pointercancel', onPUp);
+    }
 
     // (2) Pull-to-dismiss from the top of the content (touch).
     let sy = 0, ss = 0, act = false, dy = 0, onH = false;
@@ -178,35 +181,17 @@ export default function DashboardShortcuts({
     card.addEventListener('touchend', onTEnd);
     card.addEventListener('touchcancel', onTEnd);
 
-    // (3) Trackpad overscroll-to-close — mobile layout only.
-    const mq = window.matchMedia('(max-width: 639px)');
-    let dist = 0, wt = 0;
-    const onWheel = (e: WheelEvent) => {
-      if (!mq.matches) return;
-      const atTop = card.scrollTop <= 0;
-      const noScroll = card.scrollHeight <= card.clientHeight + 2;
-      if (!(e.deltaY < 0 && (atTop || noScroll))) { if (dist > 0) { dist = 0; snap(); } return; }
-      e.preventDefault();
-      if (dist === 0) card.classList.add('dragging');
-      dist += Math.abs(e.deltaY);
-      card.style.transform = `translateY(${Math.min(dist * 0.5, 220)}px)`;
-      window.clearTimeout(wt);
-      if (dist > 150) { dist = 0; swipeOut(); return; }
-      wt = window.setTimeout(() => { dist = 0; snap(); }, 160);
-    };
-    card.addEventListener('wheel', onWheel, { passive: false });
-
     return () => {
-      handle?.removeEventListener('pointerdown', onPDown);
-      handle?.removeEventListener('pointermove', onPMove);
-      handle?.removeEventListener('pointerup', onPUp);
-      handle?.removeEventListener('pointercancel', onPUp);
+      if (!isMouse && handle) {
+        handle.removeEventListener('pointerdown', onPDown);
+        handle.removeEventListener('pointermove', onPMove);
+        handle.removeEventListener('pointerup', onPUp);
+        handle.removeEventListener('pointercancel', onPUp);
+      }
       card.removeEventListener('touchstart', onTStart);
       card.removeEventListener('touchmove', onTMove);
       card.removeEventListener('touchend', onTEnd);
       card.removeEventListener('touchcancel', onTEnd);
-      card.removeEventListener('wheel', onWheel);
-      window.clearTimeout(wt);
     };
   }, [picker]);
 
@@ -246,7 +231,7 @@ export default function DashboardShortcuts({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 auto-rows-fr gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 auto-rows-fr gap-3 sm:gap-4">
         {selected.map((key) => {
           const m = byKey.get(key);
           if (!m) return null;
@@ -255,27 +240,30 @@ export default function DashboardShortcuts({
               <a
                 href={m.href}
                 onClick={editing ? (e) => e.preventDefault() : undefined}
-                className={`relative overflow-hidden flex h-full items-center gap-3 p-4 sm:p-5 rounded-2xl transition-transform min-h-[104px] sm:min-h-[116px] ${
+                className={`relative overflow-hidden flex flex-col justify-end h-full p-4 sm:p-5 rounded-2xl transition-transform min-h-[104px] sm:min-h-[116px] ${
                   editing ? 'cursor-default' : 'hover:-translate-y-0.5'
                 }`}
                 style={{ background: m.bg }}
               >
-                {/* dark scrim so white text reads on the lighter tiles */}
-                <span className="absolute inset-0 bg-black/25 pointer-events-none"></span>
-                <svg
-                  className="relative w-7 h-7 shrink-0 text-[#ffffff]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.7}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
-                </svg>
-                <span className="relative min-w-0">
-                  <span className="block text-[16px] sm:text-[17px] font-semibold leading-tight text-[#ffffff]">
+                {/* large icon watermark — bigger than the card, centered, a subtle
+                    lighter tint of the card colour, sitting behind the text (z-0) */}
+                <span className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                  <svg
+                    className="w-[130%] h-[130%] text-white/[0.10]"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={0.9}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
+                  </svg>
+                </span>
+                {/* title + subtitle, full width, on top */}
+                <span className="tile-text relative z-10 w-full">
+                  <span className="block w-full text-[16px] sm:text-[17px] font-bold leading-tight" style={{ color: m.fg }}>
                     {m.label}
                   </span>
-                  <span className="block text-[13px] mt-1 text-[#ffffff]/75">
+                  <span className="block w-full text-[12.5px] mt-1 leading-snug" style={{ color: m.sub }}>
                     {m.desc}
                   </span>
                 </span>
@@ -284,12 +272,12 @@ export default function DashboardShortcuts({
                 type="button"
                 aria-label={`Elimină ${m.label}`}
                 onClick={() => remove(key)}
-                className={`absolute top-2 right-2 w-7 h-7 inline-flex items-center justify-center rounded-lg bg-[#E0584F] text-white shadow-sm hover:bg-[#C9443B] transition-all ${
+                className={`absolute top-2 right-2 w-7 h-7 inline-flex items-center justify-center rounded-full bg-white/10 text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-all ${
                   editing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'
                 }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.8}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
@@ -322,11 +310,14 @@ export default function DashboardShortcuts({
             className="app-sheet-card w-full sm:max-w-[820px] max-h-[94vh] sm:max-h-[92vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              ref={handleRef}
-              className="flex justify-center pt-3.5 pb-1 touch-none select-none cursor-grab active:cursor-grabbing"
-            >
-              <span className="w-10 h-1.5 rounded-full fm-grab" />
+            <div className="flex items-center px-3 pt-3.5 pb-1 select-none">
+              <div className="flex-1" />
+              <div ref={handleRef} className="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span className="w-10 h-1.5 rounded-full fm-grab pointer-events-none" /></div>
+              <div className="flex-1 flex justify-end">
+                <button type="button" onClick={closePicker} aria-label="Închide" className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
             </div>
             <div className="sheet-content px-4 sm:px-7 pt-3 sm:pt-7 pb-7">
               <div className="mb-6">
@@ -343,16 +334,19 @@ export default function DashboardShortcuts({
                       key={m.key}
                       type="button"
                       onClick={() => add(m.key)}
-                      className="group relative overflow-hidden flex h-full items-center gap-3 p-4 rounded-2xl text-left transition-transform hover:-translate-y-0.5"
+                      className="group relative overflow-hidden flex flex-col justify-end h-full min-h-[104px] p-4 rounded-2xl text-left transition-transform hover:-translate-y-0.5"
                       style={{ background: m.bg }}
                     >
-                      <span className="absolute inset-0 bg-black/25 pointer-events-none"></span>
-                      <svg className="relative w-7 h-7 shrink-0 text-[#ffffff]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
-                      </svg>
-                      <span className="relative min-w-0 flex-1">
-                        <span className="block text-[15.5px] font-semibold leading-tight truncate text-[#ffffff]">{m.label}</span>
-                        <span className="block text-[12.5px] mt-0.5 leading-snug line-clamp-2 text-[#ffffff]/75">{m.desc}</span>
+                      {/* large icon watermark behind the text, centered */}
+                      <span className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                        <svg className="w-[130%] h-[130%] text-white/[0.10]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={0.9}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
+                        </svg>
+                      </span>
+                      {/* title + subtitle, full width, on top */}
+                      <span className="tile-text relative z-10 w-full">
+                        <span className="block w-full text-[15.5px] font-bold leading-tight" style={{ color: m.fg }}>{m.label}</span>
+                        <span className="block w-full text-[12.5px] mt-1 leading-snug line-clamp-2" style={{ color: m.sub }}>{m.desc}</span>
                       </span>
                     </button>
                   ))}

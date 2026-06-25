@@ -3,7 +3,7 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Trash2, Loader2, Pencil, Search, Download } from 'lucide-react';
+import { Plus, Loader2, Pencil, Search, Download, X } from 'lucide-react';
 
 interface Client {
   id: string; name: string; taxId: string | null; isVatPayer: boolean; registryNumber: string | null;
@@ -133,7 +133,7 @@ export default function ClientsManager() {
             <>
             <ul className="p-2 space-y-2">
               {(showAll ? clients : clients.slice(0, 3)).map((c) => (
-                <li key={c.id} className="flex items-center gap-3 p-4 rounded-2xl bg-white/10 hover:bg-white/15 transition-colors">
+                <li key={c.id} className="group flex items-center gap-3 p-4 rounded-2xl bg-white/10 hover:bg-white/15 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-bold text-white truncate">{c.name}</p>
                     <p className="text-xs text-[#9FB8CC] truncate">
@@ -143,8 +143,12 @@ export default function ClientsManager() {
                     </p>
                   </div>
                   {c.isVatPayer && <span className="text-[10px] px-2 py-0.5 bg-[#34A0A4]/15 text-[#34A0A4] rounded-full font-semibold shrink-0">plătitor TVA</span>}
-                  <button onClick={() => setEditing({ ...empty, ...c, taxId: c.taxId || '', country: c.country || 'Romania' } as any)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-white hover:bg-white/15 shrink-0"><Pencil className="w-4 h-4" /></button>
-                  <button onClick={() => remove(c.id)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-white/15 hover:text-[#DC4B41] shrink-0"><Trash2 className="w-4 h-4" /></button>
+                  <div className="flex items-center gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => setEditing({ ...empty, ...c, taxId: c.taxId || '', country: c.country || 'Romania' } as any)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-white/15 hover:text-white transition-colors" title="Editează"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => remove(c.id)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>

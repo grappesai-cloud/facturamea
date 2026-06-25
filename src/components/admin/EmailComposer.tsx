@@ -3,9 +3,9 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 type Audience = 'all' | 'trial' | 'lifetime' | 'custom';
 
 const ORANGE = '#1A759F';
-const INK = '#0A0A0A';
-const BORDER = '#E8E8E4';
-const MUTED = '#6B6B68';
+const INK = '#0A2238';
+const BORDER = '#E3EAF1';
+const MUTED = '#46627A';
 
 const AUDIENCES: { value: Audience; label: string }[] = [
   { value: 'all', label: 'Toți utilizatorii' },
@@ -20,12 +20,12 @@ const SNIPPETS: { id: string; label: string; html: string }[] = [
   {
     id: 'heading',
     label: 'Titlu',
-    html: `<h2 style="margin:28px 0 12px;font-family:'Inter',Arial,sans-serif;font-size:20px;font-weight:700;line-height:1.3;color:${INK};letter-spacing:-0.02em;">Titlul tău aici</h2>\n`,
+    html: `<h2 style="margin:28px 0 12px;font-family:'Outfit',Arial,sans-serif;font-size:20px;font-weight:700;line-height:1.3;color:${INK};letter-spacing:-0.02em;">Titlul tău aici</h2>\n`,
   },
   {
     id: 'paragraph',
     label: 'Paragraf',
-    html: `<p style="margin:0 0 16px;font-family:'Inter',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Scrie aici textul paragrafului.</p>\n`,
+    html: `<p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Scrie aici textul paragrafului.</p>\n`,
   },
   {
     id: 'cta',
@@ -33,22 +33,22 @@ const SNIPPETS: { id: string; label: string; html: string }[] = [
     html: `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:24px 0;">
   <tr>
     <td align="center" bgcolor="${ORANGE}" style="border-radius:12px;">
-      <a href="https://facturamea.com" target="_blank" style="display:inline-block;padding:14px 28px;font-family:'Inter',Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background-color:${ORANGE};">Deschide facturamea</a>
+      <a href="https://facturamea.com" target="_blank" style="display:inline-block;padding:14px 28px;font-family:'Outfit',Arial,sans-serif;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;border-radius:12px;background-color:${ORANGE};">Deschide facturamea</a>
     </td>
   </tr>
 </table>\n`,
   },
 ];
 
-const STARTER_BODY = `<p style="margin:0 0 16px;font-family:'Inter',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Salut,</p>
-<p style="margin:0 0 16px;font-family:'Inter',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Scrie mesajul aici.</p>`;
+const STARTER_BODY = `<p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Salut,</p>
+<p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Scrie mesajul aici.</p>`;
 
 const inputCls =
-  'w-full px-4 py-2.5 bg-white border border-[#E8E8E4] rounded-xl text-[13px] focus:border-[#0A0A0A] focus:outline-none transition-colors';
+  'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#0A2238] focus:outline-none transition-colors';
 
 // Client-side mirror of wrapEmailHtml (src/lib/email-campaign.ts) for instant preview.
 function wrapPreview(preheader: string, bodyHtml: string): string {
-  const cream = '#FAFAF8';
+  const cream = '#EDF1F5';
   return `<!DOCTYPE html><html lang="ro"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head>
 <body style="margin:0;padding:0;background-color:${cream};">
   <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(preheader)}</div>
@@ -56,12 +56,12 @@ function wrapPreview(preheader: string, bodyHtml: string): string {
     <tr><td align="center" style="padding:32px 16px;">
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background-color:#ffffff;border:1px solid ${BORDER};border-radius:16px;overflow:hidden;">
         <tr><td style="padding:28px 40px;border-bottom:1px solid ${BORDER};">
-          <span style="font-family:'Inter',Arial,sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.03em;color:${INK};">factura<span style="color:${ORANGE};">mea</span></span>
+          <span style="font-family:'Outfit',Arial,sans-serif;font-size:22px;font-weight:800;letter-spacing:-0.03em;color:${INK};">factura<span style="color:${ORANGE};">mea</span></span>
         </td></tr>
         <tr><td style="padding:32px 40px;">${bodyHtml}</td></tr>
         <tr><td style="padding:24px 40px 32px;border-top:1px solid ${BORDER};">
-          <p style="margin:0 0 6px;font-family:'Inter',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">facturamea · Platformă de facturare pentru transport și logistică</p>
-          <p style="margin:0;font-family:'Inter',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">Ai primit acest email pentru că ai un cont facturamea. <a href="#" style="color:${MUTED};text-decoration:underline;">Dezabonează-te</a>.</p>
+          <p style="margin:0 0 6px;font-family:'Outfit',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">facturamea · Platformă de facturare pentru transport și logistică</p>
+          <p style="margin:0;font-family:'Outfit',Arial,sans-serif;font-size:12px;line-height:1.6;color:${MUTED};">Ai primit acest email pentru că ai un cont facturamea. <a href="#" style="color:${MUTED};text-decoration:underline;">Dezabonează-te</a>.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -237,7 +237,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
       {/* Composer column */}
-      <div className="space-y-4 p-6 bg-white border border-[#E8E8E4] rounded-xl">
+      <div className="space-y-4 p-6 bg-white border border-[#E3EAF1] rounded-xl">
         {banner && (
           <div
             className={
@@ -264,7 +264,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
 
         <div>
           <label className="block text-[12px] font-medium mb-1.5">
-            Preheader <span className="text-[#A8A8A4] font-normal">(text de previzualizare în inbox)</span>
+            Preheader <span className="text-[#9FB8CC] font-normal">(text de previzualizare în inbox)</span>
           </label>
           <input
             className={inputCls}
@@ -282,9 +282,9 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
               <option key={a.value} value={a.value}>{a.label}</option>
             ))}
           </select>
-          <p className="text-[11px] text-[#6B6B68] mt-1.5">
+          <p className="text-[11px] text-[#46627A] mt-1.5">
             Destinatari estimați:{' '}
-            <span className="font-semibold text-[#0A0A0A]">
+            <span className="font-semibold text-[#0A2238]">
               {audienceCount != null ? audienceCount.toLocaleString('ro-RO') : '-'}
             </span>
           </p>
@@ -312,7 +312,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
                   key={s.id}
                   type="button"
                   onClick={() => insertSnippet(s.html)}
-                  className="px-2.5 py-1 text-[11px] font-medium border border-[#E8E8E4] rounded-lg hover:bg-[#F4F4F0] transition-colors"
+                  className="px-2.5 py-1 text-[11px] font-medium border border-[#E3EAF1] rounded-lg hover:bg-[#F4F4F0] transition-colors"
                 >
                   {s.label}
                 </button>
@@ -327,17 +327,17 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             onChange={onBodyChange}
             spellCheck={false}
           />
-          <p className="text-[11px] text-[#A8A8A4] mt-1.5">
+          <p className="text-[11px] text-[#9FB8CC] mt-1.5">
             HTML cu stiluri inline. Antetul, footerul și shell-ul branded se adaugă automat la trimitere.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-[#E8E8E4]">
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-[#E3EAF1]">
           <button
             type="button"
             onClick={onSaveDraft}
             disabled={busy != null}
-            className="px-4 py-2.5 border border-[#E8E8E4] text-[#0A0A0A] font-semibold rounded-xl text-[13px] hover:bg-[#F4F4F0] disabled:opacity-50 transition-colors"
+            className="px-4 py-2.5 border border-[#E3EAF1] text-[#0A2238] font-semibold rounded-xl text-[13px] hover:bg-[#F4F4F0] disabled:opacity-50 transition-colors"
           >
             {busy === 'save' ? 'Se salvează...' : 'Salvează schița'}
           </button>
@@ -353,26 +353,26 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             type="button"
             onClick={onSend}
             disabled={busy != null}
-            className="px-5 py-2.5 bg-[#0A0A0A] hover:bg-[#1A1A1A] disabled:bg-[#A8A8A4] text-white font-semibold rounded-xl text-[13px] transition-colors"
+            className="px-5 py-2.5 bg-[#0A2238] hover:bg-[#1A1A1A] disabled:bg-[#9FB8CC] text-white font-semibold rounded-xl text-[13px] transition-colors"
           >
             {busy === 'send' ? 'Se trimite...' : 'Trimite campanie'}
           </button>
         </div>
-        <p className="text-[11px] text-[#6B6B68]">
+        <p className="text-[11px] text-[#46627A]">
           Testul ajunge la <span className="font-medium">{adminEmail}</span>. Trimiterea campaniei este ireversibilă.
         </p>
       </div>
 
       {/* Preview column */}
-      <div className="bg-white border border-[#E8E8E4] rounded-xl overflow-hidden flex flex-col">
-        <div className="px-5 py-3 border-b border-[#E8E8E4] flex items-center justify-between">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Previzualizare</p>
-          <span className="text-[11px] text-[#A8A8A4]">{dirty || !campaignId ? 'Nesalvat' : 'Salvat'}</span>
+      <div className="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden flex flex-col">
+        <div className="px-5 py-3 border-b border-[#E3EAF1] flex items-center justify-between">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Previzualizare</p>
+          <span className="text-[11px] text-[#9FB8CC]">{dirty || !campaignId ? 'Nesalvat' : 'Salvat'}</span>
         </div>
         <iframe
           title="Previzualizare email"
           srcDoc={previewSrc}
-          className="w-full flex-1 min-h-[640px] bg-[#FAFAF8]"
+          className="w-full flex-1 min-h-[640px] bg-[#EDF1F5]"
           sandbox=""
         />
       </div>

@@ -29,11 +29,11 @@
   --color-accent-800: #114a64;
   --color-accent-900: #0d3a4f;
 
-  /* Premium minimal palette (dashboard) */
-  --color-bone: #fafaf8;
-  --color-ink: #0a0a0a;
-  --color-muted: #6b6b68;
-  --color-edge: #e8e8e4;
+  /* Premium minimal palette — on-brand (navy / soft light / teal-muted) */
+  --color-bone: #EDF1F5;
+  --color-ink: #0A2238;
+  --color-muted: #46627A;
+  --color-edge: #E3EAF1;
 
   /* ─── Meadow Green palette (dashboard redesign) ───
      Full lime→teal→deep-blue ramp, light → dark. Roles:
@@ -186,7 +186,7 @@ body {
 .th-card-mint   { background: var(--pastel-mint);    border-color: rgba(0,0,0,0.04); }
 .th-card-lilac  { background: var(--pastel-lilac);   border-color: rgba(0,0,0,0.04); }
 .th-card-cream  { background: var(--pastel-cream);   border-color: rgba(0,0,0,0.04); }
-.th-card-ink    { background: #0A0A0A; color: #FAFAF8; border-color: #0A0A0A; }
+.th-card-ink    { background: #0A2238; color: #EDF1F5; border-color: #0A2238; }
 
 /* Soft pastel chip / pill (date labels in the reference) */
 .th-chip {
@@ -196,18 +196,18 @@ body {
   border: 1px solid rgba(0,0,0,0.05);
   border-radius: 999px;
   font-size: 11px; font-weight: 500;
-  color: #0A0A0A;
+  color: #0A2238;
 }
 
 /* Section eyebrow (small uppercase label above headings) */
 .th-eyebrow {
   font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: #6B6B68; font-weight: 500;
+  color: #46627A; font-weight: 500;
 }
 
 /* Big page heading */
-.th-h1 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #0A0A0A; }
-.th-h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #0A0A0A; }
+.th-h1 { font-size: clamp(28px, 3.4vw, 40px); font-weight: 700; letter-spacing: -0.02em; line-height: 1.05; color: #0A2238; }
+.th-h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #0A2238; }
 
 /* Stat tile — colorful, big number */
 .th-stat {
@@ -217,9 +217,9 @@ body {
   box-shadow: var(--shadow-card);
 }
 .th-stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-card-lg); }
-.th-stat .num { font-size: 36px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; color: #0A0A0A; font-variant-numeric: tabular-nums; }
-.th-stat .lbl { font-size: 12px; color: #2E2E2C; font-weight: 500; }
-.th-card-ink .num, .th-card-ink .lbl { color: #FAFAF8; }
+.th-stat .num { font-size: 36px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; color: #0A2238; font-variant-numeric: tabular-nums; }
+.th-stat .lbl { font-size: 12px; color: #46627A; font-weight: 500; }
+.th-card-ink .num, .th-card-ink .lbl { color: #EDF1F5; }
 
 /* ─── Global uplift for all /app pages — bumps existing cards/inputs/headings
        without requiring per-page rewrites. Scoped to .th-app-main. ── */

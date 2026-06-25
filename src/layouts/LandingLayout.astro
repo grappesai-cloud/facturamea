@@ -2,6 +2,7 @@
 // Light landing shell — floating glass navbar, smooth scroll (GSAP ScrollSmoother), light footer.
 import BaseLayout from './BaseLayout.astro';
 import PhoneFrame from '../components/PhoneFrame.astro';
+import { dbAvailable } from '../db';
 
 interface Props {
   title: string;
@@ -38,13 +39,17 @@ const homeHref = user ? '/app' : '/';
           </a>
 
           <!-- Block 2 — actions (its own pill) -->
-          <div class="flex items-center gap-2 h-14 sm:h-16 px-2 sm:px-2.5 rounded-full bg-white/50 backdrop-blur-xl ring-1 ring-white/50 shadow-[0_8px_32px_-14px_rgba(16,42,67,0.22)]">
+          <div class="flex items-center gap-1.5 sm:gap-2 h-14 sm:h-16 px-2 sm:px-2.5 rounded-full bg-white/50 backdrop-blur-xl ring-1 ring-white/50 shadow-[0_8px_32px_-14px_rgba(16,42,67,0.22)]">
             {user ? (
-              <a href="/app" class="inline-flex items-center px-4 sm:px-6 h-10 sm:h-11 rounded-full bg-[#0A2238] text-white text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Dashboard</a>
+              <a href="/app" class="inline-flex items-center whitespace-nowrap px-4 sm:px-6 h-10 sm:h-11 rounded-full bg-[#0A2238] text-white text-[13.5px] sm:text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Dashboard</a>
             ) : (
               <>
-                <a href="/auth/login" class="inline-flex items-center px-4 sm:px-5 h-10 sm:h-11 rounded-full ring-1 ring-[#0A2238]/15 text-[#0A2238] text-[14px] font-semibold hover:bg-black/[0.04] transition-colors">Autentifică-te</a>
-                <a href="/api/demo" class="inline-flex items-center px-4 sm:px-6 h-10 sm:h-11 rounded-full bg-[#0A2238] text-white text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Intră în demo</a>
+                <a href={dbAvailable ? '/api/demo' : '/app'} class="inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 sm:px-4 h-10 sm:h-11 rounded-full ring-1 ring-[#1A759F]/30 text-[#1A759F] text-[13.5px] sm:text-[14px] font-semibold hover:bg-[#1A759F]/[0.07] transition-colors">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  Demo
+                </a>
+                <a href="/auth/login" class="hidden sm:inline-flex items-center whitespace-nowrap px-4 sm:px-5 h-10 sm:h-11 rounded-full ring-1 ring-[#0A2238]/15 text-[#0A2238] text-[14px] font-semibold hover:bg-black/[0.04] transition-colors">Autentifică-te</a>
+                <a href="/auth/register" class="inline-flex items-center whitespace-nowrap px-4 sm:px-6 h-10 sm:h-11 rounded-full bg-[#0A2238] text-white text-[13.5px] sm:text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Începe gratuit</a>
               </>
             )}
           </div>
@@ -74,7 +79,7 @@ const homeHref = user ? '/app' : '/';
                   Tot ce ai nevoie ca să facturezi, într-o singură aplicație. O singură plată, fără abonament.
                 </p>
                 <a href="/auth/register" data-magnetic class="inline-flex items-center mt-7 px-9 py-4 rounded-full bg-[#0A2238] text-white font-bold hover:bg-[#14304b] transition-colors">
-                  Cumpără acces pe viață
+                  Începe gratuit
                 </a>
                 <div class="mt-8 flex items-center gap-4">
                   <p class="text-sm text-[#46627A] font-medium leading-tight">Aplicația mobilă<br />e disponibilă acum</p>

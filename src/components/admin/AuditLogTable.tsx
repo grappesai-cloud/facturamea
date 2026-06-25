@@ -68,23 +68,23 @@ export default function AuditLogTable() {
         <Card>
           <CardContent className="p-0 overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
-              <thead className="bg-[#FAFAF8] border-b border-[#E8E8E4]">
+              <thead className="bg-[#EDF1F5] border-b border-[#E3EAF1]">
                 <tr>
-                  <th className="text-left px-3 py-2 font-medium text-[#0A0A0A]">Data</th>
-                  <th className="text-left px-3 py-2 font-medium text-[#0A0A0A]">User</th>
-                  <th className="text-left px-3 py-2 font-medium text-[#0A0A0A]">Acțiune</th>
-                  <th className="text-left px-3 py-2 font-medium text-[#0A0A0A]">Entitate</th>
-                  <th className="text-left px-3 py-2 font-medium text-[#0A0A0A]">IP</th>
+                  <th className="text-left px-3 py-2 font-medium text-[#0A2238]">Data</th>
+                  <th className="text-left px-3 py-2 font-medium text-[#0A2238]">User</th>
+                  <th className="text-left px-3 py-2 font-medium text-[#0A2238]">Acțiune</th>
+                  <th className="text-left px-3 py-2 font-medium text-[#0A2238]">Entitate</th>
+                  <th className="text-left px-3 py-2 font-medium text-[#0A2238]">IP</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-[#E8E8E4] hover:bg-[#FAFAF8]/50">
-                    <td className="px-3 py-2 text-xs text-[#6B6B68] whitespace-nowrap">{r.createdAt ? new Date(r.createdAt).toLocaleString('ro-RO') : ''}</td>
-                    <td className="px-3 py-2">{r.userName ?? '—'} <span className="text-xs text-[#A8A8A4]">{r.userEmail}</span></td>
+                  <tr key={r.id} className="border-b border-[#E3EAF1] hover:bg-[#EDF1F5]/50">
+                    <td className="px-3 py-2 text-xs text-[#46627A] whitespace-nowrap">{r.createdAt ? new Date(r.createdAt).toLocaleString('ro-RO') : ''}</td>
+                    <td className="px-3 py-2">{r.userName ?? '—'} <span className="text-xs text-[#9FB8CC]">{r.userEmail}</span></td>
                     <td className="px-3 py-2"><Badge variant={ACTION_VARIANT[r.action] || 'outline'}>{r.action}</Badge></td>
-                    <td className="px-3 py-2 text-xs text-[#3D3D3A]">{r.entityType ?? ''} {r.entityId ?? ''}</td>
-                    <td className="px-3 py-2 text-xs text-[#6B6B68]">{r.ipAddress ?? ''}</td>
+                    <td className="px-3 py-2 text-xs text-[#26415A]">{r.entityType ?? ''} {r.entityId ?? ''}</td>
+                    <td className="px-3 py-2 text-xs text-[#46627A]">{r.ipAddress ?? ''}</td>
                   </tr>
                 ))}
               </tbody>
@@ -93,7 +93,7 @@ export default function AuditLogTable() {
         </Card>
       )}
 
-      <div className="flex items-center justify-between text-sm text-[#6B6B68]">
+      <div className="flex items-center justify-between text-sm text-[#46627A]">
         <span>{total} înregistrări</span>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(p - 1, 1))}>← Anterior</Button>

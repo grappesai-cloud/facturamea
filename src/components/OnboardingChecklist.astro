@@ -59,12 +59,12 @@ const shouldRender = !dismissed && !allDone;
       <div>
         <p class="th-eyebrow">Onboarding</p>
         <h2 class="th-h2 mt-1">Pune profilul la punct ({doneCount}/{totalCount})</h2>
-        <p class="text-[12px] text-[#3D3D3A] mt-1.5">5 minute acum = mai puţin haos peste 3 luni.</p>
+        <p class="text-[12px] text-[#26415A] mt-1.5">5 minute acum = mai puţin haos peste 3 luni.</p>
       </div>
       <button
         type="button"
         id="onboarding-skip-btn"
-        class="text-[12px] text-[#3D3D3A] hover:text-[#0A0A0A] font-medium transition-colors"
+        class="text-[12px] text-[#26415A] hover:text-[#0A2238] font-medium transition-colors"
       >
         Termină mai târziu
       </button>
@@ -72,23 +72,23 @@ const shouldRender = !dismissed && !allDone;
 
     {/* Progress bar */}
     <div class="w-full h-1.5 bg-white/60 rounded-full overflow-hidden mb-5">
-      <div class="h-full bg-[#0A0A0A] transition-all duration-500" style={`width: ${(doneCount / totalCount) * 100}%`}></div>
+      <div class="h-full bg-[#0A2238] transition-all duration-500" style={`width: ${(doneCount / totalCount) * 100}%`}></div>
     </div>
 
     <ul class="space-y-2">
       {items.map((it) => (
         <li class:list={['flex items-center gap-3 p-4 rounded-xl', it.done ? 'bg-white/40' : 'bg-white/80']}>
-          <span class:list={['w-7 h-7 rounded-full flex items-center justify-center shrink-0', it.done ? 'bg-[#0A0A0A] text-white' : 'border-2 border-[#0A0A0A]/30']}>
+          <span class:list={['w-7 h-7 rounded-full flex items-center justify-center shrink-0', it.done ? 'bg-[#0A2238] text-white' : 'border-2 border-[#0A2238]/30']}>
             {it.done ? (
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
             ) : null}
           </span>
           <div class="min-w-0 flex-1">
-            <p class:list={['text-[13px] font-semibold', it.done ? 'text-[#3D3D3A] line-through' : 'text-[#0A0A0A]']}>{it.title}</p>
-            {!it.done && <p class="text-[11px] text-[#3D3D3A] mt-0.5">{it.desc}</p>}
+            <p class:list={['text-[13px] font-semibold', it.done ? 'text-[#26415A] line-through' : 'text-[#0A2238]']}>{it.title}</p>
+            {!it.done && <p class="text-[11px] text-[#26415A] mt-0.5">{it.desc}</p>}
           </div>
           {it.cta && (
-            <a href={it.cta.href} class="px-3.5 py-1.5 bg-[#0A0A0A] hover:bg-[#2E2E2C] text-white text-[12px] font-semibold rounded-xl transition-colors shrink-0">
+            <a href={it.cta.href} class="px-3.5 py-1.5 bg-[#0A2238] hover:bg-[#14304B] text-white text-[12px] font-semibold rounded-xl transition-colors shrink-0">
               {it.cta.label} →
             </a>
           )}

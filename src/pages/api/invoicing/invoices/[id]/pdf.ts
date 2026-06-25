@@ -88,10 +88,9 @@ export const GET: APIRoute = async ({ params, locals, request }) => {
       method: 'GET',
       extra: { invoiceId },
     });
-    return new Response(JSON.stringify({ error: 'Nu am putut genera PDF-ul. Încearcă din nou.' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // Don't dead-end the user if Chromium fails — fall back to the printable
+    // page so they can still "Save as PDF" from the browser.
+    return new Response(null, { status: 302, headers: { Location: printUrl } });
   } finally {
     if (browser) await browser.close().catch(() => {});
     activePdfRenders--;

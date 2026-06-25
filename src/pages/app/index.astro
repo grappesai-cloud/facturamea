@@ -1,6 +1,6 @@
 ---
 import AppLayout from '../../layouts/AppLayout.astro';
-import { db } from '../../db';
+import { db, dbAvailable } from '../../db';
 import { transportInvoices, expenses, users, invoiceProducts, etransportDeclarations } from '../../db/schema';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { NAV_MODULES } from '../../lib/nav-modules';
@@ -81,9 +81,36 @@ if (companyId) {
   } catch (e) { /* DB not ready */ }
 }
 
-// Empty state shows REAL zeros — no mock fallback. A brand-new account sees its
-// true state (0), never fabricated numbers.
+// Demo fallback — ONLY for the no-database display deploy (screenshots): populate
+// the chart with plausible numbers so the design is reviewable. A real backend
+// always shows real numbers (zeros for a brand-new account, never fabricated).
+const curMonth = now.getMonth(); // 0-11
 const hasRealData = monthAgg.some((a, i) => i >= 1 && (a.issued || a.collected || a.expenses));
+if (!hasRealData && !dbAvailable) {
+  // { v: collected, d: still-to-pay, c: expenses } in RON.
+  const MOCK = [
+    { v: 9200, d: 1800, c: 6100 },  { v: 11500, d: 2400, c: 7200 },
+    { v: 8600, d: 1200, c: 5400 },  { v: 14800, d: 3600, c: 8100 },
+    { v: 12300, d: 2100, c: 9400 }, { v: 16900, d: 4200, c: 7600 },
+    { v: 13400, d: 2800, c: 8800 }, { v: 10200, d: 1500, c: 6700 },
+    { v: 15600, d: 3100, c: 9100 }, { v: 12900, d: 2600, c: 7300 },
+    { v: 17800, d: 4800, c: 9900 }, { v: 14100, d: 2200, c: 8400 },
+  ];
+  for (let i = 0; i < 12; i++) {
+    if (i <= curMonth) {
+      const m = MOCK[i];
+      monthAgg[i + 1] = { collected: m.v * 100, issued: (m.v + m.d) * 100, expenses: m.c * 100 };
+    } else {
+      monthAgg[i + 1] = { collected: 0, issued: 0, expenses: 0 };
+    }
+  }
+  // Top KPI cards: use the current month's mock so they aren't zero in the demo.
+  kpis.collectedMonth = MOCK[curMonth].v * 100;
+  kpis.expensesMonth = MOCK[curMonth].c * 100;
+  if (!counts.facturi) counts.facturi = 127;
+  if (!counts.produse) counts.produse = 48;
+  if (!counts.declaratii) counts.declaratii = 12;
+}
 
 // Build 12 monthly columns: income (collected + still-to-pay, stacked) vs expenses.
 const MONTH_ABBR = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
@@ -132,16 +159,18 @@ const stats = [
 ];
 
 // Flat solid tiles cycling the full lime→teal→blue ramp.
+// All tiles are medium-dark so the WHITE title + subtitle read crisply everywhere
+// (consistent across dashboard / quick-access). fg/sub kept white for clarity.
 const TILE = [
-  { bg: '#D9ED92', fg: '#1C3A22', sub: '#3C5A33' },              // Lime Cream
-  { bg: '#B5E48C', fg: '#1B3A24', sub: '#395A33' },              // Light Green
-  { bg: '#99D98C', fg: '#163A26', sub: '#2F5638' },              // Willow
-  { bg: '#76C893', fg: '#0F3A28', sub: '#235340' },              // Emerald
-  { bg: '#52B69A', fg: '#06322A', sub: '#0F4A3C' },              // Ocean Mist
-  { bg: '#34A0A4', fg: '#06272B', sub: '#0C3E44' },              // Tropical Teal
-  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Bondi Blue
-  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Cerulean
-  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.82)' }, // Baltic Blue
+  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Cerulean
+  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Bondi Blue
+  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Baltic Blue
+  { bg: '#2D8A6E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Pine Green
+  { bg: '#2A7B9B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Ocean
+  { bg: '#1D6E8C', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Deep Teal
+  { bg: '#357A6B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Spruce
+  { bg: '#246A93', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Steel Blue
+  { bg: '#155E75', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Dark Cerulean
 ];
 const tileFor = (key: string) => TILE[Math.max(0, NAV_MODULES.findIndex((m) => m.key === key)) % TILE.length];
 
@@ -163,6 +192,11 @@ try {
     if (Array.isArray(arr)) selectedModules = arr.filter((k) => typeof k === 'string');
   }
 } catch { /* column may not exist yet / DB not ready */ }
+
+// Default: show the first 3 quick-access tiles when the user hasn't pinned any.
+if (selectedModules.length === 0) {
+  selectedModules = rest.slice(0, 3).map((m) => m.key);
+}
 
 // Dashboard hero helpers (reference look: big number + faded decimals + mini chart).
 const curM = now.getMonth();

@@ -2,8 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 /**
  * Reusable bottom-sheet (slide-up on mobile, centered modal on desktop) with the
- * same drag-to-dismiss feel as the app menus: drag the grab handle, pull from the
- * top, or trackpad-overscroll up to close. Esc + backdrop click also close.
+ * same drag-to-dismiss feel as the app menus: drag the grab handle or pull from the
+ * top on touch devices. Esc + backdrop click + X button also close.
  */
 export function BottomSheet({ open, onClose, children, cardClassName }: { open: boolean; onClose: () => void; children: ReactNode; cardClassName?: string }) {
   const [mounted, setMounted] = useState(open);
@@ -38,14 +38,18 @@ export function BottomSheet({ open, onClose, children, cardClassName }: { open: 
     const snap = () => { card.classList.remove('dragging'); card.style.transform = ''; };
     const swipeOut = () => { card.classList.remove('dragging'); card.style.transform = 'translateY(100%)'; onClose(); };
 
+    // Pointer drag on handle — touch devices only (not mouse/trackpad)
+    const isMouse = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
     let pd = false, psy = 0, pdy = 0;
     const onPDown = (e: PointerEvent) => { pd = true; psy = e.clientY; pdy = 0; card.classList.add('dragging'); handle?.setPointerCapture?.(e.pointerId); };
     const onPMove = (e: PointerEvent) => { if (!pd) return; pdy = Math.max(0, e.clientY - psy); card.style.transform = `translateY(${pdy}px)`; };
     const onPUp = () => { if (!pd) return; pd = false; if (pdy > threshold()) swipeOut(); else snap(); };
-    handle?.addEventListener('pointerdown', onPDown);
-    handle?.addEventListener('pointermove', onPMove);
-    handle?.addEventListener('pointerup', onPUp);
-    handle?.addEventListener('pointercancel', onPUp);
+    if (!isMouse && handle) {
+      handle.addEventListener('pointerdown', onPDown);
+      handle.addEventListener('pointermove', onPMove);
+      handle.addEventListener('pointerup', onPUp);
+      handle.addEventListener('pointercancel', onPUp);
+    }
 
     let sy = 0, ss = 0, act = false, dy = 0, onH = false;
     const onTStart = (e: TouchEvent) => { if (e.touches.length !== 1) return; onH = !!handle && handle.contains(e.target as Node); sy = e.touches[0].clientY; ss = card.scrollTop; act = false; dy = 0; };
@@ -65,33 +69,17 @@ export function BottomSheet({ open, onClose, children, cardClassName }: { open: 
     card.addEventListener('touchend', onTEnd);
     card.addEventListener('touchcancel', onTEnd);
 
-    let wdist = 0, wTimer = 0;
-    const snapW = () => { wdist = 0; card.classList.remove('dragging'); card.style.transform = ''; };
-    const onWheel = (e: WheelEvent) => {
-      const atTop = card.scrollTop <= 0;
-      const noScroll = card.scrollHeight <= card.clientHeight + 2;
-      if (!(e.deltaY < 0 && (atTop || noScroll))) { if (wdist > 0) snapW(); return; }
-      e.preventDefault();
-      if (wdist === 0) card.classList.add('dragging');
-      wdist += Math.abs(e.deltaY);
-      card.style.transform = `translateY(${Math.min(wdist * 0.5, 220)}px)`;
-      window.clearTimeout(wTimer);
-      if (wdist > 150) { wdist = 0; swipeOut(); return; }
-      wTimer = window.setTimeout(snapW, 160);
-    };
-    card.addEventListener('wheel', onWheel, { passive: false });
-
     return () => {
-      handle?.removeEventListener('pointerdown', onPDown);
-      handle?.removeEventListener('pointermove', onPMove);
-      handle?.removeEventListener('pointerup', onPUp);
-      handle?.removeEventListener('pointercancel', onPUp);
+      if (!isMouse && handle) {
+        handle.removeEventListener('pointerdown', onPDown);
+        handle.removeEventListener('pointermove', onPMove);
+        handle.removeEventListener('pointerup', onPUp);
+        handle.removeEventListener('pointercancel', onPUp);
+      }
       card.removeEventListener('touchstart', onTStart);
       card.removeEventListener('touchmove', onTMove);
       card.removeEventListener('touchend', onTEnd);
       card.removeEventListener('touchcancel', onTEnd);
-      card.removeEventListener('wheel', onWheel);
-      window.clearTimeout(wTimer);
     };
   }, [mounted]);
 
@@ -99,7 +87,15 @@ export function BottomSheet({ open, onClose, children, cardClassName }: { open: 
   return (
     <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
       <div ref={cardRef} className={`app-sheet-card w-full max-h-[90vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)] ${cardClassName ?? 'sm:max-w-[520px]'}`} onClick={(e) => e.stopPropagation()}>
-        <div ref={handleRef} className="flex justify-center pt-3.5 pb-1 touch-none select-none cursor-grab active:cursor-grabbing"><span className="w-10 h-1.5 rounded-full fm-grab" /></div>
+        <div className="flex items-center px-3 pt-3.5 pb-1 select-none">
+          <div className="flex-1" />
+          <div ref={handleRef} className="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span className="w-10 h-1.5 rounded-full fm-grab pointer-events-none" /></div>
+          <div className="flex-1 flex justify-end">
+            <button type="button" onClick={onClose} aria-label="Închide" className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
         {children}
       </div>
     </div>

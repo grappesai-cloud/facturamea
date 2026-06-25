@@ -1,23 +1,25 @@
 ---
 // /app/logout — pagină de fallback pentru useri care tastează direct ruta.
 // Logout-ul real se face POST către /api/auth/logout prin formularul din panoul profil.
-// Aici afişăm doar un buton care declanşează acel POST + opţiune de a renunţa.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Deconectare — facturamea">
-  <main class="min-h-screen flex items-center justify-center bg-[#FAFAF8] px-4" style="font-family:'Inter',sans-serif">
-    <div class="th-card th-card-lg max-w-md w-full text-center">
-      <p class="th-eyebrow">Cont</p>
-      <h1 class="th-h2 mt-2">Vrei să te deconectezi?</h1>
-      <p class="text-[13px] text-[#6B6B68] mt-2">Sesiunea va fi închisă pe acest dispozitiv.</p>
-      <div class="flex gap-3 justify-center mt-6">
+  <main class="min-h-screen flex items-center justify-center bg-[#EDF1F5] px-4" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <div class="max-w-md w-full text-center bg-white rounded-[24px] ring-1 ring-black/[0.05] shadow-[0_24px_70px_-40px_rgba(16,42,67,0.4)] p-8 sm:p-10">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-[#0A2238] grid place-items-center text-white">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3m0 0l4-4m-4 4l4 4M16 4h2a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-2"/></svg>
+      </div>
+      <p class="text-[12px] uppercase tracking-wider text-[#1A759F] font-semibold mt-5">Cont</p>
+      <h1 class="text-2xl font-extrabold text-[#0A2238] tracking-[-0.02em] mt-1">Vrei să te deconectezi?</h1>
+      <p class="text-[14px] text-[#46627A] mt-2">Sesiunea va fi închisă pe acest dispozitiv.</p>
+      <div class="flex flex-col sm:flex-row gap-3 justify-center mt-7">
         <form method="POST" action="/api/auth/logout">
-          <button type="submit" class="px-5 py-2.5 rounded-xl bg-[#0A0A0A] hover:bg-[#2E2E2C] text-white text-[13px] font-semibold transition-colors">
+          <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 rounded-full bg-[#0A2238] text-white text-[14px] font-bold hover:bg-[#14304b] transition-colors">
             Da, deconectează-mă
           </button>
         </form>
-        <a href="/app" class="px-5 py-2.5 rounded-xl bg-white border border-[#E8E8E4] hover:border-[#0A0A0A] text-[#0A0A0A] text-[13px] font-medium transition-colors">
+        <a href="/app" class="inline-flex items-center justify-center px-6 py-3 rounded-full ring-1 ring-[#0A2238]/15 text-[#0A2238] text-[14px] font-semibold hover:bg-black/[0.04] transition-colors">
           Anulează
         </a>
       </div>

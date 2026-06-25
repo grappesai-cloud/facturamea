@@ -30,6 +30,8 @@ const STATUS_COLORS: Record<string, string> = {
   overdue: '#DC4B41', disputed: '#DC4B41', draft: '#7C9AB4', voided: '#7C9AB4',
 };
 
+const LS_KEY = 'analytics-hidden-cards';
+
 function monthLabel(m: string) {
   const [y, mm] = m.split('-');
   const names = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
@@ -43,7 +45,7 @@ function MonthlyChart({ invoiced, collected }: { invoiced: MonthCents[]; collect
   const max = Math.max(1, ...invoiced.map((m) => m.cents), ...collected.map((m) => m.cents));
   if (months.length === 0) return <div className="text-[14px] text-[#7C9AB4]">Date insuficiente pentru perioada selectată.</div>;
 
-  const H = 220;          // chart height in px
+  const H = 220;
   const colW = 100 / months.length;
   return (
     <div>
@@ -102,12 +104,38 @@ function defaultRange() {
   return { from: start.toISOString().slice(0, 10), to };
 }
 
+function XBtn({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-0 group-hover:opacity-100"
+      aria-label="Ascunde"
+    >
+      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+    </button>
+  );
+}
+
 export default function AnalyticsDashboard() {
   const [range, setRange] = useState(defaultRange());
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [hidden, setHidden] = useState<Set<string>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]')); } catch { return new Set(); }
+  });
+
+  const hide = (id: string) => {
+    const next = new Set(hidden).add(id);
+    setHidden(next);
+    localStorage.setItem(LS_KEY, JSON.stringify([...next]));
+  };
+  const resetHidden = () => {
+    setHidden(new Set());
+    localStorage.removeItem(LS_KEY);
+  };
 
   const load = async (r = range) => {
     setLoading(true); setError('');
@@ -129,19 +157,43 @@ export default function AnalyticsDashboard() {
   const totalCollected = data?.monthlyCollected.reduce((s, m) => s + m.cents, 0) || 0;
   const collectRate = totalInvoiced > 0 ? Math.round((totalCollected / totalInvoiced) * 100) : 0;
 
+  const kpis = [
+    { id: 'total-facturat', label: 'Total facturat', value: ron(totalInvoiced), color: 'text-white' },
+    { id: 'total-incasat', label: 'Total încasat', value: ron(totalCollected), color: 'text-white' },
+    { id: 'rata-incasare', label: 'Rată de încasare', value: `${collectRate}%`, color: 'text-[#E1FB15]' },
+    { id: 'marja-bruta', label: 'Marjă brută', value: data ? `${data.grossMargin.marginPct}%` : '—', sub: data ? ron(data.grossMargin.marginCents) : '', color: 'text-white' },
+  ];
+
+  const visibleKpis = kpis.filter((k) => !hidden.has(k.id));
+
   return (
     <div className="space-y-6">
       {error && <p className="text-[14px] text-[#DC4B41]">{error}</p>}
 
-      {/* KPI row — first */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Card className="bg-white/5 border-0 shadow-none rounded-2xl"><CardContent className="p-4"><p className="text-[13px] text-[#9FB8CC]">Total facturat</p><p className="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-white mt-1 tabular-nums">{ron(totalInvoiced)}</p></CardContent></Card>
-        <Card className="bg-white/5 border-0 shadow-none rounded-2xl"><CardContent className="p-4"><p className="text-[13px] text-[#9FB8CC]">Total încasat</p><p className="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-white mt-1 tabular-nums">{ron(totalCollected)}</p></CardContent></Card>
-        <Card className="bg-white/5 border-0 shadow-none rounded-2xl"><CardContent className="p-4"><p className="text-[13px] text-[#9FB8CC]">Rată de încasare</p><p className="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-[#E1FB15] mt-1 tabular-nums">{collectRate}%</p></CardContent></Card>
-        <Card className="bg-white/5 border-0 shadow-none rounded-2xl"><CardContent className="p-4"><p className="text-[13px] text-[#9FB8CC]">Marjă brută</p><p className="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-white mt-1 tabular-nums">{data ? `${data.grossMargin.marginPct}%` : '—'}</p><p className="text-[12px] text-[#7C9AB4]">{data ? ron(data.grossMargin.marginCents) : ''}</p></CardContent></Card>
-      </div>
+      {/* KPI row */}
+      {visibleKpis.length > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {visibleKpis.map((k) => (
+            <div key={k.id} className="group relative">
+              <Card className="bg-white/5 border-0 shadow-none rounded-2xl">
+                <CardContent className="p-4">
+                  <p className="text-[13px] text-[#9FB8CC]">{k.label}</p>
+                  <p className={`text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] mt-1 tabular-nums ${k.color}`}>{k.value}</p>
+                  {k.sub && <p className="text-[12px] text-[#7C9AB4]">{k.sub}</p>}
+                </CardContent>
+              </Card>
+              <XBtn onClick={() => hide(k.id)} />
+            </div>
+          ))}
+        </div>
+      )}
+      {hidden.size > 0 && (
+        <button type="button" onClick={resetHidden} className="text-[13px] text-[#9FB8CC] hover:text-white transition-colors">
+          Restabilește cardurile ascunse ({hidden.size})
+        </button>
+      )}
 
-      {/* Period filter — collapsed by default behind a dropdown */}
+      {/* Period filter */}
       <div>
         <button
           type="button"

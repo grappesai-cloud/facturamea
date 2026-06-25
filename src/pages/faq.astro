@@ -1,0 +1,82 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+Astro.response.headers.set('Vary', 'Cookie');
+
+const sections = [
+  {
+    title: 'Preț și licență',
+    id: 'pret',
+    items: [
+      { q: 'Cât costă facturamea?', a: 'Costă 700 RON, o singură plată. Primești licență pe viață, fără abonament lunar sau anual.' },
+      { q: 'Ce înseamnă licență pe viață?', a: 'Folosești aplicația fără limită de timp după plata unică. Nu există reînnoiri și nu îți cerem bani în fiecare lună.' },
+      { q: 'Plata se face din aplicație?', a: 'Da. Te înregistrezi gratuit, testezi aplicația și faci plata o singură dată din cont, când ești convins.' },
+      { q: 'Actualizările costă suplimentar?', a: 'Nu. Actualizările care țin pasul cu cerințele ANAF sunt incluse în licență.' },
+    ],
+  },
+  {
+    title: 'e-Factura și fiscal',
+    id: 'e-factura',
+    items: [
+      { q: 'Trimiteți facturile în SPV ANAF?', a: 'Da. Generăm XML-ul în formatul cerut, îl validăm și trimitem factura direct în Spațiul Privat Virtual ANAF, conform cerințelor 2026. Răspunsul oficial este salvat în cont.' },
+      { q: 'Susțineți e-Transport?', a: 'Da. Poți genera și transmite declarațiile e-Transport pentru bunurile care intră sub această obligație.' },
+      { q: 'Generați SAF-T D406?', a: 'Da. Declarația D406 este generată automat în formatul cerut de ANAF, gata de depus.' },
+    ],
+  },
+  {
+    title: 'Funcții',
+    id: 'functii',
+    items: [
+      { q: 'Ce documente pot emite?', a: 'Facturi, proforme, avize de însoțire și chitanțe, cu serii și numerotare automată, în RON și valută.' },
+      { q: 'Aveți gestiune de stocuri?', a: 'Da. Ai intrări, ieșiri, NIR și stoc în timp real, legate automat de facturile emise.' },
+    ],
+  },
+  {
+    title: 'Aplicații și cont',
+    id: 'aplicatii',
+    items: [
+      { q: 'Funcționează pe telefon?', a: 'Da. Ai aplicație web plus aplicații native iOS și Android, cu același cont și date sincronizate în timp real.' },
+      { q: 'Cum mă autentific?', a: 'Te poți autentifica cu Google, cu Apple sau cu email și parolă.' },
+      { q: 'Pot lucra cu echipa și contabilul?', a: 'Da. Adaugi mai mulți utilizatori cu roluri și permisiuni: administrator, vânzări, contabil.' },
+    ],
+  },
+  {
+    title: 'Securitate',
+    id: 'securitate',
+    items: [
+      { q: 'Cât de sigure sunt datele mele?', a: 'Folosim conexiuni criptate HTTPS, parole stocate ca hash, sesiuni securizate și separare între medii. Datele tale nu sunt vândute terților.' },
+    ],
+  },
+];
+---
+
+<PublicLayout
+  title="Întrebări frecvente"
+  description="Răspunsuri despre preț, e-Factura ANAF, funcții, aplicații mobile și securitate la facturamea."
+>
+  <p class="text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Întrebări frecvente</p>
+  <h1 class="text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-2">Răspunsuri la întrebările tale</h1>
+  <p class="text-[#6B6B68] mb-10">
+    Nu găsești ce cauți? Scrie-ne pe <a href="/contact" class="text-[#FF5C00] hover:underline">pagina de contact</a>.
+  </p>
+
+  <div class="space-y-10">
+    {sections.map((section) => (
+      <section id={section.id} class="scroll-mt-24">
+        <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-4 pb-2 border-b border-[#E8E8E4]">{section.title}</h2>
+        <div class="space-y-3">
+          {section.items.map((it) => (
+            <details class="bg-white rounded-xl border border-[#E8E8E4] group">
+              <summary class="cursor-pointer px-5 py-4 font-medium text-[#0A0A0A] flex items-center justify-between gap-4 hover:bg-[#FAFAF8] rounded-xl transition-colors">
+                {it.q}
+                <span class="text-[#FF5C00] group-open:rotate-180 transition-transform shrink-0">▾</span>
+              </summary>
+              <div class="px-5 pb-4 text-sm text-[#6B6B68] leading-relaxed">{it.a}</div>
+            </details>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</PublicLayout>
