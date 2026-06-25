@@ -63,7 +63,11 @@ export async function applyStockIn(
     target: [stockLevels.warehouseId, stockLevels.productId],
     set: {
       quantity: sql`${stockLevels.quantity} + ${quantity}`,
-      avgCostCents: sql`CASE WHEN (${stockLevels.quantity} + ${quantity}) > 0 THEN ROUND((${stockLevels.quantity} * ${stockLevels.avgCostCents} + ${quantity} * ${cost})::numeric / (${stockLevels.quantity} + ${quantity})) ELSE ${cost} END`,
+      // All operands cast to numeric: stockLevels.quantity is double precision,
+      // so a bare `::numeric / (quantity + n)` mixes numeric with float8 and the
+      // statement fails to plan (no numeric/double-precision division) — which
+      // broke EVERY stock-in (NIR, transfer-in, storno reversal, count surplus).
+      avgCostCents: sql`CASE WHEN (${stockLevels.quantity} + ${quantity}) > 0 THEN ROUND((${stockLevels.quantity}::numeric * ${stockLevels.avgCostCents}::numeric + ${quantity}::numeric * ${cost}::numeric) / (${stockLevels.quantity} + ${quantity})::numeric) ELSE ${cost} END`,
       updatedAt: new Date(),
     },
   });

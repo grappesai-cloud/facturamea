@@ -151,7 +151,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
     });
   } catch (err) {
-    console.error('[receptions] save failed:', err instanceof Error ? `${err.name}: ${err.message}` : err);
+    const cause = (err as any)?.cause;
+    console.error('[receptions] save failed:', err instanceof Error ? `${err.name}: ${err.message}` : err,
+      cause ? `| cause: ${cause?.code || ''} ${cause?.message || cause}` : '');
     return new Response(JSON.stringify({ error: 'Eroare la salvarea recepției' }), { status: 500 });
   }
 
