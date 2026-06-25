@@ -240,25 +240,25 @@ export default function DashboardShortcuts({
               <a
                 href={m.href}
                 onClick={editing ? (e) => e.preventDefault() : undefined}
-                className={`relative overflow-hidden flex flex-col justify-end h-full p-4 sm:p-5 rounded-2xl transition-transform min-h-[104px] sm:min-h-[116px] ${
+                className={`relative overflow-hidden flex flex-col justify-between h-full p-4 sm:p-5 rounded-2xl transition-transform min-h-[104px] sm:min-h-[116px] ${
                   editing ? 'cursor-default' : 'hover:-translate-y-0.5'
                 }`}
                 style={{ background: m.bg }}
               >
-                {/* large icon watermark — bigger than the card, centered, a subtle
-                    lighter tint of the card colour, sitting behind the text (z-0) */}
-                <span className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
+                {/* small icon, top-left */}
+                <span className="relative z-10 inline-flex" aria-hidden="true">
                   <svg
-                    className="w-[130%] h-[130%] text-white/[0.10]"
+                    className="w-7 h-7 sm:w-8 sm:h-8"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
-                    strokeWidth={0.9}
+                    strokeWidth={1.7}
+                    style={{ color: m.fg }}
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d={m.icon} />
                   </svg>
                 </span>
-                {/* title + subtitle, full width, on top */}
+                {/* title + subtitle, full width, below the icon */}
                 <span className="tile-text relative z-10 w-full">
                   <span className="block w-full text-[16px] sm:text-[17px] font-bold leading-tight" style={{ color: m.fg }}>
                     {m.label}
