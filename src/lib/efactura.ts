@@ -290,11 +290,6 @@ export function generateEFacturaXml(input: InvoiceInput): string {
   ${partyXml(input.supplierVatPayer === false ? { ...input.customer, vatPayer: false } : input.customer, 'AccountingCustomerParty')}
   <cac:Delivery>
     <cbc:ActualDeliveryDate>${input.issueDate}</cbc:ActualDeliveryDate>
-    <cac:DeliveryLocation>
-      <cac:Address>
-        <cac:Country><cbc:IdentificationCode>${xmlEscape(input.customer.address.country.slice(0, 2).toUpperCase())}</cbc:IdentificationCode></cac:Country>
-      </cac:Address>
-    </cac:DeliveryLocation>
   </cac:Delivery>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="${cur}">${money(vatTotalCents)}</cbc:TaxAmount>${subtotalsXml}
