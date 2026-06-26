@@ -28,7 +28,7 @@ interface Party {
   cui: string; // fără prefix RO
   vatPayer: boolean; // plătitor TVA → fiscal ID = RO + cui
   registrationNumber?: string; // J40/.../2020 (nr. reg. comerț)
-  address: { street: string; city: string; postalCode?: string; country: string };
+  address: { street: string; city: string; postalCode?: string; country: string; countrySubentity?: string };
   contact?: { phone?: string; email?: string };
 }
 
@@ -124,15 +124,17 @@ const money = (cents: number) => (cents / 100).toFixed(2);
 // Inner <cac:Address> fields, shared by the party PostalAddress and the
 // Delivery location, so the București-sector (BR-RO-100) + county (BR-RO-110)
 // logic is applied consistently everywhere.
-function addressInner(addr: { street: string; city: string; postalCode?: string; country: string }): string {
+function addressInner(addr: { street: string; city: string; postalCode?: string; country: string; countrySubentity?: string }): string {
   const countryCode = addr.country.slice(0, 2).toUpperCase();
   const county = countryCode === 'RO' ? resolveCountyCode(addr) : null;
   const sector = county === 'RO-B' ? resolveBucharestSector(addr) : null;
   const cityName = sector || addr.city;
+  // BT-79: RO → cod județ rezolvat; străin → subdiviziunea furnizată (ex. DE-BE).
+  const subentity = county || (addr.countrySubentity ? addr.countrySubentity.trim() : null);
   return `<cbc:StreetName>${xmlEscape(addr.street)}</cbc:StreetName>
         <cbc:CityName>${xmlEscape(cityName)}</cbc:CityName>
         ${addr.postalCode ? `<cbc:PostalZone>${xmlEscape(addr.postalCode)}</cbc:PostalZone>` : ''}
-        ${county ? `<cbc:CountrySubentity>${county}</cbc:CountrySubentity>` : ''}
+        ${subentity ? `<cbc:CountrySubentity>${xmlEscape(subentity)}</cbc:CountrySubentity>` : ''}
         <cac:Country><cbc:IdentificationCode>${xmlEscape(countryCode)}</cbc:IdentificationCode></cac:Country>`;
 }
 

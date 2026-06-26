@@ -43,12 +43,16 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
   let customerCountry = 'RO';
   let customerCity = '';
   let customerStreet = inv.clientAddressSnap || '';
+  let customerCounty = '';
+  let customerPostal = '';
   if (inv.clientExternalId) {
     const [c] = await db.select().from(invoiceClients).where(eq(invoiceClients.id, inv.clientExternalId)).limit(1);
     if (c) {
       customerCountry = countryToIso(c.country);
       customerCity = c.city || '';
       customerStreet = c.address || customerStreet;
+      customerCounty = c.county || '';
+      customerPostal = c.postalCode || '';
     }
   }
   // A buyer with a tax id gets a PartyTaxScheme; the id is prefixed with the buyer's
@@ -88,7 +92,7 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
         ? ((inv.clientTaxIdSnap || '').replace(/^RO/i, '').replace(/\D/g, '') || '')
         : ((inv.clientTaxIdSnap || '').replace(/\s/g, '') || ''),
       vatPayer: customerHasTaxId,
-      address: { street: customerStreet || '—', city: customerCity || '—', country: customerCountry },
+      address: { street: customerStreet || '—', city: customerCity || '—', country: customerCountry, postalCode: customerPostal || undefined, countrySubentity: customerCounty || undefined },
     },
     lines: lines.map((l) => ({
       description: l.description,
