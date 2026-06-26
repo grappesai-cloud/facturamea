@@ -908,6 +908,22 @@ export const pushSubscriptions = pgTable('push_subscriptions', {
   consecutiveFailures: integer('consecutive_failures').notNull().default(0),
 }, (table) => [index('idx_push_subs_user').on(table.userId)]);
 
+// Native push device tokens (APNs / FCM) for the Capacitor iOS/Android apps.
+// Distinct from push_subscriptions (web-push VAPID, which doesn't work in a
+// native WKWebView). One row per device token.
+export const deviceTokens = pgTable('device_tokens', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  companyId: text('company_id'),
+  platform: varchar('platform', { length: 12 }).notNull(), // 'ios' | 'android'
+  token: text('token').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  lastSeenAt: timestamp('last_seen_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('uq_device_token').on(table.token),
+  index('idx_device_tokens_user').on(table.userId),
+]);
+
 // ─── HOS / AETR driver hours ─────────────────────────────
 
 // ─── ANAF OAuth connections (e-Factura, e-Transport) ────

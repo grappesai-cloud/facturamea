@@ -151,6 +151,17 @@ export async function notify(input: NotifyInput): Promise<string> {
       entityType: input.entityType,
       entityId: input.entityId,
     });
+
+    // Native push to the user's app devices (gated by the same in-app pref).
+    // Dynamic import so http2/crypto load only when a notification is sent.
+    try {
+      const { sendNativePushToUser } = await import('./push-native');
+      await sendNativePushToUser(input.userId, {
+        title: input.title,
+        body: input.body || input.title,
+        data: input.linkUrl ? { url: input.linkUrl } : undefined,
+      });
+    } catch { /* push not configured / transient — never block the notification */ }
   }
 
   if (input.email && user?.email && shouldSend(prefs, input.type, 'email')) {
