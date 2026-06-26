@@ -183,6 +183,66 @@ export function mapShopifyOrderToInvoice(order: any): MappedOrder {
   };
 }
 
+// ── eMag Marketplace order → invoice ────────────────────────────────────────
+// eMag `order/read` result item. Unlike Woo/Shopify, eMag is PULL-based (no
+// webhook): a poller fetches finalized orders and feeds them here. Amounts come
+// as decimal strings; `sale_price` is the per-unit price WITHOUT VAT, in RON.
+// Client identity: `customer.legal_entity === 1` ⇒ company (CUI in `customer.code`),
+// otherwise a natural person (no tax id).
+export function mapEmagOrderToInvoice(order: any): MappedOrder {
+  const cust = order?.customer || {};
+  const isCompany = String(cust.legal_entity ?? '0') === '1' || !!String(cust.company || '').trim();
+  const company = String(cust.company || '').trim();
+  const person = String(cust.name || cust.billing_name || '').trim();
+  const clientName = (isCompany ? (company || person) : (person || company)) || 'Client eMag';
+  // For companies eMag puts the CUI in `code`; persoane fizice have none.
+  const clientTaxId = isCompany ? (String(cust.code || '').trim() || null) : null;
+
+  // eMag.ro invoices in RON. Other platforms (.bg/.hu) carry their own currency.
+  const currency = String(order?.currency || 'RON').toUpperCase().slice(0, 5);
+
+  const items: any[] = Array.isArray(order?.products) ? order.products : [];
+  const lines: MappedLine[] = items.map((it) => {
+    const quantity = Math.max(0, Number(it?.quantity) || 1);
+    const unitPriceCents = toCentsFromDecimalString(it?.sale_price);
+    // eMag may carry the VAT as a decimal ("0.21") or a percentage ("21");
+    // normalise to an integer percent, falling back to the RO standard rate.
+    let vatRate = DEFAULT_VAT_RATE;
+    const rawVat = it?.vat;
+    if (rawVat != null && String(rawVat).trim() !== '') {
+      const v = parseFloat(String(rawVat).replace(',', '.'));
+      if (Number.isFinite(v)) {
+        const pct = v > 0 && v <= 1 ? Math.round(v * 100) : Math.round(v);
+        if (pct >= 0 && pct <= 30) vatRate = pct;
+      }
+    }
+    return {
+      description: String(it?.name || 'Produs').slice(0, 500),
+      quantity,
+      unitPriceCents,
+      vatRate,
+    };
+  });
+
+  // Shipping is billed via `shipping_tax` (the delivery amount charged).
+  const shipping = toCentsFromDecimalString(order?.shipping_tax);
+  if (shipping > 0) {
+    lines.push({ description: 'Transport', quantity: 1, unitPriceCents: shipping, vatRate: DEFAULT_VAT_RATE });
+  }
+
+  if (lines.length === 0) {
+    lines.push({ description: 'Comandă eMag', quantity: 1, unitPriceCents: 0, vatRate: DEFAULT_VAT_RATE });
+  }
+
+  return {
+    clientName,
+    clientTaxId,
+    currency,
+    lines,
+    externalOrderRef: order?.id != null ? String(order.id) : null,
+  };
+}
+
 // ── Persist a mapped order as an issued invoice ─────────────────────────────
 // Allocates the company's default `factura` series and inserts the invoice +
 // lines. Server-side computes totals. Returns the new invoice id, or null on

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 interface Conn {
   id: string;
-  provider: 'woocommerce' | 'shopify' | 'prestashop' | 'custom';
+  provider: 'woocommerce' | 'shopify' | 'prestashop' | 'emag' | 'custom';
   label: string | null;
   baseUrl: string | null;
   webhookSecret: string;
@@ -10,11 +10,13 @@ interface Conn {
   isActive: boolean;
   lastEventAt: string | null;
   createdAt: string | null;
+  hasCreds?: boolean;
 }
 
 const PROVIDERS: { id: Conn['provider']; label: string; webhookBase: string | null }[] = [
   { id: 'woocommerce', label: 'WooCommerce', webhookBase: '/api/webhooks/woocommerce/' },
   { id: 'shopify', label: 'Shopify', webhookBase: '/api/webhooks/shopify/' },
+  { id: 'emag', label: 'eMag Marketplace', webhookBase: null },
   { id: 'prestashop', label: 'PrestaShop', webhookBase: null },
   { id: 'custom', label: 'Altă platformă (custom)', webhookBase: null },
 ];
@@ -22,6 +24,7 @@ const PROVIDERS: { id: Conn['provider']; label: string; webhookBase: string | nu
 const PROVIDER_LABELS: Record<Conn['provider'], string> = {
   woocommerce: 'WooCommerce',
   shopify: 'Shopify',
+  emag: 'eMag',
   prestashop: 'PrestaShop',
   custom: 'Custom',
 };
@@ -49,10 +52,22 @@ export default function ConnectorsManager() {
   const [error, setError] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ provider: Conn['provider']; label: string; baseUrl: string }>({
+  const [syncing, setSyncing] = useState<string | null>(null);
+  const [syncMsg, setSyncMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null);
+  const [draft, setDraft] = useState<{
+    provider: Conn['provider'];
+    label: string;
+    baseUrl: string;
+    emagUser: string;
+    emagPass: string;
+    emagPlatform: string;
+  }>({
     provider: 'woocommerce',
     label: '',
     baseUrl: '',
+    emagUser: '',
+    emagPass: '',
+    emagPlatform: 'ro',
   });
 
   useEffect(() => {
@@ -78,10 +93,22 @@ export default function ConnectorsManager() {
     setError('');
     setBusy(true);
     try {
+      const payload: Record<string, unknown> = {
+        provider: draft.provider,
+        label: draft.label.trim(),
+        baseUrl: draft.baseUrl.trim(),
+      };
+      if (draft.provider === 'emag') {
+        payload.config = {
+          username: draft.emagUser.trim(),
+          password: draft.emagPass.trim(),
+          platform: draft.emagPlatform,
+        };
+      }
       const res = await fetch('/api/connectors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: draft.provider, label: draft.label.trim(), baseUrl: draft.baseUrl.trim() }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -89,12 +116,31 @@ export default function ConnectorsManager() {
         return;
       }
       setShowAdd(false);
-      setDraft({ provider: 'woocommerce', label: '', baseUrl: '' });
+      setDraft({ provider: 'woocommerce', label: '', baseUrl: '', emagUser: '', emagPass: '', emagPlatform: 'ro' });
       await refresh();
     } catch {
       setError('Eroare de conexiune');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const sync = async (id: string) => {
+    setSyncing(id);
+    setSyncMsg(null);
+    try {
+      const r = await fetch(`/api/connectors/${id}/sync`, { method: 'POST' });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.ok) {
+        setSyncMsg({ id, ok: true, text: `Sincronizat: ${d.pulled} comenzi citite, ${d.invoiced} facturi emise, ${d.attached} atașate în eMag.` });
+      } else {
+        setSyncMsg({ id, ok: false, text: d.error || 'Eroare la sincronizare' });
+      }
+    } catch {
+      setSyncMsg({ id, ok: false, text: 'Eroare de conexiune' });
+    } finally {
+      setSyncing(null);
+      await refresh();
     }
   };
 
@@ -184,15 +230,62 @@ export default function ConnectorsManager() {
               />
             </div>
           </div>
-          <div>
-            <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Adresa magazinului (opțional)</label>
-            <input
-              className={inputCls}
-              placeholder="ex: https://magazinul-meu.ro"
-              value={draft.baseUrl}
-              onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })}
-            />
-          </div>
+          {draft.provider !== 'emag' && (
+            <div>
+              <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Adresa magazinului (opțional)</label>
+              <input
+                className={inputCls}
+                placeholder="ex: https://magazinul-meu.ro"
+                value={draft.baseUrl}
+                onChange={(e) => setDraft({ ...draft, baseUrl: e.target.value })}
+              />
+            </div>
+          )}
+
+          {draft.provider === 'emag' && (
+            <div className="space-y-4 rounded-xl bg-white/5 p-4">
+              <p className="text-[13px] text-[#9FB8CC] leading-relaxed">
+                Introdu utilizatorul și parola din <strong>contul tău de Marketplace API eMag</strong>. eMag cere și ca
+                IP-ul serverului facturamea să fie adăugat în lista albă din contul tău, altfel sincronizarea e respinsă.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Utilizator API</label>
+                  <input
+                    className={inputCls}
+                    autoComplete="off"
+                    placeholder="utilizator Marketplace API"
+                    value={draft.emagUser}
+                    onChange={(e) => setDraft({ ...draft, emagUser: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Parolă API</label>
+                  <input
+                    className={inputCls}
+                    type="password"
+                    autoComplete="new-password"
+                    placeholder="parolă Marketplace API"
+                    value={draft.emagPass}
+                    onChange={(e) => setDraft({ ...draft, emagPass: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="max-w-[200px]">
+                <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Platformă</label>
+                <select
+                  className={`${inputCls} appearance-none [color-scheme:dark]`}
+                  value={draft.emagPlatform}
+                  onChange={(e) => setDraft({ ...draft, emagPlatform: e.target.value })}
+                >
+                  <option value="ro">eMag.ro</option>
+                  <option value="bg">eMag.bg</option>
+                  <option value="hu">eMag.hu</option>
+                </select>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-3">
             <button className={btnPrimary} disabled={busy} onClick={addConnection}>
               {busy ? 'Se salvează…' : 'Salvează conexiunea'}
@@ -318,6 +411,30 @@ export default function ConnectorsManager() {
                         </p>
                       )}
                     </div>
+                  </div>
+                ) : c.provider === 'emag' ? (
+                  <div className="mt-5 rounded-xl bg-white/5 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[14px] font-semibold text-white">Sincronizare comenzi eMag</p>
+                        <p className="text-[13px] text-[#9FB8CC] mt-0.5">
+                          {c.hasCreds ? 'Credențiale salvate.' : 'Lipsesc credențialele API.'} Trage comenzile finalizate
+                          și emite facturile, apoi atașează factura înapoi în eMag.
+                        </p>
+                      </div>
+                      <button
+                        className={btnPrimary}
+                        disabled={!c.hasCreds || !c.isActive || syncing === c.id}
+                        onClick={() => sync(c.id)}
+                      >
+                        {syncing === c.id ? 'Se sincronizează…' : 'Sincronizează acum'}
+                      </button>
+                    </div>
+                    {syncMsg?.id === c.id && (
+                      <div className={`mt-3 px-4 py-3 rounded-xl text-[14px] ${syncMsg.ok ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-[#DC4B41]/15 text-[#DC4B41]'}`}>
+                        {syncMsg.text}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="mt-5 rounded-xl bg-[#E8A33C]/15 p-4 text-[14px] text-[#9FB8CC]">
