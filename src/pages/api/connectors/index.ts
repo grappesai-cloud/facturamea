@@ -6,10 +6,11 @@ import { nanoid } from 'nanoid';
 
 import { requireRole } from '../../../lib/require-role';
 import { sealEmagCreds } from '../../../lib/emag';
+import { encryptSecret } from '../../../lib/crypto';
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 
-const VALID_PROVIDERS = ['woocommerce', 'shopify', 'prestashop', 'emag', 'custom'];
+const VALID_PROVIDERS = ['woocommerce', 'shopify', 'prestashop', 'gomag', 'emag', 'stripe', 'payment', 'custom'];
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!locals.user) return json({ error: 'Neautorizat' }, 401);
@@ -70,6 +71,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
       }
       try {
         configEnc = sealEmagCreds({ username, password, platform });
+      } catch {
+        return json({ error: 'Cheia de criptare nu e configurată pe server' }, 500);
+      }
+    } else if (provider === 'stripe') {
+      // Per-client Stripe webhook signing secret (whsec_...), stored encrypted.
+      const cfg = body?.config || {};
+      const signingSecret = String(cfg.signingSecret || '').trim();
+      if (!signingSecret) {
+        return json({ error: 'Stripe are nevoie de secretul de semnare al webhook-ului (whsec_...)' }, 400);
+      }
+      try {
+        configEnc = encryptSecret(JSON.stringify({ signingSecret }));
       } catch {
         return json({ error: 'Cheia de criptare nu e configurată pe server' }, 500);
       }

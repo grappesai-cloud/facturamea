@@ -243,6 +243,169 @@ export function mapEmagOrderToInvoice(order: any): MappedOrder {
   };
 }
 
+// ── PrestaShop order → invoice ──────────────────────────────────────────────
+// PrestaShop (via a webhook module) posts an order object. Field names vary by
+// module/version, so we read tolerantly with fallbacks. Prices are decimal
+// strings; we prefer the tax-excluded unit price and derive the rate.
+export function mapPrestaShopOrderToInvoice(order: any): MappedOrder {
+  const cust = order?.customer || {};
+  const addr = order?.invoice_address || order?.address_invoice || {};
+  const company = String(cust.company || addr.company || '').trim();
+  const person = [cust.firstname || addr.firstname, cust.lastname || addr.lastname].filter(Boolean).join(' ').trim();
+  const clientName = company || person || 'Client magazin online';
+  const clientTaxId = String(addr.vat_number || cust.vat_number || cust.siret || '').trim() || null;
+
+  const currency = String(order?.currency || order?.id_currency_iso || 'RON').toUpperCase().slice(0, 5);
+
+  const items: any[] = Array.isArray(order?.products) ? order.products
+    : Array.isArray(order?.order_rows) ? order.order_rows : [];
+  const lines: MappedLine[] = items.map((it) => {
+    const quantity = Math.max(0, Number(it?.product_quantity ?? it?.quantity) || 1);
+    const unitPriceCents = toCentsFromDecimalString(it?.unit_price_tax_excl ?? it?.product_price ?? it?.unit_price);
+    let vatRate = DEFAULT_VAT_RATE;
+    const t = parseFloat(String(it?.tax_rate ?? '').replace(',', '.'));
+    if (Number.isFinite(t) && t > 0 && t <= 30) vatRate = Math.round(t);
+    return { description: String(it?.product_name ?? it?.name ?? 'Produs').slice(0, 500), quantity, unitPriceCents, vatRate };
+  });
+
+  const ship = toCentsFromDecimalString(order?.total_shipping_tax_excl ?? order?.total_shipping);
+  if (ship > 0) lines.push({ description: 'Transport', quantity: 1, unitPriceCents: ship, vatRate: DEFAULT_VAT_RATE });
+
+  if (lines.length === 0) {
+    const total = toCentsFromDecimalString(order?.total_paid_tax_excl ?? order?.total_paid);
+    lines.push({ description: 'Comandă magazin online', quantity: 1, unitPriceCents: total, vatRate: DEFAULT_VAT_RATE });
+  }
+
+  return {
+    clientName,
+    clientTaxId,
+    currency,
+    lines,
+    externalOrderRef: order?.id_order != null ? String(order.id_order) : (order?.id != null ? String(order.id) : null),
+  };
+}
+
+// ── Gomag order → invoice ───────────────────────────────────────────────────
+// Gomag (RO shop platform) order webhook. Billing carries the client identity
+// (incl. `cui` for companies); products carry unit price + VAT.
+export function mapGomagOrderToInvoice(order: any): MappedOrder {
+  const b = order?.billing || order?.customer || {};
+  const company = String(b.company || b.firma || '').trim();
+  const person = String(b.name || b.nume || [b.firstname, b.lastname].filter(Boolean).join(' ')).trim();
+  const clientName = company || person || 'Client magazin online';
+  const clientTaxId = String(b.cui || b.cif || b.vat || '').trim() || null;
+
+  const currency = String(order?.currency || 'RON').toUpperCase().slice(0, 5);
+
+  const items: any[] = Array.isArray(order?.products) ? order.products
+    : Array.isArray(order?.items) ? order.items : [];
+  const lines: MappedLine[] = items.map((it) => {
+    const quantity = Math.max(0, Number(it?.quantity ?? it?.qty) || 1);
+    const unitPriceCents = toCentsFromDecimalString(it?.price ?? it?.unit_price ?? it?.pret);
+    let vatRate = DEFAULT_VAT_RATE;
+    const v = parseFloat(String(it?.vat ?? it?.tva ?? '').replace(',', '.'));
+    if (Number.isFinite(v)) {
+      const pct = v > 0 && v <= 1 ? Math.round(v * 100) : Math.round(v);
+      if (pct >= 0 && pct <= 30) vatRate = pct;
+    }
+    return { description: String(it?.name ?? it?.product_name ?? 'Produs').slice(0, 500), quantity, unitPriceCents, vatRate };
+  });
+
+  const ship = toCentsFromDecimalString(order?.shipping ?? order?.transport);
+  if (ship > 0) lines.push({ description: 'Transport', quantity: 1, unitPriceCents: ship, vatRate: DEFAULT_VAT_RATE });
+
+  if (lines.length === 0) lines.push({ description: 'Comandă magazin online', quantity: 1, unitPriceCents: 0, vatRate: DEFAULT_VAT_RATE });
+
+  return {
+    clientName,
+    clientTaxId,
+    currency,
+    lines,
+    externalOrderRef: order?.order_id != null ? String(order.order_id) : (order?.id != null ? String(order.id) : null),
+  };
+}
+
+// ── Stripe payment event → invoice ──────────────────────────────────────────
+// "Stripe as a source": when the client's own Stripe account collects a payment,
+// issue an invoice for it. Stripe amounts are ALREADY in minor units (bani), so
+// no ×100. We split net/VAT from `total_details.amount_tax` when present, else
+// assume the amount is gross at the RO standard rate. Returns null for events we
+// don't invoice (unpaid sessions, unknown types).
+export function mapStripeEventToInvoice(event: any): MappedOrder | null {
+  const obj = event?.data?.object || {};
+  const type = String(event?.type || '');
+  let amountTotal = 0;
+  let amountTax = 0;
+  let currency = 'RON';
+  let name = '';
+  let ref = '';
+
+  if (type === 'checkout.session.completed') {
+    if (obj.payment_status && obj.payment_status !== 'paid') return null;
+    amountTotal = Number(obj.amount_total) || 0;
+    amountTax = Number(obj.total_details?.amount_tax) || 0;
+    currency = String(obj.currency || 'ron').toUpperCase().slice(0, 5);
+    name = obj.customer_details?.name || obj.customer_details?.email || '';
+    ref = String(obj.id || '');
+  } else if (type === 'payment_intent.succeeded') {
+    amountTotal = Number(obj.amount_received ?? obj.amount) || 0;
+    currency = String(obj.currency || 'ron').toUpperCase().slice(0, 5);
+    name = obj.shipping?.name || obj.receipt_email || '';
+    ref = String(obj.id || '');
+  } else {
+    return null;
+  }
+  if (amountTotal <= 0) return null;
+
+  let net: number;
+  let vatRate: number;
+  if (amountTax > 0 && amountTotal > amountTax) {
+    net = amountTotal - amountTax;
+    const derived = Math.round((amountTax / net) * 100);
+    vatRate = derived > 0 && derived <= 30 ? derived : DEFAULT_VAT_RATE;
+  } else {
+    net = Math.round(amountTotal / (1 + DEFAULT_VAT_RATE / 100));
+    vatRate = DEFAULT_VAT_RATE;
+  }
+
+  return {
+    clientName: (name || 'Client online').slice(0, 200),
+    clientTaxId: null,
+    currency,
+    lines: [{ description: 'Plată online (Stripe)', quantity: 1, unitPriceCents: net, vatRate }],
+    externalOrderRef: ref || null,
+  };
+}
+
+// ── Generic payment notification → invoice ──────────────────────────────────
+// A normalized payment payload that any processor (Netopia / PayU / EuPlătesc)
+// can be wired to POST on a confirmed payment. The amount is treated as gross at
+// the standard rate unless an explicit `vat_rate` is supplied. Accepts either
+// `amount_cents` (integer minor units) or `amount` (decimal string).
+export function mapGenericPaymentToInvoice(p: any): MappedOrder | null {
+  const amount = Number(p?.amount_cents) > 0 ? Math.round(Number(p.amount_cents)) : toCentsFromDecimalString(p?.amount);
+  if (!amount || amount <= 0) return null;
+
+  const currency = String(p?.currency || 'RON').toUpperCase().slice(0, 5);
+  const clientName = String(p?.customer_name || p?.name || 'Client').slice(0, 200);
+  const clientTaxId = String(p?.customer_tax_id || p?.cui || '').trim() || null;
+  const description = String(p?.description || 'Plată online').slice(0, 500);
+
+  const explicit = p?.vat_rate != null ? Number(p.vat_rate) : null;
+  let vatRate: number;
+  if (explicit != null && explicit >= 0 && explicit <= 30) vatRate = Math.round(explicit);
+  else vatRate = DEFAULT_VAT_RATE;
+  const net = Math.round(amount / (1 + vatRate / 100));
+
+  return {
+    clientName,
+    clientTaxId,
+    currency,
+    lines: [{ description, quantity: 1, unitPriceCents: net, vatRate }],
+    externalOrderRef: p?.reference != null ? String(p.reference) : null,
+  };
+}
+
 // ── Persist a mapped order as an issued invoice ─────────────────────────────
 // Allocates the company's default `factura` series and inserts the invoice +
 // lines. Server-side computes totals. Returns the new invoice id, or null on

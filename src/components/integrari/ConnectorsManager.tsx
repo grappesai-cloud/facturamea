@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 interface Conn {
   id: string;
-  provider: 'woocommerce' | 'shopify' | 'prestashop' | 'emag' | 'custom';
+  provider: 'woocommerce' | 'shopify' | 'prestashop' | 'gomag' | 'emag' | 'stripe' | 'payment' | 'custom';
   label: string | null;
   baseUrl: string | null;
   webhookSecret: string;
@@ -17,7 +17,10 @@ const PROVIDERS: { id: Conn['provider']; label: string; webhookBase: string | nu
   { id: 'woocommerce', label: 'WooCommerce', webhookBase: '/api/webhooks/woocommerce/' },
   { id: 'shopify', label: 'Shopify', webhookBase: '/api/webhooks/shopify/' },
   { id: 'emag', label: 'eMag Marketplace', webhookBase: null },
-  { id: 'prestashop', label: 'PrestaShop', webhookBase: null },
+  { id: 'prestashop', label: 'PrestaShop', webhookBase: '/api/webhooks/prestashop/' },
+  { id: 'gomag', label: 'Gomag', webhookBase: '/api/webhooks/gomag/' },
+  { id: 'stripe', label: 'Stripe (plăți)', webhookBase: '/api/webhooks/stripe-source/' },
+  { id: 'payment', label: 'Plăți (Netopia / PayU / EuPlătesc)', webhookBase: '/api/webhooks/payment/' },
   { id: 'custom', label: 'Altă platformă (custom)', webhookBase: null },
 ];
 
@@ -26,6 +29,9 @@ const PROVIDER_LABELS: Record<Conn['provider'], string> = {
   shopify: 'Shopify',
   emag: 'eMag',
   prestashop: 'PrestaShop',
+  gomag: 'Gomag',
+  stripe: 'Stripe',
+  payment: 'Plăți',
   custom: 'Custom',
 };
 
@@ -61,6 +67,7 @@ export default function ConnectorsManager() {
     emagUser: string;
     emagPass: string;
     emagPlatform: string;
+    stripeSecret: string;
   }>({
     provider: 'woocommerce',
     label: '',
@@ -68,6 +75,7 @@ export default function ConnectorsManager() {
     emagUser: '',
     emagPass: '',
     emagPlatform: 'ro',
+    stripeSecret: '',
   });
 
   useEffect(() => {
@@ -105,6 +113,9 @@ export default function ConnectorsManager() {
           platform: draft.emagPlatform,
         };
       }
+      if (draft.provider === 'stripe') {
+        payload.config = { signingSecret: draft.stripeSecret.trim() };
+      }
       const res = await fetch('/api/connectors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,7 +127,7 @@ export default function ConnectorsManager() {
         return;
       }
       setShowAdd(false);
-      setDraft({ provider: 'woocommerce', label: '', baseUrl: '', emagUser: '', emagPass: '', emagPlatform: 'ro' });
+      setDraft({ provider: 'woocommerce', label: '', baseUrl: '', emagUser: '', emagPass: '', emagPlatform: 'ro', stripeSecret: '' });
       await refresh();
     } catch {
       setError('Eroare de conexiune');
@@ -286,6 +297,34 @@ export default function ConnectorsManager() {
             </div>
           )}
 
+          {draft.provider === 'stripe' && (
+            <div className="space-y-3 rounded-xl bg-white/5 p-4">
+              <p className="text-[13px] text-[#9FB8CC] leading-relaxed">
+                În Stripe: <strong>Developers → Webhooks → Add endpoint</strong>, lipește adresa care apare după salvare,
+                alege evenimentul <strong>checkout.session.completed</strong> (sau <strong>payment_intent.succeeded</strong>),
+                apoi copiază aici <strong>Signing secret</strong>-ul (începe cu <code>whsec_</code>).
+              </p>
+              <div>
+                <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Signing secret (whsec_…)</label>
+                <input
+                  className={inputCls}
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="whsec_..."
+                  value={draft.stripeSecret}
+                  onChange={(e) => setDraft({ ...draft, stripeSecret: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+
+          {draft.provider === 'payment' && (
+            <div className="rounded-xl bg-white/5 p-4 text-[13px] text-[#9FB8CC] leading-relaxed">
+              Pentru Netopia, PayU sau EuPlătesc: configurează notificarea de plată (IPN) să trimită către adresa care
+              apare după salvare, cu un corp JSON semnat (HMAC). Emitem factura automat la fiecare plată confirmată.
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-3">
             <button className={btnPrimary} disabled={busy} onClick={addConnection}>
               {busy ? 'Se salvează…' : 'Salvează conexiunea'}
@@ -399,15 +438,40 @@ export default function ConnectorsManager() {
                       </button>
                     </div>
                     <div className="mt-3 text-[14px] text-[#9FB8CC] leading-relaxed">
-                      {c.provider === 'woocommerce' ? (
+                      {c.provider === 'woocommerce' && (
                         <p>
                           În WooCommerce: <strong>Setări → Avansat → Webhooks</strong>, adaugă un webhook nou, alege
                           acțiunea <strong>order.created</strong> și lipește adresa de mai sus la „Delivery URL".
                         </p>
-                      ) : (
+                      )}
+                      {c.provider === 'shopify' && (
                         <p>
                           În Shopify: <strong>Settings → Notifications → Webhooks</strong>, apasă „Create webhook",
                           alege evenimentul <strong>Order creation</strong> (format JSON) și lipește adresa de mai sus.
+                        </p>
+                      )}
+                      {c.provider === 'prestashop' && (
+                        <p>
+                          În PrestaShop: folosește un modul de webhook care semnează corpul cu HMAC-SHA256 (header
+                          <strong> X-Webhook-Signature</strong>) la confirmarea comenzii și pune adresa de mai sus ca URL.
+                        </p>
+                      )}
+                      {c.provider === 'gomag' && (
+                        <p>
+                          În Gomag: setează un webhook de comandă către adresa de mai sus, semnat HMAC-SHA256 (header
+                          <strong> X-Webhook-Signature</strong>).
+                        </p>
+                      )}
+                      {c.provider === 'stripe' && (
+                        <p>
+                          În Stripe: <strong>Developers → Webhooks</strong>, adaugă endpoint-ul cu adresa de mai sus și
+                          evenimentul <strong>checkout.session.completed</strong>. Secretul de semnare l-ai introdus la creare.
+                        </p>
+                      )}
+                      {c.provider === 'payment' && (
+                        <p>
+                          Configurează notificarea de plată (Netopia / PayU / EuPlătesc) să trimită un JSON semnat
+                          HMAC-SHA256 (header <strong>X-Webhook-Signature</strong>) către adresa de mai sus.
                         </p>
                       )}
                     </div>

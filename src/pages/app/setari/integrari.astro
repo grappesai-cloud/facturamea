@@ -11,9 +11,9 @@ if (!user.companyId) return Astro.redirect('/app/setari');
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Integrări magazin online</h1>
       <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl leading-relaxed">
-        Conectează WooCommerce, Shopify sau eMag Marketplace. La fiecare comandă nouă, facturamea poate emite automat
-        factura și o poate trimite la e-Factura dacă ai pornit trimiterea automată. Pentru eMag tragem comenzile
-        finalizate și atașăm factura înapoi în comandă.
+        Conectează WooCommerce, Shopify, eMag Marketplace, PrestaShop, Gomag sau plățile tale (Stripe, Netopia, PayU).
+        La fiecare comandă nouă sau plată confirmată, facturamea poate emite automat factura și o poate trimite la
+        e-Factura dacă ai pornit trimiterea automată. Pentru eMag tragem comenzile finalizate și atașăm factura înapoi.
       </p>
     </div>
 
@@ -23,7 +23,7 @@ if (!user.companyId) return Astro.redirect('/app/setari');
     <div class="mt-8 rounded-3xl p-5 sm:p-6 bg-white/5">
       <h2 class="text-[18px] font-bold text-white mb-3">Cum funcționează</h2>
       <ol class="space-y-2.5 text-[14px] text-[#9FB8CC] leading-relaxed list-decimal pl-5">
-        <li>Adaugi o conexiune aici și alegi platforma (WooCommerce sau Shopify).</li>
+        <li>Adaugi o conexiune aici și alegi platforma (WooCommerce, Shopify, eMag, PrestaShop, Gomag sau plăți).</li>
         <li>Copiezi adresa webhook generată și o lipești în panoul magazinului tău.</li>
         <li>Când vine o comandă, magazinul trimite datele către facturamea pe acea adresă.</li>
         <li>Dacă „Factură automată" este pornit, se emite o factură nouă pe seria ta de facturi.</li>
