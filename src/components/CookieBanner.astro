@@ -122,6 +122,17 @@ const t = tFn(Astro.locals?.locale ?? 'ro');
   }
 
   function showBannerIfNeeded() {
+    // Native app (Capacitor): no cookie banner. The app uses only necessary
+    // session cookies; analytics/marketing/chat don't run in-app. Persist a
+    // necessary-only consent so nothing prompts and no extra scripts load.
+    if (document.documentElement.classList.contains('capacitor-native')) {
+      if (!loadConsent()) {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ necessary: true, analytics: false, marketing: false, support: false, decidedAt: new Date().toISOString() }));
+        } catch {}
+      }
+      return;
+    }
     if (!loadConsent()) {
       setTimeout(() => banner?.classList.remove('hidden'), 600);
     }
