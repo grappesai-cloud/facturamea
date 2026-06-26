@@ -38,19 +38,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
     companyId: locals.user.companyId || null,
     platform,
   };
-  const upsert = () => db.insert(deviceTokens).values({ id: nanoid(), token, ...row }).onConflictDoUpdate({
-    target: deviceTokens.token,
-    set: { ...row, lastSeenAt: new Date() },
-  });
   try {
-    await upsert();
+    await ensureTable(); // idempotent; guarantees the table exists
+    await db.insert(deviceTokens).values({ id: nanoid(), token, ...row }).onConflictDoUpdate({
+      target: deviceTokens.token,
+      set: { ...row, lastSeenAt: new Date() },
+    });
     return json({ ok: true });
   } catch (err) {
-    // First call may hit a missing table — create it once, then retry.
-    if (/relation .*device_tokens.* does not exist|no such table/i.test(String((err as any)?.message || err))) {
-      try { await ensureTable(); await upsert(); return json({ ok: true, created: true }); } catch { /* fall through */ }
-    }
-    return json({ ok: false }, 200);
+    return json({ ok: false, error: String((err as any)?.message || err).slice(0, 200) }, 200);
   }
 };
 
