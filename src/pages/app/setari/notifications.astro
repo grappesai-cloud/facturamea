@@ -1,104 +1,29 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
-import { db } from '../../../db';
-import { notificationPreferences } from '../../../db/schema';
-import { eq } from 'drizzle-orm';
 
+// Notification preferences arrive together with the mobile app (in-app
+// notifications). Until then this is a "coming soon" placeholder so the link
+// from the settings landing and the email footers doesn't 404.
 const user = Astro.locals.user!;
-
-// Load the user's preferences (defaults: both channels on). Backed by the
-// existing GET/PUT /api/notifications/preferences API.
-let emailEnabled = true;
-let inAppEnabled = true;
-try {
-  const [p] = await db.select().from(notificationPreferences).where(eq(notificationPreferences.userId, user.id)).limit(1);
-  if (p) {
-    emailEnabled = p.emailEnabled !== false;
-    inAppEnabled = p.inAppEnabled !== false;
-  }
-} catch {
-  // DB not provisioned — render with defaults on.
-}
-
-const toggleBtn = 'relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0';
-const knob = 'inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow';
+void user;
 ---
 
 <AppLayout title="Notificări — facturamea" activeTab="setari" breadcrumbTitle="Notificări">
   <div class="max-w-3xl">
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Notificări</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl leading-relaxed">
-        Alege cum vrei să fii anunțat despre facturi scadente, statusul e-Factura, plăți primite și alte evenimente.
-        Mesajele din aplicație le vezi oricând în <a href="/app/notificari" class="text-[#E1FB15] hover:underline">Notificări</a>.
+    </div>
+
+    <div class="rounded-2xl p-8 sm:p-10 bg-white/5 text-center">
+      <div class="mx-auto w-14 h-14 rounded-2xl bg-[#E1FB15]/15 grid place-items-center mb-5">
+        <svg class="w-7 h-7 text-[#E1FB15]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      </div>
+      <span class="inline-block px-3 py-1 rounded-full text-[12px] font-semibold bg-[#E1FB15]/15 text-[#E1FB15] mb-3">În curând</span>
+      <h2 class="text-[20px] font-bold text-white">Setările de notificări vin în curând</h2>
+      <p class="text-[14px] text-[#9FB8CC] mt-2 max-w-md mx-auto leading-relaxed">
+        Notificările în aplicație sosesc odată cu aplicația de mobil. Atunci vei putea alege aici ce alerte primești
+        (scadențe, status e-Factura, plăți). Până atunci, alertele importante ajung pe e-mail.
       </p>
     </div>
-
-    <!-- Email channel -->
-    <div class="mb-3 flex flex-wrap items-center gap-3 rounded-2xl p-5 bg-white/5">
-      <div class="flex-1 min-w-[220px]">
-        <p class="text-[16px] font-semibold text-white">Notificări pe e-mail</p>
-        <p class="text-[13px] text-[#9FB8CC] mt-0.5">Primești pe e-mail alertele importante (scadențe, e-Factura, plăți).</p>
-      </div>
-      <button id="email-toggle" role="switch" aria-checked={emailEnabled ? 'true' : 'false'}
-        class:list={[toggleBtn, emailEnabled ? 'bg-[#E1FB15]' : 'bg-white/15']}>
-        <span class:list={[knob, emailEnabled ? 'translate-x-7' : 'translate-x-1']}></span>
-      </button>
-      <span id="email-state" class="text-[14px] font-semibold w-[60px] text-white">{emailEnabled ? 'Pornit' : 'Oprit'}</span>
-    </div>
-
-    <!-- In-app channel -->
-    <div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl p-5 bg-white/5">
-      <div class="flex-1 min-w-[220px]">
-        <p class="text-[16px] font-semibold text-white">Notificări în aplicație</p>
-        <p class="text-[13px] text-[#9FB8CC] mt-0.5">Vezi notificările în clopoțel și în pagina Notificări.</p>
-      </div>
-      <button id="inapp-toggle" role="switch" aria-checked={inAppEnabled ? 'true' : 'false'}
-        class:list={[toggleBtn, inAppEnabled ? 'bg-[#E1FB15]' : 'bg-white/15']}>
-        <span class:list={[knob, inAppEnabled ? 'translate-x-7' : 'translate-x-1']}></span>
-      </button>
-      <span id="inapp-state" class="text-[14px] font-semibold w-[60px] text-white">{inAppEnabled ? 'Pornit' : 'Oprit'}</span>
-    </div>
-
-    <p id="notif-msg" class="text-[13px] text-[#2E9E6A] h-5"></p>
   </div>
-
-  <script>
-    function wire(toggleId: string, stateId: string, field: 'emailEnabled' | 'inAppEnabled') {
-      const toggle = document.getElementById(toggleId);
-      const stateLbl = document.getElementById(stateId);
-      const msg = document.getElementById('notif-msg');
-      toggle?.addEventListener('click', async () => {
-        const next = toggle.getAttribute('aria-checked') !== 'true';
-        toggle.setAttribute('aria-checked', next ? 'true' : 'false');
-        toggle.classList.toggle('bg-[#E1FB15]', next);
-        toggle.classList.toggle('bg-white/15', !next);
-        const k = toggle.querySelector('span');
-        k?.classList.toggle('translate-x-7', next);
-        k?.classList.toggle('translate-x-1', !next);
-        if (stateLbl) stateLbl.textContent = next ? 'Pornit' : 'Oprit';
-        if (msg) msg.textContent = '';
-        try {
-          const res = await fetch('/api/notifications/preferences', {
-            method: 'PUT', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ [field]: next }),
-          });
-          if (!res.ok) throw new Error('save failed');
-          if (msg) { msg.textContent = 'Salvat.'; setTimeout(() => { if (msg.textContent === 'Salvat.') msg.textContent = ''; }, 1500); }
-        } catch {
-          // Revert on failure.
-          const rev = !next;
-          toggle.setAttribute('aria-checked', rev ? 'true' : 'false');
-          toggle.classList.toggle('bg-[#E1FB15]', rev);
-          toggle.classList.toggle('bg-white/15', !rev);
-          k?.classList.toggle('translate-x-7', rev);
-          k?.classList.toggle('translate-x-1', !rev);
-          if (stateLbl) stateLbl.textContent = rev ? 'Pornit' : 'Oprit';
-          if (msg) { msg.textContent = 'Nu am putut salva. Încearcă din nou.'; msg.className = 'text-[13px] text-[#DC4B41] h-5'; }
-        }
-      });
-    }
-    wire('email-toggle', 'email-state', 'emailEnabled');
-    wire('inapp-toggle', 'inapp-state', 'inAppEnabled');
-  </script>
 </AppLayout>
