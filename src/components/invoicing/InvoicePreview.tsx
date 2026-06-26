@@ -21,9 +21,9 @@ const SAMPLE = {
   buyer: 'Client Demo SRL',
   buyerCui: 'RO87654321',
   lines: [
-    { d: 'Servicii consultanță', q: '1', up: '2.400,00', vat: '19%', tot: '2.856,00' },
-    { d: 'Licență software', q: '2', up: '600,00', vat: '19%', tot: '1.428,00' },
-    { d: 'Mentenanță lunară', q: '1', up: '450,00', vat: '19%', tot: '535,50' },
+    { d: 'Servicii consultanță', q: '1', up: '2.400,00', vat: '21%', tot: '2.904,00' },
+    { d: 'Licență software', q: '2', up: '600,00', vat: '21%', tot: '1.452,00' },
+    { d: 'Mentenanță lunară', q: '1', up: '450,00', vat: '21%', tot: '544,50' },
   ],
   subtotal: '3.450,00',
   vat: '655,50',

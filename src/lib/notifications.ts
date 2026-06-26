@@ -15,6 +15,7 @@ export type NotificationType =
   | 'incident'
   | 'rating'
   | 'invoice'
+  | 'vat_threshold'
   | 'system';
 
 export interface NotifyInput {

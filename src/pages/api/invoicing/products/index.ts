@@ -49,7 +49,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     defaultUnitPriceCents: body.defaultUnitPriceCents != null ? Math.round(Number(body.defaultUnitPriceCents)) : null,
     defaultCurrency: (body.defaultCurrency || 'RON').toUpperCase().slice(0, 5),
     defaultUm: (body.defaultUm || 'buc').slice(0, 16),
-    defaultVatRate: body.defaultVatRate != null ? Number(body.defaultVatRate) : 19,
+    defaultVatRate: body.defaultVatRate != null ? Number(body.defaultVatRate) : 21,
     productType: body.productType || 'Servicii',
     isActive: body.isActive !== false,
   } as any);

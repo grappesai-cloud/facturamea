@@ -273,5 +273,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
   }
 
+  // Non-blocking: warn the owner once if a non-VAT-payer just crossed the plafon.
+  if (kind === 'factura') {
+    try { const { checkVatThreshold } = await import('../../../../lib/vat-threshold'); await checkVatThreshold(cid); } catch (e) { console.error('vat threshold check failed', e); }
+  }
+
   return new Response(JSON.stringify({ id: invoiceId, fullNumber, totalCents, efactura }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 };

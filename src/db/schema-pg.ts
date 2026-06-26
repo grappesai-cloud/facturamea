@@ -1277,7 +1277,7 @@ export const invoiceProducts = pgTable('invoice_products', {
   defaultUnitPriceCents: integer('default_unit_price_cents'),
   defaultCurrency: varchar('default_currency', { length: 5 }).default('RON'),
   defaultUm: varchar('default_um', { length: 16 }).default('buc'),
-  defaultVatRate: doublePrecision('default_vat_rate').default(19),
+  defaultVatRate: doublePrecision('default_vat_rate').default(21),
   // 'Marfuri' | 'Servicii' | 'Produs finit' | 'Materii prime' | 'Semifabricate' | 'Obiecte de inventar' | 'Ambalaje'
   productType: varchar('product_type', { length: 40 }).default('Servicii'),
   isActive: boolean('is_active').default(true),

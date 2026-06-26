@@ -236,7 +236,7 @@ async function importProducts(
       defaultUnitPriceCents: moneyToCents(m.defaultUnitPriceCents),
       defaultCurrency: clampStr(m.defaultCurrency, 5) || 'RON',
       defaultUm: clampStr(m.defaultUm, 16) || 'buc',
-      defaultVatRate: vat ?? 19,
+      defaultVatRate: vat ?? 21,
       productType: clampStr(m.productType, 40) || 'Servicii',
       isActive: true,
     });

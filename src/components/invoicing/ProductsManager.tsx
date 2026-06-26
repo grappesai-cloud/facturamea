@@ -18,12 +18,12 @@ interface Product {
 }
 
 const PRODUCT_TYPES = ['Servicii', 'Marfuri', 'Produs finit', 'Materii prime', 'Semifabricate', 'Obiecte de inventar', 'Ambalaje'];
-const VAT_RATES = [0, 5, 9, 19];
+const VAT_RATES = [0, 5, 9, 11, 21];
 
 const emptyForm = (): Partial<Product> => ({
   code: '', name: '', description: '',
   defaultUnitPriceCents: null, defaultCurrency: 'RON', defaultUm: 'buc',
-  defaultVatRate: 19, productType: 'Servicii', isActive: true,
+  defaultVatRate: 21, productType: 'Servicii', isActive: true,
 });
 
 export default function ProductsManager({ initial }: { initial: Product[] }) {
@@ -139,7 +139,7 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
             </div>
             <div>
               <Label className="text-[13px] font-medium text-[#9FB8CC]">TVA (%)</Label>
-              <select value={form.defaultVatRate ?? 19} onChange={(e) => setForm({ ...form, defaultVatRate: Number(e.target.value) })} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+              <select value={form.defaultVatRate ?? 21} onChange={(e) => setForm({ ...form, defaultVatRate: Number(e.target.value) })} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
                 {VAT_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
               </select>
             </div>
