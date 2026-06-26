@@ -90,7 +90,9 @@ export async function submitInvoiceToAnaf(invoiceId: string, opts: { userId: str
       // (partyXml prefixes the foreign country code, e.g. AE…).
       cui: customerIsRo
         ? ((inv.clientTaxIdSnap || '').replace(/^RO/i, '').replace(/\D/g, '') || '')
-        : ((inv.clientTaxIdSnap || '').replace(/\s/g, '') || ''),
+        // Foreign: strip a leading country prefix if the VAT id already carries it
+        // (e.g. "DE811128135"), else partyXml would double it → "DEDE811128135".
+        : ((inv.clientTaxIdSnap || '').replace(/\s/g, '').replace(new RegExp('^' + customerCountry, 'i'), '') || ''),
       vatPayer: customerHasTaxId,
       address: { street: customerStreet || '—', city: customerCity || '—', country: customerCountry, postalCode: customerPostal || undefined, countrySubentity: customerCounty || undefined },
     },
