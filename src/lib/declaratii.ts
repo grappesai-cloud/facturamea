@@ -18,7 +18,7 @@ import {
   billingAddresses,
   suppliers,
 } from '../db/schema';
-import { and, eq, gte, lte, ne } from 'drizzle-orm';
+import { and, eq, gte, lte, ne, isNotNull } from 'drizzle-orm';
 
 // XML escaping — identical style to lib/efactura.ts.
 export const escapeXml = (s: string | null | undefined): string =>
@@ -330,6 +330,188 @@ export function generateD300Csv(data: DeclaratieData): string {
     ['Sold TVA (RON)', centsToStr(s.soldCents)],
     ['TVA de plata (RON)', centsToStr(s.dePlataCents)],
     ['TVA de recuperat (RON)', centsToStr(s.deRecuperatCents)],
+  ];
+  const escCsv = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  return rows.map(([k, v]) => `${escCsv(k)},${escCsv(v)}`).join('\r\n') + '\r\n';
+}
+
+// ── D100 (impozit microîntreprinderi) ───────────────────────────────────────
+// Declarația 100 — obligații de plată la bugetul de stat. For a micro company
+// (neplătitor de TVA / regim micro) the relevant line is the income tax on
+// revenue (impozit pe veniturile microîntreprinderilor), declared QUARTERLY.
+// Base = cifra de afaceri (livrări) on the period; tax = base × rate.
+//   rate 1% — micro cu cel puțin un salariat (cazul uzual)
+//   rate 3% — micro fără salariați / anumite activități
+// ANAF cod obligație 1170 = impozit pe veniturile microîntreprinderilor.
+export interface D100Summary {
+  baseCents: number;     // cifra de afaceri (venituri) pe trimestru
+  ratePct: number;       // 1 sau 3
+  taxCents: number;      // impozit datorat = base × rate
+  trimestru: number;     // 1..4 derivat din perioadă
+}
+
+const trimestruOf = (month: number): number => Math.floor((month - 1) / 3) + 1;
+
+export function computeD100Summary(data: DeclaratieData, ratePct: number): D100Summary {
+  const rate = ratePct === 3 ? 3 : 1;
+  const baseCents = data.livrariTotals.baseCents;
+  return {
+    baseCents,
+    ratePct: rate,
+    taxCents: Math.round((baseCents * rate) / 100),
+    trimestru: trimestruOf(data.period.month),
+  };
+}
+
+export function generateD100Xml(data: DeclaratieData, ratePct: number): string {
+  const { declarant, period } = data;
+  const s = computeD100Summary(data, ratePct);
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<declaratie100 xmlns="mfp:anaf:dgti:d100:declaratie:v1" luna="${period.month}" an="${period.year}" trimestru="${s.trimestru}">
+  <antet>
+    <cui>${escapeXml(declarant.cui)}</cui>
+    <den>${escapeXml(declarant.name)}</den>
+    <an>${period.year}</an>
+    <luna>${period.month}</luna>
+    <perioadaDe>${period.from}</perioadaDe>
+    <perioadaLa>${period.to}</perioadaLa>
+    <intocmit>facturamea</intocmit>
+  </antet>
+  <obligatii>
+    <obligatie>
+      <nrCrt>1</nrCrt>
+      <denumire>Impozit pe veniturile microintreprinderilor</denumire>
+      <codBugetar>1170</codBugetar>
+      <bazaImpozabila>${centsToStr(s.baseCents)}</bazaImpozabila>
+      <cota>${s.ratePct}</cota>
+      <datorat>${centsToStr(s.taxCents)}</datorat>
+    </obligatie>
+  </obligatii>
+</declaratie100>`;
+}
+
+export function generateD100Csv(data: DeclaratieData, ratePct: number): string {
+  const s = computeD100Summary(data, ratePct);
+  const rows: Array<[string, string]> = [
+    ['Declarant', data.declarant.name],
+    ['CUI', data.declarant.cui],
+    ['Trimestru', `T${s.trimestru} ${data.period.year}`],
+    ['Perioada', `${data.period.from} .. ${data.period.to}`],
+    ['Cifra de afaceri / venituri (RON)', centsToStr(s.baseCents)],
+    ['Cota impozit micro (%)', String(s.ratePct)],
+    ['Impozit datorat (RON)', centsToStr(s.taxCents)],
+  ];
+  const escCsv = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  return rows.map(([k, v]) => `${escCsv(k)},${escCsv(v)}`).join('\r\n') + '\r\n';
+}
+
+// ── D212 (Declarația unică — PFA) ────────────────────────────────────────────
+// Pentru persoane fizice (PFA/II/IF) în sistem real. Impozitul pe venit este
+// ANUAL și se calculează pe baza ÎNCASĂRILOR (contabilitate de casă), nu a
+// facturilor emise — de aceea numărăm facturile cu paidAt în an, nu issuedAt.
+//   venit brut   = total încasat (facturi plătite în an)
+//   cheltuieli   = cheltuieli deductibile înregistrate în an
+//   venit net    = max(0, brut − cheltuieli)
+//   impozit      = 10% × venit net
+// CAS/CASS depind de plafoane (6/12/24 salarii minime) care se schimbă anual;
+// le raportăm informativ (venit net vs. plafoane) ca să le confirme contabilul,
+// fără a emite o cifră de contribuții posibil greșită.
+export interface D212Data {
+  declarant: { cui: string; name: string; rawCui: string | null };
+  year: number;
+  venitBrutCents: number;     // încasări în an
+  cheltuieliCents: number;    // cheltuieli deductibile în an
+  venitNetCents: number;      // max(0, brut − cheltuieli)
+  impozitCents: number;       // 10% × venit net
+  nrFacturiIncasate: number;
+}
+
+// Colectează datele anuale pe bază de casă (paidAt) pentru un PFA.
+export async function collectD212Data(companyId: string, year: number): Promise<D212Data> {
+  let name = '';
+  let rawCui: string | null = null;
+  try {
+    const [issuer] = await db.select().from(companies).where(eq(companies.id, companyId));
+    if (issuer) { name = issuer.name || ''; rawCui = issuer.cui || null; }
+    const [billing] = await db.select().from(billingAddresses).where(eq(billingAddresses.companyId, companyId));
+    if (billing) { name = billing.legalName || name; rawCui = billing.cui || rawCui; }
+  } catch { /* keep defaults */ }
+
+  const from = new Date(`${year}-01-01T00:00:00Z`);
+  const to = new Date(`${year}-12-31T23:59:59Z`);
+
+  // Venit brut = facturi ÎNCASATE în an (paidAt în interval), kind factura/storno.
+  let venitBrutCents = 0;
+  let nrFacturiIncasate = 0;
+  try {
+    const invoices = await db.select().from(transportInvoices).where(and(
+      eq(transportInvoices.companyId, companyId),
+      isNotNull(transportInvoices.paidAt),
+      gte(transportInvoices.paidAt, from),
+      lte(transportInvoices.paidAt, to),
+    ));
+    for (const inv of invoices) {
+      if (inv.kind !== 'factura' && inv.kind !== 'storno') continue;
+      venitBrutCents += invoiceRonCents(inv).total;
+      nrFacturiIncasate += 1;
+    }
+  } catch { /* empty */ }
+
+  // Cheltuieli deductibile = cheltuieli înregistrate în an (după data documentului).
+  let cheltuieliCents = 0;
+  try {
+    const rows = await db.select().from(expenses).where(and(
+      eq(expenses.companyId, companyId),
+      gte(expenses.issueDate, `${year}-01-01`),
+      lte(expenses.issueDate, `${year}-12-31`),
+    ));
+    for (const exp of rows) cheltuieliCents += expenseRonCents(exp).total;
+  } catch { /* empty */ }
+
+  const venitNetCents = Math.max(0, venitBrutCents - cheltuieliCents);
+  const impozitCents = Math.round(venitNetCents * 0.1);
+  return {
+    declarant: { cui: normalizeCui(rawCui), name, rawCui },
+    year,
+    venitBrutCents,
+    cheltuieliCents,
+    venitNetCents,
+    impozitCents,
+    nrFacturiIncasate,
+  };
+}
+
+export function generateD212Xml(d: D212Data): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<declaratie212 xmlns="mfp:anaf:dgti:d212:declaratie:v1" an="${d.year}">
+  <antet>
+    <cif>${escapeXml(d.declarant.cui)}</cif>
+    <den>${escapeXml(d.declarant.name)}</den>
+    <anFiscal>${d.year}</anFiscal>
+    <intocmit>facturamea</intocmit>
+  </antet>
+  <venitRealizat>
+    <venitBrut>${centsToStr(d.venitBrutCents)}</venitBrut>
+    <cheltuieliDeductibile>${centsToStr(d.cheltuieliCents)}</cheltuieliDeductibile>
+    <venitNet>${centsToStr(d.venitNetCents)}</venitNet>
+    <cotaImpozit>10</cotaImpozit>
+    <impozitDatorat>${centsToStr(d.impozitCents)}</impozitDatorat>
+  </venitRealizat>
+</declaratie212>`;
+}
+
+export function generateD212Csv(d: D212Data): string {
+  const rows: Array<[string, string]> = [
+    ['Declarant', d.declarant.name],
+    ['CIF/CNP', d.declarant.cui],
+    ['An fiscal', String(d.year)],
+    ['Facturi incasate (nr)', String(d.nrFacturiIncasate)],
+    ['Venit brut incasat (RON)', centsToStr(d.venitBrutCents)],
+    ['Cheltuieli deductibile (RON)', centsToStr(d.cheltuieliCents)],
+    ['Venit net (RON)', centsToStr(d.venitNetCents)],
+    ['Cota impozit pe venit (%)', '10'],
+    ['Impozit pe venit datorat (RON)', centsToStr(d.impozitCents)],
+    ['Nota', 'CAS/CASS se calculeaza pe plafoane (6/12/24 salarii minime) — verifica cu contabilul.'],
   ];
   const escCsv = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
   return rows.map(([k, v]) => `${escCsv(k)},${escCsv(v)}`).join('\r\n') + '\r\n';
