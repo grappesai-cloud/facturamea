@@ -24,11 +24,12 @@ const config: CapacitorConfig = {
   },
   plugins: {
     SplashScreen: {
-      // Keep the splash up until the remote web app has loaded, then hide it from
-      // JS (see the native script in BaseLayout) — avoids a white flash while
-      // facturamea.com loads over the network.
-      launchShowDuration: 3000,
-      launchAutoHide: false,
+      // Auto-hide on a timer — reliable for the hosted model (a JS hide() call
+      // from the remote page doesn't always marshal to the native plugin). ~2.5s
+      // covers the network load of facturamea.com on a normal connection.
+      launchShowDuration: 2500,
+      launchFadeOutDuration: 350,
+      launchAutoHide: true,
       backgroundColor: '#FFFFFF',
       showSpinner: false,
     },
