@@ -1,8 +1,15 @@
 # PROPRIETARY AND CONFIDENTIAL LICENSE
 
-© 2026 Robert Gyorgy / Gyorgy Albert-Robert PFA. Toate drepturile rezervate.
+> **DOMENIUL ACESTEI LICENȚE — citește întâi:** Această licență acoperă **EXCLUSIV
+> redesignul de interfață (frontend)** realizat de autor — layout, componente,
+> stiluri și fluxuri UI. **Backend-ul, infrastructura, baza de date, logica de
+> business, ideea și produsul facturamea în sine NU fac obiectul acestei licențe
+> și aparțin beneficiarului** (proprietarul produsului). Vezi secțiunea „Domeniu
+> și proveniență" mai jos.
 
-Acest cod sursă este proprietate intelectuală privată.
+© 2026 Robert Gyorgy / Gyorgy Albert-Robert PFA — **asupra redesignului de frontend**. Toate drepturile rezervate asupra acestei părți.
+
+Această licență vizează **redesignul de frontend** ca proprietate intelectuală a autorului.
 Codul este pus la dispoziție strict în baza acordului comercial de parteneriat
 (Revenue Share / Sweat Equity) stabilit între autor și beneficiari.
 

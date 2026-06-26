@@ -56,6 +56,13 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       const res = await fetch(`/api/invoicing/invoices/${invoiceId}/share`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Eroare'); return; }
+      // Native app: open the OS share sheet directly. Web: show the share modal.
+      const cap = (window as any).Capacitor;
+      const Share = cap?.Plugins?.Share;
+      if (cap?.isNativePlatform?.() && Share?.share) {
+        try { await Share.share({ title: 'Factură', text: 'Vezi factura', url: data.url, dialogTitle: 'Distribuie factura' }); return; }
+        catch { /* cancelled / unavailable → fall through to the modal */ }
+      }
       setShareUrl(data.url);
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };

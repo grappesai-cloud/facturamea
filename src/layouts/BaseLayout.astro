@@ -88,6 +88,12 @@ const locale = Astro.locals?.locale ?? 'ro';
           // false so it covers the network load of the remote web app).
           window.addEventListener('load', function () {
             try { cap.Plugins && cap.Plugins.SplashScreen && cap.Plugins.SplashScreen.hide(); } catch (e) {}
+            // Native app build carries no developer/author meta or names.
+            try {
+              ['author', 'copyright', 'generator', 'x-author-fingerprint'].forEach(function (n) {
+                var m = document.querySelector('meta[name="' + n + '"]'); if (m) m.remove();
+              });
+            } catch (e) {}
           });
           // Native push: register for APNs/FCM on the authed app area and send the
           // device token to the server (associated with the logged-in user).
@@ -152,15 +158,14 @@ const locale = Astro.locals?.locale ?? 'ro';
       .capacitor-native [data-native-only] { display: block !important; }
     </style>
     {/* ───────────────────────────────────────────────────────────────────────
-        Authorship watermark. This software is proprietary — © Robert Gyorgy
-        (Gyorgy Albert-Robert PFA). Architecture, frontend & backend authored by
-        Robert Gyorgy. See LICENSE.md. Removing these marks does not transfer
-        any rights.
+        Attribution (web). The FRONTEND UI redesign only — layout, components,
+        styles and UI flows — was authored by Robert Gyorgy (Gyorgy Albert-Robert
+        PFA) under a partnership; see LICENSE.md. The backend, infrastructure and
+        the product/idea itself are NOT his (LICENSE.md states this explicitly).
+        These meta tags are removed in the native app build.
        ─────────────────────────────────────────────────────────────────────── */}
-    <meta name="author" content="Robert Gyorgy — Gyorgy Albert-Robert PFA" />
-    <meta name="generator" content="Custom Gyorgy Albert-Robert PFA Architecture" />
-    <meta name="copyright" content="© 2026 Robert Gyorgy / Gyorgy Albert-Robert PFA. All rights reserved." />
-    <meta name="x-author-fingerprint" content="GAR-PFA::robert-gyorgy::facturamea" />
+    <meta name="author" content="Frontend UI: Robert Gyorgy — Gyorgy Albert-Robert PFA (see LICENSE.md)" />
+    <meta name="copyright" content="© 2026 Robert Gyorgy / Gyorgy Albert-Robert PFA — frontend UI redesign only. See LICENSE.md." />
     <script is:inline>
       // Apply font-scale + dark mode before paint to avoid FOUC.
       (function(){
@@ -518,14 +523,15 @@ const locale = Astro.locals?.locale ?? 'ro';
     <slot />
     <CookieBanner />
     <script is:inline>
-      // Authorship signature — proprietary software, © Robert Gyorgy / Gyorgy Albert-Robert PFA.
+      // Frontend/UI attribution (web only — omitted in the native app build).
+      // Scope: the UI redesign only; backend/infrastructure are not covered (LICENSE.md).
       try {
-        console.info(
-          '%c Developed & Engineered by Robert Gyorgy | Gyorgy Albert-Robert PFA ',
-          'background:#0A2238;color:#E1FB15;padding:6px 10px;border-radius:6px;font-weight:700;font-size:12px;'
-        );
-        console.info('%c© 2026 Gyorgy Albert-Robert PFA — proprietary. See LICENSE.md. Unauthorized copying or derivative use is prohibited.',
-          'color:#9FB8CC;font-size:11px;');
+        if (!document.documentElement.classList.contains('capacitor-native')) {
+          console.info(
+            '%c Frontend / UI redesign by Robert Gyorgy — Gyorgy Albert-Robert PFA (see LICENSE.md) ',
+            'background:#0A2238;color:#E1FB15;padding:6px 10px;border-radius:6px;font-weight:700;font-size:12px;'
+          );
+        }
       } catch (e) {}
     </script>
     <script is:inline>
