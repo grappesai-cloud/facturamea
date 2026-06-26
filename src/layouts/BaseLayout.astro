@@ -107,6 +107,39 @@ const locale = Astro.locals?.locale ?? 'ro';
                 }).catch(function () {});
               } catch (e) {}
             });
+            // Biometric lock (Face ID / fingerprint), opt-in per device. FAIL-OPEN:
+            // if disabled, the plugin is missing, or no biometric is enrolled, we
+            // never block — so a user can't get locked out of their own app.
+            (function () {
+              var Bio = cap.Plugins && cap.Plugins.NativeBiometric;
+              var App = cap.Plugins && cap.Plugins.App;
+              var locking = false;
+              function overlay(show, onRetry) {
+                var el = document.getElementById('fm-bio-lock');
+                if (!show) { if (el) el.remove(); return; }
+                if (el) return;
+                el = document.createElement('div');
+                el.id = 'fm-bio-lock';
+                el.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#0A2238;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;color:#fff;font-family:system-ui';
+                el.innerHTML = '<div style="font-size:42px">🔒</div><div style="font-size:16px;font-weight:600">facturamea blocat</div><button id="fm-bio-retry" style="padding:12px 24px;border:0;border-radius:9999px;background:#E1FB15;color:#0A2238;font-weight:700;font-size:14px">Deblochează</button>';
+                document.body.appendChild(el);
+                el.querySelector('#fm-bio-retry').addEventListener('click', onRetry);
+              }
+              function tryUnlock() {
+                if (locking) return;
+                if (localStorage.getItem('fm_bio_lock') !== '1' || !Bio) return; // disabled / no plugin → open
+                locking = true;
+                Bio.isAvailable().then(function (r) {
+                  if (!r || !r.isAvailable) { locking = false; return; } // not enrolled → open
+                  overlay(true, function () { Bio.verifyIdentity({ reason: 'Deblochează facturamea', title: 'facturamea' }).then(function () { overlay(false); }).catch(function () {}); });
+                  Bio.verifyIdentity({ reason: 'Deblochează facturamea', title: 'facturamea' })
+                    .then(function () { overlay(false); locking = false; })
+                    .catch(function () { locking = false; });
+                }).catch(function () { locking = false; });
+              }
+              window.addEventListener('load', tryUnlock);
+              if (App && App.addListener) App.addListener('appStateChange', function (s) { if (s && s.isActive) tryUnlock(); });
+            })();
           }
         } catch (e) {}
       })();
