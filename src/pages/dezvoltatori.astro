@@ -1,0 +1,134 @@
+---
+// Public developer documentation for the facturamea v1 API. Prerendered to
+// static HTML (no env / DB needed). Linked from Setări → API & integrări.
+export const prerender = true;
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+const BASE = 'https://facturamea.com/api/v1';
+
+// Endpoint reference — kept in sync with src/pages/api/v1/*.
+const endpoints = [
+  { method: 'GET', path: '/ping', desc: 'Testează cheia. Returnează compania asociată.' },
+  { method: 'GET', path: '/invoices', desc: 'Listează facturile (filtre: limit, offset, kind, status).' },
+  { method: 'POST', path: '/invoices', desc: 'Creează și emite o factură.' },
+  { method: 'GET', path: '/invoices/{id}', desc: 'Detaliile unei facturi.' },
+  { method: 'GET', path: '/clients', desc: 'Listează clienții.' },
+  { method: 'POST', path: '/clients', desc: 'Creează un client.' },
+  { method: 'GET', path: '/products', desc: 'Listează produsele/serviciile.' },
+  { method: 'POST', path: '/products', desc: 'Creează un produs/serviciu.' },
+];
+
+const createInvoiceBody = `{
+  "client": { "name": "ACME SRL", "taxId": "RO12345678", "address": "Str. Exemplu 1, București" },
+  "currency": "RON",
+  "dueDate": "2026-07-15",
+  "lines": [
+    { "name": "Servicii consultanță", "quantity": 2, "unitPriceCents": 50000, "vatRate": 21, "unit": "ore" }
+  ]
+}`;
+
+const createInvoiceResp = `{
+  "id": "v1_abc...",
+  "fullNumber": "FAC 0042",
+  "kind": "factura",
+  "status": "issued",
+  "currency": "RON",
+  "subtotalCents": 100000,
+  "vatCents": 21000,
+  "totalCents": 121000,
+  "clientName": "ACME SRL",
+  "issuedAt": "2026-06-26T10:00:00.000Z"
+}`;
+
+const methodColor: Record<string, string> = {
+  GET: 'text-[#2E9E6A] bg-[#2E9E6A]/15',
+  POST: 'text-[#E1FB15] bg-[#E1FB15]/15',
+};
+---
+
+<PublicLayout title="API pentru dezvoltatori — facturamea" description="Documentația API v1 facturamea: emite facturi, gestionează clienți și produse din propriile aplicații. Autentificare cu cheie API, mod live și test.">
+  <main class="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
+    <a href="/app/setari/api" class="text-[13px] text-[#9FB8CC] hover:text-white">← Înapoi la chei API</a>
+    <h1 class="text-[34px] sm:text-[44px] font-semibold tracking-[-0.03em] text-white mt-3">API pentru dezvoltatori</h1>
+    <p class="text-[15px] text-[#9FB8CC] mt-3 leading-relaxed">
+      Conectează facturamea la propriile aplicații sau la alte sisteme de facturare. Poți emite facturi, gestiona clienți
+      și produse programatic, prin REST. Toate sumele sunt în <strong class="text-white">bani</strong> (întregi), iar
+      totalurile sunt calculate pe server.
+    </p>
+
+    <!-- Auth -->
+    <section class="mt-10">
+      <h2 class="text-[22px] font-bold text-white">Autentificare</h2>
+      <p class="text-[14px] text-[#9FB8CC] mt-2 leading-relaxed">
+        Generează o cheie din <a href="/app/setari/api" class="text-[#E1FB15] hover:underline">Setări → API & integrări</a>
+        și trimite-o în header-ul <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">Authorization</code>.
+        Cheile <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">fm_test_…</code> sunt
+        <strong class="text-white">read-only</strong> (nu consumă o serie fiscală reală); cele
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">fm_live_…</code> emit documente reale.
+      </p>
+      <pre class="bg-black/40 text-[#9FB8CC] text-[13px] rounded-xl p-4 mt-3 overflow-x-auto font-mono"><code>curl {BASE}/ping \
+  -H "Authorization: Bearer fm_live_..."</code></pre>
+    </section>
+
+    <!-- Base URL -->
+    <section class="mt-10">
+      <h2 class="text-[22px] font-bold text-white">Adresa de bază</h2>
+      <pre class="bg-black/40 text-white text-[14px] rounded-xl p-4 mt-3 font-mono">{BASE}</pre>
+    </section>
+
+    <!-- Endpoints -->
+    <section class="mt-10">
+      <h2 class="text-[22px] font-bold text-white">Endpoint-uri</h2>
+      <div class="mt-3 rounded-2xl overflow-hidden border border-white/10">
+        {endpoints.map((e, i) => (
+          <div class={`flex items-center gap-3 px-4 py-3 ${i % 2 ? 'bg-white/[0.02]' : 'bg-white/5'}`}>
+            <span class={`shrink-0 w-14 text-center text-[12px] font-bold rounded-md py-1 ${methodColor[e.method]}`}>{e.method}</span>
+            <code class="font-mono text-[13px] text-white shrink-0">{e.path}</code>
+            <span class="text-[13px] text-[#9FB8CC] truncate">{e.desc}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Create invoice -->
+    <section class="mt-10">
+      <h2 class="text-[22px] font-bold text-white">Emite o factură</h2>
+      <p class="text-[14px] text-[#9FB8CC] mt-2 leading-relaxed">
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">POST /invoices</code>. Trimite fie
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">clientId</code> (un client existent), fie un
+        obiect <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">client</code> inline cu cel puțin
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">name</code>. Fiecare linie are
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">name</code>,
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">quantity</code>,
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">unitPriceCents</code> și opțional
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">vatRate</code>,
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">unit</code>,
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">code</code>. Pentru valută non-RON cursul BNR
+        se preia automat; fără curs, cererea e respinsă (nu declarăm 1:1).
+      </p>
+      <p class="text-[13px] font-semibold text-[#9FB8CC] mt-4 mb-1.5">Cerere</p>
+      <pre class="bg-black/40 text-[#9FB8CC] text-[13px] rounded-xl p-4 overflow-x-auto font-mono"><code>{createInvoiceBody}</code></pre>
+      <p class="text-[13px] font-semibold text-[#9FB8CC] mt-4 mb-1.5">Răspuns</p>
+      <pre class="bg-black/40 text-[#9FB8CC] text-[13px] rounded-xl p-4 overflow-x-auto font-mono"><code>{createInvoiceResp}</code></pre>
+    </section>
+
+    <!-- Errors -->
+    <section class="mt-10">
+      <h2 class="text-[22px] font-bold text-white">Erori</h2>
+      <p class="text-[14px] text-[#9FB8CC] mt-2 leading-relaxed">
+        Răspunsurile de eroare au forma <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">{'{ "error", "message" }'}</code>:
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">401 unauthorized</code> (cheie lipsă/invalidă),
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">400 bad_request</code> (date invalide),
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">404 not_found</code>,
+        <code class="font-mono text-white bg-white/10 px-1.5 py-0.5 rounded">500 server_error</code>.
+      </p>
+    </section>
+
+    <section class="mt-12 rounded-2xl p-5 bg-white/5">
+      <p class="text-[14px] text-[#9FB8CC]">
+        Vrei integrare cu un magazin (WooCommerce, Shopify, eMag, PrestaShop, Gomag) sau cu plăți (Stripe, Netopia, PayU)?
+        Acelea se configurează fără cod din <a href="/app/setari/integrari" class="text-[#E1FB15] hover:underline">Setări → Integrări</a>.
+      </p>
+    </section>
+  </main>
+</PublicLayout>
