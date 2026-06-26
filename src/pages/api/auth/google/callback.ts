@@ -44,6 +44,18 @@ export const GET: APIRoute = async ({ request }) => {
       return new Response(null, { status: 302, headers });
     }
 
+    // Native app: hand a signed token back via the custom scheme; the real
+    // session is created when the app exchanges it inside the WKWebView.
+    if (readCookie(request.headers.get('cookie'), 'fm_oauth_native') === '1') {
+      const { signNativeAuth, NATIVE_SCHEME } = await import('../../../../lib/native-auth');
+      try { await logAction({ userId, companyId, action: 'auth.oauth_google_native', request }); } catch {}
+      const h = new Headers({ Location: `${NATIVE_SCHEME}://auth?token=${encodeURIComponent(signNativeAuth(userId))}` });
+      h.append('Set-Cookie', 'fm_g_state=; Path=/; HttpOnly; Max-Age=0');
+      h.append('Set-Cookie', 'fm_oauth_native=; Path=/; HttpOnly; Max-Age=0');
+      h.append('Set-Cookie', 'fm_oauth_fe=; Path=/; HttpOnly; Max-Age=0');
+      return new Response(null, { status: 302, headers: h });
+    }
+
     const sessionId = await createSession(userId);
     try { await logAction({ userId, companyId, action: 'auth.oauth_google', request }); } catch {}
     // Prefer a server-side session cookie over leaking the token in a URL

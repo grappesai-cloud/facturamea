@@ -57,6 +57,33 @@ const locale = Astro.locals?.locale ?? 'ro';
           // Everything else (landing, marketing, /auth/register) → into the app,
           // where the auth middleware sends guests to login and members to /app.
           if (!allowed) { location.replace('/app'); return; }
+          // Native OAuth: Google/Apple block embedded webviews, and the OAuth
+          // cookies never reach the WKWebView. So open the flow in a real
+          // browser (SFSafariViewController/Custom Tab) via the Browser plugin,
+          // and catch the com.facturamea.app://auth?token=… deep link, then
+          // exchange the token for a session inside the webview.
+          (function () {
+            var App = cap.Plugins && cap.Plugins.App;
+            var Browser = cap.Plugins && cap.Plugins.Browser;
+            if (App && App.addListener) {
+              App.addListener('appUrlOpen', function (data) {
+                try {
+                  var u = (data && data.url) || '';
+                  if (u.indexOf('com.facturamea.app://auth') !== 0) return;
+                  var m = u.match(/[?&]token=([^&]+)/);
+                  if (Browser && Browser.close) { try { Browser.close(); } catch (e) {} }
+                  if (m) location.href = '/api/auth/native-exchange?token=' + m[1];
+                } catch (e) {}
+              });
+            }
+            // Intercept the OAuth links and open them in the system browser.
+            document.addEventListener('click', function (ev) {
+              var a = ev.target && ev.target.closest && ev.target.closest('a[href="/api/auth/google"], a[href="/api/auth/apple"]');
+              if (!a || !Browser || !Browser.open) return;
+              ev.preventDefault();
+              Browser.open({ url: location.origin + a.getAttribute('href') + '?native=1' });
+            }, true);
+          })();
           // Hide the native splash once the page is ready (we set launchAutoHide
           // false so it covers the network load of the remote web app).
           window.addEventListener('load', function () {

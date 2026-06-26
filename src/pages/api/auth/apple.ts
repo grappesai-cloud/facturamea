@@ -15,5 +15,9 @@ export const GET: APIRoute = async ({ request, url }) => {
   if (isAllowedFeRedirect(redirect)) {
     headers.append('Set-Cookie', `fm_oauth_fe=${encodeURIComponent(redirect!)}; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=600`);
   }
+  // Native app flow: OAuth runs in SFSafariViewController / Chrome Custom Tab.
+  if (url.searchParams.get('native') === '1') {
+    headers.append('Set-Cookie', `fm_oauth_native=1; Path=/; HttpOnly; SameSite=None; Secure; Max-Age=600`);
+  }
   return new Response(null, { status: 302, headers });
 };
