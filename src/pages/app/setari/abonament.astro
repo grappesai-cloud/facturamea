@@ -59,8 +59,11 @@ const features = [
         <div class="rounded-2xl p-5 bg-white/5 flex items-center justify-between gap-3">
           <div>
             <p class="text-[13px] font-semibold text-white">Cont neactivat</p>
-            <p class="text-[12px] text-[#7C9AB4] mt-0.5">
+            <p data-web-only class="text-[12px] text-[#7C9AB4] mt-0.5">
               Activează licența pe viață printr-o singură plată pentru a folosi aplicația.
+            </p>
+            <p data-native-only class="text-[12px] text-[#7C9AB4] mt-0.5">
+              Contul tău nu este încă activat.
             </p>
           </div>
           <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-[#DC4B41]/15 text-[#DC4B41]">
@@ -68,7 +71,7 @@ const features = [
           </span>
         </div>
 
-        <div class="rounded-3xl p-5 sm:p-6 bg-white/5 text-white relative overflow-hidden">
+        <div data-web-only class="rounded-3xl p-5 sm:p-6 bg-white/5 text-white relative overflow-hidden">
           <div class="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold uppercase tracking-wider">Lifetime</div>
           <p class="text-[13px] font-semibold text-[#9FB8CC]">facturamea</p>
           <div class="flex items-end gap-2 mt-2">

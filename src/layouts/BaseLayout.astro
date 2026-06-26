@@ -114,6 +114,9 @@ const locale = Astro.locals?.locale ?? 'ro';
     <style is:inline>
       /* Hide web-only chrome (signup link, "back to site") inside the native app. */
       .capacitor-native [data-web-only] { display: none !important; }
+      /* Shown ONLY inside the native app (e.g. neutral copy replacing payment CTAs). */
+      [data-native-only] { display: none; }
+      .capacitor-native [data-native-only] { display: block !important; }
     </style>
     {/* ───────────────────────────────────────────────────────────────────────
         Authorship watermark. This software is proprietary — © Robert Gyorgy
