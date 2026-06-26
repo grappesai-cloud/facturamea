@@ -39,6 +39,8 @@ describe('e-Factura UBL / CIUS-RO', () => {
     expect(xml).toMatch(/<cbc:BuyerReference>FAC-0001<\/cbc:BuyerReference>/);
     // defalcare TVA prezentă
     expect(xml).toContain('<cac:TaxSubtotal>');
+    // BT-72 ActualDeliveryDate prezentă (cerută de BR-IC-11 pt intracomunitar)
+    expect(xml).toContain('<cbc:ActualDeliveryDate>2026-06-16</cbc:ActualDeliveryDate>');
   });
 
   it('pune nr. reg. comerț în PartyLegalEntity/CompanyID, nu în CompanyLegalForm', () => {
