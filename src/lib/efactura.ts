@@ -121,27 +121,33 @@ const xmlEscape = (s: string) =>
 
 const money = (cents: number) => (cents / 100).toFixed(2);
 
+// Inner <cac:Address> fields, shared by the party PostalAddress and the
+// Delivery location, so the București-sector (BR-RO-100) + county (BR-RO-110)
+// logic is applied consistently everywhere.
+function addressInner(addr: { street: string; city: string; postalCode?: string; country: string }): string {
+  const countryCode = addr.country.slice(0, 2).toUpperCase();
+  const county = countryCode === 'RO' ? resolveCountyCode(addr) : null;
+  const sector = county === 'RO-B' ? resolveBucharestSector(addr) : null;
+  const cityName = sector || addr.city;
+  return `<cbc:StreetName>${xmlEscape(addr.street)}</cbc:StreetName>
+        <cbc:CityName>${xmlEscape(cityName)}</cbc:CityName>
+        ${addr.postalCode ? `<cbc:PostalZone>${xmlEscape(addr.postalCode)}</cbc:PostalZone>` : ''}
+        ${county ? `<cbc:CountrySubentity>${county}</cbc:CountrySubentity>` : ''}
+        <cac:Country><cbc:IdentificationCode>${xmlEscape(countryCode)}</cbc:IdentificationCode></cac:Country>`;
+}
+
 function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCustomerParty'): string {
   // PartyLegalEntity/CompanyID. For a NON-VAT-payer there is no PartyTaxScheme, so
   // the CUI must live here or ANAF can't identify the party ("cui vanzator=0").
   // VAT payers keep reg.com here (their CUI is in PartyTaxScheme = RO+cui).
   const legalId = party.vatPayer ? (party.registrationNumber || `RO${party.cui}`) : party.cui;
   const countryCode = party.address.country.slice(0, 2).toUpperCase();
-  // BR-RO-110: pentru RO, subdiviziunea = cod ISO 3166-2:RO (ex. RO-CT). București = RO-B.
-  const county = countryCode === 'RO' ? resolveCountyCode(party.address) : null;
-  // BR-RO-100: pentru București (RO-B) localitatea = SECTOR1..6, nu "București".
-  const sector = county === 'RO-B' ? resolveBucharestSector(party.address) : null;
-  const cityName = sector || party.address.city;
   return `
   <cac:${role}>
     <cac:Party>
       <cac:PartyName><cbc:Name>${xmlEscape(party.name)}</cbc:Name></cac:PartyName>
       <cac:PostalAddress>
-        <cbc:StreetName>${xmlEscape(party.address.street)}</cbc:StreetName>
-        <cbc:CityName>${xmlEscape(cityName)}</cbc:CityName>
-        ${party.address.postalCode ? `<cbc:PostalZone>${xmlEscape(party.address.postalCode)}</cbc:PostalZone>` : ''}
-        ${county ? `<cbc:CountrySubentity>${county}</cbc:CountrySubentity>` : ''}
-        <cac:Country><cbc:IdentificationCode>${xmlEscape(countryCode)}</cbc:IdentificationCode></cac:Country>
+        ${addressInner(party.address)}
       </cac:PostalAddress>
       ${
         party.vatPayer
@@ -289,7 +295,16 @@ export function generateEFacturaXml(input: InvoiceInput): string {
   ${partyXml(input.supplierVatPayer === false ? { ...input.supplier, vatPayer: false } : input.supplier, 'AccountingSupplierParty')}
   ${partyXml(input.supplierVatPayer === false ? { ...input.customer, vatPayer: false } : input.customer, 'AccountingCustomerParty')}
   <cac:Delivery>
-    <cbc:ActualDeliveryDate>${input.issueDate}</cbc:ActualDeliveryDate>
+    <cbc:ActualDeliveryDate>${input.issueDate}</cbc:ActualDeliveryDate>${
+      input.lines.some((l) => l.vatCategory === 'K')
+        ? `
+    <cac:DeliveryLocation>
+      <cac:Address>
+        ${addressInner(input.customer.address)}
+      </cac:Address>
+    </cac:DeliveryLocation>`
+        : ''
+    }
   </cac:Delivery>
   <cac:TaxTotal>
     <cbc:TaxAmount currencyID="${cur}">${money(vatTotalCents)}</cbc:TaxAmount>${subtotalsXml}
