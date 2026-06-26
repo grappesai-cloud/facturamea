@@ -56,7 +56,12 @@ const locale = Astro.locals?.locale ?? 'ro';
             || p === '/termeni' || p === '/confidentialitate';
           // Everything else (landing, marketing, /auth/register) → into the app,
           // where the auth middleware sends guests to login and members to /app.
-          if (!allowed) location.replace('/app');
+          if (!allowed) { location.replace('/app'); return; }
+          // Hide the native splash once the page is ready (we set launchAutoHide
+          // false so it covers the network load of the remote web app).
+          window.addEventListener('load', function () {
+            try { cap.Plugins && cap.Plugins.SplashScreen && cap.Plugins.SplashScreen.hide(); } catch (e) {}
+          });
         } catch (e) {}
       })();
     </script>

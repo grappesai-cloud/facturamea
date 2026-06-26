@@ -17,10 +17,21 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'always',
-    backgroundColor: '#FAFAF8',
+    backgroundColor: '#FFFFFF',
   },
   android: {
-    backgroundColor: '#FAFAF8',
+    backgroundColor: '#FFFFFF',
+  },
+  plugins: {
+    SplashScreen: {
+      // Keep the splash up until the remote web app has loaded, then hide it from
+      // JS (see the native script in BaseLayout) — avoids a white flash while
+      // facturamea.com loads over the network.
+      launchShowDuration: 3000,
+      launchAutoHide: false,
+      backgroundColor: '#FFFFFF',
+      showSpinner: false,
+    },
   },
 };
 
