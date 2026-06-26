@@ -78,6 +78,16 @@ function resolveCountyCode(addr: { street?: string; city?: string }): string | n
   return best;
 }
 
+// BR-RO-100: pentru București (subdiviziune RO-B), localitatea (BT-52) trebuie să
+// fie un cod SECTOR-RO (SECTOR1..SECTOR6), NU "București". Parsăm sectorul din
+// oraș/stradă; dacă e deja "SECTORn" îl păstrăm. Returnează null dacă nu-l găsim.
+function resolveBucharestSector(addr: { street?: string; city?: string }): string | null {
+  const hay = `${addr.city || ''} ${addr.street || ''}`.toLowerCase()
+    .replace(/[ăâ]/g, 'a').replace(/[șş]/g, 's').replace(/[țţ]/g, 't').replace(/î/g, 'i');
+  const m = hay.match(/sector(?:ul)?\s*0*([1-6])\b/);
+  return m ? `SECTOR${m[1]}` : null;
+}
+
 interface InvoiceLine {
   description: string;
   quantity: number;
@@ -119,13 +129,16 @@ function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCus
   const countryCode = party.address.country.slice(0, 2).toUpperCase();
   // BR-RO-110: pentru RO, subdiviziunea = cod ISO 3166-2:RO (ex. RO-CT). București = RO-B.
   const county = countryCode === 'RO' ? resolveCountyCode(party.address) : null;
+  // BR-RO-100: pentru București (RO-B) localitatea = SECTOR1..6, nu "București".
+  const sector = county === 'RO-B' ? resolveBucharestSector(party.address) : null;
+  const cityName = sector || party.address.city;
   return `
   <cac:${role}>
     <cac:Party>
       <cac:PartyName><cbc:Name>${xmlEscape(party.name)}</cbc:Name></cac:PartyName>
       <cac:PostalAddress>
         <cbc:StreetName>${xmlEscape(party.address.street)}</cbc:StreetName>
-        <cbc:CityName>${xmlEscape(party.address.city)}</cbc:CityName>
+        <cbc:CityName>${xmlEscape(cityName)}</cbc:CityName>
         ${party.address.postalCode ? `<cbc:PostalZone>${xmlEscape(party.address.postalCode)}</cbc:PostalZone>` : ''}
         ${county ? `<cbc:CountrySubentity>${county}</cbc:CountrySubentity>` : ''}
         <cac:Country><cbc:IdentificationCode>${xmlEscape(countryCode)}</cbc:IdentificationCode></cac:Country>

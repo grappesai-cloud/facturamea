@@ -49,6 +49,20 @@ describe('e-Factura UBL / CIUS-RO', () => {
     expect(xml).toContain('<cbc:CompanyID>RO12345678</cbc:CompanyID>');
   });
 
+  it('BR-RO-100: localitatea București devine SECTORn (din adresă)', () => {
+    const xml = generateEFacturaXml(base({
+      supplier: { name: 'FACTURAMEA SRL', cui: '12345678', vatPayer: true, registrationNumber: 'J12/1/2020',
+        address: { street: 'Str. Exemplu 1', city: 'Cluj-Napoca', country: 'RO' } },
+      customer: { name: 'DANTE INTERNATIONAL SA', cui: '14399840', vatPayer: true,
+        address: { street: 'Bd. Exemplu, Sector 2', city: 'București', country: 'RO' } },
+    }));
+    // Cumpărătorul București → CityName = SECTOR2, subdiviziune RO-B
+    expect(xml).toContain('<cbc:CityName>SECTOR2</cbc:CityName>');
+    expect(xml).toContain('<cbc:CountrySubentity>RO-B</cbc:CountrySubentity>');
+    // nicăieri nu rămâne "București" ca localitate
+    expect(xml).not.toContain('<cbc:CityName>București</cbc:CityName>');
+  });
+
   it('totalurile respectă BR-CO (net, TVA, total)', () => {
     // 21% pe 100.00 + 9% pe 50.00 → net 150.00, TVA 21+4.5=25.50, total 175.50
     const xml = generateEFacturaXml(
