@@ -38,7 +38,32 @@ const locale = Astro.locals?.locale ?? 'ro';
 <html lang={locale}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script is:inline>
+      // Native app (Capacitor) shell: login-only experience. No landing page, no
+      // account creation. The native bridge injects window.Capacitor at document
+      // start, so this runs before paint. Web visitors are unaffected.
+      (function () {
+        try {
+          var cap = window.Capacitor;
+          if (!cap || typeof cap.isNativePlatform !== 'function' || !cap.isNativePlatform()) return;
+          document.documentElement.classList.add('capacitor-native');
+          var p = (location.pathname || '/').replace(/\/+$/, '') || '/';
+          // Allowed inside the app: the authed app, the login flow, and legal pages.
+          var allowed = p === '/app' || p.indexOf('/app/') === 0
+            || p === '/auth/login' || p === '/auth/2fa' || p === '/auth/forgot-password'
+            || p === '/auth/reset-password' || p === '/auth/verify-email' || p === '/auth/membru'
+            || p === '/termeni' || p === '/confidentialitate';
+          // Everything else (landing, marketing, /auth/register) → into the app,
+          // where the auth middleware sends guests to login and members to /app.
+          if (!allowed) location.replace('/app');
+        } catch (e) {}
+      })();
+    </script>
+    <style is:inline>
+      /* Hide web-only chrome (signup link, "back to site") inside the native app. */
+      .capacitor-native [data-web-only] { display: none !important; }
+    </style>
     {/* ───────────────────────────────────────────────────────────────────────
         Authorship watermark. This software is proprietary — © Robert Gyorgy
         (Gyorgy Albert-Robert PFA). Architecture, frontend & backend authored by
