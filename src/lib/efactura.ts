@@ -142,8 +142,11 @@ function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCus
   // PartyLegalEntity/CompanyID. For a NON-VAT-payer there is no PartyTaxScheme, so
   // the CUI must live here or ANAF can't identify the party ("cui vanzator=0").
   // VAT payers keep reg.com here (their CUI is in PartyTaxScheme = RO+cui).
-  const legalId = party.vatPayer ? (party.registrationNumber || `RO${party.cui}`) : party.cui;
   const countryCode = party.address.country.slice(0, 2).toUpperCase();
+  // BT-47 PartyLegalEntity/CompanyID = reg.com dacă există, altfel CUI prefixat cu
+  // ȚARA (RO… pt RO, DE… pt străini — niciodată "RO" hard-codat, care strica id-ul
+  // străin). ANAF identifică "cui cumparator" din BT-47, deci e nevoie și pt străini.
+  const legalId = party.vatPayer ? (party.registrationNumber || `${countryCode}${party.cui}`) : party.cui;
   return `
   <cac:${role}>
     <cac:Party>
@@ -161,7 +164,7 @@ function partyXml(party: Party, role: 'AccountingSupplierParty' | 'AccountingCus
       }
       <cac:PartyLegalEntity>
         <cbc:RegistrationName>${xmlEscape(party.name)}</cbc:RegistrationName>
-        ${countryCode === 'RO' ? `<cbc:CompanyID>${xmlEscape(legalId)}</cbc:CompanyID>` : ''}
+        <cbc:CompanyID>${xmlEscape(legalId)}</cbc:CompanyID>
       </cac:PartyLegalEntity>
       ${
         party.contact
