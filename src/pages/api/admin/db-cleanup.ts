@@ -30,16 +30,22 @@ const WIPE_ORDER = [
 
 export const GET: APIRoute = async ({ locals }) => {
   if (!isAdmin(locals.user)) return new Response('forbidden', { status: 403 });
-  const cos = await db.select({ id: companies.id, name: companies.name, cui: companies.cui }).from(companies);
-  const out: any[] = [];
-  for (const c of cos) {
-    const usrs = await db.select({ id: users.id, email: users.email }).from(users).where(eq(users.companyId, c.id));
-    const [inv] = await db.select({ n: count() }).from(transportInvoices).where(eq(transportInvoices.companyId, c.id));
-    const [exp] = await db.select({ n: count() }).from(expenses).where(eq(expenses.companyId, c.id));
-    const [cli] = await db.select({ n: count() }).from(invoiceClients).where(eq(invoiceClients.companyId, c.id));
-    out.push({ id: c.id, name: c.name, cui: c.cui, users: usrs.map((u) => u.email), invoices: inv.n, expenses: exp.n, clients: cli.n });
+  try {
+    const rows: any = await db.execute(sql.raw(`
+      SELECT c.id, c.name, c.cui,
+        (SELECT count(*) FROM transport_invoices WHERE company_id = c.id) AS inv,
+        (SELECT count(*) FROM expenses WHERE company_id = c.id) AS exp,
+        (SELECT count(*) FROM invoice_clients WHERE company_id = c.id) AS cli,
+        (SELECT count(*) FROM pos_sales WHERE company_id = c.id) AS pos,
+        (SELECT count(*) FROM journal_entries WHERE company_id = c.id) AS notes,
+        (SELECT string_agg(email, ', ') FROM users WHERE company_id = c.id) AS users
+      FROM companies c
+      ORDER BY inv DESC, exp DESC`));
+    const out = (rows.rows ?? rows ?? []).filter((r: any) => Number(r.inv) || Number(r.exp) || Number(r.cli) || Number(r.pos) || Number(r.notes) || r.users);
+    return new Response(JSON.stringify({ companies: out }, null, 1), { headers: { 'Content-Type': 'application/json' } });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: String(e?.message || e) }), { status: 500 });
   }
-  return new Response(JSON.stringify({ companies: out }, null, 1), { headers: { 'Content-Type': 'application/json' } });
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
