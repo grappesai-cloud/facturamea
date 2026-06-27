@@ -51,7 +51,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const lockedUntil = lastDay(year, month);
   try {
-    await db.update(companies).set({ ledgerLockedUntil }).where(eq(companies.id, cid));
+    await db.update(companies).set({ ledgerLockedUntil: lockedUntil }).where(eq(companies.id, cid));
   } catch { return json({ error: 'Nu am putut închide perioada.' }, 500); }
   return json({ ok: true, lockedUntil, posted });
 };
