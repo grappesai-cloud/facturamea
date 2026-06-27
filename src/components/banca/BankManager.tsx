@@ -80,6 +80,8 @@ export default function BankManager() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loadingSugg, setLoadingSugg] = useState(false);
   const [busyMatch, setBusyMatch] = useState('');
+  const [autoRec, setAutoRec] = useState(false);
+  const [autoRecMsg, setAutoRecMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   const [error, setError] = useState('');
 
@@ -208,6 +210,28 @@ export default function BankManager() {
     } catch { setError('Eroare de rețea.'); }
   };
 
+  // Bulk auto-reconcile: confirms only high-confidence, unambiguous matches;
+  // leaves the rest for manual review and reports transactions with no document.
+  const autoReconcile = async () => {
+    setAutoRec(true); setAutoRecMsg(null); setError('');
+    try {
+      const r = await fetch('/api/banca/reconcile/auto', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(activeId ? { accountId: activeId } : {}),
+      });
+      const d = await r.json();
+      if (!r.ok) { setAutoRecMsg({ kind: 'err', text: d.error || 'Auto-reconcilierea a eșuat.' }); return; }
+      const parts = [`${d.matched} reconciliate automat`];
+      if (d.ambiguous) parts.push(`${d.ambiguous} ambigue (alegi tu)`);
+      if (d.missing) parts.push(`${d.missing} fără document`);
+      if (d.reviewed) parts.push(`${d.reviewed} de verificat`);
+      setAutoRecMsg({ kind: 'ok', text: parts.join(' · ') });
+      await loadAccounts();
+      await loadTransactions(activeId, filter);
+    } catch { setAutoRecMsg({ kind: 'err', text: 'Eroare de rețea.' }); }
+    finally { setAutoRec(false); }
+  };
+
   // ── totals ──
   const totalBalance = accounts.reduce((s, a) => s + (a.balanceCents || 0), 0);
   const totalUnreconciled = accounts.reduce((s, a) => s + (a.unreconciledCount || 0), 0);
@@ -229,6 +253,25 @@ export default function BankManager() {
           <p className={`text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 tabular-nums ${totalUnreconciled > 0 ? 'text-[#E8A33C]' : 'text-[#2E9E6A]'}`}>{totalUnreconciled}</p>
         </div>
       </div>
+
+      {/* Bulk auto-reconcile */}
+      {totalUnreconciled > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+          <button
+            onClick={autoReconcile}
+            disabled={autoRec}
+            className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+          >
+            {autoRec ? 'Se reconciliază...' : `Reconciliază automat${activeAccount ? ' (acest cont)' : ''}`}
+          </button>
+          <p className="text-[13px] text-[#7C9AB4]">Confirmă singur doar potrivirile sigure (sumă + partener/număr). Restul rămân pentru tine.</p>
+        </div>
+      )}
+      {autoRecMsg && (
+        <div className={`px-4 py-3 rounded-xl text-[14px] ${autoRecMsg.kind === 'ok' ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-[#DC4B41]/15 text-[#DC4B41]'}`}>
+          {autoRecMsg.text}
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center gap-2 px-4 py-3 bg-[#DC4B41]/15 border-0 rounded-xl text-[15px] text-[#DC4B41]">
