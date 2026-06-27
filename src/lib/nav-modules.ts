@@ -41,6 +41,8 @@ export const NAV_MODULES: NavModule[] = [
     icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M2.25 6h.75m17.25 0H21M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z' },
   { key: 'efactura', label: 'e-Factura', desc: 'Trimite la ANAF (SPV)', group: 'Facturare', href: '/app/facturare/efactura',
     icon: 'M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z' },
+  { key: 'profit', label: 'Venituri-Cheltuieli', desc: 'Profitul tău pe perioadă', group: 'Gestiune', href: '/app/rapoarte/profit',
+    icon: 'M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941' },
   { key: 'rapoarte', label: 'Rapoarte', desc: 'Încasări, TVA, SAF-T', group: 'Gestiune', href: '/app/facturare/rapoarte',
     icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' },
   { key: 'primite', label: 'Facturi primite', desc: 'e-Factura primite din SPV', group: 'Facturare', href: '/app/facturare/primite',

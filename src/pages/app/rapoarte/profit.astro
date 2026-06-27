@@ -1,0 +1,145 @@
+---
+// Venituri-Cheltuieli (cont de profit simplificat). Deterministic, zero cost:
+// venituri = vânzări nete (facturi live), cheltuieli = net pe categorii, în RON.
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { transportInvoices, expenses } from '../../../db/schema';
+import { and, eq, gte, lte, notInArray } from 'drizzle-orm';
+import { invoiceRonCents, expenseRonCents } from '../../../lib/invoicing';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 2 }).format((cents || 0) / 100);
+
+// ── Period ────────────────────────────────────────────────────────────────
+const now = new Date();
+const period = (Astro.url.searchParams.get('period') || 'year').toLowerCase();
+let y = now.getUTCFullYear();
+let fromD: Date, toD: Date, label: string;
+const MONTHS = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+if (period === 'month') {
+  fromD = new Date(Date.UTC(y, now.getUTCMonth(), 1));
+  toD = new Date(Date.UTC(y, now.getUTCMonth() + 1, 0, 23, 59, 59));
+  label = `${MONTHS[now.getUTCMonth()]} ${y}`;
+} else if (period === 'prev-year') {
+  y -= 1;
+  fromD = new Date(Date.UTC(y, 0, 1));
+  toD = new Date(Date.UTC(y, 11, 31, 23, 59, 59));
+  label = `${y}`;
+} else {
+  fromD = new Date(Date.UTC(y, 0, 1));
+  toD = new Date(Date.UTC(y, 11, 31, 23, 59, 59));
+  label = `${y}`;
+}
+const fromStr = fromD.toISOString().slice(0, 10);
+const toStr = toD.toISOString().slice(0, 10);
+
+// ── Venituri: vânzări nete din facturi live (exclude ciornă/anulată/stornată) ──
+let revenue = 0;
+try {
+  const invs = await db.select().from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, companyId),
+    eq(transportInvoices.kind, 'factura'),
+    notInArray(transportInvoices.status, ['draft', 'voided', 'reversed']),
+    gte(transportInvoices.issuedAt, fromD),
+    lte(transportInvoices.issuedAt, toD),
+  ));
+  for (const inv of invs) revenue += invoiceRonCents(inv).subtotal;
+} catch { /* leave 0 */ }
+
+// ── Cheltuieli: net pe categorie ──
+const CAT_LABELS: Record<string, string> = {
+  utilitati: 'Utilități', chirie: 'Chirie', combustibil: 'Combustibil', servicii: 'Servicii',
+  marfa: 'Marfă', salarii: 'Salarii', taxe: 'Taxe', altele: 'Altele',
+};
+const byCat = new Map<string, number>();
+let expensesTotal = 0;
+try {
+  const exps = await db.select().from(expenses).where(and(
+    eq(expenses.companyId, companyId),
+    gte(expenses.issueDate, fromStr),
+    lte(expenses.issueDate, toStr),
+  ));
+  for (const e of exps) {
+    const net = expenseRonCents(e).net;
+    const cat = e.category || 'neclasificate';
+    byCat.set(cat, (byCat.get(cat) || 0) + net);
+    expensesTotal += net;
+  }
+} catch { /* leave 0 */ }
+
+const cats = [...byCat.entries()].map(([k, v]) => ({
+  key: k, label: CAT_LABELS[k] || (k === 'neclasificate' ? 'Neclasificate' : k), cents: v,
+  pct: expensesTotal > 0 ? Math.round((v / expensesTotal) * 100) : 0,
+})).sort((a, b) => b.cents - a.cents);
+
+const profit = revenue - expensesTotal;
+const marginPct = revenue > 0 ? Math.round((profit / revenue) * 100) : 0;
+
+const presets = [
+  { key: 'month', label: 'Luna curentă' },
+  { key: 'year', label: 'Anul curent' },
+  { key: 'prev-year', label: 'Anul trecut' },
+];
+---
+
+<AppLayout title="Venituri și cheltuieli" activeTab="rapoarte">
+  <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] text-white">Venituri și cheltuieli</h1>
+      <p class="mt-1.5 text-[15px] text-[#7E97AC]">Profitul tău pe perioadă, dintr-o privire. <span class="capitalize">{label}</span>.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      {presets.map((p) => (
+        <a href={`/app/rapoarte/profit?period=${p.key}`} class={`px-4 py-2 rounded-full text-[13.5px] font-semibold transition-colors ${period === p.key ? 'bg-[#E1FB15] text-[#0A2238]' : 'bg-white/10 text-white hover:bg-white/15'}`}>{p.label}</a>
+      ))}
+    </div>
+  </div>
+
+  <!-- Headline -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+    <div class="rounded-2xl bg-white/5 p-5">
+      <p class="text-[13px] uppercase tracking-wider text-[#7E97AC]">Venituri (net)</p>
+      <p class="mt-1.5 text-[26px] font-bold tabular-nums text-white">{ron(revenue)}</p>
+    </div>
+    <div class="rounded-2xl bg-white/5 p-5">
+      <p class="text-[13px] uppercase tracking-wider text-[#7E97AC]">Cheltuieli (net)</p>
+      <p class="mt-1.5 text-[26px] font-bold tabular-nums text-white">{ron(expensesTotal)}</p>
+    </div>
+    <div class={`rounded-2xl p-5 ${profit >= 0 ? 'bg-[#2E9E6A]/12 ring-1 ring-[#2E9E6A]/25' : 'bg-[#DC4B41]/12 ring-1 ring-[#DC4B41]/25'}`}>
+      <p class="text-[13px] uppercase tracking-wider text-[#7E97AC]">Profit{profit >= 0 ? '' : ' (pierdere)'}</p>
+      <p class={`mt-1.5 text-[26px] font-bold tabular-nums ${profit >= 0 ? 'text-[#2E9E6A]' : 'text-[#DC4B41]'}`}>{ron(profit)}</p>
+      {revenue > 0 && <p class="text-[12px] text-[#9FB8CC] mt-0.5">marjă {marginPct}% din venituri</p>}
+    </div>
+  </div>
+
+  <!-- Expense breakdown -->
+  <div class="rounded-2xl bg-white/5 p-5">
+    <h2 class="text-[16px] font-bold text-white mb-4">Cheltuieli pe categorii</h2>
+    {cats.length === 0 ? (
+      <p class="text-[14px] text-[#7E97AC]">Nicio cheltuială în această perioadă.</p>
+    ) : (
+      <ul class="space-y-3">
+        {cats.map((c) => (
+          <li>
+            <div class="flex items-center justify-between gap-3 mb-1.5">
+              <span class="text-[14.5px] text-white">{c.label}</span>
+              <span class="text-[14px] tabular-nums text-[#9FB8CC]">{ron(c.cents)} · {c.pct}%</span>
+            </div>
+            <div class="h-2 rounded-full bg-white/10 overflow-hidden">
+              <div class="h-full rounded-full bg-[#E1FB15]" style={`width:${c.pct}%`}></div>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </div>
+
+  <p class="mt-4 text-[12.5px] text-[#7E97AC]">
+    Calcul simplificat: venituri = vânzări nete din facturile emise (fără TVA), cheltuieli = sumele nete pe categorii.
+    Nu include impozitul pe profit/microîntreprindere. Pentru raportarea oficială folosește Contabilitate → Balanță.
+  </p>
+</AppLayout>
