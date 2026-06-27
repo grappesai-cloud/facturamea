@@ -484,7 +484,7 @@ const invoiceLineSchema = z.object({
 }).passthrough();
 
 export const invoiceCreateSchema = z.object({
-  kind: z.enum(['factura', 'proforma', 'storno', 'chitanta']),
+  kind: z.enum(['factura', 'proforma', 'storno', 'chitanta', 'aviz']),
   seriesId: z.string().optional().nullable(),
   lines: z.array(invoiceLineSchema).min(1),
   clientCompanyId: z.string().optional().nullable(),
