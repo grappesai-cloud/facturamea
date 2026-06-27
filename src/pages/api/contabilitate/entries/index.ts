@@ -83,7 +83,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 // locked period are immutable (the proper correction is a reversing note).
 export const DELETE: APIRoute = async ({ url, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
-  const denied = requireRole(locals, 'accounting.manage'); if (denied) return denied;
+  const denied = requireRole(locals, 'settings.manage'); if (denied) return denied;
   const cid = locals.user.companyId;
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
   const id = url.searchParams.get('id') || '';
