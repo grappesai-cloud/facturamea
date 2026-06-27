@@ -31,20 +31,24 @@ const WIPE_ORDER = [
 export const GET: APIRoute = async ({ locals }) => {
   if (!isAdmin(locals.user)) return new Response('forbidden', { status: 403 });
   try {
-    const rows: any = await db.execute(sql.raw(`
-      SELECT c.id, c.name, c.cui,
-        (SELECT count(*) FROM transport_invoices WHERE company_id = c.id) AS inv,
-        (SELECT count(*) FROM expenses WHERE company_id = c.id) AS exp,
-        (SELECT count(*) FROM invoice_clients WHERE company_id = c.id) AS cli,
-        (SELECT count(*) FROM pos_sales WHERE company_id = c.id) AS pos,
-        (SELECT count(*) FROM journal_entries WHERE company_id = c.id) AS notes,
-        (SELECT string_agg(email, ', ') FROM users WHERE company_id = c.id) AS users
-      FROM companies c
-      ORDER BY inv DESC, exp DESC`));
-    const out = (rows.rows ?? rows ?? []).filter((r: any) => Number(r.inv) || Number(r.exp) || Number(r.cli) || Number(r.pos) || Number(r.notes) || r.users);
+    const cos = await db.select({ id: companies.id, name: companies.name, cui: companies.cui }).from(companies);
+    const out: any[] = [];
+    for (const c of cos) {
+      const usrs = await db.select({ email: users.email }).from(users).where(eq(users.companyId, c.id));
+      const counts: Record<string, number> = {};
+      for (const t of ['transport_invoices', 'expenses', 'invoice_clients', 'pos_sales', 'journal_entries']) {
+        try {
+          const r: any = await db.execute(sql.raw(`SELECT count(*)::int AS n FROM ${t} WHERE company_id = '${c.id.replace(/'/g, "''")}'`));
+          counts[t] = (r.rows ?? r ?? [])[0]?.n ?? 0;
+        } catch (e: any) { counts[t] = -1; }
+      }
+      if (usrs.length || Object.values(counts).some((n) => n > 0)) {
+        out.push({ id: c.id, name: c.name, cui: c.cui, users: usrs.map((u) => u.email).join(', '), ...counts });
+      }
+    }
     return new Response(JSON.stringify({ companies: out }, null, 1), { headers: { 'Content-Type': 'application/json' } });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: String(e?.message || e) }), { status: 500 });
+    return new Response(JSON.stringify({ error: String(e?.cause?.message || e?.detail || e?.message || e) }), { status: 500 });
   }
 };
 
