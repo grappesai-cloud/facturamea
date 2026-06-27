@@ -11,7 +11,7 @@ import { notify } from '../../../../lib/notifications';
 import { submitInvoiceToAnaf } from '../../../../lib/efactura-submit';
 import { requireRole } from '../../../../lib/require-role';
 
-const VALID_KINDS: InvoiceKind[] = ['factura', 'proforma', 'storno', 'chitanta'];
+const VALID_KINDS: InvoiceKind[] = ['factura', 'proforma', 'storno', 'chitanta', 'aviz'];
 
 export const GET: APIRoute = async ({ url, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });

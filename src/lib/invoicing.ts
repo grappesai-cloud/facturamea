@@ -33,13 +33,14 @@ export async function loadIssuer(companyId: string) {
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type DbLike = typeof db | Tx;
 
-export type InvoiceKind = 'factura' | 'proforma' | 'storno' | 'chitanta';
+export type InvoiceKind = 'factura' | 'proforma' | 'storno' | 'chitanta' | 'aviz';
 
 export const INVOICE_KIND_LABELS: Record<InvoiceKind, string> = {
   factura: 'Factură',
   proforma: 'Proformă',
   storno: 'Factură storno',
   chitanta: 'Chitanță',
+  aviz: 'Aviz de însoțire',
 };
 
 // How a series prefix + sequence number are rendered into a full document
@@ -98,6 +99,7 @@ export async function ensureDefaultSeries(
     proforma: { name: 'Serie proforme', prefix: 'PF' },
     storno: { name: 'Serie storno', prefix: 'ST' },
     chitanta: { name: 'Serie chitanțe', prefix: 'CH' },
+    aviz: { name: 'Serie avize', prefix: 'AV' },
   };
   const id = nanoid();
   await executor.insert(invoiceSeries).values({

@@ -28,13 +28,14 @@ interface CatalogProduct {
   defaultVatRate: number | null;
 }
 
-type Kind = 'factura' | 'proforma' | 'storno' | 'chitanta';
+type Kind = 'factura' | 'proforma' | 'storno' | 'chitanta' | 'aviz';
 
 const KIND_TITLE: Record<Kind, string> = {
   factura: 'Emite factură',
   proforma: 'Emite proformă',
   storno: 'Emite factură storno',
   chitanta: 'Emite chitanță',
+  aviz: 'Emite aviz de însoțire',
 };
 
 interface ExternalClient {

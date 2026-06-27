@@ -30,7 +30,7 @@ const remaining = inv.totalCents - inv.paidCents;
 const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && isOverdue(inv.dueAt);
 const effectiveStatus = overdue ? 'overdue' : inv.status;
 
-const kindLabel: Record<string, string> = { factura: 'Factură', proforma: 'Proformă', storno: 'Factură storno', chitanta: 'Chitanță' };
+const kindLabel: Record<string, string> = { factura: 'Factură', proforma: 'Proformă', storno: 'Factură storno', chitanta: 'Chitanță', aviz: 'Aviz de însoțire' };
 const statusTone: Record<string, string> = {
   draft: 'bg-white/10 text-[#A8BED2]',
   issued: 'bg-[#E8A33C]/15 text-[#E8A33C]',
