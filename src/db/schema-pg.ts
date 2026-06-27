@@ -1514,6 +1514,32 @@ export const expenses = pgTable('expenses', {
   index('idx_expenses_status').on(table.companyId, table.status),
 ]);
 
+// Client requests — accountant↔client document/info inbox. The accountant (or
+// any team member) asks for something ("trimite bonul de la X"); the client
+// responds with text + an optional file; either side resolves it. Replaces the
+// WhatsApp/email back-and-forth with a tracked, per-company thread.
+export const clientRequests = pgTable('client_requests', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  createdByUserId: text('created_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  title: varchar('title', { length: 200 }).notNull(),
+  note: text('note'),
+  relatedType: varchar('related_type', { length: 16 }), // invoice | expense | bank | null
+  relatedId: text('related_id'),
+  status: varchar('status', { length: 16 }).notNull().default('open'), // open | resolved
+  responseNote: text('response_note'),
+  responseAttachmentUrl: text('response_attachment_url'),
+  responseAttachmentName: varchar('response_attachment_name', { length: 200 }),
+  respondedByUserId: text('responded_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  respondedAt: timestamp('responded_at'),
+  resolvedByUserId: text('resolved_by_user_id').references(() => users.id, { onDelete: 'set null' }),
+  resolvedAt: timestamp('resolved_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => [
+  index('idx_client_requests_company').on(table.companyId, table.status),
+]);
+
 // POS sales (casă de marcat / bon fiscal).
 export const posSales = pgTable('pos_sales', {
   id: text('id').primaryKey(),

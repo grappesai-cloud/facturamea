@@ -85,6 +85,13 @@
       "when": 1782565071984,
       "tag": "0011_striped_wallop",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1782566316906,
+      "tag": "0012_wooden_joseph",
+      "breakpoints": true
     }
   ]
 }
