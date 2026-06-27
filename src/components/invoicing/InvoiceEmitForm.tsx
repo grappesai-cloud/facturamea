@@ -155,6 +155,11 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const [showAddClient, setShowAddClient] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
+  // Clear the "pick a client" validation hint as soon as one is chosen, so it
+  // doesn't linger after the user fixes it.
+  useEffect(() => {
+    if (pickedClient) setError((e) => (e === 'Alege sau adaugă un client' ? '' : e));
+  }, [pickedClient]);
 
   // Close dropdown when clicking outside the picker.
   useEffect(() => {
