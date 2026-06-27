@@ -43,7 +43,7 @@ const amt = (ronCents: number, cur = 'RON', curCents?: number) =>
   `<Amount>${cents(ronCents)}</Amount><CurrencyCode>${esc(cur)}</CurrencyCode><CurrencyAmount>${cents(curCents ?? ronCents)}</CurrencyAmount>`;
 // Structured address (City + Country mandatory).
 const addr = (city: string | null | undefined, country: string | null | undefined, street?: string | null) =>
-  `${street ? `<StreetName>${esc(street)}</StreetName>` : ''}<City>${esc(city || '-')}</City><Country>${esc(ctry(country))}</Country>`;
+  `${street ? `<StreetName>${esc(street.slice(0, 70))}</StreetName>` : ''}<City>${esc((city || '-').slice(0, 35))}</City><Country>${esc(ctry(country))}</Country>`;
 // Opening/closing balance as a single debit-or-credit element (XSD choice).
 const bal = (tag: 'Opening' | 'Closing', netCents: number) =>
   netCents >= 0 ? `<${tag}DebitBalance>${cents(netCents)}</${tag}DebitBalance>` : `<${tag}CreditBalance>${cents(-netCents)}</${tag}CreditBalance>`;
@@ -327,12 +327,12 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
   <GeneralLedgerEntries>
     <NumberOfEntries>${entries.length}</NumberOfEntries>
     <TotalDebit>${cents(glDebit)}</TotalDebit>
-    <TotalCredit>${cents(glCredit)}</TotalCredit>
+    <TotalCredit>${cents(glCredit)}</TotalCredit>${txBlocks.length ? `
     <Journal>
       <JournalID>GENERAL</JournalID>
       <Description>Registru jurnal</Description>
       <Type>GL</Type>${txBlocks.join('')}
-    </Journal>
+    </Journal>` : ''}
   </GeneralLedgerEntries>
   <SourceDocuments>
     <SalesInvoices>
