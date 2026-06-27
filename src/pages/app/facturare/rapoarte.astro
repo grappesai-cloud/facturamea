@@ -553,6 +553,7 @@ const TABS: { id: TabId; label: string }[] = [
   })}
 
   <script>
+    document.addEventListener('astro:page-load', () => {
     function setReportTab(id: string) {
       document.querySelectorAll('[data-panel]').forEach((p) => p.classList.toggle('hidden', p.getAttribute('data-panel') !== id));
       document.querySelectorAll('[data-kpis]').forEach((p) => p.classList.toggle('hidden', p.getAttribute('data-kpis') !== id));
@@ -579,26 +580,34 @@ const TABS: { id: TabId; label: string }[] = [
       document.querySelectorAll('[data-preset]').forEach(setTabParam);
       const url = new URL(location.href); url.searchParams.set('tab', id); history.replaceState({}, '', url);
     }
-    document.querySelectorAll('.report-tab').forEach((b) =>
-      b.addEventListener('click', () => setReportTab(b.getAttribute('data-tab') || 'facturi')));
+    document.querySelectorAll('.report-tab').forEach((b) => {
+      if ((b as HTMLElement).dataset.fmBound) return;
+      (b as HTMLElement).dataset.fmBound = '1';
+      b.addEventListener('click', () => setReportTab(b.getAttribute('data-tab') || 'facturi'));
+    });
 
     // Advanced-filters dropdown (collapsed by default)
     const fBtn = document.getElementById('toggle-filters');
     const fForm = document.getElementById('rap-filters');
-    fBtn?.addEventListener('click', () => {
-      const show = fForm?.classList.contains('hidden');
-      fForm?.classList.toggle('hidden');
-      fBtn.setAttribute('aria-expanded', String(show));
-      fBtn.querySelector('[data-chev]')?.classList.toggle('rotate-180', show);
-      fBtn.classList.toggle('bg-white/15', show);
+    if (fBtn && !fBtn.dataset.fmBound) {
+      fBtn.dataset.fmBound = '1';
+      fBtn.addEventListener('click', () => {
+        const show = fForm?.classList.contains('hidden');
+        fForm?.classList.toggle('hidden');
+        fBtn.setAttribute('aria-expanded', String(show));
+        fBtn.querySelector('[data-chev]')?.classList.toggle('rotate-180', show);
+        fBtn.classList.toggle('bg-white/15', show);
+      });
+    }
     });
   </script>
 
   <script is:inline>
-    (function () {
+    document.addEventListener('astro:page-load', function () {
       var sec = document.getElementById('rep-summary');
       var btn = document.getElementById('rep-edit');
-      if (!sec || !btn) return;
+      if (!sec || !btn || btn.dataset.fmBound) return;
+      btn.dataset.fmBound = '1';
       var KEY = 'fm-rep-hidden';
       var hidden;
       try { hidden = new Set(JSON.parse(localStorage.getItem(KEY) || '[]')); } catch (e) { hidden = new Set(); }
@@ -644,6 +653,6 @@ const TABS: { id: TabId; label: string }[] = [
       }
       btn.addEventListener('click', function () { editing = !editing; render(); });
       render();
-    })();
+    });
   </script>
 </AppLayout>

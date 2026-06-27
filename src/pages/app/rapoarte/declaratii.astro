@@ -165,7 +165,7 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 </AppLayout>
 
 <script is:inline>
-  (function () {
+  document.addEventListener('astro:page-load', function () {
     const monthEl = document.getElementById('decl-month');
     const yearEl = document.getElementById('decl-year');
     const errEl = document.getElementById('decl-error');
@@ -235,7 +235,9 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
     }
 
     document.querySelectorAll('.decl-dl').forEach(function (btn) {
+      if (btn.dataset.fmBound) return;
+      btn.dataset.fmBound = '1';
       btn.addEventListener('click', function () { download(btn); });
     });
-  })();
+  });
 </script>

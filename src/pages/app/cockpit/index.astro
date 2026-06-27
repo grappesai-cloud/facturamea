@@ -193,7 +193,10 @@ const DOT: Record<string, string> = { red: 'bg-[#DC4B41]', amber: 'bg-[#E8A33C]'
   )}
 
   <script is:inline>
+  document.addEventListener('astro:page-load', function () {
   document.querySelectorAll('.fm-open').forEach(function (btn) {
+    if (btn.dataset.fmBound) return;
+    btn.dataset.fmBound = '1';
     btn.addEventListener('click', async function () {
       var id = btn.getAttribute('data-company');
       // Already the active company → go straight in.
@@ -215,6 +218,7 @@ const DOT: Record<string, string> = { red: 'bg-[#DC4B41]', amber: 'bg-[#E8A33C]'
       btn.disabled = false;
       btn.textContent = 'Intră';
     });
+  });
   });
 </script>
 </AppLayout>

@@ -164,8 +164,10 @@ const yearChoices = [curYearNum - 2, curYearNum - 1, curYearNum, curYearNum + 1]
   </p>
 
   <script is:inline define:vars={{ defaultPeriod }}>
-    (function () {
+    document.addEventListener('astro:page-load', function () {
       const btn = document.getElementById('run-dep');
+      if (btn && btn.dataset.fmBound) return;
+      if (btn) btn.dataset.fmBound = '1';
       const periodEl = document.getElementById('dep-period');
       const monthEl = document.getElementById('dep-month');
       const yearEl = document.getElementById('dep-year');
@@ -211,6 +213,6 @@ const yearChoices = [curYearNum - 2, curYearNum - 1, curYearNum, curYearNum + 1]
           btn.textContent = original;
         }
       });
-    })();
+    });
   </script>
 </AppLayout>

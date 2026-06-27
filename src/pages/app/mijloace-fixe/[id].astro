@@ -151,7 +151,7 @@ const schedule = buildSchedule({
   )}
 
   <script is:inline define:vars={{ assetId: id }}>
-    (function () {
+    document.addEventListener('astro:page-load', function () {
       async function patch(payload, confirmMsg) {
         if (confirmMsg && !confirm(confirmMsg)) return;
         try {
@@ -165,12 +165,20 @@ const schedule = buildSchedule({
           else { alert(data.error || 'Eroare.'); }
         } catch (e) { alert('Eroare de conexiune.'); }
       }
-      document.getElementById('dispose-btn')?.addEventListener('click', function () {
-        patch({ dispose: true }, 'Sigur casezi acest mijloc fix? Nu va mai fi amortizat.');
-      });
-      document.getElementById('reactivate-btn')?.addEventListener('click', function () {
-        patch({ reactivate: true });
-      });
-    })();
+      var disposeBtn = document.getElementById('dispose-btn');
+      if (disposeBtn && !disposeBtn.dataset.fmBound) {
+        disposeBtn.dataset.fmBound = '1';
+        disposeBtn.addEventListener('click', function () {
+          patch({ dispose: true }, 'Sigur casezi acest mijloc fix? Nu va mai fi amortizat.');
+        });
+      }
+      var reactivateBtn = document.getElementById('reactivate-btn');
+      if (reactivateBtn && !reactivateBtn.dataset.fmBound) {
+        reactivateBtn.dataset.fmBound = '1';
+        reactivateBtn.addEventListener('click', function () {
+          patch({ reactivate: true });
+        });
+      }
+    });
   </script>
 </AppLayout>

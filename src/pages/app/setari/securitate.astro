@@ -34,10 +34,11 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
         </button>
       </div>
       <script is:inline>
-        (function () {
+        document.addEventListener('astro:page-load', function () {
           var btn = document.getElementById('bio-lock-toggle');
           var knob = document.getElementById('bio-lock-knob');
-          if (!btn) return;
+          if (!btn || btn.dataset.fmBound) return;
+          btn.dataset.fmBound = '1';
           function render(on) {
             btn.setAttribute('aria-checked', on ? 'true' : 'false');
             btn.style.background = on ? '#E1FB15' : 'rgba(255,255,255,0.15)';
@@ -60,7 +61,7 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
               localStorage.removeItem('fm_bio_lock'); render(false);
             }
           });
-        })();
+        });
       </script>
     </section>
 
@@ -181,11 +182,19 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
   </div>
 
   <script>
+    document.addEventListener('astro:page-load', () => {
     const $ = (id: string) => document.getElementById(id);
+    const on = (id: string, ev: string, fn: EventListenerOrEventListenerObject) => {
+      const el = $(id);
+      if (el && !(el as HTMLElement).dataset.fmBound) {
+        (el as HTMLElement).dataset.fmBound = '1';
+        el.addEventListener(ev, fn);
+      }
+    };
 
     // ─── 2FA enrollment ──────────────────────────────
     let recoveryCodesPlain: string[] = [];
-    $('totp-enroll-start')?.addEventListener('click', async () => {
+    on('totp-enroll-start', 'click', async () => {
       const res = await fetch('/api/auth/totp/enroll', { method: 'POST' });
       const data = await res.json();
       if (!res.ok) { alert(data.error || 'Eroare'); return; }
@@ -204,7 +213,7 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
       });
     });
 
-    $('totp-copy-codes')?.addEventListener('click', () => {
+    on('totp-copy-codes', 'click', () => {
       navigator.clipboard.writeText(recoveryCodesPlain.join('\n'));
       const btn = $('totp-copy-codes')!;
       const original = btn.textContent;
@@ -212,7 +221,7 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
       setTimeout(() => { btn.textContent = original; }, 2000);
     });
 
-    $('totp-confirm')?.addEventListener('click', async () => {
+    on('totp-confirm', 'click', async () => {
       const code = ($('totp-code') as HTMLInputElement).value.replace(/\s+/g, '');
       const errEl = $('totp-confirm-error')!;
       errEl.classList.add('hidden');
@@ -233,10 +242,10 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
     });
 
     // ─── 2FA disable ────────────────────────────────
-    $('totp-disable-show')?.addEventListener('click', () => {
+    on('totp-disable-show', 'click', () => {
       ($('totp-disable-form') as HTMLElement)?.classList.remove('hidden');
     });
-    $('totp-disable-do')?.addEventListener('click', async () => {
+    on('totp-disable-do', 'click', async () => {
       const value = ($('totp-disable-code') as HTMLInputElement).value;
       const errEl = $('totp-disable-error')!;
       errEl.classList.add('hidden');
@@ -257,7 +266,7 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
     });
 
     // ─── GDPR export ─────────────────────────────────
-    $('gdpr-export')?.addEventListener('click', async () => {
+    on('gdpr-export', 'click', async () => {
       const password = prompt('Pentru securitate, introdu parola contului:');
       if (!password) return;
       const btn = $('gdpr-export') as HTMLButtonElement;
@@ -282,13 +291,13 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
     });
 
     // ─── GDPR delete ─────────────────────────────────
-    $('gdpr-delete-show')?.addEventListener('click', () => {
+    on('gdpr-delete-show', 'click', () => {
       ($('gdpr-delete-form') as HTMLElement)?.classList.remove('hidden');
     });
-    $('gdpr-delete-cancel')?.addEventListener('click', () => {
+    on('gdpr-delete-cancel', 'click', () => {
       ($('gdpr-delete-form') as HTMLElement)?.classList.add('hidden');
     });
-    $('gdpr-delete-do')?.addEventListener('click', async () => {
+    on('gdpr-delete-do', 'click', async () => {
       const confirm = ($('gdpr-confirm') as HTMLInputElement).value;
       const password = ($('gdpr-password') as HTMLInputElement).value;
       const errEl = $('gdpr-delete-error')!;
@@ -311,6 +320,7 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
       }
       alert('Contul tău a fost marcat pentru ştergere. Vei fi delogat.');
       window.location.href = '/';
+    });
     });
   </script>
 </AppLayout>
