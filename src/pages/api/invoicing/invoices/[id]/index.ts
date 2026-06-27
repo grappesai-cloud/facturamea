@@ -21,3 +21,23 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
   return new Response(JSON.stringify({ invoice: inv, lines }), { headers: { 'Content-Type': 'application/json' } });
 };
+
+// DELETE /api/invoicing/invoices/[id] — remove a DRAFT document. Issued
+// documents must be reversed via storno, never deleted (audit trail + ANAF).
+export const DELETE: APIRoute = async ({ params, locals }) => {
+  if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const cid = locals.user.companyId;
+  if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
+
+  const [inv] = await db.select().from(transportInvoices)
+    .where(and(eq(transportInvoices.id, params.id!), eq(transportInvoices.companyId, cid)))
+    .limit(1);
+  if (!inv) return new Response(JSON.stringify({ error: 'Factură inexistentă' }), { status: 404 });
+  if (inv.status !== 'draft') {
+    return new Response(JSON.stringify({ error: 'Doar ciornele pot fi șterse. O factură emisă se anulează prin storno.' }), { status: 422 });
+  }
+
+  await db.delete(transportInvoiceLines).where(eq(transportInvoiceLines.invoiceId, inv.id));
+  await db.delete(transportInvoices).where(and(eq(transportInvoices.id, inv.id), eq(transportInvoices.companyId, cid)));
+  return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
+};

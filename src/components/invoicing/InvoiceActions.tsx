@@ -37,6 +37,20 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   const canStorno = kind === 'factura' && status !== 'draft' && !settled;
   const canDispute = kind === 'factura' && !['draft', 'paid', 'voided', 'reversed', 'disputed'].includes(status);
   const canRecur = (kind === 'factura' || kind === 'proforma') && status !== 'draft' && !settled;
+  // Drafts were never issued (no number reserved at ANAF, no audit obligation) so
+  // they can be deleted outright. Issued documents must be reversed via storno.
+  const canDelete = status === 'draft';
+
+  const doDelete = async () => {
+    if (!(await askConfirm('Ștergi definitiv această ciornă? Acțiunea nu poate fi anulată.'))) return;
+    setBusy(true); setError('');
+    try {
+      const res = await fetch(`/api/invoicing/invoices/${invoiceId}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error || 'Eroare'); return; }
+      window.location.href = '/app/facturare';
+    } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
+  };
 
   const doShare = async () => {
     setBusy(true); setError('');
@@ -153,6 +167,11 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       {canRecur && (
         <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={doRecur}>
           <Repeat className="w-4 h-4 mr-1.5" /> Transformă în recurentă
+        </Button>
+      )}
+      {canDelete && (
+        <Button variant="outline" size="sm" className="rounded-full bg-[#DC4B41]/15 text-[#DC4B41] border-0 hover:bg-[#DC4B41]/25 hover:border-0" disabled={busy} onClick={doDelete}>
+          <AlertTriangle className="w-4 h-4 mr-1.5" /> Șterge ciorna
         </Button>
       )}
       <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={doShare}>
