@@ -16,6 +16,7 @@ import {
   transportInvoiceLines,
   transportInvoicePayments,
   expenses,
+  companies,
 } from '../db/schema';
 
 // Units that mark a line as a service (→ revenue account 704 instead of 707).
@@ -238,6 +239,16 @@ export async function listAccounts(companyId: string) {
 // already exists for that pair, it is skipped.
 export async function postEntry(companyId: string, input: PostEntryInput): Promise<PostResult> {
   if (!companyId) return { ok: false, error: 'Companie lipsă' };
+
+  // Period lock: refuse any ledger entry dated within a closed (locked) period.
+  if (input.entryDate) {
+    try {
+      const [co] = await db.select({ locked: companies.ledgerLockedUntil }).from(companies).where(eq(companies.id, companyId)).limit(1);
+      if (co?.locked && input.entryDate <= co.locked) {
+        return { ok: false, error: `Perioada este închisă (blocată până la ${co.locked}). Deblochează luna pentru a posta în ea.` };
+      }
+    } catch { /* if the check fails, fall through — don't block legitimate posting on a read error */ }
+  }
 
   const lines = (input.lines || [])
     .map((l) => {

@@ -1,0 +1,124 @@
+---
+// Month-close: a guided "lock the period" flow. Shows a checklist for the
+// chosen month (unreconciled bank, unclassified expenses), posts everything
+// unposted (autoPostAll happens on lock), then freezes the period so no
+// back-dated edits can touch a closed month. Owner can re-open.
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { companies, bankTransactions, expenses } from '../../../db/schema';
+import { and, eq, gte, lte, isNull, sql } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+const isOwner = (Astro.locals.company?.role || '') === 'owner';
+
+// Period: default to LAST month (you close the month that just ended).
+const now = new Date();
+let y = Number(Astro.url.searchParams.get('y')) || 0;
+let m = Number(Astro.url.searchParams.get('m')) || 0;
+if (!y || m < 1 || m > 12) {
+  const prev = new Date(Date.UTC(now.getFullYear(), now.getMonth() - 1, 1));
+  y = prev.getUTCFullYear(); m = prev.getUTCMonth() + 1;
+}
+const pad = (n: number) => String(n).padStart(2, '0');
+const monthStart = `${y}-${pad(m)}-01`;
+const monthEnd = new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
+const MONTHS = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+const periodLabel = `${MONTHS[m - 1]} ${y}`;
+
+const [co] = await db.select({ locked: companies.ledgerLockedUntil }).from(companies).where(eq(companies.id, companyId)).limit(1);
+const lockedUntil = co?.locked || null;
+const isClosed = !!lockedUntil && lockedUntil >= monthEnd;
+
+// Checklist counts for the month (warnings, not blockers).
+let unrec = 0, unclass = 0;
+try {
+  const [r] = await db.select({ n: sql<number>`count(*)` }).from(bankTransactions)
+    .where(and(eq(bankTransactions.companyId, companyId), eq(bankTransactions.reconciled, false), gte(bankTransactions.bookingDate, monthStart), lte(bankTransactions.bookingDate, monthEnd)));
+  unrec = Number(r?.n || 0);
+} catch {}
+try {
+  const [r] = await db.select({ n: sql<number>`count(*)` }).from(expenses)
+    .where(and(eq(expenses.companyId, companyId), isNull(expenses.category), gte(expenses.issueDate, monthStart), lte(expenses.issueDate, monthEnd)));
+  unclass = Number(r?.n || 0);
+} catch {}
+
+// Month navigation links.
+const prevM = m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 };
+const nextM = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };
+---
+
+<AppLayout title="Închidere lună" activeTab="contabilitate">
+  <div class="mb-6 flex items-end justify-between gap-4 flex-wrap">
+    <div>
+      <h1 class="text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] text-white">Închidere lună</h1>
+      <p class="mt-1.5 text-[15px] text-[#7E97AC]">Postează tot, verifică balanța și blochează perioada.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href={`/app/contabilitate/inchidere?y=${prevM.y}&m=${prevM.m}`} class="px-3 py-2 rounded-full bg-white/10 text-white text-[14px] hover:bg-white/15">←</a>
+      <span class="px-4 py-2 rounded-full bg-white/5 text-white text-[15px] font-semibold capitalize">{periodLabel}</span>
+      <a href={`/app/contabilitate/inchidere?y=${nextM.y}&m=${nextM.m}`} class="px-3 py-2 rounded-full bg-white/10 text-white text-[14px] hover:bg-white/15">→</a>
+    </div>
+  </div>
+
+  {isClosed ? (
+    <div class="rounded-2xl bg-[#2E9E6A]/10 ring-1 ring-[#2E9E6A]/30 p-5 mb-5">
+      <p class="text-[16px] font-semibold text-[#2E9E6A]">🔒 {periodLabel} este închisă</p>
+      <p class="text-[14px] text-[#9FB8CC] mt-1">Nicio notă contabilă sau document nu mai poate fi datat în această perioadă (blocat până la {lockedUntil}).</p>
+      {isOwner && (
+        <button id="fm-unlock" data-y={y} data-m={m} class="mt-4 px-5 py-2.5 rounded-full bg-[#DC4B41]/15 text-[#DC4B41] text-[14px] font-semibold hover:bg-[#DC4B41]/25">Redeschide luna</button>
+      )}
+    </div>
+  ) : (
+    <>
+      <div class="rounded-2xl bg-white/5 p-5 mb-4">
+        <p class="text-[13px] uppercase tracking-wider text-[#7E97AC] mb-3">Verificări pentru {periodLabel}</p>
+        <ul class="space-y-2.5">
+          <li class="flex items-center gap-3 text-[15px]">
+            <span class={`w-2.5 h-2.5 rounded-full ${unrec > 0 ? 'bg-[#E8A33C]' : 'bg-[#2E9E6A]'}`}></span>
+            <span class="text-white">{unrec === 0 ? 'Banca e reconciliată complet' : `${unrec} tranzacții bancare nereconciliate`}</span>
+            {unrec > 0 && <a href="/app/banca" class="ml-auto text-[13px] text-[#D9ED92] hover:underline">Reconciliază →</a>}
+          </li>
+          <li class="flex items-center gap-3 text-[15px]">
+            <span class={`w-2.5 h-2.5 rounded-full ${unclass > 0 ? 'bg-[#E8A33C]' : 'bg-[#2E9E6A]'}`}></span>
+            <span class="text-white">{unclass === 0 ? 'Toate cheltuielile sunt clasificate' : `${unclass} cheltuieli neclasificate`}</span>
+            {unclass > 0 && <a href="/app/cheltuieli" class="ml-auto text-[13px] text-[#D9ED92] hover:underline">Clasifică →</a>}
+          </li>
+        </ul>
+        <p class="text-[13px] text-[#7E97AC] mt-3">Verificările sunt orientative — poți închide luna și cu ele nerezolvate, dar e recomandat să le rezolvi întâi.</p>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-3">
+        <a href={`/app/contabilitate/balanta?from=${monthStart}&to=${monthEnd}`} class="px-5 py-2.5 rounded-full bg-white/10 text-white text-[14px] font-semibold hover:bg-white/15">Vezi balanța lunii</a>
+        <button id="fm-lock" data-y={y} data-m={m} class="px-6 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E]">Postează tot și închide {periodLabel}</button>
+      </div>
+      <p id="fm-close-msg" class="mt-3 text-[14px]"></p>
+    </>
+  )}
+
+  <script is:inline>
+    function call(action, btn) {
+      var y = btn.getAttribute('data-y'), m = btn.getAttribute('data-m');
+      var ok = action === 'lock'
+        ? confirm('Postează toate documentele și închizi luna? Nu se mai pot face modificări retroactive în ea.')
+        : confirm('Redeschizi luna? Vei putea posta și edita din nou în această perioadă.');
+      if (!ok) return;
+      btn.disabled = true;
+      fetch('/api/contabilitate/close', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ year: Number(y), month: Number(m), action: action }),
+      }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, d: d }; }); })
+        .then(function (res) {
+          var el = document.getElementById('fm-close-msg');
+          if (!res.ok) { if (el) { el.textContent = res.d.error || 'Eroare.'; el.className = 'mt-3 text-[14px] text-[#DC4B41]'; } btn.disabled = false; return; }
+          window.location.reload();
+        })
+        .catch(function () { btn.disabled = false; });
+    }
+    var lock = document.getElementById('fm-lock');
+    if (lock) lock.addEventListener('click', function () { call('lock', lock); });
+    var unlock = document.getElementById('fm-unlock');
+    if (unlock) unlock.addEventListener('click', function () { call('unlock', unlock); });
+  </script>
+</AppLayout>

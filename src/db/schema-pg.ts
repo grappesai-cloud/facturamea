@@ -1,4 +1,4 @@
-import { pgTable, text, integer, boolean, timestamp, serial, varchar, doublePrecision, primaryKey, index, uniqueIndex, jsonb, date, check } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, boolean, timestamp, varchar, doublePrecision, primaryKey, index, uniqueIndex, jsonb, date, check } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 // ─── Users & Auth ──────────────────────────────────────────
@@ -128,6 +128,9 @@ export const companies = pgTable('companies', {
   // e-Factura: when true (default), every issued invoice is auto-submitted to ANAF SPV
   // on creation. No manual per-invoice toggle/button; controlled here at company level.
   efacturaAutoSend: boolean('efactura_auto_send').default(true),
+  // Accounting period lock: all financial documents/ledger entries dated on or
+  // before this date are frozen (month-close). No back-dated edits past it.
+  ledgerLockedUntil: date('ledger_locked_until', { mode: 'string' }),
   // Automated payment reminders (dunning) to clients.
   dunningEnabled: boolean('dunning_enabled').default(false),
   // Inventory cost method: cmp (weighted avg) | fifo | lifo.

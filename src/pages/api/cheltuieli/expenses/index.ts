@@ -1,7 +1,7 @@
 // Expenses (cheltuieli) — incoming supplier invoices / receipts. List + create.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { expenses, suppliers } from '../../../../db/schema';
+import { expenses, suppliers, companies } from '../../../../db/schema';
 import { and, eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireRole } from '../../../../lib/require-role';
@@ -80,6 +80,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const documentType = DOC_TYPES.includes(body.documentType) ? body.documentType : 'factura';
   const currency = (body.currency || 'RON').toUpperCase().slice(0, 5);
   const issueDate = body.issueDate || new Date().toISOString().slice(0, 10);
+  // Period lock: no new expense dated inside a closed month.
+  try {
+    const [co] = await db.select({ locked: companies.ledgerLockedUntil }).from(companies).where(eq(companies.id, cid)).limit(1);
+    if (co?.locked && issueDate <= co.locked) {
+      return new Response(JSON.stringify({ error: `Perioada e închisă (blocată până la ${co.locked}). Alege o dată ulterioară sau redeschide luna.` }), { status: 422 });
+    }
+  } catch { /* don't block on read error */ }
   // Freeze the BNR rate for non-RON expenses so declarations (D300/D394/D390)
   // report the base + VAT in RON, not at face value.
   const bnr = currency !== 'RON' ? await captureBnrSnapshot(issueDate, currency).catch(() => null) : null;
