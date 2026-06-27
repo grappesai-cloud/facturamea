@@ -64,9 +64,11 @@ interface Expense {
   category: string | null; documentType: string; documentNumber: string | null;
   issueDate: string | null; dueDate: string | null; currency: string | null;
   netCents: number; vatCents: number; totalCents: number; paidCents: number;
-  status: string; deductible: boolean; notes: string | null;
+  status: string; deductible: boolean; vatScheme: string | null; notes: string | null;
 }
 interface Supplier { id: string; name: string; }
+
+const CURRENCIES = ['RON', 'EUR', 'USD', 'GBP', 'CHF'];
 
 const CATEGORIES = ['utilitati', 'chirie', 'combustibil', 'servicii', 'marfa', 'salarii', 'taxe', 'altele'];
 const CAT_LABELS: Record<string, string> = {
@@ -82,13 +84,13 @@ const STATUS_BADGE: Record<string, { label: string; cls: string }> = {
   paid: { label: 'Plătit', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
 };
 
-const ron = (cents: number) =>
-  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+const money = (cents: number, currency?: string | null) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: currency || 'RON' }).format((cents || 0) / 100);
 
 const emptyForm = {
   supplierId: '', supplierNameSnap: '', category: 'servicii', documentType: 'factura',
   documentNumber: '', issueDate: new Date().toISOString().slice(0, 10), dueDate: '',
-  net: '', vat: '', deductible: true,
+  net: '', vat: '', deductible: true, currency: 'RON', vatScheme: 'normal',
 };
 
 export default function ExpensesManager() {
@@ -132,6 +134,8 @@ export default function ExpensesManager() {
         netCents: Math.round((Number(form.net) || 0) * 100),
         vatCents: Math.round((Number(form.vat) || 0) * 100),
         deductible: form.deductible,
+        currency: form.currency,
+        vatScheme: form.vatScheme,
       };
       const res = await fetch('/api/cheltuieli/expenses', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -208,7 +212,8 @@ export default function ExpensesManager() {
                   <p className="text-[12px] text-[#7C9AB4] mt-0.5 truncate">{e.category ? (CAT_LABELS[e.category] || e.category) : '—'}{e.issueDate ? ` · ${new Date(e.issueDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}` : ''}</p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-[15px] font-bold tabular-nums text-white">{ron(e.totalCents)}</p>
+                  <p className="text-[15px] font-bold tabular-nums text-white">{money(e.totalCents, e.currency)}</p>
+                  {e.vatScheme === 'reverse_charge' && <p className="text-[10.5px] text-[#7C9AB4] mt-0.5">taxare inversă</p>}
                   <div className="flex items-center justify-end gap-1 mt-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     {e.status !== 'paid' && (
                       <button onClick={() => markPaid(e.id)} title="Marchează plătit" className="w-8 h-8 grid place-items-center rounded-full bg-white/10 text-[#9FB8CC] hover:text-[#2E9E6A] hover:bg-white/15 transition-colors"><Check className="w-4 h-4" /></button>
@@ -261,9 +266,35 @@ export default function ExpensesManager() {
               <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Număr document</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.documentNumber} onChange={(e) => setForm({ ...form, documentNumber: e.target.value })} /></div>
               <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Data emiterii</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="date" value={form.issueDate} onChange={(e) => setForm({ ...form, issueDate: e.target.value })} /></div>
               <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Scadență</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Net (RON)</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.net} onChange={(e) => setForm({ ...form, net: e.target.value })} placeholder="0.00" /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">TVA (RON)</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.vat} onChange={(e) => setForm({ ...form, vat: e.target.value })} placeholder="0.00" /></div>
+              <div>
+                <Label className="mb-1 block text-xs text-[#9FB8CC]">Monedă</Label>
+                <Select className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
+                  {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </Select>
+              </div>
+              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Net ({form.currency})</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.net} onChange={(e) => setForm({ ...form, net: e.target.value })} placeholder="0.00" /></div>
+              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">TVA ({form.currency})</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.vat} onChange={(e) => setForm({ ...form, vat: e.target.value })} placeholder="0.00" /></div>
             </div>
+            {form.currency !== 'RON' && (
+              <p className="text-[11px] text-[#7C9AB4]">Cursul BNR de la data emiterii e preluat automat la salvare (pentru declarații în RON).</p>
+            )}
+            <label className="flex items-center gap-2 text-xs text-[#9FB8CC]">
+              <input
+                type="checkbox"
+                checked={form.vatScheme === 'reverse_charge'}
+                onChange={(e) => {
+                  const on = e.target.checked;
+                  // Auto-sugerează TVA la cota standard 21% dacă e gol (taxare inversă: TVA auto-lichidat).
+                  const autoVat = on && !form.vat && Number(form.net) > 0
+                    ? (Math.round(Number(form.net) * 0.21 * 100) / 100).toString()
+                    : form.vat;
+                  setForm({ ...form, vatScheme: on ? 'reverse_charge' : 'normal', vat: autoVat });
+                }}
+              /> Taxare inversă (achiziție intra-UE / servicii non-UE)
+            </label>
+            {form.vatScheme === 'reverse_charge' && (
+              <p className="text-[11px] text-[#7C9AB4] -mt-1">TVA-ul se auto-lichidează (4426 + 4427, efect zero) și nu se adaugă la suma de plată. Introdu TVA calculat la cota aplicabilă.</p>
+            )}
             <label className="flex items-center gap-2 text-xs text-[#9FB8CC]">
               <input type="checkbox" checked={form.deductible} onChange={(e) => setForm({ ...form, deductible: e.target.checked })} /> Cheltuială deductibilă
             </label>

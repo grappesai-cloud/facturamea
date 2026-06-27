@@ -80,7 +80,6 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@upstash/redis": "^1.38.0",
-    "@vercel/blob": "^2.3.3",
     "astro": "^6.1.5",
     "bcryptjs": "^3.0.3",
     "better-auth": "^1.6.2",

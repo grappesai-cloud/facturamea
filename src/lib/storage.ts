@@ -1,10 +1,7 @@
-// Provider-agnostic private object storage.
-//
-// Prefers S3-compatible storage (Cloudflare R2 / self-hosted MinIO / AWS S3)
-// when S3_* env is set; falls back to Vercel Blob when its token is present.
-// Either way the model is the same: files are PRIVATE and callers persist a
-// stable proxy URL (`/api/files?p=<key>`) that streams bytes only to an
-// authenticated, same-company user (see src/pages/api/files.ts).
+// Private object storage on S3-compatible backends (Cloudflare R2 /
+// self-hosted MinIO / AWS S3). Files are PRIVATE and callers persist a stable
+// proxy URL (`/api/files?p=<key>`) that streams bytes only to an authenticated,
+// same-company user (see src/pages/api/files.ts).
 //
 // Env (S3-compatible — recommended, no monthly fee, no lock-in):
 //   S3_ENDPOINT          e.g. https://<accountid>.r2.cloudflarestorage.com  (R2)
@@ -22,9 +19,9 @@ function s3Configured(): boolean {
   return !!(env('S3_BUCKET') && env('S3_ACCESS_KEY_ID') && env('S3_SECRET_ACCESS_KEY') && env('S3_ENDPOINT'));
 }
 
-/** True when SOME storage backend is wired (S3-compatible or Vercel Blob). */
+/** True when the S3-compatible storage backend is wired. */
 export function storageConfigured(): boolean {
-  return s3Configured() || !!env('BLOB_READ_WRITE_TOKEN');
+  return s3Configured();
 }
 
 type GetResult = { body: Uint8Array; contentType: string; size: number } | null;
@@ -48,44 +45,23 @@ async function s3client() {
 
 /** Store a private object under `key`. Throws 'storage-not-configured' if no backend. */
 export async function putObject(key: string, data: Buffer | Uint8Array, contentType: string): Promise<void> {
-  if (s3Configured()) {
-    const { PutObjectCommand } = await import('@aws-sdk/client-s3');
-    const c = await s3client();
-    await c.send(new PutObjectCommand({ Bucket: env('S3_BUCKET'), Key: key, Body: data, ContentType: contentType }));
-    return;
-  }
-  if (env('BLOB_READ_WRITE_TOKEN')) {
-    const { put } = await import('@vercel/blob');
-    await put(key, data as unknown as Buffer, { access: 'public', addRandomSuffix: false, contentType } as any);
-    return;
-  }
-  throw new Error('storage-not-configured');
+  if (!s3Configured()) throw new Error('storage-not-configured');
+  const { PutObjectCommand } = await import('@aws-sdk/client-s3');
+  const c = await s3client();
+  await c.send(new PutObjectCommand({ Bucket: env('S3_BUCKET'), Key: key, Body: data, ContentType: contentType }));
 }
 
 /** Fetch a private object's bytes, or null if missing / no backend. */
 export async function getObject(key: string): Promise<GetResult> {
-  if (s3Configured()) {
-    const { GetObjectCommand } = await import('@aws-sdk/client-s3');
-    const c = await s3client();
-    try {
-      const r = await c.send(new GetObjectCommand({ Bucket: env('S3_BUCKET'), Key: key }));
-      const body: Uint8Array = await r.Body.transformToByteArray();
-      return { body, contentType: r.ContentType || 'application/octet-stream', size: r.ContentLength ?? body.length };
-    } catch (e: any) {
-      if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return null;
-      throw e;
-    }
+  if (!s3Configured()) return null;
+  const { GetObjectCommand } = await import('@aws-sdk/client-s3');
+  const c = await s3client();
+  try {
+    const r = await c.send(new GetObjectCommand({ Bucket: env('S3_BUCKET'), Key: key }));
+    const body: Uint8Array = await r.Body.transformToByteArray();
+    return { body, contentType: r.ContentType || 'application/octet-stream', size: r.ContentLength ?? body.length };
+  } catch (e: any) {
+    if (e?.name === 'NoSuchKey' || e?.$metadata?.httpStatusCode === 404) return null;
+    throw e;
   }
-  if (env('BLOB_READ_WRITE_TOKEN')) {
-    const { head } = await import('@vercel/blob');
-    try {
-      const meta = await head(key);
-      if (!meta?.url) return null;
-      const ab = await (await fetch(meta.url)).arrayBuffer();
-      return { body: new Uint8Array(ab), contentType: meta.contentType || 'application/octet-stream', size: meta.size ?? ab.byteLength };
-    } catch {
-      return null;
-    }
-  }
-  return null;
 }

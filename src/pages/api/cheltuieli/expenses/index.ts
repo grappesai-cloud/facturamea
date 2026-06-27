@@ -9,6 +9,7 @@ import { captureBnrSnapshot } from '../../../../lib/bnr-fx';
 
 const DOC_TYPES = ['factura', 'bon', 'chitanta', 'extras'];
 const STATUSES = ['unpaid', 'partial', 'paid'];
+const VAT_SCHEMES = ['normal', 'reverse_charge'];
 
 export const GET: APIRoute = async ({ url, locals }) => {
   if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
@@ -41,6 +42,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
         paidCents: expenses.paidCents,
         status: expenses.status,
         deductible: expenses.deductible,
+        vatScheme: expenses.vatScheme,
         notes: expenses.notes,
         createdAt: expenses.createdAt,
       })
@@ -62,9 +64,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
 
   const body = await request.json().catch(() => ({})) as any;
+  const vatScheme = VAT_SCHEMES.includes(body.vatScheme) ? body.vatScheme : 'normal';
+  const reverseCharge = vatScheme === 'reverse_charge';
   const netCents = Math.max(0, Math.round(Number(body.netCents) || 0));
   const vatCents = Math.max(0, Math.round(Number(body.vatCents) || 0));
-  const totalCents = body.totalCents != null ? Math.max(0, Math.round(Number(body.totalCents))) : netCents + vatCents;
+  // Taxare inversă: TVA-ul e auto-lichidat (4426+4427), NU se datorează furnizorului,
+  // deci suma de plată = net. Altfel, total = net + TVA (sau cel transmis explicit).
+  const totalCents = reverseCharge
+    ? netCents
+    : body.totalCents != null ? Math.max(0, Math.round(Number(body.totalCents))) : netCents + vatCents;
   if (totalCents <= 0) return new Response(JSON.stringify({ error: 'Suma cheltuielii e obligatorie' }), { status: 400 });
 
   const paidCents = Math.max(0, Math.round(Number(body.paidCents) || 0));
@@ -96,6 +104,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       paidCents,
       status,
       deductible: body.deductible !== false,
+      vatScheme,
       attachmentUrl: body.attachmentUrl?.trim() || null,
       attachmentName: body.attachmentName?.trim() || null,
       notes: body.notes?.trim() || null,

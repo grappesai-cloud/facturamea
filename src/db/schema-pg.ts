@@ -1490,6 +1490,10 @@ export const expenses = pgTable('expenses', {
   paidCents: integer('paid_cents').notNull().default(0),
   status: varchar('status', { length: 16 }).notNull().default('unpaid'), // unpaid | partial | paid
   deductible: boolean('deductible').default(true),
+  // VAT scheme: 'normal' (RO furnizor cu TVA deductibil) | 'reverse_charge'
+  // (taxare inversă — achiziții intra-UE / servicii non-UE: TVA auto-lichidată,
+  // 4426 + 4427 neutru, nedatorată furnizorului).
+  vatScheme: varchar('vat_scheme', { length: 20 }).default('normal'),
   attachmentUrl: text('attachment_url'),
   attachmentName: varchar('attachment_name', { length: 200 }),
   notes: text('notes'),

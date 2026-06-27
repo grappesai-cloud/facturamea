@@ -431,19 +431,30 @@ export async function postExpense(expenseId: string, createdByUserId?: string | 
     const expenseAccount = expenseAccountForCategory(exp.category);
     const desc = `Cheltuială ${exp.documentNumber || ''} · ${exp.supplierNameSnap || 'furnizor'}`.trim();
 
+    const reverseCharge = (exp as any).vatScheme === 'reverse_charge';
+
     const lines: PostLine[] = [
       { accountCode: expenseAccount, debitCents: net, creditCents: 0, note: 'Cheltuială netă' },
     ];
-    // VAT is only deductible (4426) when the expense is marked deductible.
     if (vat > 0) {
-      if (exp.deductible) {
+      if (reverseCharge) {
+        // Taxare inversă (achiziții intra-UE / servicii non-UE): TVA-ul se
+        // auto-lichidează — deductibilă (4426) ȘI colectată (4427) simultan,
+        // efect net zero. Nu se datorează furnizorului (401 = doar netul).
+        lines.push({ accountCode: '4426', debitCents: vat, creditCents: 0, note: 'TVA deductibilă (taxare inversă)' });
+        lines.push({ accountCode: '4427', debitCents: 0, creditCents: vat, note: 'TVA colectată (taxare inversă)' });
+      } else if (exp.deductible) {
+        // VAT is only deductible (4426) when the expense is marked deductible.
         lines.push({ accountCode: '4426', debitCents: vat, creditCents: 0, note: 'TVA deductibilă' });
       } else {
         // Non-deductible VAT folds into the expense account.
         lines[0].debitCents += vat;
       }
     }
-    lines.push({ accountCode: '401', debitCents: 0, creditCents: total, note: 'Datorie furnizor' });
+    // Supplier payable: under reverse charge the VAT isn't owed to the supplier,
+    // only the net. Otherwise the full document total.
+    const payable = reverseCharge ? net : total;
+    lines.push({ accountCode: '401', debitCents: 0, creditCents: payable, note: 'Datorie furnizor' });
 
     return await postEntry(exp.companyId, {
       entryDate: exp.issueDate || todayISO(),
