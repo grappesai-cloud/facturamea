@@ -49,11 +49,23 @@ const sections = [
     ],
   },
 ];
+
+// FAQPage schema — Google rich results + a clean Q&A source AI answer engines cite.
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: sections.flatMap((s) => s.items).map((i) => ({
+    '@type': 'Question',
+    name: i.q,
+    acceptedAnswer: { '@type': 'Answer', text: i.a },
+  })),
+};
 ---
 
 <PublicLayout
-  title="Întrebări frecvente"
-  description="Răspunsuri despre preț, e-Factura ANAF, funcții, aplicații mobile și securitate la facturamea."
+  title="Întrebări frecvente despre facturamea — preț, e-Factura ANAF, funcții"
+  description="Răspunsuri despre preț (plată unică, licență pe viață), e-Factura ANAF, e-Transport, SAF-T D406, funcții, aplicații mobile și securitate la facturamea."
+  structuredData={faqSchema}
 >
   <p class="text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Întrebări frecvente</p>
   <h1 class="text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-2">Răspunsuri la întrebările tale</h1>

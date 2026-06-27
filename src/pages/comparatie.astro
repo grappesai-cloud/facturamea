@@ -1,0 +1,114 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
+
+// Honest, defensible comparison: the real, durable distinction is the pricing
+// MODEL (one-time license vs recurring subscription), not exact competitor
+// prices (which change). All listed apps are ANAF-compliant; the differentiator
+// is plată unică + toate funcțiile incluse.
+const rows = [
+  { f: 'Model de plată', me: 'Plată unică (licență pe viață)', oblio: 'Abonament anual', smartbill: 'Abonament lunar/anual', fgo: 'Abonament lunar/anual' },
+  { f: 'Cost recurent', me: 'Nu — plătești o singură dată', oblio: 'Da, se reînnoiește', smartbill: 'Da, se reînnoiește', fgo: 'Da, se reînnoiește' },
+  { f: 'e-Factura ANAF (SPV)', me: 'Inclus', oblio: 'Inclus', smartbill: 'Inclus', fgo: 'Inclus' },
+  { f: 'e-Transport', me: 'Inclus', oblio: 'Inclus', smartbill: 'Inclus', fgo: 'Inclus' },
+  { f: 'SAF-T D406', me: 'Inclus', oblio: 'Inclus', smartbill: 'Inclus', fgo: 'Inclus' },
+  { f: 'Gestiune stocuri (NIR, transfer)', me: 'Inclus', oblio: 'Inclus', smartbill: 'Plan superior', fgo: 'Plan superior' },
+  { f: 'POS / casă de marcat', me: 'Inclus', oblio: 'Inclus', smartbill: 'Separat', fgo: 'Plan superior' },
+  { f: 'Contabilitate (jurnal, balanță)', me: 'Inclus', oblio: 'Parțial', smartbill: 'Modul separat', fgo: 'Parțial' },
+  { f: 'Aplicații iOS + Android', me: 'Da', oblio: 'Da', smartbill: 'Da', fgo: 'Da' },
+  { f: 'Cost pe 5 ani (orientativ)', me: 'O singură plată', oblio: '5× abonament anual', smartbill: '5× abonament anual', fgo: '5× abonament anual' },
+];
+
+const faqs = [
+  { q: 'Există un program de facturare fără abonament în România?', a: 'Da. facturamea este un program de facturare conform ANAF cu plată unică și licență pe viață: plătești o singură dată (700 RON) și ai acces permanent la toate funcțiile, fără abonament lunar sau anual. Majoritatea alternativelor (Oblio, SmartBill, FGO) funcționează pe abonament recurent.' },
+  { q: 'Care e o alternativă la Oblio sau SmartBill fără costuri lunare?', a: 'facturamea oferă aceleași funcții esențiale (facturare, e-Factura SPV, e-Transport, SAF-T D406, gestiune, POS), dar printr-o singură plată în loc de un abonament care se reînnoiește la nesfârșit. Pe termen lung costul total este mai mic, fiindcă nu plătești în fiecare an.' },
+  { q: 'facturamea este conform ANAF 2026?', a: 'Da. Include e-Factura (transmitere directă în SPV, format UBL 2.1 / CIUS-RO), e-Transport și SAF-T D406, conform obligațiilor în vigoare în 2026, fără costuri suplimentare pentru aceste funcții.' },
+  { q: 'Cât costă facturamea?', a: 'O singură plată de 700 RON, licență pe viață. Fără abonament, fără reînnoiri, fără costuri ascunse. Toate funcțiile sunt incluse imediat după plată.' },
+  { q: 'Pot folosi facturamea ca PFA sau freelancer?', a: 'Da. facturamea este potrivit pentru PFA, freelanceri, SRL-uri mici și mijlocii și contabili. Interfața e simplă, fără să fie nevoie de cunoștințe de contabilitate.' },
+];
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqs.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
+
+const cell = (v: string) => (v === 'Inclus' || v === 'Da' || v.startsWith('Plată') || v.startsWith('Nu') || v.startsWith('O singură'));
+---
+
+<PublicLayout
+  title="Comparație programe de facturare 2026: facturamea vs Oblio, SmartBill, FGO"
+  description="Comparație programe de facturare conform ANAF (2026): facturamea (plată unică, licență pe viață) vs Oblio, SmartBill și FGO (abonament). e-Factura, e-Transport, SAF-T D406 — vezi ce e inclus."
+  structuredData={structuredData}
+>
+  <article class="max-w-none">
+    <p class="text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Comparație 2026</p>
+    <h1 class="text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-6">Program de facturare fără abonament: facturamea vs Oblio, SmartBill și FGO</h1>
+
+    <p class="text-lg text-[#3D3D3A] leading-relaxed mb-6">
+      Toate programele serioase de facturare din România sunt astăzi conforme ANAF (e-Factura, e-Transport, SAF-T D406). Diferența reală nu mai e funcția — ci <strong>modelul de plată</strong>. Oblio, SmartBill și FGO funcționează pe <strong>abonament recurent</strong> care se reînnoiește la nesfârșit. facturamea funcționează pe <strong>plată unică, licență pe viață</strong>: plătești o singură dată și ai totul, pentru totdeauna.
+    </p>
+
+    <div class="overflow-x-auto my-10 rounded-2xl border border-[#E8E8E4]">
+      <table class="w-full text-sm border-collapse bg-white">
+        <thead>
+          <tr class="bg-[#FAFAF8] text-left">
+            <th class="p-4 font-semibold text-[#0A0A0A]">&nbsp;</th>
+            <th class="p-4 font-bold text-[#FF5C00] whitespace-nowrap">facturamea</th>
+            <th class="p-4 font-semibold text-[#6B6B68]">Oblio</th>
+            <th class="p-4 font-semibold text-[#6B6B68]">SmartBill</th>
+            <th class="p-4 font-semibold text-[#6B6B68]">FGO</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr class="border-t border-[#EFEFEC]">
+              <td class="p-4 font-medium text-[#0A0A0A]">{r.f}</td>
+              <td class={`p-4 font-semibold ${cell(r.me) ? 'text-[#0A7A3D]' : 'text-[#0A0A0A]'}`}>{r.me}</td>
+              <td class="p-4 text-[#6B6B68]">{r.oblio}</td>
+              <td class="p-4 text-[#6B6B68]">{r.smartbill}</td>
+              <td class="p-4 text-[#6B6B68]">{r.fgo}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-xs text-[#6B6B68] mb-10">Comparația reflectă modelul de produs al fiecărei soluții. Funcțiile și prețurile concurenților pot varia în timp — verifică pe site-urile lor pentru detalii actualizate. facturamea: o singură plată de 700 RON, licență pe viață.</p>
+
+    <h2 class="text-2xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-4">De ce contează plata unică</h2>
+    <p class="text-[#3D3D3A] leading-relaxed mb-4">
+      Pe un abonament de, să zicem, câteva sute de lei pe an, în 5 ani plătești de câteva ori valoarea unei licențe pe viață — și nu te oprești niciodată. Cu facturamea, costul e fix și se termină: o singură plată, apoi folosești programul ani la rând fără să mai scoți un leu. Pentru o firmă mică sau un PFA, asta înseamnă predictibilitate și cost total mai mic.
+    </p>
+
+    <h2 class="text-2xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-4 mt-10">Ce e inclus în facturamea</h2>
+    <ul class="list-disc pl-5 space-y-2 text-[#3D3D3A] mb-10">
+      <li>Facturi, proforme, avize, chitanțe — cu serii și numerotare automată</li>
+      <li>e-Factura ANAF (trimitere directă în SPV), e-Transport și SAF-T D406</li>
+      <li>Gestiune stocuri completă: depozite, recepție NIR, transfer, inventariere, loturi</li>
+      <li>Cheltuieli, furnizori, scanare bonuri (OCR), import facturi XML</li>
+      <li>POS, facturi recurente, contabilitate în partidă dublă, declarații (D300, D390, D394)</li>
+      <li>Rapoarte, reconciliere bancară, roluri multi-utilizator, aplicații iOS + Android</li>
+    </ul>
+
+    <h2 class="text-2xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-5 mt-10">Întrebări frecvente</h2>
+    <div class="space-y-4 mb-10">
+      {faqs.map((f) => (
+        <div class="bg-white rounded-2xl p-6 border border-[#E8E8E4]">
+          <h3 class="font-bold text-[#0A0A0A] text-lg mb-2">{f.q}</h3>
+          <p class="text-[#3D3D3A] leading-relaxed">{f.a}</p>
+        </div>
+      ))}
+    </div>
+
+    <div class="bg-[#0A0A0A] rounded-2xl p-8 text-center">
+      <h2 class="text-2xl font-bold text-white mb-2">O singură plată. Totul inclus. Pe viață.</h2>
+      <p class="text-[#B8B8B4] mb-6">700 RON, licență pe viață — fără abonament, fără reînnoiri.</p>
+      <a href="/auth/register" class="inline-flex items-center px-7 py-3 rounded-full bg-[#FF5C00] text-white font-bold hover:bg-[#E65200] transition-colors">Începe cu facturamea →</a>
+    </div>
+  </article>
+</PublicLayout>
