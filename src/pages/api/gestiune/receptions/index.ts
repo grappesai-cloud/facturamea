@@ -5,8 +5,8 @@
 // stockLevels (weighted-average cost) via applyStockIn.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { receptions, receptionLines, suppliers, warehouses, invoiceProducts } from '../../../../db/schema';
-import { and, eq, desc } from 'drizzle-orm';
+import { receptions, receptionLines, suppliers, warehouses, invoiceProducts, stockLevels, stockMovements } from '../../../../db/schema';
+import { and, eq, desc, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { applyStockIn } from '../../../../lib/stock';
 import { requireRole } from '../../../../lib/require-role';
@@ -158,4 +158,48 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   return new Response(JSON.stringify({ id: receptionId }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+};
+
+// DELETE /api/gestiune/receptions?id=... — reverse a reception: undo its stock-in
+// and remove header + lines + movements. Blocked if the received goods have since
+// been (partly) consumed (reversing would push stock negative).
+export const DELETE: APIRoute = async ({ url, locals }) => {
+  if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'stock.manage'); if (denied) return denied;
+  const cid = locals.user.companyId;
+  if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
+  const id = url.searchParams.get('id') || '';
+  if (!id) return new Response(JSON.stringify({ error: 'id lipsă' }), { status: 400 });
+
+  const [rec] = await db.select().from(receptions)
+    .where(and(eq(receptions.id, id), eq(receptions.companyId, cid))).limit(1);
+  if (!rec) return new Response(JSON.stringify({ error: 'Recepție inexistentă' }), { status: 404 });
+
+  const lines = await db.select().from(receptionLines).where(eq(receptionLines.receptionId, id));
+  // Pre-check: every stocked line must still have enough on hand to reverse.
+  if (rec.status === 'posted') {
+    for (const l of lines) {
+      if (!l.productId) continue;
+      const [lvl] = await db.select({ q: stockLevels.quantity }).from(stockLevels)
+        .where(and(eq(stockLevels.warehouseId, rec.warehouseId), eq(stockLevels.productId, l.productId))).limit(1);
+      if (!lvl || Number(lvl.q) < Number(l.quantity)) {
+        return new Response(JSON.stringify({ error: 'Marfa recepționată a fost deja (parțial) consumată — recepția nu mai poate fi anulată. Fac o ieșire/ajustare de stoc.' }), { status: 422 });
+      }
+    }
+  }
+
+  await db.transaction(async (tx) => {
+    if (rec.status === 'posted') {
+      for (const l of lines) {
+        if (!l.productId) continue;
+        await tx.update(stockLevels)
+          .set({ quantity: sql`${stockLevels.quantity} - ${Number(l.quantity)}`, updatedAt: new Date() })
+          .where(and(eq(stockLevels.warehouseId, rec.warehouseId), eq(stockLevels.productId, l.productId)));
+      }
+    }
+    await tx.delete(stockMovements).where(and(eq(stockMovements.refType, 'nir'), eq(stockMovements.refId, id)));
+    await tx.delete(receptionLines).where(eq(receptionLines.receptionId, id));
+    await tx.delete(receptions).where(and(eq(receptions.id, id), eq(receptions.companyId, cid)));
+  });
+  return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
 };

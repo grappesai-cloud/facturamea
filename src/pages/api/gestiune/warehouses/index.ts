@@ -1,8 +1,8 @@
 // Warehouses (gestiuni) — list + create, scoped to the caller's company.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../db';
-import { warehouses } from '../../../../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { warehouses, stockMovements, receptions } from '../../../../db/schema';
+import { and, eq, desc } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { requireRole } from '../../../../lib/require-role';
 
@@ -57,4 +57,29 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response(JSON.stringify({ error: 'Eroare la salvare' }), { status: 500 });
   }
   return new Response(JSON.stringify({ id }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+};
+
+// DELETE /api/gestiune/warehouses?id=... — only an EMPTY warehouse (no stock
+// movements, no receptions) can be removed. A used one keeps its history.
+export const DELETE: APIRoute = async ({ url, locals }) => {
+  if (!locals.user) return new Response(JSON.stringify({ error: 'Neautorizat' }), { status: 401 });
+  const denied = requireRole(locals, 'stock.manage');
+  if (denied) return denied;
+  const cid = locals.user.companyId;
+  if (!cid) return new Response(JSON.stringify({ error: 'Companie lipsă' }), { status: 400 });
+  const id = url.searchParams.get('id') || '';
+  if (!id) return new Response(JSON.stringify({ error: 'id lipsă' }), { status: 400 });
+
+  const [wh] = await db.select({ id: warehouses.id }).from(warehouses)
+    .where(and(eq(warehouses.id, id), eq(warehouses.companyId, cid))).limit(1);
+  if (!wh) return new Response(JSON.stringify({ error: 'Gestiune inexistentă' }), { status: 404 });
+
+  const [mov] = await db.select({ id: stockMovements.id }).from(stockMovements).where(eq(stockMovements.warehouseId, id)).limit(1);
+  const [rec] = await db.select({ id: receptions.id }).from(receptions).where(eq(receptions.warehouseId, id)).limit(1);
+  if (mov || rec) {
+    return new Response(JSON.stringify({ error: 'Gestiunea are mișcări de stoc sau recepții și nu poate fi ștearsă. Golește-o întâi.' }), { status: 422 });
+  }
+
+  await db.delete(warehouses).where(and(eq(warehouses.id, id), eq(warehouses.companyId, cid)));
+  return new Response(JSON.stringify({ ok: true }), { headers: { 'Content-Type': 'application/json' } });
 };
