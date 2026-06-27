@@ -29,6 +29,17 @@ export const POST: APIRoute = async ({ request, url }) => {
       const body = await request.json();
       const { name, email, password, userType, phone, companyName, cui, country, city, companyPhone, referralCode, depot, gps } = body;
 
+      // Anti-bot: Cloudflare Turnstile (enforced only when TURNSTILE_SECRET is set;
+      // fail-open otherwise). The register form already renders the widget + sends
+      // the token. Honeypot: bots fill every field, real users never see `website`.
+      if (typeof body.website === 'string' && body.website.trim() !== '') {
+        return new Response(JSON.stringify({ success: true, pendingVerification: true }), { status: 201, headers: { 'Content-Type': 'application/json' } });
+      }
+      const turn = await verifyTurnstile(String(body.turnstileToken || ''), clientIp);
+      if (!turn.ok) {
+        return new Response(JSON.stringify({ error: 'Verificarea anti-bot a eșuat. Reîncarcă pagina și încearcă din nou.' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+      }
+
       if (!name || !email || !password || !companyName) {
         return new Response(JSON.stringify({ error: 'Câmpuri obligatorii lipsă' }), {
           status: 400, headers: { 'Content-Type': 'application/json' },
