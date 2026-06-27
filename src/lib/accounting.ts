@@ -454,12 +454,16 @@ export async function postExpense(expenseId: string, createdByUserId?: string | 
         // efect net zero. Nu se datorează furnizorului (401 = doar netul).
         lines.push({ accountCode: '4426', debitCents: vat, creditCents: 0, note: 'TVA deductibilă (taxare inversă)' });
         lines.push({ accountCode: '4427', debitCents: 0, creditCents: vat, note: 'TVA colectată (taxare inversă)' });
-      } else if (exp.deductible) {
-        // VAT is only deductible (4426) when the expense is marked deductible.
-        lines.push({ accountCode: '4426', debitCents: vat, creditCents: 0, note: 'TVA deductibilă' });
       } else {
-        // Non-deductible VAT folds into the expense account.
-        lines[0].debitCents += vat;
+        // Partial VAT deductibility (e.g. 50% for a company car not used
+        // exclusively for business): only the deductible share hits 4426; the
+        // non-deductible VAT folds into the expense account (it's a real cost).
+        const rawPct = (exp as any).deductiblePct;
+        const pct = Math.max(0, Math.min(100, rawPct == null ? (exp.deductible ? 100 : 0) : Number(rawPct)));
+        const dedVat = Math.round((vat * pct) / 100);
+        const nonDedVat = vat - dedVat;
+        if (dedVat > 0) lines.push({ accountCode: '4426', debitCents: dedVat, creditCents: 0, note: pct < 100 ? `TVA deductibilă ${pct}%` : 'TVA deductibilă' });
+        if (nonDedVat > 0) lines[0].debitCents += nonDedVat;
       }
     }
     // Supplier payable: under reverse charge the VAT isn't owed to the supplier,

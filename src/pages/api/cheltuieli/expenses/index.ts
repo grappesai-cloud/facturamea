@@ -77,6 +77,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const paidCents = Math.max(0, Math.round(Number(body.paidCents) || 0));
   const status = paidCents >= totalCents && totalCents > 0 ? 'paid' : paidCents > 0 ? 'partial' : 'unpaid';
+  // Deductibility percentage (0–100). Falls back to the legacy boolean.
+  const deductiblePct = body.deductiblePct != null
+    ? Math.max(0, Math.min(100, Math.round(Number(body.deductiblePct))))
+    : (body.deductible === false ? 0 : 100);
   const documentType = DOC_TYPES.includes(body.documentType) ? body.documentType : 'factura';
   const currency = (body.currency || 'RON').toUpperCase().slice(0, 5);
   const issueDate = body.issueDate || new Date().toISOString().slice(0, 10);
@@ -110,7 +114,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       totalCents,
       paidCents,
       status,
-      deductible: body.deductible !== false,
+      deductible: deductiblePct > 0,
+      deductiblePct,
       vatScheme,
       attachmentUrl: body.attachmentUrl?.trim() || null,
       attachmentName: body.attachmentName?.trim() || null,
@@ -128,7 +133,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     try {
       await db.update(suppliers).set({
         defaultCategory: learnCategory,
-        defaultDeductible: body.deductible !== false,
+        defaultDeductible: deductiblePct > 0,
+        defaultDeductiblePct: deductiblePct,
         defaultVatScheme: vatScheme,
       }).where(and(eq(suppliers.id, String(body.supplierId)), eq(suppliers.companyId, cid)));
     } catch { /* non-fatal */ }

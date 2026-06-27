@@ -1439,6 +1439,7 @@ export const suppliers = pgTable('suppliers', {
   // for this supplier, auto-applied to future expenses (deterministic, no AI).
   defaultCategory: varchar('default_category', { length: 60 }),
   defaultDeductible: boolean('default_deductible'),
+  defaultDeductiblePct: integer('default_deductible_pct'),
   defaultVatScheme: varchar('default_vat_scheme', { length: 20 }),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
@@ -1499,6 +1500,10 @@ export const expenses = pgTable('expenses', {
   paidCents: integer('paid_cents').notNull().default(0),
   status: varchar('status', { length: 16 }).notNull().default('unpaid'), // unpaid | partial | paid
   deductible: boolean('deductible').default(true),
+  // Deductibility percentage 0–100. 100 = full, 50 = autoturism nefolosit
+  // exclusiv business (50% cheltuială + 50% TVA), 0 = nedeductibil. The VAT split
+  // follows this in accounting (only the deductible part hits 4426).
+  deductiblePct: integer('deductible_pct').default(100),
   // VAT scheme: 'normal' (RO furnizor cu TVA deductibil) | 'reverse_charge'
   // (taxare inversă — achiziții intra-UE / servicii non-UE: TVA auto-lichidată,
   // 4426 + 4427 neutru, nedatorată furnizorului).

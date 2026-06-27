@@ -107,6 +107,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
       paidCents: 0,
       status: 'unpaid',
       deductible: sugg.deductible,
+      deductiblePct: sugg.deductiblePct,
       vatScheme: sugg.vatScheme,
       notes: `Importat din e-Factura (SPV), mesaj ${row.anafMsgId}.${cuiNote}${lineNote}`,
       createdByUserId: locals.user.id,

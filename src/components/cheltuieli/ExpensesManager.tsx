@@ -70,6 +70,7 @@ interface Supplier {
   id: string; name: string;
   defaultCategory?: string | null;
   defaultDeductible?: boolean | null;
+  defaultDeductiblePct?: number | null;
   defaultVatScheme?: string | null;
 }
 
@@ -95,7 +96,7 @@ const money = (cents: number, currency?: string | null) =>
 const emptyForm = {
   supplierId: '', supplierNameSnap: '', category: 'servicii', documentType: 'factura',
   documentNumber: '', issueDate: new Date().toISOString().slice(0, 10), dueDate: '',
-  net: '', vat: '', deductible: true, currency: 'RON', vatScheme: 'normal',
+  net: '', vat: '', deductible: true, deductiblePct: 100, currency: 'RON', vatScheme: 'normal',
 };
 
 export default function ExpensesManager() {
@@ -138,7 +139,8 @@ export default function ExpensesManager() {
         dueDate: form.dueDate || null,
         netCents: Math.round((Number(form.net) || 0) * 100),
         vatCents: Math.round((Number(form.vat) || 0) * 100),
-        deductible: form.deductible,
+        deductible: form.deductiblePct > 0,
+        deductiblePct: form.deductiblePct,
         currency: form.currency,
         vatScheme: form.vatScheme,
       };
@@ -251,7 +253,7 @@ export default function ExpensesManager() {
                   const next = { ...form, supplierId: e.target.value };
                   if (sup?.defaultCategory) {
                     next.category = sup.defaultCategory;
-                    next.deductible = sup.defaultDeductible !== false;
+                    next.deductiblePct = sup.defaultDeductiblePct != null ? sup.defaultDeductiblePct : (sup.defaultDeductible === false ? 0 : 100);
                     next.vatScheme = sup.defaultVatScheme === 'reverse_charge' ? 'reverse_charge' : 'normal';
                   }
                   setForm(next);
@@ -311,8 +313,25 @@ export default function ExpensesManager() {
               <p className="text-[11px] text-[#7C9AB4] -mt-1">TVA-ul se auto-lichidează (4426 + 4427, efect zero) și nu se adaugă la suma de plată. Introdu TVA calculat la cota aplicabilă.</p>
             )}
             <label className="flex items-center gap-2 text-xs text-[#9FB8CC]">
-              <input type="checkbox" checked={form.deductible} onChange={(e) => setForm({ ...form, deductible: e.target.checked })} /> Cheltuială deductibilă
+              <input type="checkbox" checked={form.deductiblePct > 0} onChange={(e) => setForm({ ...form, deductiblePct: e.target.checked ? 100 : 0 })} /> Cheltuială deductibilă
             </label>
+            {form.deductiblePct > 0 && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-[#9FB8CC]">Cât e deductibil:</span>
+                {[
+                  { v: 100, label: '100%' },
+                  { v: 50, label: '50% (auto)' },
+                ].map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => setForm({ ...form, deductiblePct: o.v })}
+                    className={`px-3 py-1.5 rounded-full text-[12.5px] font-semibold transition-colors ${form.deductiblePct === o.v ? 'bg-[#E1FB15] text-[#0A2238]' : 'bg-white/10 text-white hover:bg-white/15'}`}
+                  >{o.label}</button>
+                ))}
+                {form.deductiblePct === 50 && <span className="text-[11px] text-[#7C9AB4]">Autoturism nefolosit exclusiv business: 50% cheltuială + 50% TVA.</span>}
+              </div>
+            )}
             <div className="flex gap-2">
               <Button className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none" size="sm" disabled={busy} onClick={save}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
               <Button className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full" size="sm" variant="outline" onClick={() => setForm(null)}>Renunță</Button>

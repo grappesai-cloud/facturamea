@@ -38,6 +38,7 @@ const RO = new Set(['', 'romania', 'românia', 'ro']);
 export interface SupplierMemory {
   defaultCategory?: string | null;
   defaultDeductible?: boolean | null;
+  defaultDeductiblePct?: number | null;
   defaultVatScheme?: string | null;
   country?: string | null;
 }
@@ -45,6 +46,7 @@ export interface SupplierMemory {
 export interface Suggestion {
   category: ExpenseCategory | null;
   deductible: boolean;
+  deductiblePct: number;
   vatScheme: 'normal' | 'reverse_charge';
   source: 'memory' | 'rules' | 'default';
 }
@@ -64,9 +66,11 @@ export function suggestClassification(opts: {
 
   // 1. Per-supplier memory.
   if (supplier?.defaultCategory) {
+    const pct = supplier.defaultDeductiblePct != null ? supplier.defaultDeductiblePct : (supplier.defaultDeductible === false ? 0 : 100);
     return {
       category: supplier.defaultCategory as ExpenseCategory,
-      deductible: supplier.defaultDeductible !== false,
+      deductible: pct > 0,
+      deductiblePct: pct,
       vatScheme: (supplier.defaultVatScheme as any) === 'reverse_charge' ? 'reverse_charge' : (foreign ? 'reverse_charge' : 'normal'),
       source: 'memory',
     };
@@ -75,9 +79,9 @@ export function suggestClassification(opts: {
   // 2. Keyword rules.
   const byKw = classifyByKeywords(supplierName, documentText);
   if (byKw) {
-    return { category: byKw, deductible: true, vatScheme: foreign ? 'reverse_charge' : 'normal', source: 'rules' };
+    return { category: byKw, deductible: true, deductiblePct: 100, vatScheme: foreign ? 'reverse_charge' : 'normal', source: 'rules' };
   }
 
   // 3. Nothing learned yet.
-  return { category: null, deductible: true, vatScheme: foreign ? 'reverse_charge' : 'normal', source: 'default' };
+  return { category: null, deductible: true, deductiblePct: 100, vatScheme: foreign ? 'reverse_charge' : 'normal', source: 'default' };
 }
