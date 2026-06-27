@@ -4,7 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Loader2, Warehouse as WarehouseIcon } from 'lucide-react';
+import { Plus, Loader2, Warehouse as WarehouseIcon, Trash2 } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 
 interface Warehouse {
@@ -55,6 +55,17 @@ export default function WarehousesManager() {
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
+  const del = async (id: string) => {
+    if (!confirm('Ștergi această gestiune? (doar dacă e goală — fără stoc sau recepții)')) return;
+    setError('');
+    try {
+      const res = await fetch(`/api/gestiune/warehouses?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error || 'Eroare'); return; }
+      await refresh();
+    } catch { setError('Eroare conexiune'); }
+  };
+
   const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
   const selectCls = `${inputCls} [color-scheme:dark]`;
   const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
@@ -94,6 +105,9 @@ export default function WarehousesManager() {
                   </div>
                   {w.isDefault && <span className="text-[10px] px-2 py-0.5 bg-[#E1FB15]/15 text-[#E1FB15] rounded-full font-semibold">implicită</span>}
                   {!w.isActive && <span className="text-[10px] px-2 py-0.5 bg-white/10 text-[#A8BED2] rounded-full font-semibold">inactivă</span>}
+                  <button type="button" onClick={() => del(w.id)} aria-label="Șterge gestiunea" title="Șterge (doar dacă e goală)" className="shrink-0 p-1.5 rounded-lg text-[#8FA6BC] hover:text-[#DC4B41] hover:bg-[#DC4B41]/10 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </li>
               ))}
             </ul>
