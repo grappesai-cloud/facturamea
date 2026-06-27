@@ -8,9 +8,10 @@
 // Falls back gracefully to the list metadata if the XML can't be fetched/parsed.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../../db';
-import { efacturaInbox, expenses } from '../../../../../db/schema';
-import { and, eq } from 'drizzle-orm';
+import { efacturaInbox, expenses, suppliers } from '../../../../../db/schema';
+import { and, eq, or } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
+import { suggestClassification } from '../../../../../lib/expense-classify';
 import { getAnafStatus } from '../../../../../lib/anaf/tokens';
 import { downloadMessage } from '../../../../../lib/anaf/efactura-client';
 import { extractInvoiceXml, parseEfacturaXml, type ParsedInvoiceFields } from '../../../../../lib/efactura-parse';
@@ -74,12 +75,28 @@ export const POST: APIRoute = async ({ params, locals }) => {
   const cuiNote = parsed?.supplierCui ? ` CUI furnizor: ${parsed.supplierCui}.` : '';
   const lineNote = parsed ? ` (${parsed.lineCount} linii, citit din XML)` : '';
 
+  // Pre-classify (deterministic): match a known supplier by CUI to reuse its
+  // learned defaults, else keyword rules on the supplier name.
+  const cif = String(parsed?.supplierCui || row.fromCif || '').replace(/\D/g, '');
+  let supplierRow: typeof suppliers.$inferSelect | null = null;
+  if (cif) {
+    try {
+      const [s] = await db.select().from(suppliers)
+        .where(and(eq(suppliers.companyId, companyId), or(eq(suppliers.cui, cif), eq(suppliers.cui, `RO${cif}`))))
+        .limit(1);
+      supplierRow = s || null;
+    } catch { /* ignore */ }
+  }
+  const sugg = suggestClassification({ supplier: supplierRow, supplierName, documentText: documentNumber });
+
   const expenseId = nanoid();
   try {
     await db.insert(expenses).values({
       id: expenseId,
       companyId,
+      supplierId: supplierRow?.id || null,
       supplierNameSnap: supplierName,
+      category: sugg.category,
       documentType: 'factura',
       documentNumber,
       issueDate,
@@ -89,7 +106,8 @@ export const POST: APIRoute = async ({ params, locals }) => {
       totalCents,
       paidCents: 0,
       status: 'unpaid',
-      deductible: true,
+      deductible: sugg.deductible,
+      vatScheme: sugg.vatScheme,
       notes: `Importat din e-Factura (SPV), mesaj ${row.anafMsgId}.${cuiNote}${lineNote}`,
       createdByUserId: locals.user.id,
       createdAt: new Date(),

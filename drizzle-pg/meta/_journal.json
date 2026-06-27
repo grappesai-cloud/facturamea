@@ -78,6 +78,13 @@
       "when": 1782555175816,
       "tag": "0010_slippery_logan",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1782565071984,
+      "tag": "0011_striped_wallop",
+      "breakpoints": true
     }
   ]
 }

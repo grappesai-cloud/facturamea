@@ -6,7 +6,7 @@
 // transactions with no candidate at all are reported as "missing document".
 import { db } from '../db';
 import { bankTransactions, transportInvoices, expenses, transportInvoicePayments } from '../db/schema';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 // Normalize for loose "appears in text" / token matching.

@@ -1432,6 +1432,11 @@ export const suppliers = pgTable('suppliers', {
   iban: varchar('iban', { length: 40 }),
   email: varchar('email', { length: 255 }),
   phone: varchar('phone', { length: 50 }),
+  // Learned classification defaults — remembered from the last expense booked
+  // for this supplier, auto-applied to future expenses (deterministic, no AI).
+  defaultCategory: varchar('default_category', { length: 60 }),
+  defaultDeductible: boolean('default_deductible'),
+  defaultVatScheme: varchar('default_vat_scheme', { length: 20 }),
   isActive: boolean('is_active').default(true),
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [

@@ -66,7 +66,12 @@ interface Expense {
   netCents: number; vatCents: number; totalCents: number; paidCents: number;
   status: string; deductible: boolean; vatScheme: string | null; notes: string | null;
 }
-interface Supplier { id: string; name: string; }
+interface Supplier {
+  id: string; name: string;
+  defaultCategory?: string | null;
+  defaultDeductible?: boolean | null;
+  defaultVatScheme?: string | null;
+}
 
 const CURRENCIES = ['RON', 'EUR', 'USD', 'GBP', 'CHF'];
 
@@ -240,9 +245,19 @@ export default function ExpensesManager() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
                 <Label className="mb-1 block text-xs text-[#9FB8CC]">Furnizor</Label>
-                <Select className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })}>
+                <Select className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.supplierId} onChange={(e) => {
+                  const sup = suppliers.find((s) => s.id === e.target.value);
+                  // Pre-fill from this supplier's learned defaults (per-supplier memory).
+                  const next = { ...form, supplierId: e.target.value };
+                  if (sup?.defaultCategory) {
+                    next.category = sup.defaultCategory;
+                    next.deductible = sup.defaultDeductible !== false;
+                    next.vatScheme = sup.defaultVatScheme === 'reverse_charge' ? 'reverse_charge' : 'normal';
+                  }
+                  setForm(next);
+                }}>
                   <option value="">Fără furnizor / manual</option>
-                  {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}{s.defaultCategory ? ' ·' : ''}</option>)}
                 </Select>
               </div>
               {!form.supplierId && (

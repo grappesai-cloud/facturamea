@@ -113,5 +113,19 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch {
     return new Response(JSON.stringify({ error: 'Eroare la salvare' }), { status: 500 });
   }
+
+  // Learn: remember this classification on the supplier so the next expense from
+  // the same supplier pre-fills automatically (deterministic per-supplier memory).
+  const learnCategory = body.category?.trim() || null;
+  if (body.supplierId && learnCategory) {
+    try {
+      await db.update(suppliers).set({
+        defaultCategory: learnCategory,
+        defaultDeductible: body.deductible !== false,
+        defaultVatScheme: vatScheme,
+      }).where(and(eq(suppliers.id, String(body.supplierId)), eq(suppliers.companyId, cid)));
+    } catch { /* non-fatal */ }
+  }
+
   return new Response(JSON.stringify({ id }), { status: 201, headers: { 'Content-Type': 'application/json' } });
 };
