@@ -1002,6 +1002,15 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
     const menu = setupSheet('menu-overlay', 'menu-card', 'menu-handle');
     const help = setupSheet('help-modal', 'help-card', 'help-handle');
 
+    // Tapping a tile in the "Ce vrei să faci?" menu (or any sheet link) navigates
+    // via SPA; the overlay is transition:persist so it survives the swap. Close it
+    // on every page-load so the user lands on the new page without a manual close.
+    document.addEventListener('astro:page-load', () => {
+      if (menu?.isOpen?.()) menu.close();
+      if (settings?.isOpen?.()) settings.close();
+      if (help?.isOpen?.()) help.close();
+    });
+
     // Stylish back button → previous page (falls back to the dashboard).
     // Event-delegated: the back button lives in swapped page content, so a direct
     // listener bound once would be lost after the first SPA navigation.

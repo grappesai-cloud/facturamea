@@ -45,7 +45,6 @@ const signatureUrl = issuer?.invoiceSignatureUrl ?? null;
 const footerText = issuer?.invoiceFooterText ?? model?.footerText ?? '';
 const showShipping = model?.showShipping !== false && !!inv.shippingText;
 const showEmittedWith = !!model?.showEmittedWith;
-const showQr = !!model?.showQr && !!qrDataUrl;
 
 // Site palette
 const INK = '#07090f';
@@ -216,12 +215,7 @@ const shellStyle = [
   )}
 
   <div class="mt-12 flex justify-between items-end gap-8">
-    {showQr ? (
-      <div class="text-center">
-        <img src={qrDataUrl} alt="QR" style="width: 96px; height: 96px;" />
-        <p class="text-[9px] mt-1" style={`color:${FAINT}`}>{t('Scanează pentru verificare', 'Scan to verify')}</p>
-      </div>
-    ) : <div></div>}
+    <div></div>
     {(stampUrl || signatureUrl) && (
       <div class="flex justify-end gap-8 items-end">
         {signatureUrl && (

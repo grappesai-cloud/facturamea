@@ -188,7 +188,7 @@ export default function ModelEditor() {
 
           <div className="border-t border-white/10 pt-3 space-y-2">
             <p className="text-[10px] uppercase tracking-wider text-[#8FA6BC]">Opțiuni afișare</p>
-            {([['showShipping', 'Afișează date privind expediția'], ['showQr', 'Afișează cod QR pe factură'], ['showEmittedWith', 'Afișează „Emis cu facturamea”']] as const).map(([k, lbl]) => (
+            {([['showShipping', 'Afișează date privind expediția'], ['showEmittedWith', 'Afișează „Emis cu facturamea”']] as const).map(([k, lbl]) => (
               <label key={k} className="flex items-center gap-2.5 text-[13px] text-[#C8DAE8] cursor-pointer">
                 <input type="checkbox" checked={draft[k] as boolean} onChange={(e) => field(k, e.target.checked)} className="w-4 h-4 accent-[#1A759F]" />
                 {lbl}

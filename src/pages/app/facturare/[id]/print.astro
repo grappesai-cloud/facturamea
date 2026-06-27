@@ -5,7 +5,6 @@ import { db } from '../../../../db';
 import { transportInvoices, transportInvoiceLines, invoiceModels, orders, freight } from '../../../../db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { loadIssuer } from '../../../../lib/invoicing';
-import QRCode from 'qrcode';
 
 const user = Astro.locals.user!;
 const id = Astro.params.id!;
@@ -30,21 +29,10 @@ if (invRow.orderId) {
 const inv = { ...invRow, shippingText };
 
 const kindLabel: Record<string, string> = { factura: 'Factură fiscală', proforma: 'Factură proformă', storno: 'Factură storno', chitanta: 'Chitanță' };
-
-// QR (when the model enables it): encodes the public share link if present,
-// else a compact reference payload.
-let qrDataUrl: string | null = null;
-if (model?.showQr) {
-  const baseUrl = import.meta.env.PUBLIC_BASE_URL || process.env.PUBLIC_BASE_URL || 'https://facturamea.com';
-  const payload = inv.shareToken
-    ? `${baseUrl}/factura/${inv.shareToken}`
-    : `${inv.fullNumber} | ${issuer?.name ?? ''} | ${(inv.totalCents / 100).toFixed(2)} ${inv.currency}`;
-  qrDataUrl = await QRCode.toDataURL(payload, { margin: 1, width: 192 }).catch(() => null);
-}
 ---
 
 <PrintLayout title={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber}`}>
-  <InvoiceDocument inv={inv} lines={lines} issuer={issuer} model={model} qrDataUrl={qrDataUrl} />
+  <InvoiceDocument inv={inv} lines={lines} issuer={issuer} model={model} />
   <script is:inline>
     // When reached via the "PDF" button fallback, open the print dialog so the
     // user can Save as PDF directly.

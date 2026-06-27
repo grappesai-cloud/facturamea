@@ -17,10 +17,12 @@ const config: CapacitorConfig = {
   },
   ios: {
     contentInset: 'always',
-    backgroundColor: '#FFFFFF',
+    // Dark app background so the iOS safe-area (home-indicator) region doesn't
+    // flash white below the content. Requires a native rebuild to take effect.
+    backgroundColor: '#07090f',
   },
   android: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#07090f',
   },
   plugins: {
     SplashScreen: {

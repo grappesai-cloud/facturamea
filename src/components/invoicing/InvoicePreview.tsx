@@ -178,11 +178,8 @@ export default function InvoicePreview({ draft }: { draft: Draft }) {
           )}
         </div>
 
-        {/* QR + footer */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 14 }}>
-          {draft.showQr ? (
-            <div style={{ width: 30, height: 30, borderRadius: 4, background: `repeating-conic-gradient(${INK} 0 25%, #fff 0 50%) 0/8px 8px` }} />
-          ) : <div />}
+        {/* footer */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end', marginTop: 14 }}>
           <div style={{ width: 60, borderTop: `1px solid ${LINE}`, paddingTop: 3, textAlign: 'center', color: FAINT, fontSize: 6.5 }}>Semnătură</div>
         </div>
 
