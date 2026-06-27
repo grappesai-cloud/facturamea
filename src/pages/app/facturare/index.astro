@@ -319,16 +319,17 @@ const statusLabel: Record<string, string> = {
   )}
 
   <script is:inline>
-    (function () {
+    document.addEventListener('astro:page-load', function () {
       var btn = document.getElementById('toggle-chart');
       var chart = document.getElementById('facturare-chart');
-      if (!btn || !chart) return;
+      if (!btn || !chart || btn.dataset.chartBound) return;
+      btn.dataset.chartBound = '1';
       btn.addEventListener('click', function () {
         var show = chart.classList.contains('hidden');
         chart.classList.toggle('hidden');
         btn.setAttribute('aria-expanded', String(show));
         btn.classList.toggle('bg-white/15', show);
       });
-    })();
+    });
   </script>
 </AppLayout>
