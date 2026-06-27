@@ -38,7 +38,7 @@ export const NAV_MODULES: NavModule[] = [
   { key: 'stocuri', label: 'Stocuri', desc: 'Gestiune, depozite, NIR', group: 'Gestiune', href: '/app/gestiune',
     icon: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z' },
   { key: 'cheltuieli', label: 'Cheltuieli', desc: 'Facturi primite, furnizori', group: 'Gestiune', href: '/app/cheltuieli',
-    icon: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M2.25 6h.75m17.25 0H21M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z' },
+    icon: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z' },
   { key: 'efactura', label: 'e-Factura', desc: 'Trimite la ANAF (SPV)', group: 'Facturare', href: '/app/facturare/efactura',
     icon: 'M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z' },
   { key: 'profit', label: 'Venituri-Cheltuieli', desc: 'Profitul tău pe perioadă', group: 'Gestiune', href: '/app/rapoarte/profit',
