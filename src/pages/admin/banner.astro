@@ -7,7 +7,7 @@ import { desc } from 'drizzle-orm';
 let banners: typeof siteBanner.$inferSelect[] = [];
 try { banners = await db.select().from(siteBanner).orderBy(desc(siteBanner.createdAt)); } catch {}
 
-const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#0A2238] focus:outline-none transition-colors';
+const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#07090f] focus:outline-none transition-colors';
 const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO') : '—';
 ---
 
@@ -40,7 +40,7 @@ const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO') : '—';
         <input type="datetime-local" name="endsAt" class={inputCls} />
       </div>
     </div>
-    <button type="submit" class="px-5 py-2.5 bg-[#0A2238] hover:bg-[#1A1A1A] text-white font-semibold rounded-xl text-[13px] transition-colors">
+    <button type="submit" class="px-5 py-2.5 bg-[#07090f] hover:bg-[#1A1A1A] text-white font-semibold rounded-xl text-[13px] transition-colors">
       Activează banner
     </button>
     <p class="text-[11px] text-[#46627A]">Crearea unui banner nou dezactivează automat banner-ul curent.</p>

@@ -22,8 +22,8 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 const ROLE_ORDER: Role[] = ['owner', 'accountant', 'operator', 'viewer'];
 
-const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
-const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
+const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
 
 export default function TeamManager({ canManage }: { canManage: boolean }) {
   const [members, setMembers] = useState<Member[]>([]);
@@ -147,21 +147,21 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
                 ))}
               </select>
             </div>
-            <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] disabled:opacity-60 font-bold text-[14px] transition-colors">
+            <button type="submit" disabled={submitting} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] disabled:opacity-60 font-bold text-[14px] transition-colors">
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />} Adaugă membru
             </button>
           </form>
 
           {joinCode && (
-            <div className="mt-5 p-4 rounded-2xl bg-[#0A2238] text-white">
+            <div className="mt-5 p-4 rounded-2xl bg-[#07090f] text-white">
               <p className="text-[13px] font-semibold">Cod de acces pentru {joinCode.name || 'membru'}</p>
-              <p className="text-[12px] text-[#9FB8CC] mt-0.5">Trimite-i acest cod (WhatsApp, în persoană). Intră pe <span className="font-mono">facturamea.com/auth/membru</span>, îl introduce și își setează parola. Nu e nevoie de email.</p>
+              <p className="text-[12px] text-[#A8BED2] mt-0.5">Trimite-i acest cod (WhatsApp, în persoană). Intră pe <span className="font-mono">facturamea.com/auth/membru</span>, îl introduce și își setează parola. Nu e nevoie de email.</p>
               <div className="mt-3 flex items-center gap-2">
                 <code className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-[20px] font-mono tracking-[3px] font-bold text-[#E1FB15]">{joinCode.code}</code>
                 <button
                   type="button"
                   onClick={() => { navigator.clipboard?.writeText(joinCode.code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500); }).catch(() => {}); }}
-                  className="px-4 py-3 rounded-xl bg-[#E1FB15] text-[#0A2238] text-[13px] font-bold hover:bg-[#D2EA0E] transition-colors"
+                  className="px-4 py-3 rounded-xl bg-[#E1FB15] text-[#07090f] text-[13px] font-bold hover:bg-[#D2EA0E] transition-colors"
                 >{copied ? 'Copiat!' : 'Copiază'}</button>
                 <button type="button" onClick={() => setJoinCode(null)} className="px-3 py-3 rounded-xl bg-white/10 text-white text-[13px] hover:bg-white/20 transition-colors">Închide</button>
               </div>
@@ -175,11 +175,11 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
           <h3 className="text-[14px] font-semibold text-white">Membrii echipei ({members.length})</h3>
         </div>
         {loading ? (
-          <div className="px-5 py-12 flex items-center justify-center text-[#9FB8CC]">
+          <div className="px-5 py-12 flex items-center justify-center text-[#A8BED2]">
             <Loader2 className="w-5 h-5 animate-spin" />
           </div>
         ) : members.length === 0 ? (
-          <div className="px-5 py-12 text-center text-[14px] text-[#9FB8CC]">Niciun membru încă.</div>
+          <div className="px-5 py-12 text-center text-[14px] text-[#A8BED2]">Niciun membru încă.</div>
         ) : (
           <div className="divide-y divide-white/10">
             {members.map((m) => (
@@ -187,9 +187,9 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
                 <div className="min-w-0">
                   <p className="text-[14px] font-medium text-white truncate">
                     {m.name}
-                    {m.isSelf && <span className="ml-2 text-[11px] text-[#7C9AB4] font-normal">(tu)</span>}
+                    {m.isSelf && <span className="ml-2 text-[11px] text-[#8FA6BC] font-normal">(tu)</span>}
                   </p>
-                  <p className="text-[12px] text-[#9FB8CC] truncate">{m.email} · <span className="font-mono">{m.platformId}</span></p>
+                  <p className="text-[12px] text-[#A8BED2] truncate">{m.email} · <span className="font-mono">{m.platformId}</span></p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   {canManage && !m.isSelf ? (
@@ -204,13 +204,13 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
                       ))}
                     </select>
                   ) : (
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-[#9FB8CC]">{m.roleLabel}</span>
+                    <span className="px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/10 text-[#A8BED2]">{m.roleLabel}</span>
                   )}
                   {canManage && !m.isSelf && (
                     <button
                       onClick={() => removeMember(m.userId)}
                       disabled={busyId === m.userId}
-                      className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:text-[#DC4B41] hover:bg-white/10 transition-colors disabled:opacity-60 opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                      className="w-8 h-8 rounded-full grid place-items-center text-[#A8BED2] hover:text-[#DC4B41] hover:bg-white/10 transition-colors disabled:opacity-60 opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                       title="Elimină membru"
                     >
                       <X className="w-4 h-4" />

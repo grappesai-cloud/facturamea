@@ -3,6 +3,7 @@ import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
 import { transportInvoices } from '../../../db/schema';
 import { and, eq, desc } from 'drizzle-orm';
+import EmptyState from '../../../components/ui/EmptyState.astro';
 
 const user = Astro.locals.user!;
 if (!user.companyId) return Astro.redirect('/app/setari');
@@ -24,13 +25,13 @@ try {
 }
 
 const statusLabels: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#A8BED2]' },
   issued: { label: 'Emisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
   sent: { label: 'Trimisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
   partial: { label: 'Încasată parțial', cls: 'bg-[#E8A33C]/15 text-[#E8A33C]' },
   paid: { label: 'Încasată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
   overdue: { label: 'Termen depășit', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
-  voided: { label: 'Anulată', cls: 'bg-white/10 text-[#7C9AB4]' },
+  voided: { label: 'Anulată', cls: 'bg-white/10 text-[#8FA6BC]' },
 };
 ---
 
@@ -38,13 +39,19 @@ const statusLabels: Record<string, { label: string; cls: string }> = {
   <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Proforme</h1>
-      <p class="text-[14px] text-[#9FB8CC] mt-1 max-w-2xl">Facturile proforma emise către clienți.</p>
+      <p class="text-[15px] text-[#A8BED2] mt-1.5 max-w-2xl">Facturile proforma emise către clienți.</p>
     </div>
-    <a href="/app/facturare/emite" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Emite document</a>
+    <div class="flex items-center gap-2">
+      <a href="/app/facturare/model" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Personalizează</a>
+      <a href="/app/facturare/emite?kind=proforma" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Emite proformă</a>
+    </div>
   </div>
 
   {rows.length === 0 ? (
-    <div class="rounded-2xl p-8 bg-white/5 text-center text-[13px] text-[#9FB8CC]">Nicio proformă emisă încă.</div>
+    <EmptyState title="Nicio proformă" description="Creează o proformă pentru a trimite o ofertă.">
+      <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25Z"/></svg>
+      <a slot="action" href="/app/facturare/emite?kind=proforma" class="inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Creează proformă →</a>
+    </EmptyState>
   ) : (
     <Fragment>
     <ul class="space-y-2.5">
@@ -56,7 +63,7 @@ const statusLabels: Record<string, { label: string; cls: string }> = {
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
-                  <span class="font-mono text-[12px] text-[#7C9AB4] tabular-nums truncate">{inv.fullNumber}</span>
+                  <span class="font-mono text-[12px] text-[#8FA6BC] tabular-nums truncate">{inv.fullNumber}</span>
                 </div>
                 <p class="text-[15px] text-white font-bold truncate mt-1.5">{inv.clientNameSnap}</p>
               </div>
@@ -68,7 +75,7 @@ const statusLabels: Record<string, { label: string; cls: string }> = {
     </ul>
     {rows.length > 3 && (
       <details class="mt-2.5">
-        <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+        <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
         <ul class="space-y-2.5 mt-2.5">
           {rows.slice(3).map((inv) => {
             const st = statusLabels[inv.status] || statusLabels.draft;
@@ -78,7 +85,7 @@ const statusLabels: Record<string, { label: string; cls: string }> = {
                   <div class="min-w-0 flex-1">
                     <div class="flex items-center gap-2">
                       <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${st.cls}`}>{st.label}</span>
-                      <span class="font-mono text-[12px] text-[#7C9AB4] tabular-nums truncate">{inv.fullNumber}</span>
+                      <span class="font-mono text-[12px] text-[#8FA6BC] tabular-nums truncate">{inv.fullNumber}</span>
                     </div>
                     <p class="text-[15px] text-white font-bold truncate mt-1.5">{inv.clientNameSnap}</p>
                   </div>

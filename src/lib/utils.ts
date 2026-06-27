@@ -1,4 +1,3 @@
-// asset map id: Um9iZXJ0IEd5b3JneQ==
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -17,6 +16,26 @@ export function cn(...inputs: ClassValue[]) {
 export function citySearchTerm(city: { id: number; name: string; countryCode: string } | null): string {
   if (!city) return '';
   return city.id === -1 ? city.countryCode : city.name;
+}
+
+/**
+ * Validate a Romanian CUI/CIF using the official mod-11 control digit
+ * (key 753217532). Accepts an optional "RO" prefix and surrounding spaces.
+ * Returns false for clearly malformed values; used only for a soft client-side
+ * warning — the backend remains the source of truth.
+ */
+export function isValidCui(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  const digits = String(raw).replace(/^ro/i, '').replace(/\D/g, '');
+  if (digits.length < 2 || digits.length > 10) return false;
+  const control = Number(digits.slice(-1));
+  const body = digits.slice(0, -1).padStart(9, '0');
+  const key = '753217532';
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += Number(body[i]) * Number(key[i]);
+  let c = (sum * 10) % 11;
+  if (c === 10) c = 0;
+  return c === control;
 }
 
 /** Round a numeric value to N decimals, strip trailing zeros. */

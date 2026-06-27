@@ -37,7 +37,7 @@ const cfg = ({
 } as Record<string, any>)[layout];
 
 // On-brand defaults (navy) — overridden by the user's chosen brand colour.
-const brand = model?.brandColor && model.brandColor !== '#0A0A0A' ? model.brandColor : '#0A2238';
+const brand = model?.brandColor && model.brandColor !== '#0A0A0A' ? model.brandColor : '#07090f';
 const logoUrl = model?.logoUrl ?? issuer?.invoiceLogoUrl ?? null;
 const stampUrl = issuer?.invoiceStampUrl ?? null;
 const signatureUrl = issuer?.invoiceSignatureUrl ?? null;
@@ -47,9 +47,9 @@ const showEmittedWith = !!model?.showEmittedWith;
 const showQr = !!model?.showQr && !!qrDataUrl;
 
 // Site palette
-const INK = '#0A2238';
+const INK = '#07090f';
 const MUTED = '#46627A';
-const FAINT = '#7C9AB4';
+const FAINT = '#8FA6BC';
 const LINE = '#E3EAF1';
 const LINE2 = '#EFF3F7';
 
@@ -118,7 +118,7 @@ const shellStyle = [
         {cfg.tableFill ? (
           <tr class="text-left text-[10px] uppercase tracking-wider text-white" style={`background:${brand}`}>
             <th class="py-2.5 px-3 rounded-l-lg">#</th>
-            <th class="py-2.5 pr-3">{t('Descriere', 'Description')}</th>
+            <th class="py-2.5 pl-2 pr-3">{t('Descriere', 'Description')}</th>
             <th class="py-2.5 px-2 text-right w-16">{t('Cant.', 'Qty')}</th>
             <th class="py-2.5 px-2 w-12">{t('UM', 'UoM')}</th>
             <th class="py-2.5 px-2 text-right w-24">{t('Preț unit.', 'Unit price')}</th>
@@ -128,7 +128,7 @@ const shellStyle = [
         ) : (
           <tr class="text-left text-[10px] uppercase tracking-[0.12em] border-b-2" style={`color:${brand}; border-color:${brand}`}>
             <th class="py-2.5 px-3">#</th>
-            <th class="py-2.5 pr-3">{t('Descriere', 'Description')}</th>
+            <th class="py-2.5 pl-2 pr-3">{t('Descriere', 'Description')}</th>
             <th class="py-2.5 px-2 text-right w-16">{t('Cant.', 'Qty')}</th>
             <th class="py-2.5 px-2 w-12">{t('UM', 'UoM')}</th>
             <th class="py-2.5 px-2 text-right w-24">{t('Preț unit.', 'Unit price')}</th>
@@ -140,13 +140,13 @@ const shellStyle = [
       <tbody>
         {lines.map((l: any, i: number) => (
           <tr class="border-b" style={`border-color:${LINE2}`}>
-            <td class="py-3 px-3" style={`color:${FAINT}`}>{i + 1}</td>
-            <td class="py-3 pr-3" style={`color:${INK}`}>{l.code && <span class="font-mono text-xs mr-1" style={`color:${FAINT}`}>{l.code}</span>}{l.description}</td>
-            <td class="py-3 px-2 text-right tabular-nums">{l.quantity}</td>
-            <td class="py-3 px-2" style={`color:${MUTED}`}>{l.unit}</td>
-            <td class="py-3 px-2 text-right tabular-nums">{fmt(l.unitPriceCents)}</td>
-            <td class="py-3 px-2 text-right tabular-nums">{l.vatRate}%</td>
-            <td class="py-3 px-3 text-right tabular-nums font-semibold">{fmt(l.lineTotalCents)}</td>
+            <td class="py-3 px-3 align-top" style={`color:${FAINT}`}>{i + 1}</td>
+            <td class="py-3 pl-2 pr-3 align-top" style={`color:${INK}`}>{l.code && <span class="font-mono text-xs mr-1" style={`color:${FAINT}`}>{l.code}</span>}{l.description}</td>
+            <td class="py-3 px-2 text-right tabular-nums align-top">{l.quantity}</td>
+            <td class="py-3 px-2 align-top" style={`color:${MUTED}`}>{l.unit}</td>
+            <td class="py-3 px-2 text-right tabular-nums align-top">{fmt(l.unitPriceCents)}</td>
+            <td class="py-3 px-2 text-right tabular-nums align-top">{l.vatRate}%</td>
+            <td class="py-3 px-3 text-right tabular-nums font-semibold align-top">{fmt(l.lineTotalCents)}</td>
           </tr>
         ))}
       </tbody>

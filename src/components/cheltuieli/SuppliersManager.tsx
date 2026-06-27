@@ -3,7 +3,8 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, X, Loader2, Pencil, Search } from 'lucide-react';
+import { Plus, X, Loader2, Pencil, Search, Truck } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Supplier {
   id: string; name: string; cui: string | null; regCom: string | null;
@@ -33,6 +34,12 @@ export default function SuppliersManager() {
     } catch { /* leave empty */ }
   };
   useEffect(() => { refresh(''); }, []);
+  // Debounce live search (avoid a request per keystroke).
+  useEffect(() => {
+    const id = window.setTimeout(() => refresh(q), 220);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
 
   const lookupCui = async () => {
     if (!editing?.cui) return;
@@ -76,16 +83,20 @@ export default function SuppliersManager() {
 
       <div className="flex items-center gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7C9AB4]" />
-          <Input className="pl-9 rounded-full bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={q} onChange={(e) => { setQ(e.target.value); refresh(e.target.value); }} placeholder="Caută după nume sau CUI..." />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA6BC]" />
+          <Input className="pl-9 rounded-full bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume sau CUI..." />
         </div>
-        <Button className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none" onClick={() => setEditing({ ...empty })}><Plus className="w-4 h-4 mr-1" /> Furnizor nou</Button>
+        <Button className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none" onClick={() => setEditing({ ...empty })}><Plus className="w-4 h-4 mr-1" /> Furnizor nou</Button>
       </div>
 
       <Card className="bg-white/5 border-0 shadow-none rounded-2xl">
         <CardContent className="p-0">
           {items.length === 0 ? (
-            <p className="text-sm text-[#7C9AB4] p-6 text-center">Niciun furnizor. Adaugă primul furnizor.</p>
+            <EmptyState
+              icon={<Truck />}
+              title="Niciun furnizor"
+              description="Adaugă primul furnizor pentru a înregistra cheltuieli mai rapid."
+            />
           ) : (
             <>
             <ul className="divide-y divide-white/5">
@@ -93,21 +104,21 @@ export default function SuppliersManager() {
                 <li key={s.id} className="group flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">{s.name}</p>
-                    <p className="text-xs text-[#9FB8CC] truncate">
+                    <p className="text-xs text-[#A8BED2] truncate">
                       {s.cui && <span className="font-mono mr-2">{s.cui}</span>}
                       {[s.city, s.country].filter(Boolean).join(', ')}
                       {s.email && <span className="ml-2">· {s.email}</span>}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditing({ ...empty, ...s, cui: s.cui || '', country: s.country || 'Romania' } as any)} className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-white transition-colors" title="Editează"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => remove(s.id)} className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] transition-colors" title="Șterge"><X className="w-4 h-4" /></button>
+                    <button onClick={() => setEditing({ ...empty, ...s, cui: s.cui || '', country: s.country || 'Romania' } as any)} className="w-8 h-8 rounded-full grid place-items-center text-[#A8BED2] hover:bg-white/10 hover:text-white transition-colors" title="Editează"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => remove(s.id)} className="w-8 h-8 rounded-full grid place-items-center text-[#A8BED2] hover:bg-white/10 hover:text-[#DC4B41] transition-colors" title="Șterge"><X className="w-4 h-4" /></button>
                   </div>
                 </li>
               ))}
             </ul>
             {items.length > 3 && (
-              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                 {showAll ? 'Arată mai puțin' : `Vezi toți (${items.length})`}
               </button>
             )}
@@ -122,23 +133,23 @@ export default function SuppliersManager() {
             <h3 className="font-semibold text-white">{editing.id ? 'Editează furnizor' : 'Furnizor nou'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
-                <Label className="mb-1 block text-xs text-[#9FB8CC]">CUI</Label>
+                <Label className="mb-1 block text-xs text-[#A8BED2]">CUI</Label>
                 <div className="flex gap-1">
-                  <Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.cui} onChange={(e) => setEditing({ ...editing, cui: e.target.value })} placeholder="RO12345678" />
+                  <Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.cui} onChange={(e) => setEditing({ ...editing, cui: e.target.value })} placeholder="RO12345678" />
                   <Button className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full" size="sm" variant="outline" onClick={lookupCui} disabled={looking || !editing.cui} title="Preia din ANAF">{looking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'ANAF'}</Button>
                 </div>
               </div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Nume *</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Reg. comerțului</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.regCom} onChange={(e) => setEditing({ ...editing, regCom: e.target.value })} placeholder="J40/..." /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Țara</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.country} onChange={(e) => setEditing({ ...editing, country: e.target.value })} /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Localitate</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.city} onChange={(e) => setEditing({ ...editing, city: e.target.value })} /></div>
-              <div className="md:col-span-2"><Label className="mb-1 block text-xs text-[#9FB8CC]">Adresă</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.address} onChange={(e) => setEditing({ ...editing, address: e.target.value })} /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">IBAN</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value })} /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Email</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
-              <div><Label className="mb-1 block text-xs text-[#9FB8CC]">Telefon</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
+              <div><Label className="mb-1 block text-xs text-[#A8BED2]">Nume *</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></div>
+              <div><Label className="mb-1 block text-xs text-[#A8BED2]">Reg. comerțului</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.regCom} onChange={(e) => setEditing({ ...editing, regCom: e.target.value })} placeholder="J40/..." /></div>
+              <div><Label className="mb-1 block text-xs text-[#A8BED2]">Țara</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.country} onChange={(e) => setEditing({ ...editing, country: e.target.value })} /></div>
+              <div><Label className="mb-1 block text-xs text-[#A8BED2]">Localitate</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.city} onChange={(e) => setEditing({ ...editing, city: e.target.value })} /></div>
+              <div className="md:col-span-2"><Label className="mb-1 block text-xs text-[#A8BED2]">Adresă</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.address} onChange={(e) => setEditing({ ...editing, address: e.target.value })} /></div>
+              <div><Label className="mb-1 block text-xs text-[#A8BED2]">IBAN</Label><Input autoComplete="off" className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value })} /></div>
+              <div><Label className="mb-1 block text-xs text-[#A8BED2]">Email</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} /></div>
+              <div><Label className="mb-1 block text-xs text-[#A8BED2]">Telefon</Label><Input className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></div>
             </div>
             <div className="flex gap-2">
-              <Button className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none" size="sm" disabled={busy || !editing.name} onClick={save}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
+              <Button className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none" size="sm" disabled={busy || !editing.name} onClick={save}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
               <Button className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full" size="sm" variant="outline" onClick={() => setEditing(null)}>Renunță</Button>
             </div>
           </CardContent>

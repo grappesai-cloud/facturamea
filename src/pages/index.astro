@@ -96,12 +96,12 @@ const journeySteps = [
 
       <!-- LEFT: headline + CTAs -->
       <div class="relative z-10 text-center lg:text-left">
-        <h1 class="hero-title text-[2.6rem] leading-[1.04] sm:text-6xl lg:text-[4rem] lg:leading-[0.98] font-extrabold tracking-[-0.045em] text-[#0A2238]">
+        <h1 class="hero-title text-[2.6rem] leading-[1.04] sm:text-6xl lg:text-[4rem] lg:leading-[0.98] font-extrabold tracking-[-0.045em] text-[#07090f]">
           Plătești o dată. <span class="hero-mark">Facturezi pe viață.</span>
         </h1>
         <p class="hero-line mt-6 text-base sm:text-xl text-[#46627A] leading-relaxed max-w-md mx-auto lg:mx-0">
           Fără abonament, fără reînnoiri. O plată de
-          <strong class="bg-[#E1FB15] text-[#0A2238] font-bold px-1.5 rounded">700 RON</strong> și e al tău.
+          <strong class="bg-[#E1FB15] text-[#07090f] font-bold px-1.5 rounded">700 RON</strong> și e al tău.
         </p>
         <StoreBadges class="hero-line mt-8 justify-center lg:justify-start" />
       </div>
@@ -121,7 +121,7 @@ const journeySteps = [
   <!-- ═══════════════ SHOWCASE — text left · phone center · feature list right (pinned, swaps per scroll) ═══════════════ -->
   <section id="functii" class="journey relative scroll-mt-24">
     <div data-journey class="journey-stage relative overflow-hidden px-4 sm:px-6 py-20">
-      <span class="journey-watermark pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[8%] text-[20vw] font-extrabold tracking-tighter leading-none text-[#0A2238]/[0.04] select-none hidden lg:block" aria-hidden="true">facturamea</span>
+      <span class="journey-watermark pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[8%] text-[20vw] font-extrabold tracking-tighter leading-none text-[#07090f]/[0.04] select-none hidden lg:block" aria-hidden="true">facturamea</span>
 
       <div class="journey-inner mx-auto max-w-[1180px] w-full relative">
         <!-- DESKTOP: pinned showcase (text · phone · feature list) -->
@@ -132,7 +132,7 @@ const journeySteps = [
             {journeySteps.map((s, i) => (
               <div data-jstep data-jstep-i={i} class={`jstep ${i === 0 ? 'is-active' : ''}`}>
                 <p class="text-[12px] font-bold uppercase tracking-[0.2em] text-[#1A759F] mb-3">Pasul 0{i + 1}</p>
-                <h2 class="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold text-[#0A2238] tracking-[-0.03em] leading-[1.05]">{s.h}</h2>
+                <h2 class="text-3xl sm:text-4xl lg:text-[2.6rem] font-extrabold text-[#07090f] tracking-[-0.03em] leading-[1.05]">{s.h}</h2>
                 <p class="mt-4 text-[15px] sm:text-base text-[#46627A] leading-relaxed max-w-md mx-auto lg:mx-0">{s.d}</p>
               </div>
             ))}
@@ -140,16 +140,16 @@ const journeySteps = [
 
           <!-- CENTER: phone (screen crossfade per step) -->
           <div class="flex justify-center order-1 lg:order-2">
-            <PhoneFrame class="journey-phone w-[266px] sm:w-[286px] aspect-[286/590]">
+            <PhoneFrame class="journey-phone w-[266px] sm:w-[286px] aspect-[286/590]" screenBg="#0E1F30">
               <!-- 1 · Meniu (all actions) -->
               <div data-jscreen data-jscreen-i="0" class="jscreen is-active absolute inset-0 pt-11 px-4 pb-4">
                 <img class="jvid is-ready" src="/screens/app-meniu.jpeg" alt="facturamea ·meniu facturare" loading="lazy" />
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">facturamea</p>
-                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Meniu</p>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#8FA6BC]">facturamea</p>
+                <p class="text-xl font-extrabold text-[#07090f] mt-0.5">Meniu</p>
                 <div class="mt-3 grid grid-cols-3 gap-2">
                   {['Facturi', 'e-Factura', 'Clienți', 'Produse', 'Cheltuieli', 'Rapoarte', 'Avize', 'Chitanțe', 'Stoc'].map((n) => (
                     <div class="rounded-xl bg-white ring-1 ring-black/[0.05] py-3.5 px-1 grid place-items-center text-center">
-                      <span class="text-[10.5px] font-semibold text-[#0A2238] leading-tight">{n}</span>
+                      <span class="text-[10.5px] font-semibold text-[#07090f] leading-tight">{n}</span>
                     </div>
                   ))}
                 </div>
@@ -158,37 +158,37 @@ const journeySteps = [
               <!-- 2 · Facturare -->
               <div data-jscreen data-jscreen-i="1" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
                 <img class="jvid is-ready" src="/screens/app-facturare.jpeg" alt="facturamea ·ecranul Facturare" loading="lazy" />
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Factură nouă</p>
-                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">FCT-2026-0127</p>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#8FA6BC]">Factură nouă</p>
+                <p class="text-xl font-extrabold text-[#07090f] mt-0.5">FCT-2026-0127</p>
                 <div class="mt-3 rounded-2xl bg-white ring-1 ring-black/[0.04] p-3.5">
-                  <p class="text-[11px] text-[#7C9AB4] font-medium">Client</p>
-                  <p class="text-sm font-bold text-[#0A2238]">Acme Solutions SRL</p>
+                  <p class="text-[11px] text-[#8FA6BC] font-medium">Client</p>
+                  <p class="text-sm font-bold text-[#07090f]">Acme Solutions SRL</p>
                   <div class="mt-3 space-y-2">
                     {[['Consultanță', '2.400'], ['Licență soft', '1.200'], ['Mentenanță', '600']].map(([n, v]) => (
-                      <div class="flex items-center justify-between text-[12.5px]"><span class="text-[#46627A]">{n}</span><span class="font-semibold text-[#0A2238] tabular-nums">{v} lei</span></div>
+                      <div class="flex items-center justify-between text-[12.5px]"><span class="text-[#46627A]">{n}</span><span class="font-semibold text-[#07090f] tabular-nums">{v} lei</span></div>
                     ))}
                   </div>
                   <div class="mt-3 pt-3 border-t border-black/[0.07] flex items-center justify-between">
-                    <span class="text-[12px] text-[#7C9AB4]">Total cu TVA</span>
+                    <span class="text-[12px] text-[#8FA6BC]">Total cu TVA</span>
                     <span class="text-base font-extrabold text-[#168AAD] tabular-nums">4.998 lei</span>
                   </div>
                 </div>
-                <div class="mt-3 rounded-full bg-[#0A2238] text-white text-[13px] font-bold text-center py-3">Emite & trimite în SPV</div>
+                <div class="mt-3 rounded-full bg-[#07090f] text-white text-[13px] font-bold text-center py-3">Emite & trimite în SPV</div>
               </div>
 
               <!-- 3 · Cheltuieli -->
               <div data-jscreen data-jscreen-i="2" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
                 <img class="jvid is-ready" src="/screens/app-cheltuieli.jpeg" alt="facturamea ·ecranul Cheltuieli" loading="lazy" />
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Cheltuieli</p>
-                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Luna aceasta</p>
-                <div class="mt-3 rounded-2xl bg-[#0A2238] p-4 text-white">
-                  <p class="text-[11px] text-[#9FB8CC]">Total cheltuieli</p>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#8FA6BC]">Cheltuieli</p>
+                <p class="text-xl font-extrabold text-[#07090f] mt-0.5">Luna aceasta</p>
+                <div class="mt-3 rounded-2xl bg-[#07090f] p-4 text-white">
+                  <p class="text-[11px] text-[#A8BED2]">Total cheltuieli</p>
                   <p class="text-2xl font-extrabold tabular-nums mt-0.5">7.640 <span class="text-base text-[#E1FB15]">lei</span></p>
                 </div>
                 <div class="mt-3 space-y-2">
                   {[['Combustibil', '1.840', '#52B69A'], ['Chirie birou', '2.500', '#34A0A4'], ['Software', '1.300', '#168AAD'], ['Furnizor TransSped', '2.000', '#1A759F']].map(([n, v, c]) => (
                     <div class="flex items-center justify-between rounded-xl bg-white ring-1 ring-black/[0.04] px-3.5 py-2.5">
-                      <span class="flex items-center gap-2.5 text-[13px] font-semibold text-[#0A2238]"><span class="w-2 h-2 rounded-full" style={`background:${c}`}></span>{n}</span>
+                      <span class="flex items-center gap-2.5 text-[13px] font-semibold text-[#07090f]"><span class="w-2 h-2 rounded-full" style={`background:${c}`}></span>{n}</span>
                       <span class="text-[13px] font-bold text-[#46627A] tabular-nums">{v} lei</span>
                     </div>
                   ))}
@@ -198,8 +198,8 @@ const journeySteps = [
               <!-- 4 · Rapoarte -->
               <div data-jscreen data-jscreen-i="3" class="jscreen absolute inset-0 pt-11 px-4 pb-4">
                 <img class="jvid is-ready" src="/screens/app-rapoarte.jpeg" alt="facturamea ·ecranul Rapoarte" loading="lazy" />
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#7C9AB4]">Rapoarte</p>
-                <p class="text-xl font-extrabold text-[#0A2238] mt-0.5">Vânzări 2026</p>
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-[#8FA6BC]">Rapoarte</p>
+                <p class="text-xl font-extrabold text-[#07090f] mt-0.5">Vânzări 2026</p>
                 <div class="mt-3 rounded-2xl bg-white ring-1 ring-black/[0.04] p-3.5">
                   <div class="flex items-end gap-1.5 h-24">
                     {[40, 62, 50, 78, 66, 92].map((h, i) => (
@@ -210,8 +210,8 @@ const journeySteps = [
                 <div class="mt-3 grid grid-cols-2 gap-2">
                   {[['Încasat', '214.8k'], ['TVA', '34.2k'], ['Facturi', '127'], ['Restanțe', '3']].map(([l, v]) => (
                     <div class="rounded-xl bg-white ring-1 ring-black/[0.04] px-3 py-2.5">
-                      <p class="text-[10px] uppercase tracking-wide text-[#7C9AB4] font-semibold">{l}</p>
-                      <p class="text-sm font-extrabold text-[#0A2238] tabular-nums">{v}</p>
+                      <p class="text-[10px] uppercase tracking-wide text-[#8FA6BC] font-semibold">{l}</p>
+                      <p class="text-sm font-extrabold text-[#07090f] tabular-nums">{v}</p>
                     </div>
                   ))}
                 </div>
@@ -231,14 +231,14 @@ const journeySteps = [
 
         <!-- MOBILE: stacked step cards (sticky card-stack — pin-free, reliable on touch) -->
         <div class="lg:hidden">
-          <h2 data-anim class="text-center text-3xl font-extrabold text-[#0A2238] tracking-[-0.03em] leading-tight mb-9">
+          <h2 data-anim class="text-center text-3xl font-extrabold text-[#07090f] tracking-[-0.03em] leading-tight mb-9">
             Cum funcționează, <span class="hero-mark">pas cu pas.</span>
           </h2>
           <div data-anim-stagger class="space-y-5">
             {journeySteps.map((s, i) => (
               <div class="rounded-[24px] bg-white ring-1 ring-black/[0.06] shadow-[0_18px_50px_-26px_rgba(16,42,67,0.5)] p-6">
                 <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1A759F]">Pasul 0{i + 1} · {s.short}</p>
-                <h3 class="mt-4 text-2xl font-extrabold text-[#0A2238] tracking-[-0.02em] leading-tight">{s.h}</h3>
+                <h3 class="mt-4 text-2xl font-extrabold text-[#07090f] tracking-[-0.02em] leading-tight">{s.h}</h3>
                 <p class="mt-2.5 text-[15px] text-[#46627A] leading-relaxed">{s.d}</p>
               </div>
             ))}
@@ -252,7 +252,7 @@ const journeySteps = [
   <section id="preturi" class="relative px-4 sm:px-6 py-20 lg:py-28 scroll-mt-24">
     <div class="mx-auto max-w-[1180px] grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
       <div>
-        <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.02]">
+        <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#07090f] tracking-[-0.035em] leading-[1.02]">
           O plată. Atât.
         </h2>
         <p data-anim="left" class="text-[#46627A] leading-relaxed mt-5 text-base sm:text-lg max-w-lg">
@@ -265,19 +265,19 @@ const journeySteps = [
         </ul>
       </div>
 
-      <div data-anim="scale" class="rounded-[26px] bg-[#0A2238] text-white p-7 sm:p-10">
-        <div class="inline-block px-3 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold uppercase tracking-wide">Licență pe viață</div>
+      <div data-anim="scale" class="rounded-[26px] bg-[#07090f] text-white p-7 sm:p-10">
+        <div class="inline-block px-3 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold uppercase tracking-wide">Licență pe viață</div>
         <div class="flex items-baseline gap-2 mt-4 mb-1">
           <span class="text-5xl lg:text-6xl font-extrabold tracking-[-0.04em]">700</span>
-          <span class="text-2xl font-bold text-[#9FB8CC]">RON</span>
+          <span class="text-2xl font-bold text-[#A8BED2]">RON</span>
         </div>
-        <p class="text-sm text-[#9FB8CC] mb-7">o singură plată, pentru totdeauna</p>
+        <p class="text-sm text-[#A8BED2] mb-7">o singură plată, pentru totdeauna</p>
         <ul class="space-y-3 text-[15px] text-[#EAF2F8] mb-8">
           {['Facturi, proforme, avize, chitanțe', 'e-Factura ANAF + e-Transport', 'SAF-T D406 & rapoarte', 'Gestiune stocuri, NIR, cheltuieli', 'POS, facturi recurente, multi-utilizator', 'Aplicații web, iOS și Android'].map((item) => (
-            <li class="flex items-start gap-3"><span class="shrink-0 w-6 h-6 rounded-full bg-[#E1FB15] text-[#0A2238] flex items-center justify-center text-xs font-bold mt-0.5">✓</span> {item}</li>
+            <li class="flex items-start gap-3"><span class="shrink-0 w-6 h-6 rounded-full bg-[#E1FB15] text-[#07090f] flex items-center justify-center text-xs font-bold mt-0.5">✓</span> {item}</li>
           ))}
         </ul>
-        <a href="/auth/register" data-magnetic class="block text-center w-full px-6 py-4 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] transition-colors">
+        <a href="/auth/register" data-magnetic class="block text-center w-full px-6 py-4 rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] transition-colors">
           Începe gratuit
         </a>
         <div class="mt-5 flex items-center justify-center gap-3">
@@ -290,7 +290,7 @@ const journeySteps = [
             <span class="text-[12px] font-semibold">Google Play</span>
           </a>
         </div>
-        <p class="text-center text-xs text-[#7C9AB4] mt-4">Acces complet, imediat după plată.</p>
+        <p class="text-center text-xs text-[#8FA6BC] mt-4">Acces complet, imediat după plată.</p>
       </div>
     </div>
   </section>
@@ -298,24 +298,24 @@ const journeySteps = [
   <!-- ═══════════════ APLICAȚII ═══════════════ -->
   <section id="aplicatii" class="relative px-4 sm:px-6 py-16 sm:py-20 scroll-mt-24">
     <div class="mx-auto max-w-[1180px] flex flex-col items-center text-center">
-      <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.02] max-w-2xl">
+      <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#07090f] tracking-[-0.035em] leading-[1.02] max-w-2xl">
         Web, iOS și Android, cu același cont.
       </h2>
       <p data-anim="scale" class="text-[#46627A] leading-relaxed max-w-xl mt-5 text-base sm:text-lg">
         Emite o factură de la birou, verifică încasările din mers și ține stocul la zi de oriunde. Datele se sincronizează în timp real.
       </p>
       <div data-anim-stagger class="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
-        <a href="/app" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#0A2238] text-white hover:bg-[#14304b] transition-colors">
+        <a href="/app" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#07090f] text-white hover:bg-[#14304b] transition-colors">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 16 0 18M12 3c-2.5 2.5-2.5 16 0 18" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="text-left leading-tight"><span class="block text-[10px] text-[#9FB8CC]">Deschide în</span><span class="block text-[15px] font-bold">Aplicație web</span></span>
+          <span class="text-left leading-tight"><span class="block text-[10px] text-[#A8BED2]">Deschide în</span><span class="block text-[15px] font-bold">Aplicație web</span></span>
         </a>
-        <a href="/auth/register" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#0A2238] text-white hover:bg-[#14304b] transition-colors">
+        <a href="/auth/register" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#07090f] text-white hover:bg-[#14304b] transition-colors">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.9c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7 2-1.1 2.7-2.1c.9-1.2 1.2-2.4 1.2-2.5-.1 0-2.3-.9-2.3-3.4zM14.1 5.9c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.3-.6.7-1.1 1.7-1 2.7 1 .1 2-.5 2.7-1.1z"/></svg>
-          <span class="text-left leading-tight"><span class="block text-[10px] text-[#9FB8CC]">Descarcă pe</span><span class="block text-[15px] font-bold">App Store</span></span>
+          <span class="text-left leading-tight"><span class="block text-[10px] text-[#A8BED2]">Descarcă pe</span><span class="block text-[15px] font-bold">App Store</span></span>
         </a>
-        <a href="/auth/register" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#0A2238] text-white hover:bg-[#14304b] transition-colors">
+        <a href="/auth/register" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#07090f] text-white hover:bg-[#14304b] transition-colors">
           <svg width="20" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 2.5v19l10.5-9.5L3 2.5z" fill="#34A0A4"/><path d="M3 2.5l10.5 9.5 3-2.7L4.6 1.6A1.7 1.7 0 0 0 3 2.5z" fill="#76C893"/><path d="M3 21.5l10.5-9.5 3 2.7-11.9 7.7a1.7 1.7 0 0 1-1.6-.9z" fill="#168AAD"/><path d="M16.5 9.3l-3 2.7 3 2.7 3.6-2a1.5 1.5 0 0 0 0-1.4l-3.6-2z" fill="#E1FB15"/></svg>
-          <span class="text-left leading-tight"><span class="block text-[10px] text-[#9FB8CC]">Disponibil pe</span><span class="block text-[15px] font-bold">Google Play</span></span>
+          <span class="text-left leading-tight"><span class="block text-[10px] text-[#A8BED2]">Disponibil pe</span><span class="block text-[15px] font-bold">Google Play</span></span>
         </a>
       </div>
     </div>
@@ -327,19 +327,19 @@ const journeySteps = [
       <div class="flex items-end justify-between gap-4 mb-8">
         <div>
           <p class="text-[13px] font-semibold uppercase tracking-wide text-[#34A0A4] mb-2">Blog</p>
-          <h2 class="text-3xl lg:text-4xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.05]">Ghiduri de facturare și fiscalitate</h2>
+          <h2 class="text-3xl lg:text-4xl font-extrabold text-[#07090f] tracking-[-0.035em] leading-[1.05]">Ghiduri de facturare și fiscalitate</h2>
         </div>
-        <a href="/blog" class="hidden sm:inline-block shrink-0 px-5 py-2.5 rounded-full bg-[#0A2238] text-white font-bold text-[14px] hover:bg-[#143049] transition-colors">Vezi toate</a>
+        <a href="/blog" class="hidden sm:inline-block shrink-0 px-5 py-2.5 rounded-full bg-[#07090f] text-white font-bold text-[14px] hover:bg-[#143049] transition-colors">Vezi toate</a>
       </div>
       <BlogPreview client:load />
-      <a href="/blog" class="sm:hidden mt-6 inline-block px-5 py-2.5 rounded-full bg-[#0A2238] text-white font-bold text-[14px]">Vezi toate articolele</a>
+      <a href="/blog" class="sm:hidden mt-6 inline-block px-5 py-2.5 rounded-full bg-[#07090f] text-white font-bold text-[14px]">Vezi toate articolele</a>
     </div>
   </section>
 
   <!-- ═══════════════ FAQ ═══════════════ -->
   <section id="faq" class="relative px-4 sm:px-6 py-20 lg:py-24 scroll-mt-24">
     <div class="mx-auto max-w-[1180px] grid lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-16 lg:items-start">
-      <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#0A2238] tracking-[-0.035em] leading-[1.02]">
+      <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#07090f] tracking-[-0.035em] leading-[1.02]">
         Întrebări frecvente.
       </h2>
       <div data-anim-stagger class="space-y-3">
@@ -350,9 +350,9 @@ const journeySteps = [
           { q: 'Funcționează și pe telefon?', a: 'Da. Ai aplicație web plus aplicații native iOS și Android, sincronizate cu același cont.' },
         ].map((item) => (
           <details data-faq class="group rounded-2xl bg-white ring-1 ring-black/[0.04] overflow-hidden">
-            <summary class="cursor-pointer list-none px-5 sm:px-6 py-[1.125rem] font-semibold text-[#0A2238] flex items-center justify-between gap-4 hover:bg-black/[0.015] transition-colors">
+            <summary class="cursor-pointer list-none px-5 sm:px-6 py-[1.125rem] font-semibold text-[#07090f] flex items-center justify-between gap-4 hover:bg-black/[0.015] transition-colors">
               <span>{item.q}</span>
-              <span class="faq-ico shrink-0 grid place-items-center w-9 h-9 rounded-full bg-[#0A2238] text-white transition-transform duration-300 group-open:rotate-180">
+              <span class="faq-ico shrink-0 grid place-items-center w-9 h-9 rounded-full bg-[#07090f] text-white transition-transform duration-300 group-open:rotate-180">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
               </span>
             </summary>
@@ -387,14 +387,14 @@ const journeySteps = [
     .journey { --jease: cubic-bezier(0.22, 0.61, 0.36, 1); }
     .jstep { transition: opacity 0.6s var(--jease), transform 0.6s var(--jease); }
     .jstep + .jstep { margin-top: 2rem; }               /* mobile: stacked list */
-    .jscreen { opacity: 0; transform: scale(0.965) translateY(12px); transition: opacity 0.55s var(--jease), transform 0.55s var(--jease); will-change: opacity, transform; }
-    .jscreen.is-active { opacity: 1; transform: scale(1) translateY(0); }
+    .jscreen { opacity: 0; }
+    .jscreen.is-active { opacity: 1; }
     /* video layer (screenshots/videos drop into /public/showcase) — fades in once loaded, mockup is the fallback */
     .jvid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; z-index: 6; pointer-events: none; transition: opacity 0.5s var(--jease); }
     .jvid.is-ready { opacity: 1; }
     .jnav-item { display: inline-flex; align-items: center; gap: 0.6rem; font-size: 1.15rem; font-weight: 800; letter-spacing: 0.03em; color: #8DA0B3; opacity: 0.55; transition: color 0.4s var(--jease), opacity 0.4s var(--jease), transform 0.4s var(--jease); }
     .jnav-item:hover { opacity: 0.85; }
-    .jnav-item.is-active { color: #0A2238; opacity: 1; transform: translateX(4px); }
+    .jnav-item.is-active { color: #07090f; opacity: 1; transform: translateX(4px); }
 
     /* desktop pinned mode (class added by JS, fine-pointer + motion on) */
     .is-journey { min-height: 100vh; display: flex; align-items: center; padding-top: 0; padding-bottom: 0; }

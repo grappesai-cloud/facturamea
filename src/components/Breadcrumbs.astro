@@ -98,11 +98,11 @@ if (currentTitle && crumbs.length > 0) {
     <ol class="flex items-center flex-wrap gap-1.5">
       {crumbs.map((c, i) => (
         <li class="flex items-center gap-1.5">
-          {i > 0 && <span class="text-[#9FB8CC]">/</span>}
+          {i > 0 && <span class="text-[#A8BED2]">/</span>}
           {i === crumbs.length - 1 ? (
-            <span class="text-[#0A2238] font-medium truncate max-w-[40ch]">{c.label}</span>
+            <span class="text-[#07090f] font-medium truncate max-w-[40ch]">{c.label}</span>
           ) : c.href ? (
-            <a href={c.href} class="hover:text-[#0A2238] transition-colors">{c.label}</a>
+            <a href={c.href} class="hover:text-[#07090f] transition-colors">{c.label}</a>
           ) : (
             <span class="truncate max-w-[40ch]">{c.label}</span>
           )}

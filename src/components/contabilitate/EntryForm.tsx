@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DatePicker } from '../ui/DatePicker';
 
 interface Account {
   code: string;
@@ -107,13 +108,13 @@ export default function EntryForm() {
   };
 
   const inputCls =
-    'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+    'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
 
   if (!open) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E]"
+        className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -129,10 +130,10 @@ export default function EntryForm() {
         <h2 className="text-[18px] font-bold text-white">Notă contabilă nouă</h2>
         <button
           onClick={() => { setOpen(false); reset(); }}
-          className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/15"
+          className="fm-close-btn"
           aria-label="Închide"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -140,11 +141,11 @@ export default function EntryForm() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
         <div>
-          <label className="block text-[13px] font-medium text-[#9FB8CC] mb-1.5">Data</label>
-          <input type="date" value={entryDate} onChange={(e) => setEntryDate(e.target.value)} className={`${inputCls} [color-scheme:dark]`} />
+          <label className="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Data</label>
+          <DatePicker value={entryDate} onChange={(v) => setEntryDate(v)} />
         </div>
         <div>
-          <label className="block text-[13px] font-medium text-[#9FB8CC] mb-1.5">Descriere</label>
+          <label className="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Descriere</label>
           <input
             type="text"
             value={description}
@@ -170,10 +171,10 @@ export default function EntryForm() {
                 autoComplete="off"
               />
               {l.accountCode && accountName(l.accountCode) && (
-                <p className="text-[12px] text-[#7C9AB4] mt-1 truncate">{accountName(l.accountCode)}</p>
+                <p className="text-[12px] text-[#8FA6BC] mt-1 truncate">{accountName(l.accountCode)}</p>
               )}
               {activeAuto === i && l.accountCode.trim() && (
-                <div className="absolute z-20 left-0 right-0 mt-1 bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-lg max-h-56 overflow-y-auto">
+                <div className="absolute z-20 left-0 right-0 mt-1 bg-[#07090f] ring-1 ring-white/10 rounded-2xl shadow-lg max-h-56 overflow-y-auto">
                   {accounts
                     .filter(
                       (a) =>
@@ -189,7 +190,7 @@ export default function EntryForm() {
                         className="w-full text-left px-3 py-2 hover:bg-white/5 flex items-center gap-2"
                       >
                         <span className="font-mono font-semibold text-[14px] text-white w-[56px] shrink-0">{a.code}</span>
-                        <span className="text-[13px] text-[#9FB8CC] truncate">{a.name}</span>
+                        <span className="text-[13px] text-[#A8BED2] truncate">{a.name}</span>
                       </button>
                     ))}
                 </div>
@@ -219,7 +220,7 @@ export default function EntryForm() {
               <button
                 onClick={() => removeLine(i)}
                 disabled={lines.length <= 2}
-                className="w-11 h-11 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-11 h-11 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                 aria-label="Șterge rând"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -232,7 +233,7 @@ export default function EntryForm() {
                   value={l.note}
                   onChange={(e) => setLine(i, { note: e.target.value })}
                   placeholder="Notă rând (opțional)"
-                  className="w-full rounded-xl bg-white/10 px-4 py-2 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40"
+                  className="w-full rounded-xl bg-white/10 px-4 py-2 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40"
                 />
               </div>
             )}
@@ -252,15 +253,15 @@ export default function EntryForm() {
 
       <div className="mt-5 flex flex-wrap items-center gap-4 px-4 py-3 rounded-2xl bg-white/5">
         <div className="flex-1 min-w-[120px]">
-          <p className="text-[12px] text-[#7C9AB4] uppercase tracking-wide">Total debit</p>
+          <p className="text-[12px] text-[#8FA6BC] uppercase tracking-wide">Total debit</p>
           <p className="text-[22px] font-bold tabular-nums text-white">{ron(totals.debit)}</p>
         </div>
         <div className="flex-1 min-w-[120px]">
-          <p className="text-[12px] text-[#7C9AB4] uppercase tracking-wide">Total credit</p>
+          <p className="text-[12px] text-[#8FA6BC] uppercase tracking-wide">Total credit</p>
           <p className="text-[22px] font-bold tabular-nums text-white">{ron(totals.credit)}</p>
         </div>
         <div className="flex-1 min-w-[120px]">
-          <p className="text-[12px] text-[#7C9AB4] uppercase tracking-wide">Diferență</p>
+          <p className="text-[12px] text-[#8FA6BC] uppercase tracking-wide">Diferență</p>
           <p className={`text-[22px] font-bold tabular-nums ${totals.balanced ? 'text-[#2E9E6A]' : 'text-[#DC4B41]'}`}>
             {totals.balanced ? 'Echilibrată' : ron(totals.diff)}
           </p>
@@ -273,7 +274,7 @@ export default function EntryForm() {
         <button
           onClick={save}
           disabled={busy || !totals.balanced}
-          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {busy ? 'Se salvează...' : 'Salvează nota'}
         </button>

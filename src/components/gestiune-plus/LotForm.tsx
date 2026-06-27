@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
+import { DatePicker } from '../ui/DatePicker';
 import { Loader2, Check, Plus } from 'lucide-react';
 
 interface Warehouse { id: string; name: string; }
@@ -59,9 +60,9 @@ export default function LotForm() {
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
-  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#7C9AB4] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
   const selectCls = `${inputCls} [color-scheme:dark]`;
-  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] shadow-none';
+  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
 
   return (
     <div className="space-y-4">
@@ -73,23 +74,23 @@ export default function LotForm() {
         <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Produs *</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Produs *</Label>
               <Select className={selectCls} value={productId} onChange={(e) => setProductId(e.target.value)}>
                 <option value="">Alege produsul</option>
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </Select>
             </div>
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Gestiune</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Gestiune</Label>
               <Select className={selectCls} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
                 <option value="">Fără gestiune</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
               </Select>
             </div>
-            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Cod lot *</Label><Input className={inputCls} value={lotCode} onChange={(e) => setLotCode(e.target.value)} placeholder="LOT-2026-001" /></div>
-            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Data expirării</Label><Input className={`${inputCls} [color-scheme:dark]`} type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} /></div>
-            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Cantitate</Label><Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="0" /></div>
-            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Cost unitar (RON)</Label><Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" /></div>
+            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Cod lot *</Label><Input className={inputCls} value={lotCode} onChange={(e) => setLotCode(e.target.value)} placeholder="LOT-2026-001" /></div>
+            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Data expirării</Label><DatePicker value={expiryDate} onChange={(v) => setExpiryDate(v)} /></div>
+            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Cantitate</Label><Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="0" /></div>
+            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Cost unitar (RON)</Label><Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={unitCost} onChange={(e) => setUnitCost(e.target.value)} placeholder="0.00" /></div>
           </div>
           <Button className={btnPrimary} disabled={busy} onClick={submit}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4 mr-1" /> Adaugă lot</>}</Button>
         </CardContent>

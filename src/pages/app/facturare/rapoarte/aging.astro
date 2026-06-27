@@ -65,16 +65,16 @@ const fmt = (cents: number) => cents === 0 ? '—' : (cents / 100).toLocaleStrin
   <div class="mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 print:hidden">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Vechime solduri clienți</h1>
-      <p class="text-[14px] text-[#9FB8CC] mt-1">Solduri restante grupate pe vechime, după data scadenței facturilor neîncasate.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-1">Solduri restante grupate pe vechime, după data scadenței facturilor neîncasate.</p>
     </div>
   </div>
 
   <!-- KPI summary -->
   <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-8">
     <div class="rounded-2xl p-5 bg-white/5">
-      <p class="text-[13px] font-medium text-[#7C9AB4]">Total restant</p>
+      <p class="text-[13px] font-medium text-[#8FA6BC]">Total restant</p>
       <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2">{fmt(totals.total)}</p>
-      <p class="text-[12px] text-[#7C9AB4] mt-1">{totals.invoiceCount} facturi</p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1">{totals.invoiceCount} facturi</p>
     </div>
     <div class="rounded-2xl p-5 bg-white/5">
       <p class="text-[13px] font-medium text-[#2E9E6A]">În termen</p>
@@ -102,7 +102,7 @@ const fmt = (cents: number) => cents === 0 ? '—' : (cents / 100).toLocaleStrin
   <div class="rounded-2xl bg-white/5 overflow-x-auto">
     <table class="w-full min-w-[560px] text-[13px]">
       <thead class="bg-white/5">
-        <tr class="text-left text-[12px] text-[#7C9AB4] font-semibold">
+        <tr class="text-left text-[12px] text-[#8FA6BC] font-semibold">
           <th class="py-3 px-4">Client</th>
           <th class="py-3 px-4">CUI</th>
           <th class="py-3 px-4 text-right">În termen</th>
@@ -116,19 +116,19 @@ const fmt = (cents: number) => cents === 0 ? '—' : (cents / 100).toLocaleStrin
       </thead>
       <tbody>
         {rows.length === 0 && (
-          <tr><td colspan="9" class="py-10 text-center text-[#9FB8CC]">Niciun sold restant.</td></tr>
+          <tr><td colspan="9" class="py-10 text-center text-[#A8BED2]">Niciun sold restant.</td></tr>
         )}
         {rows.map((r) => (
           <tr class="border-t border-white/10 hover:bg-white/5 transition-colors">
             <td class="py-3 px-4 font-medium text-white">{r.clientName}</td>
-            <td class="py-3 px-4 text-xs text-[#7C9AB4] font-mono">{r.clientTaxId ?? '—'}</td>
+            <td class="py-3 px-4 text-xs text-[#8FA6BC] font-mono">{r.clientTaxId ?? '—'}</td>
             <td class="py-3 px-4 text-right tabular-nums text-[#2E9E6A]">{fmt(r.bucketCurrent)}</td>
-            <td class="py-3 px-4 text-right tabular-nums text-[#9FB8CC]">{fmt(r.bucket30)}</td>
-            <td class="py-3 px-4 text-right tabular-nums text-[#9FB8CC]">{fmt(r.bucket60)}</td>
-            <td class="py-3 px-4 text-right tabular-nums text-[#9FB8CC]">{fmt(r.bucket90)}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#A8BED2]">{fmt(r.bucket30)}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#A8BED2]">{fmt(r.bucket60)}</td>
+            <td class="py-3 px-4 text-right tabular-nums text-[#A8BED2]">{fmt(r.bucket90)}</td>
             <td class="py-3 px-4 text-right tabular-nums text-[#DC4B41]">{fmt(r.bucket90plus)}</td>
             <td class="py-3 px-4 text-right tabular-nums font-bold text-white">{fmt(r.total)}</td>
-            <td class="py-3 px-4 text-right text-[#7C9AB4]">{r.invoiceCount}</td>
+            <td class="py-3 px-4 text-right text-[#8FA6BC]">{r.invoiceCount}</td>
           </tr>
         ))}
       </tbody>

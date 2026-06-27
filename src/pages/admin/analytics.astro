@@ -41,7 +41,7 @@ const [registered] = await db.select({ c: sql<number>`COUNT(*)::int` }).from(use
 const conversionPct = waitlistTotal?.c ? Math.round(((registered?.c ?? 0) / waitlistTotal.c) * 100) : 0;
 
 function sparkline(series: { d: string; c: number }[], w = 280, h = 50): string {
-  if (series.length === 0) return '<div class="h-12 flex items-center justify-center text-[11px] text-[#9FB8CC]">Date insuficiente</div>';
+  if (series.length === 0) return '<div class="h-12 flex items-center justify-center text-[11px] text-[#A8BED2]">Date insuficiente</div>';
   const max = Math.max(...series.map((s) => s.c), 1);
   const stepX = w / Math.max(series.length - 1, 1);
   const points = series.map((s, i) => `${i * stepX},${h - (s.c / max) * (h - 6) - 3}`).join(' ');
@@ -69,12 +69,12 @@ const series = [
         <p class="text-[24px] font-bold tabular-nums">{waitlistTotal?.c ?? 0}</p>
         <p class="text-[11px] text-[#46627A]">Waitlist</p>
       </div>
-      <span class="text-[#9FB8CC]">→</span>
+      <span class="text-[#A8BED2]">→</span>
       <div class="text-center">
         <p class="text-[24px] font-bold tabular-nums">{registered?.c ?? 0}</p>
         <p class="text-[11px] text-[#46627A]">Înregistraţi</p>
       </div>
-      <span class="text-[#9FB8CC]">·</span>
+      <span class="text-[#A8BED2]">·</span>
       <div class="text-center">
         <p class="text-[24px] font-bold tabular-nums text-[#1A759F]">{conversionPct}%</p>
         <p class="text-[11px] text-[#46627A]">conversie</p>
@@ -90,7 +90,7 @@ const series = [
           <p class="text-[20px] font-bold tabular-nums">{s.total.toLocaleString()}</p>
         </div>
         <div set:html={sparkline(s.data)} />
-        <div class="flex justify-between text-[10px] text-[#9FB8CC] mt-2">
+        <div class="flex justify-between text-[10px] text-[#A8BED2] mt-2">
           <span>{s.data[0]?.d ?? ''}</span>
           <span>{s.data[s.data.length - 1]?.d ?? ''}</span>
         </div>
@@ -109,7 +109,7 @@ const series = [
         {topRoutes.map((r, i) => (
           <div class="px-5 py-2.5 flex items-center justify-between text-[13px]">
             <span class="flex items-center gap-3">
-              <span class="text-[#9FB8CC] font-mono w-6 text-right">{i + 1}.</span>
+              <span class="text-[#A8BED2] font-mono w-6 text-right">{i + 1}.</span>
               <span class="font-medium">{r.route}</span>
             </span>
             <span class="font-semibold tabular-nums">{r.c}</span>

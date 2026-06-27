@@ -43,30 +43,30 @@ const createInvoiceResp = `{
 
 const methodColor: Record<string, string> = {
   GET: 'text-[#2E9E6A] bg-[#2E9E6A]/12',
-  POST: 'text-[#0A2238] bg-[#E1FB15]',
+  POST: 'text-[#07090f] bg-[#E1FB15]',
 };
 
-const codeChip = 'font-mono text-[#0A2238] bg-[#0A2238]/[0.06] px-1.5 py-0.5 rounded';
-const preCls = 'bg-[#0A2238] text-[#C9D6E0] text-[13px] rounded-xl p-4 overflow-x-auto font-mono';
+const codeChip = 'font-mono text-[#07090f] bg-[#07090f]/[0.06] px-1.5 py-0.5 rounded';
+const preCls = 'bg-[#07090f] text-[#C9D6E0] text-[13px] rounded-xl p-4 overflow-x-auto font-mono';
 ---
 
 <PublicLayout title="API pentru dezvoltatori — facturamea" description="Documentația API v1 facturamea: emite facturi, gestionează clienți și produse din propriile aplicații. Autentificare cu cheie API, mod live și test.">
   <main class="max-w-3xl mx-auto px-5 sm:px-6 py-12 sm:py-16">
-    <a href="/app/setari/api" class="text-[13px] text-[#46627A] hover:text-[#0A2238]">← Înapoi la chei API</a>
-    <h1 class="text-[34px] sm:text-[44px] font-semibold tracking-[-0.03em] text-[#0A2238] mt-3">API pentru dezvoltatori</h1>
+    <a href="/app/setari/api" class="text-[13px] text-[#46627A] hover:text-[#07090f]">← Înapoi la chei API</a>
+    <h1 class="text-[34px] sm:text-[44px] font-semibold tracking-[-0.03em] text-[#07090f] mt-3">API pentru dezvoltatori</h1>
     <p class="text-[15px] text-[#46627A] mt-3 leading-relaxed">
       Conectează facturamea la propriile aplicații sau la alte sisteme de facturare. Poți emite facturi, gestiona clienți
-      și produse programatic, prin REST. Toate sumele sunt în <strong class="text-[#0A2238]">bani</strong> (întregi), iar
+      și produse programatic, prin REST. Toate sumele sunt în <strong class="text-[#07090f]">bani</strong> (întregi), iar
       totalurile sunt calculate pe server.
     </p>
 
     <!-- Auth -->
     <section class="mt-10">
-      <h2 class="text-[22px] font-bold text-[#0A2238]">Autentificare</h2>
+      <h2 class="text-[22px] font-bold text-[#07090f]">Autentificare</h2>
       <p class="text-[14px] text-[#46627A] mt-2 leading-relaxed">
         Generează o cheie din <a href="/app/setari/api" class="text-[#1A759F] font-medium hover:underline">Setări → API & integrări</a>
         și trimite-o în header-ul <code class={codeChip}>Authorization</code>.
-        Cheile <code class={codeChip}>fm_test_…</code> sunt <strong class="text-[#0A2238]">read-only</strong>
+        Cheile <code class={codeChip}>fm_test_…</code> sunt <strong class="text-[#07090f]">read-only</strong>
         (nu consumă o serie fiscală reală); cele <code class={codeChip}>fm_live_…</code> emit documente reale.
       </p>
       <pre class={`${preCls} mt-3`}><code>curl {BASE}/ping \
@@ -75,18 +75,18 @@ const preCls = 'bg-[#0A2238] text-[#C9D6E0] text-[13px] rounded-xl p-4 overflow-
 
     <!-- Base URL -->
     <section class="mt-10">
-      <h2 class="text-[22px] font-bold text-[#0A2238]">Adresa de bază</h2>
+      <h2 class="text-[22px] font-bold text-[#07090f]">Adresa de bază</h2>
       <pre class={`${preCls} mt-3 text-white`}>{BASE}</pre>
     </section>
 
     <!-- Endpoints -->
     <section class="mt-10">
-      <h2 class="text-[22px] font-bold text-[#0A2238]">Endpoint-uri</h2>
-      <div class="mt-3 rounded-2xl overflow-hidden border border-[#0A2238]/10">
+      <h2 class="text-[22px] font-bold text-[#07090f]">Endpoint-uri</h2>
+      <div class="mt-3 rounded-2xl overflow-hidden border border-[#07090f]/10">
         {endpoints.map((e, i) => (
-          <div class={`flex items-center gap-3 px-4 py-3 ${i % 2 ? 'bg-[#0A2238]/[0.02]' : 'bg-[#0A2238]/[0.04]'}`}>
+          <div class={`flex items-center gap-3 px-4 py-3 ${i % 2 ? 'bg-[#07090f]/[0.02]' : 'bg-[#07090f]/[0.04]'}`}>
             <span class={`shrink-0 w-14 text-center text-[12px] font-bold rounded-md py-1 ${methodColor[e.method]}`}>{e.method}</span>
-            <code class="font-mono text-[13px] text-[#0A2238] shrink-0">{e.path}</code>
+            <code class="font-mono text-[13px] text-[#07090f] shrink-0">{e.path}</code>
             <span class="text-[13px] text-[#46627A] truncate">{e.desc}</span>
           </div>
         ))}
@@ -95,7 +95,7 @@ const preCls = 'bg-[#0A2238] text-[#C9D6E0] text-[13px] rounded-xl p-4 overflow-
 
     <!-- Create invoice -->
     <section class="mt-10">
-      <h2 class="text-[22px] font-bold text-[#0A2238]">Emite o factură</h2>
+      <h2 class="text-[22px] font-bold text-[#07090f]">Emite o factură</h2>
       <p class="text-[14px] text-[#46627A] mt-2 leading-relaxed">
         <code class={codeChip}>POST /invoices</code>. Trimite fie <code class={codeChip}>clientId</code> (un client existent),
         fie un obiect <code class={codeChip}>client</code> inline cu cel puțin <code class={codeChip}>name</code>. Fiecare
@@ -112,7 +112,7 @@ const preCls = 'bg-[#0A2238] text-[#C9D6E0] text-[13px] rounded-xl p-4 overflow-
 
     <!-- Errors -->
     <section class="mt-10">
-      <h2 class="text-[22px] font-bold text-[#0A2238]">Erori</h2>
+      <h2 class="text-[22px] font-bold text-[#07090f]">Erori</h2>
       <p class="text-[14px] text-[#46627A] mt-2 leading-relaxed">
         Răspunsurile de eroare au forma <code class={codeChip}>{'{ "error", "message" }'}</code>:
         <code class={codeChip}>401 unauthorized</code> (cheie lipsă/invalidă),
@@ -122,7 +122,7 @@ const preCls = 'bg-[#0A2238] text-[#C9D6E0] text-[13px] rounded-xl p-4 overflow-
       </p>
     </section>
 
-    <section class="mt-12 rounded-2xl p-5 bg-[#0A2238]/[0.04] border border-[#0A2238]/10">
+    <section class="mt-12 rounded-2xl p-5 bg-[#07090f]/[0.04] border border-[#07090f]/10">
       <p class="text-[14px] text-[#46627A]">
         Vrei integrare cu un magazin (WooCommerce, Shopify, eMag, PrestaShop, Gomag) sau cu plăți (Stripe, Netopia, PayU)?
         Acelea se configurează fără cod din <a href="/app/setari/integrari" class="text-[#1A759F] font-medium hover:underline">Setări → Integrări</a>.

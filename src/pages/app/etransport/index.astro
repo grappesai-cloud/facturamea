@@ -33,7 +33,7 @@ function statusPill(status: string) {
     case 'sent': return { label: 'Trimisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' };
     case 'confirmed': return { label: 'Confirmată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' };
     case 'error': return { label: 'Eroare', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' };
-    default: return { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' };
+    default: return { label: 'Ciornă', cls: 'bg-white/10 text-[#A8BED2]' };
   }
 }
 ---
@@ -42,23 +42,23 @@ function statusPill(status: string) {
   <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">e-Transport (UIT)</h1>
-      <p class="text-[14px] text-[#9FB8CC] mt-2">Declarațiile de transport trimise la ANAF.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-2">Declarațiile de transport trimise la ANAF.</p>
     </div>
-    <a href="/app/etransport/nou" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
+    <a href="/app/etransport/nou" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
       + Declarație nouă
     </a>
   </div>
 
   {!anaf.connected && (
     <div class="rounded-2xl p-5 mb-6 bg-[#E8A33C]/15 flex flex-wrap items-center gap-3">
-      <p class="text-[13px] text-[#9FB8CC]">Poți pregăti declarații ca ciorne. Pentru a le trimite la ANAF, conectează firma din <strong class="text-white">Setări → Integrare ANAF</strong>.</p>
+      <p class="text-[13px] text-[#A8BED2]">Poți pregăti declarații ca ciorne. Pentru a le trimite la ANAF, conectează firma din <strong class="text-white">Setări → Integrare ANAF</strong>.</p>
       <a href="/app/setari/integrari-anaf" class="text-[13px] font-semibold text-[#E1FB15] hover:underline ml-auto">Conectează →</a>
     </div>
   )}
 
   {rows.length === 0 ? (
     <div class="rounded-2xl p-5 bg-white/5 py-14 text-center">
-      <p class="text-[14px] text-[#9FB8CC]">Nicio declarație încă.</p>
+      <p class="text-[14px] text-[#A8BED2]">Nicio declarație încă.</p>
       <a href="/app/etransport/nou" class="inline-block mt-3 text-[14px] font-semibold text-[#E1FB15] hover:underline">Creează prima declarație →</a>
     </div>
   ) : (
@@ -73,8 +73,8 @@ function statusPill(status: string) {
                   <span class="font-mono font-bold text-white">{d.uit || 'Ciornă'}</span>
                   <span class={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${pill.cls}`}>{pill.label}</span>
                 </div>
-                <p class="text-[13px] text-[#9FB8CC] mt-1 truncate">{d.senderName || '-'} → {d.recipientName || '-'}</p>
-                <p class="text-[13px] text-[#7C9AB4] mt-0.5 tabular-nums">
+                <p class="text-[13px] text-[#A8BED2] mt-1 truncate">{d.senderName || '-'} → {d.recipientName || '-'}</p>
+                <p class="text-[13px] text-[#8FA6BC] mt-0.5 tabular-nums">
                   {[d.operationType, d.vehiclePlate, fmtDate(d.createdAt)].filter(Boolean).join(' · ')}
                 </p>
                 {d.status === 'error' && d.errorText && (
@@ -93,7 +93,7 @@ function statusPill(status: string) {
       </ul>
       {rows.length > 3 && (
         <details class="mt-2.5">
-          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
           <ul class="space-y-2.5 mt-2.5">
             {rows.slice(3).map((d) => {
               const pill = statusPill(d.status);
@@ -104,8 +104,8 @@ function statusPill(status: string) {
                       <span class="font-mono font-bold text-white">{d.uit || 'Ciornă'}</span>
                       <span class={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${pill.cls}`}>{pill.label}</span>
                     </div>
-                    <p class="text-[13px] text-[#9FB8CC] mt-1 truncate">{d.senderName || '-'} → {d.recipientName || '-'}</p>
-                    <p class="text-[13px] text-[#7C9AB4] mt-0.5 tabular-nums">
+                    <p class="text-[13px] text-[#A8BED2] mt-1 truncate">{d.senderName || '-'} → {d.recipientName || '-'}</p>
+                    <p class="text-[13px] text-[#8FA6BC] mt-0.5 tabular-nums">
                       {[d.operationType, d.vehiclePlate, fmtDate(d.createdAt)].filter(Boolean).join(' · ')}
                     </p>
                     {d.status === 'error' && d.errorText && (

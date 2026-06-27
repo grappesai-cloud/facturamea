@@ -50,13 +50,13 @@ export default function InvoicingSettings({ initial }: { initial: Initial }) {
           <input type="checkbox" checked={tva} onChange={(e) => setTva(e.target.checked)} className="mt-1" />
           <span>
             <strong>TVA la încasare</strong> (art. 282 Cod fiscal)
-            <span className="block text-xs text-[#9FB8CC] mt-0.5">Bifează dacă firma e înscrisă în registrul TVA la încasare. Mențiunea legală apare automat pe facturile emise după salvare.</span>
+            <span className="block text-xs text-[#A8BED2] mt-0.5">Bifează dacă firma e înscrisă în registrul TVA la încasare. Mențiunea legală apare automat pe facturile emise după salvare.</span>
           </span>
         </label>
       </div>
 
       <div className="flex items-center gap-3">
-        <Button onClick={save} disabled={saving} className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100">
+        <Button onClick={save} disabled={saving} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100">
           {saving ? <Loader2 className="w-4 h-4 mr-1.5 animate-spin" /> : <Check className="w-4 h-4 mr-1.5" />}
           Salvează setări
         </Button>
@@ -85,15 +85,15 @@ function BrandingSlot({ label, hint, url, setUrl }: { label: string; hint: strin
 
   return (
     <div className="bg-white/5 rounded-2xl p-3 text-center">
-      <Label className="text-xs uppercase tracking-wide text-[#7C9AB4]">{label}</Label>
+      <Label className="text-xs uppercase tracking-wide text-[#8FA6BC]">{label}</Label>
       <div className="mt-2 h-28 flex items-center justify-center bg-white/5 rounded-xl">
         {url ? (
           <img src={url} alt={label} style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }} />
         ) : (
-          <span className="text-xs text-[#7C9AB4]">Niciun {label.toLowerCase()}</span>
+          <span className="text-xs text-[#8FA6BC]">Niciun {label.toLowerCase()}</span>
         )}
       </div>
-      <p className="text-[10px] text-[#7C9AB4] mt-1">{hint}</p>
+      <p className="text-[10px] text-[#8FA6BC] mt-1">{hint}</p>
       <div className="flex gap-1 justify-center mt-2">
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && upload(e.target.files[0])} />
         <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={() => inputRef.current?.click()}>

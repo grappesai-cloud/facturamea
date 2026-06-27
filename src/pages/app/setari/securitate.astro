@@ -13,15 +13,15 @@ const [u] = await db.select({
 const totpEnabled = !!u?.totpEnabled;
 const totpEnrolledAt = u?.totpEnrolledAt ? new Date(u.totpEnrolledAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : null;
 
-const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none';
-const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
+const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none';
+const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
 ---
 
 <AppLayout title="Securitate cont — facturamea" activeTab="setari">
   <div class="max-w-2xl">
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Securitate</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">Autentificare în 2 paşi şi datele tale personale (GDPR).</p>
+      <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl">Autentificare în 2 paşi şi datele tale personale (GDPR).</p>
     </div>
 
     <!-- ─── Biometric lock (native app only) ─── -->
@@ -78,36 +78,36 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
 
       {!totpEnabled && (
         <div id="totp-stage-prompt" class="rounded-2xl p-5 bg-white/5">
-          <p class="text-[13px] text-[#9FB8CC] leading-relaxed">
+          <p class="text-[13px] text-[#A8BED2] leading-relaxed">
             Adaugă un strat suplimentar de protecţie. Vei avea nevoie de o aplicaţie de autentificare gen <strong class="text-white">Google Authenticator</strong>, <strong class="text-white">1Password</strong> sau <strong class="text-white">Authy</strong>.
           </p>
-          <button id="totp-enroll-start" class="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
+          <button id="totp-enroll-start" class="mt-4 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
             Activează 2FA
           </button>
         </div>
       )}
 
       <div id="totp-stage-setup" class="hidden rounded-2xl p-5 bg-white/5">
-        <p class="text-[13px] text-[#9FB8CC] mb-4"><strong class="text-white">Pas 1.</strong> Scanează codul QR cu aplicaţia de autentificare:</p>
+        <p class="text-[13px] text-[#A8BED2] mb-4"><strong class="text-white">Pas 1.</strong> Scanează codul QR cu aplicaţia de autentificare:</p>
         <div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
           <img id="totp-qr" alt="QR cod 2FA" class="w-40 h-40 rounded-xl bg-white" />
           <div class="flex-1 min-w-0">
-            <p class="text-[12px] text-[#7C9AB4] mb-1">Sau introdu manual cheia:</p>
+            <p class="text-[12px] text-[#8FA6BC] mb-1">Sau introdu manual cheia:</p>
             <code id="totp-secret" class="block px-3 py-2 bg-white/5 rounded-xl text-[12px] font-mono text-white break-all"></code>
           </div>
         </div>
 
-        <p class="text-[13px] text-[#9FB8CC] mt-6 mb-2"><strong class="text-white">Pas 2.</strong> Salvează aceste coduri de recuperare într-un loc sigur. Le poţi folosi dacă pierzi telefonul:</p>
+        <p class="text-[13px] text-[#A8BED2] mt-6 mb-2"><strong class="text-white">Pas 2.</strong> Salvează aceste coduri de recuperare într-un loc sigur. Le poţi folosi dacă pierzi telefonul:</p>
         <div id="totp-recovery" class="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4 bg-white/5 rounded-xl font-mono text-[12px] text-white mb-4"></div>
-        <button id="totp-copy-codes" class="text-[12px] text-[#9FB8CC] hover:text-white transition-colors mb-6">Copiază toate codurile</button>
+        <button id="totp-copy-codes" class="text-[12px] text-[#A8BED2] hover:text-white transition-colors mb-6">Copiază toate codurile</button>
 
-        <p class="text-[13px] text-[#9FB8CC] mb-2"><strong class="text-white">Pas 3.</strong> Tastează codul de 6 cifre din aplicaţie pentru a confirma:</p>
+        <p class="text-[13px] text-[#A8BED2] mb-2"><strong class="text-white">Pas 3.</strong> Tastează codul de 6 cifre din aplicaţie pentru a confirma:</p>
         <div class="flex gap-2 items-end">
           <div class="flex-1">
             <label for="totp-code" class={labelCls + ' sr-only'}>Cod 6 cifre</label>
             <input id="totp-code" type="text" inputmode="numeric" maxlength="6" placeholder="123456" class={inputCls + ' tabular-nums tracking-widest text-center text-[16px]'} />
           </div>
-          <button id="totp-confirm" class="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-60 transition-colors">Confirmă</button>
+          <button id="totp-confirm" class="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-60 transition-colors">Confirmă</button>
         </div>
         <p id="totp-confirm-error" class="hidden text-[12px] text-[#DC4B41] mt-2"></p>
       </div>
@@ -115,13 +115,13 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
       {totpEnabled && (
         <div class="rounded-2xl p-5 bg-white/5">
           <p class="text-[13px] text-white">2FA este activ {totpEnrolledAt && <>din <strong>{totpEnrolledAt}</strong></>}.</p>
-          <p class="text-[12px] text-[#7C9AB4] mt-2">La fiecare login vei tasta un cod de 6 cifre din aplicaţie după parolă.</p>
+          <p class="text-[12px] text-[#8FA6BC] mt-2">La fiecare login vei tasta un cod de 6 cifre din aplicaţie după parolă.</p>
           <button id="totp-disable-show" class="mt-4 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 text-[#DC4B41] font-semibold text-[13px] transition-colors">
             Dezactivează 2FA
           </button>
 
           <div id="totp-disable-form" class="hidden mt-4 pt-4 border-t border-white/10">
-            <p class="text-[12px] text-[#7C9AB4] mb-3">Confirmă cu un cod de 6 cifre actual sau cu parola contului:</p>
+            <p class="text-[12px] text-[#8FA6BC] mb-3">Confirmă cu un cod de 6 cifre actual sau cu parola contului:</p>
             <div class="flex gap-2">
               <input id="totp-disable-code" type="text" placeholder="123456 sau parolă" class={inputCls + ' flex-1'} />
               <button id="totp-disable-do" class="px-5 py-2.5 rounded-full bg-[#DC4B41] hover:bg-[#C43B32] text-white font-semibold text-[14px] transition-colors">Confirmă</button>
@@ -133,7 +133,7 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
 
       <div id="totp-success" class="hidden rounded-2xl p-5 bg-[#2E9E6A]/15">
         <p class="text-[13px] font-semibold text-white">2FA activat cu succes</p>
-        <p class="text-[12px] text-[#9FB8CC] mt-1">La următorul login vei avea nevoie de codul din aplicaţie.</p>
+        <p class="text-[12px] text-[#A8BED2] mt-1">La următorul login vei avea nevoie de codul din aplicaţie.</p>
       </div>
     </section>
 
@@ -143,7 +143,7 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
 
       <div class="rounded-2xl p-5 bg-white/5 mb-3">
         <h3 class="font-semibold text-[14px] text-white">Descarcă datele mele</h3>
-        <p class="text-[12px] text-[#9FB8CC] mt-1 leading-relaxed">Primeşti un fişier JSON cu toate datele asociate contului tău: profil, comenzi, mesaje, recenzii, documente. Drept garantat de GDPR Art. 20.</p>
+        <p class="text-[12px] text-[#A8BED2] mt-1 leading-relaxed">Primeşti un fişier JSON cu toate datele asociate contului tău: profil, comenzi, mesaje, recenzii, documente. Drept garantat de GDPR Art. 20.</p>
         <button id="gdpr-export" class="mt-3 px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">
           Descarcă JSON
         </button>
@@ -151,7 +151,7 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
 
       <div class="rounded-2xl p-5 bg-white/5">
         <h3 class="font-semibold text-[14px] text-white">Şterge contul</h3>
-        <p class="text-[12px] text-[#9FB8CC] mt-1 leading-relaxed">Contul va fi marcat pentru ştergere imediat şi şters definitiv după 30 de zile. Drept garantat de GDPR Art. 17.</p>
+        <p class="text-[12px] text-[#A8BED2] mt-1 leading-relaxed">Contul va fi marcat pentru ştergere imediat şi şters definitiv după 30 de zile. Drept garantat de GDPR Art. 17.</p>
         <p class="text-[12px] text-[#DC4B41] mt-2"><strong>Atenţie:</strong> comenzile şi facturile asociate companiei rămân pentru obligaţii legale (5 ani).</p>
         <button id="gdpr-delete-show" class="mt-3 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 text-[#DC4B41] font-semibold text-[13px] transition-colors">
           Şterge contul...

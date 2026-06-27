@@ -10,9 +10,9 @@ const userTypeLabels: Record<string, string> = {
   partener: 'Partener',
 };
 
-const inputCls = 'w-full rounded-xl bg-white/[0.06] ring-1 ring-white/15 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/60 hover:ring-white/25 transition';
-const inputDisabledCls = 'w-full rounded-xl bg-white/[0.03] ring-1 ring-white/10 px-4 py-2.5 text-[14px] text-[#7C9AB4] cursor-not-allowed';
-const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
+const inputCls = 'w-full rounded-xl bg-white/[0.06] ring-1 ring-white/15 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/60 hover:ring-white/25 transition';
+const inputDisabledCls = 'w-full rounded-xl bg-white/[0.03] ring-1 ring-white/10 px-4 py-2.5 text-[14px] text-[#8FA6BC] cursor-not-allowed';
+const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
 
 ---
 
@@ -20,7 +20,7 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
   <div class="max-w-3xl">
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Setări</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">Profil, companie, notificări, abonament.</p>
+      <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl">Profil, companie, notificări, abonament.</p>
     </div>
 
     <!-- Profile -->
@@ -59,14 +59,14 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
           </div>
         </div>
 
-        <p class="text-[11px] text-[#7C9AB4]">
+        <p class="text-[11px] text-[#8FA6BC]">
           ID platformă <span class="font-mono text-white font-semibold ml-1">{user.platformId}</span>
         </p>
 
         <div class="pt-2">
           <button
             type="submit"
-            class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors"
+            class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors"
           >
             Salvează modificările
           </button>
@@ -80,7 +80,7 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
       <div class="rounded-2xl p-5 bg-white/5">
         <div class="mb-3">
           <p class="text-[13px] font-medium text-white">Mărimea fontului</p>
-          <p class="text-[12px] text-[#7C9AB4] mt-0.5">Aplicat pe toate paginile — se salvează local pe dispozitivul tău.</p>
+          <p class="text-[12px] text-[#8FA6BC] mt-0.5">Aplicat pe toate paginile — se salvează local pe dispozitivul tău.</p>
         </div>
         <div class="inline-flex items-stretch rounded-xl overflow-hidden bg-white/5" role="group" aria-label="Mărimea fontului">
           <button type="button" data-font-scale="75"  class="th-fs-btn px-4 py-2 text-[11px] font-semibold text-white hover:bg-white/10">A · 75%</button>
@@ -98,17 +98,17 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
         <a href="/app/setari/companie" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
           <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>
           <span class="flex-1 text-[16px] text-white">Companie</span>
-          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
         <a href="/app/setari/notifications" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
           <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
           <span class="flex-1 text-[16px] text-white">Notificări</span>
-          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
         <a href="/app/setari/securitate" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
           <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 4v5c0 4.4-3 8.3-7 9-4-0.7-7-4.6-7-9V7l7-4z"/></svg>
           <span class="flex-1 text-[16px] text-white">Securitate</span>
-          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
       </div>
     </section>
@@ -120,12 +120,12 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
         <a href="/app/setari/integrari" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
           <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0H5a2 2 0 01-2-2v-4m6 6h10a2 2 0 002-2v-4"/></svg>
           <span class="flex-1 text-[16px] text-white">Integrări magazin & plăți</span>
-          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
         <a href="/app/setari/api" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
           <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
           <span class="flex-1 text-[16px] text-white">API & chei dezvoltatori</span>
-          <svg class="w-5 h-5 text-[#7C9AB4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
         </a>
       </div>
     </section>
@@ -133,7 +133,7 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
   </div>
 
   <style is:global>
-    .th-fs-btn[data-active="true"] { background-color: #E1FB15 !important; color: #0A2238 !important; }
+    .th-fs-btn[data-active="true"] { background-color: #E1FB15 !important; color: #07090f !important; }
   </style>
 
   <script>
@@ -191,4 +191,5 @@ const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
       }
     });
   </script>
+
 </AppLayout>

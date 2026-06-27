@@ -2,7 +2,9 @@ import { useMemo, useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Edit2, Save, X, Search } from 'lucide-react';
+import { Select } from '../ui/Select';
+import { Plus, Edit2, Save, X, Search, Package } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Product {
   id: string;
@@ -99,10 +101,10 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#7C9AB4]" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume sau cod…" className="pl-9 rounded-full bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA6BC]" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume sau cod…" className="pl-9 rounded-full bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
         </div>
-        <Button onClick={startCreate} disabled={creating || editing !== null} className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100">
+        <Button onClick={startCreate} disabled={creating || editing !== null} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100">
           <Plus className="w-4 h-4 mr-1.5" /> Produs nou
         </Button>
       </div>
@@ -112,42 +114,42 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
           <h3 className="font-bold text-white">{creating ? 'Adaugă produs/serviciu' : 'Editează'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Denumire *</Label>
-              <Input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Transport rutier internațional 22t" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Denumire *</Label>
+              <Input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Transport rutier internațional 22t" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Cod</Label>
-              <Input value={form.code || ''} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="TR-INT-22" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Cod</Label>
+              <Input value={form.code || ''} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="TR-INT-22" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div className="md:col-span-3">
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Descriere (opțional)</Label>
-              <Input value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Apare pe factură sub denumire" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Descriere (opțional)</Label>
+              <Input value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Apare pe factură sub denumire" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Preț unitar</Label>
-              <Input value={priceInput} onChange={(e) => setPriceInput(e.target.value)} placeholder="1800.00" inputMode="decimal" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Preț unitar</Label>
+              <Input value={priceInput} onChange={(e) => setPriceInput(e.target.value)} placeholder="1800.00" inputMode="decimal" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Monedă</Label>
-              <select value={form.defaultCurrency || 'RON'} onChange={(e) => setForm({ ...form, defaultCurrency: e.target.value })} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Monedă</Label>
+              <Select value={form.defaultCurrency || 'RON'} onChange={(e) => setForm({ ...form, defaultCurrency: e.target.value })} className="w-full">
                 <option>RON</option><option>EUR</option><option>USD</option><option>GBP</option>
-              </select>
+              </Select>
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">UM</Label>
-              <Input value={form.defaultUm || 'buc'} onChange={(e) => setForm({ ...form, defaultUm: e.target.value })} placeholder="buc, cursă, km, ore" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">UM</Label>
+              <Input value={form.defaultUm || 'buc'} onChange={(e) => setForm({ ...form, defaultUm: e.target.value })} placeholder="buc, cursă, km, ore" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">TVA (%)</Label>
-              <select value={form.defaultVatRate ?? 21} onChange={(e) => setForm({ ...form, defaultVatRate: Number(e.target.value) })} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+              <Label className="text-[13px] font-medium text-[#A8BED2]">TVA (%)</Label>
+              <Select value={form.defaultVatRate ?? 21} onChange={(e) => setForm({ ...form, defaultVatRate: Number(e.target.value) })} className="w-full">
                 {VAT_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
-              </select>
+              </Select>
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Tip produs</Label>
-              <select value={form.productType || 'Servicii'} onChange={(e) => setForm({ ...form, productType: e.target.value })} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Tip produs</Label>
+              <Select value={form.productType || 'Servicii'} onChange={(e) => setForm({ ...form, productType: e.target.value })} className="w-full">
                 {PRODUCT_TYPES.map((t) => <option key={t}>{t}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="flex items-end">
               <label className="flex items-center gap-2 text-sm text-white">
@@ -157,14 +159,18 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={save} disabled={busy} className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100"><Save className="w-4 h-4 mr-1.5" /> Salvează</Button>
+            <Button onClick={save} disabled={busy} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100"><Save className="w-4 h-4 mr-1.5" /> Salvează</Button>
             <Button variant="outline" onClick={cancel} className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0"><X className="w-4 h-4 mr-1.5" /> Anulează</Button>
           </div>
         </div>
       )}
 
       {filtered.length === 0 ? (
-        <div className="bg-white/5 rounded-2xl p-8 text-center text-[#7C9AB4]">Niciun produs încă. Adaugă primul.</div>
+        <EmptyState
+          icon={<Package />}
+          title="Nomenclator gol"
+          description="Adaugă produse și servicii ca să le refolosești pe facturi."
+        />
       ) : (
         <>
         <ul className="space-y-2.5">
@@ -175,22 +181,22 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
                   <span className="font-medium text-white truncate">{p.name}</span>
                   {p.isActive
                     ? <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-[#2E9E6A]/15 text-[#2E9E6A]">activ</span>
-                    : <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">inactiv</span>}
+                    : <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">inactiv</span>}
                 </div>
-                <p className="text-[12px] text-[#7C9AB4] mt-0.5 truncate">
+                <p className="text-[12px] text-[#8FA6BC] mt-0.5 truncate">
                   {p.code ? `${p.code} · ` : ''}{p.productType} · {p.defaultUm} · TVA {p.defaultVatRate}%
                 </p>
               </div>
               <p className="text-[15px] font-bold tabular-nums text-white shrink-0">{fmtPrice(p.defaultUnitPriceCents, p.defaultCurrency)}</p>
               <div className="flex items-center gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                <button onClick={() => startEdit(p)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-white/15 hover:text-white transition-colors" title="Editează"><Edit2 className="w-3.5 h-3.5" /></button>
-                {p.isActive && <button onClick={() => remove(p.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează"><X className="w-4 h-4" /></button>}
+                <button onClick={() => startEdit(p)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-white/15 hover:text-white transition-colors" title="Editează"><Edit2 className="w-3.5 h-3.5" /></button>
+                {p.isActive && <button onClick={() => remove(p.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează"><X className="w-4 h-4" /></button>}
               </div>
             </li>
           ))}
         </ul>
         {filtered.length > 3 && (
-          <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+          <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
             {showAll ? 'Arată mai puțin' : `Vezi toate (${filtered.length})`}
           </button>
         )}

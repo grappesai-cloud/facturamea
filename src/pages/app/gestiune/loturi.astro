@@ -1,5 +1,6 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
+import EmptyState from '../../../components/ui/EmptyState.astro';
 import LotForm from '../../../components/gestiune-plus/LotForm';
 import { db } from '../../../db';
 import { stockLots, invoiceProducts, warehouses } from '../../../db/schema';
@@ -42,7 +43,7 @@ try {
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const MS_DAY = 24 * 60 * 60 * 1000;
 const display = rows.map((r) => {
-  let expCls = 'text-[#9FB8CC]';
+  let expCls = 'text-[#A8BED2]';
   let expBadge: { label: string; cls: string } | null = null;
   if (r.expiryDate) {
     const exp = new Date(r.expiryDate); exp.setHours(0, 0, 0, 0);
@@ -63,13 +64,13 @@ const expiringCount = display.filter((r) => r.expBadge).length;
 <AppLayout title="Loturi și expirare" activeTab="stocuri">
   <div class="mb-8">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Loturi și expirare</h1>
-    <p class="text-[14px] text-[#9FB8CC] mt-2">Urmărește loturile și termenele de valabilitate. Expirate marcate cu roșu, sub 30 de zile cu galben.</p>
+    <p class="text-[14px] text-[#A8BED2] mt-2">Urmărește loturile și termenele de valabilitate. Expirate marcate cu roșu, sub 30 de zile cu galben.</p>
   </div>
 
   {expiringCount > 0 && (
     <div class="mb-6 flex flex-wrap items-center gap-3 p-4 rounded-2xl bg-[#E8A33C]/15">
       <span class="w-2 h-2 rounded-full bg-[#E8A33C]"></span>
-      <p class="text-[14px] text-[#9FB8CC]"><strong class="text-white">{expiringCount}</strong> {expiringCount === 1 ? 'lot necesită' : 'loturi necesită'} atenție (expirate sau aproape de expirare).</p>
+      <p class="text-[14px] text-[#A8BED2]"><strong class="text-white">{expiringCount}</strong> {expiringCount === 1 ? 'lot necesită' : 'loturi necesită'} atenție (expirate sau aproape de expirare).</p>
     </div>
   )}
 
@@ -78,7 +79,9 @@ const expiringCount = display.filter((r) => r.expBadge).length;
 
   <h2 class="text-[18px] font-bold text-white mb-3 mt-8">Loturi</h2>
   {display.length === 0 ? (
-    <div class="rounded-2xl p-5 bg-white/5 text-center py-10 text-[13px] text-[#9FB8CC]">Niciun lot înregistrat încă.</div>
+    <EmptyState title="Niciun lot" description="Loturile și termenele de expirare apar aici.">
+      <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="m21 7.5-9-5.25L3 7.5m18 0-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9"/></svg>
+    </EmptyState>
   ) : (
     <Fragment>
       <ul class="space-y-2.5">
@@ -89,13 +92,13 @@ const expiringCount = display.filter((r) => r.expBadge).length;
                 <span class="font-mono">{r.lotCode}</span>
                 {r.expBadge && <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${r.expBadge.cls}`}>{r.expBadge.label}</span>}
               </p>
-              <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">
+              <p class="text-[13px] text-[#8FA6BC] mt-0.5 truncate">
                 {r.productName || '·'}{r.productCode ? ` (${r.productCode})` : ''} · {r.warehouseName || '·'} · expiră <span class={r.expCls}>{r.expiryDate || '·'}</span>
               </p>
             </div>
             <div class="text-right shrink-0">
               <p class="font-bold text-white tabular-nums">{qty(r.quantity)} {r.um || ''}</p>
-              <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{ron(r.unitCostCents)}</p>
+              <p class="text-[13px] text-[#A8BED2] tabular-nums mt-0.5">{ron(r.unitCostCents)}</p>
             </div>
             <button class="lot-delete shrink-0 px-3 py-1.5 rounded-full bg-white/10 hover:bg-[#DC4B41]/20 text-[13px] font-semibold text-white transition-colors" data-id={r.id}>Șterge</button>
           </li>
@@ -103,7 +106,7 @@ const expiringCount = display.filter((r) => r.expBadge).length;
       </ul>
       {display.length > 3 && (
         <details class="mt-2.5">
-          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({display.length})</summary>
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({display.length})</summary>
           <ul class="space-y-2.5 mt-2.5">
             {display.slice(3).map((r) => (
               <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors" data-lot-row data-id={r.id}>
@@ -112,13 +115,13 @@ const expiringCount = display.filter((r) => r.expBadge).length;
                     <span class="font-mono">{r.lotCode}</span>
                     {r.expBadge && <span class={`ml-2 inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${r.expBadge.cls}`}>{r.expBadge.label}</span>}
                   </p>
-                  <p class="text-[13px] text-[#7C9AB4] mt-0.5 truncate">
+                  <p class="text-[13px] text-[#8FA6BC] mt-0.5 truncate">
                     {r.productName || '·'}{r.productCode ? ` (${r.productCode})` : ''} · {r.warehouseName || '·'} · expiră <span class={r.expCls}>{r.expiryDate || '·'}</span>
                   </p>
                 </div>
                 <div class="text-right shrink-0">
                   <p class="font-bold text-white tabular-nums">{qty(r.quantity)} {r.um || ''}</p>
-                  <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{ron(r.unitCostCents)}</p>
+                  <p class="text-[13px] text-[#A8BED2] tabular-nums mt-0.5">{ron(r.unitCostCents)}</p>
                 </div>
                 <button class="lot-delete shrink-0 px-3 py-1.5 rounded-full bg-white/10 hover:bg-[#DC4B41]/20 text-[13px] font-semibold text-white transition-colors" data-id={r.id}>Șterge</button>
               </li>

@@ -89,20 +89,20 @@ export default function CompanySwitcher({ currentCompanyId, currentCompanyName }
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 mt-1 bg-[#071828] rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/10 py-1 z-50 max-h-72 overflow-y-auto">
+        <div className="absolute left-0 right-0 mt-1 bg-[#07090f] rounded-2xl shadow-[0_20px_50px_-12px_rgba(0,0,0,0.7)] ring-1 ring-white/10 py-1 z-50 max-h-72 overflow-y-auto">
           <div className="px-3 py-2 border-b border-white/10">
-            <p className="text-[10px] uppercase tracking-[0.14em] text-[#7C9AB4] font-semibold">Companie activă</p>
+            <p className="text-[10px] uppercase tracking-[0.14em] text-[#8FA6BC] font-semibold">Companie activă</p>
             <p className="text-[13px] font-semibold text-white mt-0.5 truncate">{currentCompanyName}</p>
           </div>
 
           {loading && (
             <div className="flex justify-center py-4">
-              <Loader2 className="w-4 h-4 animate-spin text-[#7C9AB4]" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#8FA6BC]" />
             </div>
           )}
 
           {!loading && items.length === 0 && (
-            <p className="px-3 py-3 text-[11px] text-[#9FB8CC] leading-snug">
+            <p className="px-3 py-3 text-[11px] text-[#A8BED2] leading-snug">
               Ești membru într-o singură companie.
             </p>
           )}
@@ -122,10 +122,10 @@ export default function CompanySwitcher({ currentCompanyId, currentCompanyName }
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-white truncate">{m.name}</p>
-                      <p className="text-[10px] uppercase tracking-wide text-[#7C9AB4] mt-0.5">{m.role}{m.is_default && ' · default'}</p>
+                      <p className="text-[10px] uppercase tracking-wide text-[#8FA6BC] mt-0.5">{m.role}{m.is_default && ' · default'}</p>
                     </div>
                     {isCurrent && <Check className="w-4 h-4 text-[#D9ED92] shrink-0" />}
-                    {switching === m.company_id && <Loader2 className="w-4 h-4 animate-spin text-[#9FB8CC] shrink-0" />}
+                    {switching === m.company_id && <Loader2 className="w-4 h-4 animate-spin text-[#A8BED2] shrink-0" />}
                   </button>
                 );
               })}

@@ -3,6 +3,7 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
+import { DatePicker } from '../ui/DatePicker';
 import { Select } from '../ui/Select';
 import { Camera, Upload, Loader2, Check, FileText, RotateCcw } from 'lucide-react';
 
@@ -148,10 +149,10 @@ export default function ReceiptScanner() {
           </div>
           <div>
             <h2 className="text-[20px] font-bold text-white">Cheltuiala a fost salvată</h2>
-            <p className="text-[15px] text-[#9FB8CC] mt-1">O găsești în lista de cheltuieli.</p>
+            <p className="text-[15px] text-[#A8BED2] mt-1">O găsești în lista de cheltuieli.</p>
           </div>
           <div className="flex flex-wrap justify-center gap-2 pt-2">
-            <Button size="lg" onClick={reset} className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none"><Camera className="w-5 h-5 mr-1" /> Scanează altă chitanță</Button>
+            <Button size="lg" onClick={reset} className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none"><Camera className="w-5 h-5 mr-1" /> Scanează altă chitanță</Button>
             <a href="/app/cheltuieli"><Button size="lg" variant="outline" className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full">Vezi cheltuielile</Button></a>
           </div>
         </CardContent>
@@ -173,7 +174,7 @@ export default function ReceiptScanner() {
                 <FileText className="w-7 h-7 text-[#E1FB15]" />
               </div>
               <h2 className="text-[20px] font-bold text-white">Fă o poză la bon sau factură</h2>
-              <p className="text-[15px] text-[#9FB8CC] mt-2 leading-relaxed">
+              <p className="text-[15px] text-[#A8BED2] mt-2 leading-relaxed">
                 Fotografiază sau încarcă documentul. Citim automat furnizorul, numărul, data și sumele.
                 Verifici și salvezi într-un singur pas.
               </p>
@@ -182,11 +183,11 @@ export default function ReceiptScanner() {
                 <div className="mt-6 flex flex-col items-center gap-3 py-4">
                   <Loader2 className="w-8 h-8 text-[#E1FB15] animate-spin" />
                   <p className="text-[15px] font-semibold text-white">Se citește documentul...</p>
-                  {fileName && <p className="text-[13px] text-[#7C9AB4] truncate max-w-[260px]">{fileName}</p>}
+                  {fileName && <p className="text-[13px] text-[#8FA6BC] truncate max-w-[260px]">{fileName}</p>}
                 </div>
               ) : (
                 <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
-                  <Button size="xl" onClick={() => cameraInput.current?.click()} className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none w-full sm:w-auto">
+                  <Button size="xl" onClick={() => cameraInput.current?.click()} className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none w-full sm:w-auto">
                     <Camera className="w-6 h-6 mr-1" /> Fă o poză
                   </Button>
                   <Button size="xl" variant="outline" onClick={() => fileInput.current?.click()} className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full w-full sm:w-auto">
@@ -196,7 +197,7 @@ export default function ReceiptScanner() {
               )}
 
               {phase === 'idle' && (
-                <p className="text-[13px] text-[#7C9AB4] mt-4">Acceptăm poze (JPG, PNG) și PDF-uri.</p>
+                <p className="text-[13px] text-[#8FA6BC] mt-4">Acceptăm poze (JPG, PNG) și PDF-uri.</p>
               )}
             </div>
           </CardContent>
@@ -210,9 +211,9 @@ export default function ReceiptScanner() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 className="text-[18px] font-bold text-white">Verifică datele</h2>
-                {fileName && <p className="text-[13px] text-[#7C9AB4] mt-0.5 truncate max-w-[280px]">{fileName}</p>}
+                {fileName && <p className="text-[13px] text-[#8FA6BC] mt-0.5 truncate max-w-[280px]">{fileName}</p>}
               </div>
-              <Button size="sm" variant="ghost" onClick={reset} title="Reia" className="text-[#9FB8CC] hover:bg-white/10 hover:text-white rounded-full"><RotateCcw className="w-4 h-4 mr-1" /> Reia</Button>
+              <Button size="sm" variant="ghost" onClick={reset} title="Reia" className="text-[#A8BED2] hover:bg-white/10 hover:text-white rounded-full"><RotateCcw className="w-4 h-4 mr-1" /> Reia</Button>
             </div>
 
             {note && <p className="text-[14px] text-[#2E9E6A] bg-[#2E9E6A]/15 rounded-xl px-3.5 py-2.5">{note}</p>}
@@ -220,39 +221,39 @@ export default function ReceiptScanner() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
-                <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">Furnizor</Label>
-                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.supplierName} onChange={(e) => set('supplierName', e.target.value)} placeholder="Numele furnizorului" />
+                <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">Furnizor</Label>
+                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.supplierName} onChange={(e) => set('supplierName', e.target.value)} placeholder="Numele furnizorului" />
               </div>
               <div>
-                <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">Număr document</Label>
-                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.documentNumber} onChange={(e) => set('documentNumber', e.target.value)} placeholder="ex: 12345" />
+                <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">Număr document</Label>
+                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.documentNumber} onChange={(e) => set('documentNumber', e.target.value)} placeholder="ex: 12345" />
               </div>
               <div>
-                <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">Data emiterii</Label>
-                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="date" value={form.issueDate} onChange={(e) => set('issueDate', e.target.value)} />
+                <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">Data emiterii</Label>
+                <DatePicker value={form.issueDate} onChange={(v) => set('issueDate', v)} />
               </div>
               <div>
-                <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">Categorie</Label>
-                <Select className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.category} onChange={(e) => set('category', e.target.value)}>
+                <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">Categorie</Label>
+                <Select className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={form.category} onChange={(e) => set('category', e.target.value)}>
                   {CATEGORIES.map((c) => <option key={c} value={c}>{CAT_LABELS[c]}</option>)}
                 </Select>
               </div>
               <div>
-                <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">Total (RON)</Label>
-                <Input className="h-12 text-[16px] font-semibold bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.total} onChange={(e) => set('total', e.target.value)} placeholder="0.00" />
+                <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">Total (RON)</Label>
+                <Input className="h-12 text-[16px] font-semibold bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.total} onChange={(e) => set('total', e.target.value)} placeholder="0.00" />
               </div>
               <div>
-                <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">Bază fără TVA (RON)</Label>
-                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.net} onChange={(e) => set('net', e.target.value)} placeholder="0.00" />
+                <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">Bază fără TVA (RON)</Label>
+                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.net} onChange={(e) => set('net', e.target.value)} placeholder="0.00" />
               </div>
               <div>
-                <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">TVA (RON)</Label>
-                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.vat} onChange={(e) => set('vat', e.target.value)} placeholder="0.00" />
+                <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">TVA (RON)</Label>
+                <Input className="h-12 text-[16px] bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={form.vat} onChange={(e) => set('vat', e.target.value)} placeholder="0.00" />
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
-              <Button size="lg" disabled={phase === 'saving'} onClick={save} className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none w-full sm:w-auto">
+              <Button size="lg" disabled={phase === 'saving'} onClick={save} className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none w-full sm:w-auto">
                 {phase === 'saving' ? <><Loader2 className="w-5 h-5 mr-1 animate-spin" /> Se salvează...</> : <><Check className="w-5 h-5 mr-1" /> Salvează cheltuiala</>}
               </Button>
               <Button size="lg" variant="outline" disabled={phase === 'saving'} onClick={reset} className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full w-full sm:w-auto">Renunță</Button>

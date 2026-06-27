@@ -68,13 +68,13 @@ async function safe<T>(p: Promise<T>, fb: T): Promise<T> { try { return await p;
 
 const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const statusTone: Record<string, string> = {
-  draft: 'bg-white/10 text-[#9FB8CC]',
+  draft: 'bg-white/10 text-[#A8BED2]',
   issued: 'bg-[#E8A33C]/15 text-[#E8A33C]',
   sent: 'bg-[#34A0A4]/15 text-[#34A0A4]',
   paid: 'bg-[#2E9E6A]/15 text-[#2E9E6A]',
   partial: 'bg-[#E8A33C]/15 text-[#E8A33C]',
-  voided: 'bg-white/10 text-[#7C9AB4]',
-  reversed: 'bg-white/10 text-[#7C9AB4]',
+  voided: 'bg-white/10 text-[#8FA6BC]',
+  reversed: 'bg-white/10 text-[#8FA6BC]',
 };
 const statusLabel: Record<string, string> = {
   draft: 'Ciornă', issued: 'Emisă', sent: 'Trimisă', paid: 'Plătită',
@@ -255,7 +255,7 @@ const TABS: { id: TabId; label: string }[] = [
 <AppLayout title="Rapoarte facturare" activeTab="facturare">
   <div class="mb-6">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Rapoarte</h1>
-    <p class="text-[14px] text-[#9FB8CC] mt-1">Sumar rapid pe perioada selectată — vânzări, încasări, TVA și restanțe dintr-o privire.</p>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Sumar rapid pe perioada selectată — vânzări, încasări, TVA și restanțe dintr-o privire.</p>
   </div>
 
   <!-- ── Quick-read summary (customizable, like the dashboard) ── -->
@@ -269,33 +269,36 @@ const TABS: { id: TabId; label: string }[] = [
     </div>
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
       <div data-rep-widget="vanzari" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
-        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Vânzări (facturat)</p>
-        <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(summary.facturat)} <span class="text-[13px] sm:text-[15px] text-[#7C9AB4] font-semibold">RON</span></p>
-        <p class="text-[12px] text-[#7C9AB4] mt-1">{summary.count} facturi · {summary.paidCount} plătite</p>
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#8FA6BC]">Vânzări (facturat)</p>
+        <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(summary.facturat)} <span class="text-[13px] sm:text-[15px] text-[#8FA6BC] font-semibold">RON</span></p>
+        <p class="text-[12px] text-[#8FA6BC] mt-1">{summary.count} facturi · {summary.paidCount} plătite</p>
       </div>
       <div data-rep-widget="incasat" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
-        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">Încasat</p>
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#8FA6BC]">Încasat</p>
         <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#2E9E6A] mt-1.5 whitespace-nowrap">{fmt(summary.incasat)} <span class="text-[13px] sm:text-[15px] text-[#2E9E6A]/70 font-semibold">RON</span></p>
-        <p class="text-[12px] text-[#7C9AB4] mt-1">Rată încasare {collectRatePct}%</p>
+        <p class="text-[12px] text-[#8FA6BC] mt-1">Rată încasare {collectRatePct}%</p>
       </div>
       <div data-rep-widget="deincasat" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
-        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">De încasat</p>
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#8FA6BC]">De încasat</p>
         <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-1.5 whitespace-nowrap">{fmt(deIncasat)} <span class="text-[13px] sm:text-[15px] text-[#E8A33C]/70 font-semibold">RON</span></p>
         <p class="text-[12px] text-[#E8A33C]/80 mt-1">{summary.restanteCount} restante · {fmt(summary.restante)}</p>
       </div>
       <div data-rep-widget="tva" class="relative rounded-2xl p-4 sm:p-5 bg-white/5">
-        <p class="text-[12px] sm:text-[13px] font-medium text-[#7C9AB4]">TVA colectată</p>
+        <p class="text-[12px] sm:text-[13px] font-medium text-[#8FA6BC]">TVA colectată</p>
         <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E1FB15] mt-1.5 whitespace-nowrap">{fmt(summary.tva)} <span class="text-[13px] sm:text-[15px] text-[#E1FB15]/70 font-semibold">RON</span></p>
-        <p class="text-[12px] text-[#7C9AB4] mt-1">Bază impozabilă {fmt(summary.baza)}</p>
+        <p class="text-[12px] text-[#8FA6BC] mt-1">Bază impozabilă {fmt(summary.baza)}</p>
       </div>
     </div>
 
-    <div class="grid lg:grid-cols-2 gap-3 mt-3">
+    <div class="grid lg:grid-cols-2 gap-3 mt-3 items-stretch">
       <!-- Top clients -->
-      <div data-rep-widget="clienti" class="relative rounded-2xl p-5 bg-white/5">
-        <h3 class="text-[15px] font-bold text-white mb-3">Top clienți · facturat</h3>
+      <div data-rep-widget="clienti" class="relative rounded-2xl p-5 bg-white/5 flex flex-col">
+        <h3 class="text-[13px] font-semibold text-[#8FA6BC] uppercase tracking-wider mb-4">Top clienți · facturat</h3>
         {topClients.length === 0 ? (
-          <p class="text-[13px] text-[#9FB8CC]">Niciun client în perioada selectată.</p>
+          <div class="py-6 text-center">
+            <p class="text-[13px] font-semibold text-white">Niciun client în această perioadă</p>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5">Încearcă un alt interval de timp.</p>
+          </div>
         ) : (
           <div class="space-y-2.5">
             {topClients.map((c) => (
@@ -312,24 +315,48 @@ const TABS: { id: TabId; label: string }[] = [
       </div>
 
       <!-- More report types -->
-      <div data-rep-widget="more" class="relative rounded-2xl p-5 bg-white/5">
-        <h3 class="text-[15px] font-bold text-white mb-3">Mai multe rapoarte</h3>
-        <div class="grid sm:grid-cols-2 gap-2.5">
-          <a href="/app/rapoarte/analitice" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-            <span class="text-[13.5px] font-semibold text-white">Analiză detaliată</span>
-            <span class="text-[#9FB8CC] text-[12px]">grafice, top produse →</span>
+      <div data-rep-widget="more" class="relative rounded-2xl p-5 bg-white/5 flex flex-col">
+        <h3 class="text-[13px] font-semibold text-[#8FA6BC] uppercase tracking-wider mb-4">Mai multe rapoarte</h3>
+        <div class="grid sm:grid-cols-2 gap-2.5 flex-1">
+          <a href="/app/rapoarte/analitice" class="group/card flex items-center gap-3.5 p-4 rounded-2xl bg-white/8 hover:bg-white/12 transition-colors">
+            <span class="shrink-0 w-9 h-9 rounded-xl grid place-items-center bg-[#34A0A4]/20 text-[#34A0A4] group-hover/card:bg-[#34A0A4]/30 transition-colors">
+              <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[14px] font-semibold text-white leading-tight">Analiză detaliată</p>
+              <p class="text-[12px] text-[#8FA6BC] mt-0.5">Grafice, top produse & clienți</p>
+            </div>
+            <svg class="w-4 h-4 text-[#4A6478] shrink-0 group-hover/card:text-[#A8BED2] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
           </a>
-          <a href="/app/rapoarte/declaratii" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-            <span class="text-[13.5px] font-semibold text-white">Declarații fiscale</span>
-            <span class="text-[#9FB8CC] text-[12px]">D300/D390/D394, SAF-T →</span>
+          <a href="/app/rapoarte/declaratii" class="group/card flex items-center gap-3.5 p-4 rounded-2xl bg-white/8 hover:bg-white/12 transition-colors">
+            <span class="shrink-0 w-9 h-9 rounded-xl grid place-items-center bg-[#E1FB15]/12 text-[#E1FB15] group-hover/card:bg-[#E1FB15]/20 transition-colors">
+              <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[14px] font-semibold text-white leading-tight">Declarații fiscale</p>
+              <p class="text-[12px] text-[#8FA6BC] mt-0.5">D300, D390, D394, SAF-T</p>
+            </div>
+            <svg class="w-4 h-4 text-[#4A6478] shrink-0 group-hover/card:text-[#A8BED2] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
           </a>
-          <a href="/app/cheltuieli" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-            <span class="text-[13.5px] font-semibold text-white">Cheltuieli</span>
-            <span class="text-[#9FB8CC] text-[12px]">costuri, furnizori →</span>
+          <a href="/app/cheltuieli" class="group/card flex items-center gap-3.5 p-4 rounded-2xl bg-white/8 hover:bg-white/12 transition-colors">
+            <span class="shrink-0 w-9 h-9 rounded-xl grid place-items-center bg-[#E8A33C]/15 text-[#E8A33C] group-hover/card:bg-[#E8A33C]/25 transition-colors">
+              <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/></svg>
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[14px] font-semibold text-white leading-tight">Cheltuieli</p>
+              <p class="text-[12px] text-[#8FA6BC] mt-0.5">Costuri, furnizori, categorii</p>
+            </div>
+            <svg class="w-4 h-4 text-[#4A6478] shrink-0 group-hover/card:text-[#A8BED2] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
           </a>
-          <a href="/app/banca" class="flex items-center justify-between gap-2 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
-            <span class="text-[13.5px] font-semibold text-white">Bancă & reconciliere</span>
-            <span class="text-[#9FB8CC] text-[12px]">extrase, încasări →</span>
+          <a href="/app/banca" class="group/card flex items-center gap-3.5 p-4 rounded-2xl bg-white/8 hover:bg-white/12 transition-colors">
+            <span class="shrink-0 w-9 h-9 rounded-xl grid place-items-center bg-[#76C893]/15 text-[#76C893] group-hover/card:bg-[#76C893]/25 transition-colors">
+              <svg class="w-4.5 h-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 21v-8.25M15.75 21v-8.25M8.25 21v-8.25M3 9l9-6 9 6m-1.5 12V10.332A48.36 48.36 0 0012 9.75c-2.551 0-5.056.2-7.5.582V21M3 21h18M12 6.75h.008v.008H12V6.75z"/></svg>
+            </span>
+            <div class="flex-1 min-w-0">
+              <p class="text-[14px] font-semibold text-white leading-tight">Bancă & reconciliere</p>
+              <p class="text-[12px] text-[#8FA6BC] mt-0.5">Extrase, încasări, reconciliere</p>
+            </div>
+            <svg class="w-4 h-4 text-[#4A6478] shrink-0 group-hover/card:text-[#A8BED2] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/></svg>
           </a>
         </div>
       </div>
@@ -341,7 +368,7 @@ const TABS: { id: TabId; label: string }[] = [
     {TABS.map((t) => (
       <button type="button" data-tab={t.id}
         class:list={['report-tab px-4 py-2.5 text-[14px] font-medium transition-colors border-b-2 -mb-px',
-          tab === t.id ? 'text-white border-[#E1FB15]' : 'text-[#9FB8CC] hover:text-white border-transparent']}>
+          tab === t.id ? 'text-white border-[#E1FB15]' : 'text-[#A8BED2] hover:text-white border-transparent']}>
         {t.label}
       </button>
     ))}
@@ -364,13 +391,13 @@ const TABS: { id: TabId; label: string }[] = [
         <a href={presetHref(p.id)} data-preset
            class:list={['px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors',
              range === p.id
-               ? 'bg-[#E1FB15] text-[#0A2238]'
-               : 'bg-white/5 text-[#9FB8CC] hover:bg-white/10']}>
+               ? 'bg-[#E1FB15] text-[#07090f]'
+               : 'bg-white/5 text-[#A8BED2] hover:bg-white/10']}>
           {p.label}
         </a>
       ))}
       {range === 'custom' && (
-        <span class="px-4 py-1.5 rounded-full text-[13px] font-semibold bg-[#E1FB15] text-[#0A2238]">Interval custom</span>
+        <span class="px-4 py-1.5 rounded-full text-[13px] font-semibold bg-[#E1FB15] text-[#07090f]">Interval custom</span>
       )}
     </div>
 
@@ -380,15 +407,15 @@ const TABS: { id: TabId; label: string }[] = [
     <input type="hidden" name="range" value="custom" />
     <div data-doc-filters class:list={[(tab === 'facturi' || tab === 'proforma') ? 'contents' : 'hidden']}>
       <div>
-        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Caută serie/număr</label>
-        <input name="q" value={q} placeholder="ex: TH 0012" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+        <label class="text-[13px] font-medium text-[#A8BED2] block mb-1.5">Caută serie/număr</label>
+        <input name="q" value={q} placeholder="ex: TH 0012" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none" />
       </div>
       <div>
-        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Client</label>
-        <input name="client" value={clientFilter} placeholder="nume client" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+        <label class="text-[13px] font-medium text-[#A8BED2] block mb-1.5">Client</label>
+        <input name="client" value={clientFilter} placeholder="nume client" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none" />
       </div>
       <div>
-        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Serie</label>
+        <label class="text-[13px] font-medium text-[#A8BED2] block mb-1.5">Serie</label>
         <select name="series" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none">
           <option value="">Toate</option>
           {seriesAll.filter((s) => s.kind === 'factura' || s.kind === 'proforma').map((s) => (
@@ -397,7 +424,7 @@ const TABS: { id: TabId; label: string }[] = [
         </select>
       </div>
       <div>
-        <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Ce fel de facturi</label>
+        <label class="text-[13px] font-medium text-[#A8BED2] block mb-1.5">Ce fel de facturi</label>
         <select name="status" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none">
           {STATUS_OPTIONS.map((o) => (
             <option value={o.id} selected={statusFilter === o.id}>{o.label}</option>
@@ -406,15 +433,15 @@ const TABS: { id: TabId; label: string }[] = [
       </div>
     </div>
     <div>
-      <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">De la</label>
+      <label class="text-[13px] font-medium text-[#A8BED2] block mb-1.5">De la</label>
       <input type="date" name="from" value={fromIso} class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none" />
     </div>
     <div>
-      <label class="text-[13px] font-medium text-[#9FB8CC] block mb-1.5">Până la</label>
+      <label class="text-[13px] font-medium text-[#A8BED2] block mb-1.5">Până la</label>
       <input type="date" name="to" value={toIso} class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none" />
     </div>
     <div class="flex gap-2 flex-wrap">
-      <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Filtrează</button>
+      <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Filtrează</button>
       <a id="export-link" href={`/api/invoicing/reports/export?tab=${tab}&q=${encodeURIComponent(q)}&client=${encodeURIComponent(clientFilter)}&series=${seriesId}&status=${statusFilter}&from=${fromIso}&to=${toIso}`}
          class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">⭳ Export CSV</a>
     </div>
@@ -428,7 +455,10 @@ const TABS: { id: TabId; label: string }[] = [
       <div data-panel={id} class:list={[id === tab ? '' : 'hidden']}>
         <!-- Results — top 3 + "Vezi toate" expander -->
         {rows.length === 0 ? (
-          <div class="rounded-2xl bg-white/5 text-center py-10 text-[13px] text-[#9FB8CC]">Niciun rezultat.</div>
+          <div class="rounded-2xl bg-white/5 text-center py-10">
+            <p class="text-[14px] font-semibold text-white">Niciun rezultat</p>
+            <p class="text-[12px] text-[#8FA6BC] mt-1">Niciun rezultat pentru filtrele alese.</p>
+          </div>
         ) : (
           <Fragment>
           <div class="space-y-2.5">
@@ -436,21 +466,21 @@ const TABS: { id: TabId; label: string }[] = [
               <a href={`/app/facturare/${r.id}`} class="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div class="min-w-0 flex-1">
                   <div class="flex items-center gap-2">
-                    <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusTone[r.status] ?? 'bg-white/10 text-[#9FB8CC]'}`}>{statusLabel[r.status] ?? r.status}</span>
-                    <span class="font-mono text-[12px] text-[#7C9AB4] truncate">{r.fullNumber}</span>
+                    <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusTone[r.status] ?? 'bg-white/10 text-[#A8BED2]'}`}>{statusLabel[r.status] ?? r.status}</span>
+                    <span class="font-mono text-[12px] text-[#8FA6BC] truncate">{r.fullNumber}</span>
                   </div>
                   <p class="text-[15px] text-white font-semibold truncate mt-1.5">{r.clientNameSnap}</p>
-                  <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
+                  <p class="text-[12px] text-[#8FA6BC] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
                 </div>
                 <div class="text-right shrink-0">
                   <p class="text-[15px] font-bold tabular-nums text-white">{fmt(r.totalCents)} {r.currency}</p>
-                  <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Plătit {fmt(r.paidCents)}</p>
+                  <p class="text-[12px] text-[#8FA6BC] mt-0.5 tabular-nums">Plătit {fmt(r.paidCents)}</p>
                 </div>
                 <div class="shrink-0 flex flex-col items-end gap-1.5">
                   {!['paid', 'voided', 'draft', 'reversed', 'disputed'].includes(r.status) && (
-                    <span class="px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold whitespace-nowrap">Încasează</span>
+                    <span class="px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold whitespace-nowrap">Încasează</span>
                   )}
-                  <span class="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#9FB8CC] group-hover:text-white transition-colors whitespace-nowrap">Detalii<svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></span>
+                  <span class="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#A8BED2] group-hover:text-white transition-colors whitespace-nowrap">Detalii<svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></span>
                 </div>
               </a>
             ))}
@@ -458,7 +488,7 @@ const TABS: { id: TabId; label: string }[] = [
               <a href={`/app/facturare/${r.invoiceId}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div class="min-w-0 flex-1">
                   <p class="text-[15px] text-white font-semibold truncate">{r.clientName}</p>
-                  <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}{r.method ? ` · ${r.method}` : ''}</p>
+                  <p class="text-[12px] text-[#8FA6BC] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}{r.method ? ` · ${r.method}` : ''}</p>
                 </div>
                 <p class="text-[15px] font-bold tabular-nums text-white shrink-0">{fmt(r.amountCents)} {r.currency}</p>
               </a>
@@ -467,30 +497,30 @@ const TABS: { id: TabId; label: string }[] = [
               <a href={`/app/facturare/${r.id}`} class="block p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div class="flex items-center justify-between gap-2">
                   <span class="font-mono text-[13px] text-white truncate">{r.fullNumber}</span>
-                  <span class="text-[12px] text-[#9FB8CC] shrink-0">{r.efacturaStatus}</span>
+                  <span class="text-[12px] text-[#A8BED2] shrink-0">{r.efacturaStatus}</span>
                 </div>
-                <p class="text-[12px] text-[#7C9AB4] mt-1 truncate">SPV {r.efacturaAnafId ?? '—'} · {r.efacturaSubmittedAt ? new Date(r.efacturaSubmittedAt).toLocaleString('ro-RO') : '—'}</p>
+                <p class="text-[12px] text-[#8FA6BC] mt-1 truncate">SPV {r.efacturaAnafId ?? '—'} · {r.efacturaSubmittedAt ? new Date(r.efacturaSubmittedAt).toLocaleString('ro-RO') : '—'}</p>
                 {r.efacturaError && <p class="text-[12px] text-[#DC4B41] mt-1">{r.efacturaError}</p>}
               </a>
             ))}
           </div>
           {rows.length > 3 && (
             <details class="mt-2.5">
-              <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
+              <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({rows.length})</summary>
               <div class="space-y-2.5 mt-2.5">
                 {(id === 'facturi' || id === 'proforma') && rows.slice(3).map((r) => (
                   <a href={`/app/facturare/${r.id}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-2">
-                        <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusTone[r.status] ?? 'bg-white/10 text-[#9FB8CC]'}`}>{statusLabel[r.status] ?? r.status}</span>
-                        <span class="font-mono text-[12px] text-[#7C9AB4] truncate">{r.fullNumber}</span>
+                        <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusTone[r.status] ?? 'bg-white/10 text-[#A8BED2]'}`}>{statusLabel[r.status] ?? r.status}</span>
+                        <span class="font-mono text-[12px] text-[#8FA6BC] truncate">{r.fullNumber}</span>
                       </div>
                       <p class="text-[15px] text-white font-semibold truncate mt-1.5">{r.clientNameSnap}</p>
-                      <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
+                      <p class="text-[12px] text-[#8FA6BC] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
                     </div>
                     <div class="text-right shrink-0">
                       <p class="text-[15px] font-bold tabular-nums text-white">{fmt(r.totalCents)} {r.currency}</p>
-                      <p class="text-[12px] text-[#7C9AB4] mt-0.5 tabular-nums">Plătit {fmt(r.paidCents)}</p>
+                      <p class="text-[12px] text-[#8FA6BC] mt-0.5 tabular-nums">Plătit {fmt(r.paidCents)}</p>
                     </div>
                   </a>
                 ))}
@@ -498,7 +528,7 @@ const TABS: { id: TabId; label: string }[] = [
                   <a href={`/app/facturare/${r.invoiceId}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                     <div class="min-w-0 flex-1">
                       <p class="text-[15px] text-white font-semibold truncate">{r.clientName}</p>
-                      <p class="text-[12px] text-[#7C9AB4] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}{r.method ? ` · ${r.method}` : ''}</p>
+                      <p class="text-[12px] text-[#8FA6BC] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}{r.method ? ` · ${r.method}` : ''}</p>
                     </div>
                     <p class="text-[15px] font-bold tabular-nums text-white shrink-0">{fmt(r.amountCents)} {r.currency}</p>
                   </a>
@@ -507,9 +537,9 @@ const TABS: { id: TabId; label: string }[] = [
                   <a href={`/app/facturare/${r.id}`} class="block p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                     <div class="flex items-center justify-between gap-2">
                       <span class="font-mono text-[13px] text-white truncate">{r.fullNumber}</span>
-                      <span class="text-[12px] text-[#9FB8CC] shrink-0">{r.efacturaStatus}</span>
+                      <span class="text-[12px] text-[#A8BED2] shrink-0">{r.efacturaStatus}</span>
                     </div>
-                    <p class="text-[12px] text-[#7C9AB4] mt-1 truncate">SPV {r.efacturaAnafId ?? '—'} · {r.efacturaSubmittedAt ? new Date(r.efacturaSubmittedAt).toLocaleString('ro-RO') : '—'}</p>
+                    <p class="text-[12px] text-[#8FA6BC] mt-1 truncate">SPV {r.efacturaAnafId ?? '—'} · {r.efacturaSubmittedAt ? new Date(r.efacturaSubmittedAt).toLocaleString('ro-RO') : '—'}</p>
                     {r.efacturaError && <p class="text-[12px] text-[#DC4B41] mt-1">{r.efacturaError}</p>}
                   </a>
                 ))}
@@ -530,7 +560,7 @@ const TABS: { id: TabId; label: string }[] = [
         const active = b.getAttribute('data-tab') === id;
         b.classList.toggle('text-white', active);
         b.classList.toggle('border-[#E1FB15]', active);
-        b.classList.toggle('text-[#9FB8CC]', !active);
+        b.classList.toggle('text-[#A8BED2]', !active);
         b.classList.toggle('border-transparent', !active);
       });
       const docOnly = id === 'facturi' || id === 'proforma';
@@ -579,7 +609,7 @@ const TABS: { id: TabId; label: string }[] = [
       function render() {
         if (label) label.textContent = editing ? 'Gata' : 'Personalizează';
         btn.classList.toggle('bg-[#E1FB15]', editing);
-        btn.classList.toggle('text-[#0A2238]', editing);
+        btn.classList.toggle('text-[#07090f]', editing);
         btn.classList.toggle('bg-white/10', !editing);
         btn.classList.toggle('text-white', !editing);
         widgets.forEach(function (w) {
@@ -593,7 +623,7 @@ const TABS: { id: TabId; label: string }[] = [
               ctrl = document.createElement('button');
               ctrl.setAttribute('data-rep-hidebtn', '');
               ctrl.type = 'button';
-              ctrl.className = 'absolute top-2 right-2 z-20 w-7 h-7 inline-flex items-center justify-center rounded-full bg-white/10 text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors';
+              ctrl.className = 'absolute top-2 right-2 z-20 w-7 h-7 inline-flex items-center justify-center rounded-full bg-white/10 text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors';
               ctrl.addEventListener('click', function (e) {
                 e.preventDefault(); e.stopPropagation();
                 if (hidden.has(k)) hidden.delete(k); else hidden.add(k);

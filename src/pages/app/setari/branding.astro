@@ -21,7 +21,7 @@ const [company] = await db.select({
 <AppLayout title="Branding companie" activeTab="setari">
   <div class="mb-6 sm:mb-8">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Branding companie</h1>
-    <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">Logo, descriere, website — afișate pe profilul public al companiei.</p>
+    <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl">Logo, descriere, website — afișate pe profilul public al companiei.</p>
   </div>
 
   <div class="rounded-3xl p-5 sm:p-6 bg-white/5 max-w-2xl">
@@ -32,34 +32,34 @@ const [company] = await db.select({
           {company?.logoUrl ? (
             <img src={company.logoUrl} alt="Logo" class="w-full h-full object-contain" />
           ) : (
-            <span class="text-[10px] text-[#7C9AB4]">fără logo</span>
+            <span class="text-[10px] text-[#8FA6BC]">fără logo</span>
           )}
         </div>
         <div class="flex-1">
-          <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" class="text-[12px] text-[#9FB8CC]" />
-          <p class="text-[11px] text-[#7C9AB4] mt-1">PNG / JPG / WebP — max 10 MB. Pătrat recomandat.</p>
+          <input id="logo-file" type="file" accept="image/png,image/jpeg,image/webp" class="text-[12px] text-[#A8BED2]" />
+          <p class="text-[11px] text-[#8FA6BC] mt-1">PNG / JPG / WebP — max 10 MB. Pătrat recomandat.</p>
         </div>
         {company?.logoUrl && (
           <button id="logo-remove" class="text-[12px] text-[#DC4B41] hover:underline">Scoate</button>
         )}
       </div>
-      <p id="logo-status" class="text-[12px] text-[#7C9AB4] mt-2"></p>
+      <p id="logo-status" class="text-[12px] text-[#8FA6BC] mt-2"></p>
     </div>
 
     <form id="branding-form" class="space-y-4 pt-6 border-t border-white/10">
       <input type="hidden" id="logo-url" name="logoUrl" value={company?.logoUrl ?? ''} />
       <div>
-        <label class="block text-[13px] font-medium text-[#9FB8CC] mb-1.5">Descriere companie</label>
-        <textarea name="description" rows="4" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none">{company?.description ?? ''}</textarea>
+        <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Descriere companie</label>
+        <textarea name="description" rows="4" class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none">{company?.description ?? ''}</textarea>
       </div>
       <div>
-        <label class="block text-[13px] font-medium text-[#9FB8CC] mb-1.5">Website</label>
-        <input name="website" type="url" placeholder="https://..." value={company?.website ?? ''} class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none" />
+        <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Website</label>
+        <input name="website" type="url" placeholder="https://..." value={company?.website ?? ''} class="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none" />
       </div>
-      <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
+      <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
         Salvează branding
       </button>
-      <p id="branding-status" class="text-[12px] text-[#7C9AB4]"></p>
+      <p id="branding-status" class="text-[12px] text-[#8FA6BC]"></p>
     </form>
   </div>
 
@@ -92,14 +92,21 @@ const [company] = await db.select({
       const url = await uploadLogo(f);
       if (!url) return;
       urlInput.value = url;
-      previewEl.innerHTML = `<img src="${url}" alt="Logo" class="w-full h-full object-contain" />`;
+      // Set the src via DOM property (not innerHTML string interpolation) so a
+      // crafted URL can't break out of the attribute / inject markup.
+      previewEl.replaceChildren();
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Logo';
+      img.className = 'w-full h-full object-contain';
+      previewEl.appendChild(img);
       statusEl.textContent = 'Logo încărcat. Salvează formularul ca să devină public.';
     });
 
     removeBtn?.addEventListener('click', (e) => {
       e.preventDefault();
       urlInput.value = '';
-      previewEl.innerHTML = '<span class="text-[10px] text-[#7C9AB4]">fără logo</span>';
+      previewEl.innerHTML = '<span class="text-[10px] text-[#8FA6BC]">fără logo</span>';
       statusEl.textContent = 'Logo scos. Salvează ca să confirmi.';
     });
 

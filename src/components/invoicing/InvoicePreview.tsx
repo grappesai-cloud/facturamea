@@ -34,7 +34,7 @@ export default function InvoicePreview({ draft }: { draft: Draft }) {
   const layout = ['classic', 'modern', 'minimal', 'bold', 'elegant'].includes(draft.layoutKey)
     ? draft.layoutKey
     : (draft.layoutKey === 'accent' ? 'elegant' : 'classic');
-  const brand = draft.brandColor && draft.brandColor !== '#0A0A0A' ? draft.brandColor : '#0A2238';
+  const brand = draft.brandColor && draft.brandColor !== '#0A0A0A' ? draft.brandColor : '#07090f';
   const cfg = ({
     classic: { topBar: true, band: false, stripe: false, tableFill: true, totalFill: false, panel: false },
     modern: { topBar: false, band: true, stripe: false, tableFill: true, totalFill: true, panel: false },
@@ -43,7 +43,7 @@ export default function InvoicePreview({ draft }: { draft: Draft }) {
     elegant: { topBar: false, band: false, stripe: false, tableFill: true, totalFill: false, panel: true },
   } as Record<string, any>)[layout];
 
-  const INK = '#0A2238', MUTED = '#46627A', FAINT = '#7C9AB4', LINE = '#E3EAF1', LINE2 = '#EFF3F7';
+  const INK = '#07090f', MUTED = '#46627A', FAINT = '#8FA6BC', LINE = '#E3EAF1', LINE2 = '#EFF3F7';
 
   const Logo = ({ dark }: { dark?: boolean }) =>
     draft.logoUrl ? (

@@ -56,17 +56,17 @@ try {
 }
 
 const salesBadge: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#A8BED2]' },
   confirmed: { label: 'Confirmată', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
   invoiced: { label: 'Facturată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
   delivered: { label: 'Livrată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
   canceled: { label: 'Anulată', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
 };
 const purchaseBadge: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  draft: { label: 'Ciornă', cls: 'bg-white/10 text-[#A8BED2]' },
   sent: { label: 'Trimisă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
   received: { label: 'Recepționată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
-  closed: { label: 'Închisă', cls: 'bg-white/10 text-[#9FB8CC]' },
+  closed: { label: 'Închisă', cls: 'bg-white/10 text-[#A8BED2]' },
   canceled: { label: 'Anulată', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
 };
 ---
@@ -75,30 +75,30 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
   <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Comenzi</h1>
-      <p class="text-[14px] text-[#9FB8CC] mt-2">Vânzări către clienți și achiziții de la furnizori.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-2">Vânzări către clienți și achiziții de la furnizori.</p>
     </div>
     <div class="flex gap-2 flex-wrap">
-      <a href="/app/comenzi/noua-client" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Comandă client</a>
+      <a href="/app/comenzi/noua-client" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Comandă client</a>
       <a href="/app/comenzi/noua-furnizor" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Comandă furnizor</a>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="mb-4 inline-flex rounded-full bg-white/5 p-1">
-    <button data-tab="clienti" class={`tab-btn px-4 h-9 rounded-full text-[14px] font-semibold transition-colors ${tabParam === 'clienti' ? 'bg-white/10 text-white' : 'text-[#9FB8CC] hover:text-white'}`}>Clienți</button>
-    <button data-tab="furnizori" class={`tab-btn px-4 h-9 rounded-full text-[14px] font-semibold transition-colors ${tabParam === 'furnizori' ? 'bg-white/10 text-white' : 'text-[#9FB8CC] hover:text-white'}`}>Furnizori</button>
+    <button data-tab="clienti" class={`tab-btn px-4 h-9 rounded-full text-[14px] font-semibold transition-colors ${tabParam === 'clienti' ? 'bg-white/10 text-white' : 'text-[#A8BED2] hover:text-white'}`}>Clienți</button>
+    <button data-tab="furnizori" class={`tab-btn px-4 h-9 rounded-full text-[14px] font-semibold transition-colors ${tabParam === 'furnizori' ? 'bg-white/10 text-white' : 'text-[#A8BED2] hover:text-white'}`}>Furnizori</button>
   </div>
 
   <!-- Clienti panel -->
   <div data-panel="clienti" class={tabParam === 'clienti' ? '' : 'hidden'}>
     <div class="rounded-2xl bg-white/5 overflow-hidden">
       {salesRows.length === 0 ? (
-        <div class="px-5 py-12 text-center text-[14px] text-[#9FB8CC]">Nicio comandă de la clienți încă. <a href="/app/comenzi/noua-client" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
+        <div class="px-5 py-12 text-center text-[14px] text-[#A8BED2]">Nicio comandă de la clienți încă. <a href="/app/comenzi/noua-client" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
       ) : (
         <div class="overflow-x-auto">
           <table class="w-full text-[14px]">
             <thead>
-              <tr class="text-left text-[12px] font-medium text-[#7C9AB4]">
+              <tr class="text-left text-[12px] font-medium text-[#8FA6BC]">
                 <th class="px-5 py-3 font-medium">Număr</th>
                 <th class="px-5 py-3 font-medium">Client</th>
                 <th class="px-5 py-3 font-medium">Data</th>
@@ -115,7 +115,7 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                   <tr class="border-t border-white/5 hover:bg-white/10 transition-colors" data-so-row data-id={o.id}>
                     <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
                     <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[220px]">{o.clientNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
                     <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
                     <td class="px-5 py-3.5"><span class={`so-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
                     <td class="px-5 py-3.5 text-right">
@@ -124,9 +124,9 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                       ) : (
                         <div class="inline-flex gap-1.5">
                           {canInvoice && (
-                            <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
+                            <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
                           )}
-                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
                         </div>
                       )}
                     </td>
@@ -140,7 +140,7 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                   <tr class="so-extra hidden border-t border-white/5 hover:bg-white/10 transition-colors" data-so-row data-id={o.id}>
                     <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
                     <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[220px]">{o.clientNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
                     <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
                     <td class="px-5 py-3.5"><span class={`so-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
                     <td class="px-5 py-3.5 text-right">
@@ -149,9 +149,9 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                       ) : (
                         <div class="inline-flex gap-1.5">
                           {canInvoice && (
-                            <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
+                            <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
                           )}
-                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
                         </div>
                       )}
                     </td>
@@ -161,7 +161,7 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
               {salesRows.length > 3 && (
                 <tr>
                   <td colspan="6" class="px-5 py-3.5 text-center">
-                    <button type="button" data-expand="so" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({salesRows.length})</button>
+                    <button type="button" data-expand="so" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({salesRows.length})</button>
                   </td>
                 </tr>
               )}
@@ -176,12 +176,12 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
   <div data-panel="furnizori" class={tabParam === 'furnizori' ? '' : 'hidden'}>
     <div class="rounded-2xl bg-white/5 overflow-hidden">
       {purchaseRows.length === 0 ? (
-        <div class="px-5 py-12 text-center text-[14px] text-[#9FB8CC]">Nicio comandă către furnizori încă. <a href="/app/comenzi/noua-furnizor" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
+        <div class="px-5 py-12 text-center text-[14px] text-[#A8BED2]">Nicio comandă către furnizori încă. <a href="/app/comenzi/noua-furnizor" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
       ) : (
         <div class="overflow-x-auto">
           <table class="w-full text-[14px]">
             <thead>
-              <tr class="text-left text-[12px] font-medium text-[#7C9AB4]">
+              <tr class="text-left text-[12px] font-medium text-[#8FA6BC]">
                 <th class="px-5 py-3 font-medium">Număr</th>
                 <th class="px-5 py-3 font-medium">Furnizor</th>
                 <th class="px-5 py-3 font-medium">Data</th>
@@ -199,17 +199,17 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                   <tr class="border-t border-white/5 hover:bg-white/10 transition-colors" data-po-row data-id={o.id}>
                     <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
                     <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[200px]">{o.supplierName || o.supplierNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
-                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.expectedDate ? new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.expectedDate ? new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
                     <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
                     <td class="px-5 py-3.5"><span class={`po-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
                     <td class="px-5 py-3.5 text-right">
                       <div class="inline-flex gap-1.5">
                         {canReceive && (
-                          <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
+                          <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
                         )}
                         {o.status !== 'received' && (
-                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
                         )}
                       </div>
                     </td>
@@ -223,17 +223,17 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                   <tr class="po-extra hidden border-t border-white/5 hover:bg-white/10 transition-colors" data-po-row data-id={o.id}>
                     <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
                     <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[200px]">{o.supplierName || o.supplierNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
-                    <td class="px-5 py-3.5 text-[#9FB8CC] tabular-nums">{o.expectedDate ? new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.expectedDate ? new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
                     <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
                     <td class="px-5 py-3.5"><span class={`po-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
                     <td class="px-5 py-3.5 text-right">
                       <div class="inline-flex gap-1.5">
                         {canReceive && (
-                          <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
+                          <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
                         )}
                         {o.status !== 'received' && (
-                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#9FB8CC] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
                         )}
                       </div>
                     </td>
@@ -243,7 +243,7 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
               {purchaseRows.length > 3 && (
                 <tr>
                   <td colspan="7" class="px-5 py-3.5 text-center">
-                    <button type="button" data-expand="po" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({purchaseRows.length})</button>
+                    <button type="button" data-expand="po" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({purchaseRows.length})</button>
                   </td>
                 </tr>
               )}
@@ -266,7 +266,7 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
         const on = b.dataset.tab === tab;
         b.classList.toggle('bg-white/10', on);
         b.classList.toggle('text-white', on);
-        b.classList.toggle('text-[#9FB8CC]', !on);
+        b.classList.toggle('text-[#A8BED2]', !on);
       });
       panels.forEach((p) => p.classList.toggle('hidden', p.dataset.panel !== (tab === 'furnizori' ? 'furnizori' : 'clienti')));
       const url = new URL(window.location.href);

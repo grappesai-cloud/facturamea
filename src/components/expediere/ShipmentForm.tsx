@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../ui/Select';
 
 const PROVIDERS: { id: 'sameday' | 'fan' | 'dpd' | 'cargus'; label: string }[] = [
   { id: 'sameday', label: 'Sameday' },
@@ -88,9 +89,9 @@ export default function ShipmentForm({ onCreated }: Props = {}) {
     }
   };
 
-  const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
-  const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
-  const btnPrimary = 'inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E]';
+  const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+  const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
+  const btnPrimary = 'inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]';
   const btnGhost = 'inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15';
 
   if (!open) {
@@ -107,7 +108,7 @@ export default function ShipmentForm({ onCreated }: Props = {}) {
         <h3 className="text-[17px] font-semibold text-white">Expediere nouă</h3>
         <button
           type="button"
-          className="text-[14px] font-semibold text-[#9FB8CC] hover:text-white"
+          className="text-[14px] font-semibold text-[#A8BED2] hover:text-white"
           onClick={() => {
             setOpen(false);
             setError('');
@@ -130,8 +131,7 @@ export default function ShipmentForm({ onCreated }: Props = {}) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className={labelCls}>Curier</label>
-          <select
-            className={`${inputCls} appearance-none [color-scheme:dark]`}
+          <Select
             value={form.provider}
             onChange={(e) => setForm({ ...form, provider: e.target.value as typeof form.provider })}
           >
@@ -140,7 +140,7 @@ export default function ShipmentForm({ onCreated }: Props = {}) {
                 {p.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label className={labelCls}>Nume destinatar *</label>
@@ -181,8 +181,7 @@ export default function ShipmentForm({ onCreated }: Props = {}) {
         </div>
         <div>
           <label className={labelCls}>Județ</label>
-          <select
-            className={`${inputCls} appearance-none [color-scheme:dark]`}
+          <Select
             value={form.county}
             onChange={(e) => setForm({ ...form, county: e.target.value })}
           >
@@ -192,7 +191,7 @@ export default function ShipmentForm({ onCreated }: Props = {}) {
                 {c}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>

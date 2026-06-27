@@ -58,9 +58,9 @@ const links = [
 ---
 
 <AppLayout title="Contabilitate" activeTab="contabilitate">
-  <div class="mb-8 sm:mb-10">
+  <div class="mb-6 sm:mb-8">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Contabilitate</h1>
-    <p class="text-[15px] text-[#9FB8CC] mt-2">Note, jurnal, balanță și planul de conturi.</p>
+    <p class="text-[15px] text-[#A8BED2] mt-1.5">Note, jurnal, balanță și planul de conturi.</p>
   </div>
 
   {!hasChart ? (
@@ -69,8 +69,8 @@ const links = [
         <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
       </div>
       <h2 class="text-[19px] font-bold text-white">Pornește contabilitatea</h2>
-      <p class="text-[14px] text-[#9FB8CC] mt-1.5 max-w-[460px] mx-auto">Adăugăm planul de conturi românesc (conturi uzuale pentru vânzări, cheltuieli, TVA și trezorerie). Îl poți ajusta oricând.</p>
-      <button id="setup-btn" class="mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
+      <p class="text-[14px] text-[#A8BED2] mt-1.5 max-w-[460px] mx-auto">Adăugăm planul de conturi românesc (conturi uzuale pentru vânzări, cheltuieli, TVA și trezorerie). Îl poți ajusta oricând.</p>
+      <button id="setup-btn" class="mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">
         Inițializează planul de conturi
       </button>
       <p id="setup-msg" class="text-[14px] text-[#DC4B41] mt-3 hidden"></p>
@@ -80,7 +80,7 @@ const links = [
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {cards.map((c) => (
           <div class="rounded-2xl p-5 bg-white/5">
-            <p class="text-[13px] text-[#9FB8CC]">{c.label}</p>
+            <p class="text-[13px] text-[#A8BED2]">{c.label}</p>
             <p class={`text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] mt-3 tabular-nums ${c.accent}`}>{c.value}</p>
           </div>
         ))}
@@ -89,9 +89,9 @@ const links = [
       <div class="flex flex-wrap items-center gap-4 mb-6 rounded-2xl p-5 bg-white/5">
         <div class="flex-1 min-w-[220px]">
           <p class="text-[16px] font-semibold text-white">Generează note din facturi și cheltuieli</p>
-          <p class="text-[14px] text-[#9FB8CC] mt-1">Creează automat note contabile pentru facturile emise, cheltuieli și încasări neînregistrate.</p>
+          <p class="text-[14px] text-[#A8BED2] mt-1">Creează automat note contabile pentru facturile emise, cheltuieli și încasări neînregistrate.</p>
         </div>
-        <button id="autopost-btn" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors shrink-0">
+        <button id="autopost-btn" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors shrink-0">
           Generează note
         </button>
       </div>
@@ -105,7 +105,7 @@ const links = [
             </span>
             <span class="min-w-0">
               <span class="block text-[17px] font-semibold leading-tight text-white">{m.label}</span>
-              <span class="block text-[14px] text-[#9FB8CC] mt-1">{m.desc}</span>
+              <span class="block text-[14px] text-[#A8BED2] mt-1">{m.desc}</span>
             </span>
           </a>
         ))}

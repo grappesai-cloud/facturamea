@@ -37,13 +37,13 @@ const card = 'bg-white/5 rounded-2xl';
   <div class="max-w-4xl">
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Plăți și bancă</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">Plată online a facturilor și conectarea automată la bancă.</p>
+      <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl">Plată online a facturilor și conectarea automată la bancă.</p>
     </div>
 
     <!-- ─── Plată online ──────────────────────────────────────────── -->
     <section class="mb-12">
       <h2 class="text-[18px] font-bold text-white mb-3">Plată online</h2>
-      <p class="text-[14px] text-[#9FB8CC] leading-relaxed mb-5">
+      <p class="text-[14px] text-[#A8BED2] leading-relaxed mb-5">
         Adaugă pe facturi un buton „Link de plată" prin care clientul poate plăti cu cardul.
         Când plata reușește, încasarea se înregistrează automat pe factură.
       </p>
@@ -54,19 +54,19 @@ const card = 'bg-white/5 rounded-2xl';
           <div class="flex items-start justify-between gap-4">
             <div>
               <h3 class="text-[16px] font-semibold text-white">Stripe (card internațional)</h3>
-              <p class="text-[14px] text-[#9FB8CC] mt-1 leading-relaxed">
+              <p class="text-[14px] text-[#A8BED2] mt-1 leading-relaxed">
                 Procesator de plăți cu cardul, util pentru clienți internaționali. Linkul de plată generează un
                 checkout Stripe pentru suma rămasă de încasat.
               </p>
             </div>
-            <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${stripeOn ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#7C9AB4]'}`}>
-              <span class={`w-1.5 h-1.5 rounded-full ${stripeOn ? 'bg-[#2E9E6A]' : 'bg-[#7C9AB4]'}`}></span>
+            <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${stripeOn ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#8FA6BC]'}`}>
+              <span class={`w-1.5 h-1.5 rounded-full ${stripeOn ? 'bg-[#2E9E6A]' : 'bg-[#8FA6BC]'}`}></span>
               {stripeOn ? 'Configurat' : 'Neconfigurat'}
             </span>
           </div>
           {!stripeOn && (
             <div class="mt-4 px-4 py-3 rounded-xl bg-white/10">
-              <p class="text-[13px] text-[#9FB8CC]">
+              <p class="text-[13px] text-[#A8BED2]">
                 Pentru a activa, setează variabila de mediu
                 <span class="font-mono text-white">STRIPE_SECRET_KEY</span>
                 (și <span class="font-mono text-white">STRIPE_WEBHOOK_SECRET</span> pentru confirmarea automată a plății).
@@ -85,25 +85,25 @@ const card = 'bg-white/5 rounded-2xl';
                   <span class="ml-2 align-middle text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#E8A33C]/15 text-[#E8A33C]">sandbox</span>
                 )}
               </h3>
-              <p class="text-[14px] text-[#9FB8CC] mt-1 leading-relaxed">
+              <p class="text-[14px] text-[#A8BED2] mt-1 leading-relaxed">
                 Procesatorul de plăți românesc. Recomandat pentru clienți din România (carduri locale, plată în RON).
                 Linkul de plată trimite clientul către pagina securizată Netopia.
               </p>
             </div>
-            <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${netopiaOn ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#7C9AB4]'}`}>
-              <span class={`w-1.5 h-1.5 rounded-full ${netopiaOn ? 'bg-[#2E9E6A]' : 'bg-[#7C9AB4]'}`}></span>
+            <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${netopiaOn ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#8FA6BC]'}`}>
+              <span class={`w-1.5 h-1.5 rounded-full ${netopiaOn ? 'bg-[#2E9E6A]' : 'bg-[#8FA6BC]'}`}></span>
               {netopiaOn ? 'Configurat' : 'Neconfigurat'}
             </span>
           </div>
           {!netopiaOn && (
             <div class="mt-4 px-4 py-3 rounded-xl bg-white/10">
-              <p class="text-[13px] text-[#9FB8CC] mb-2">
+              <p class="text-[13px] text-[#A8BED2] mb-2">
                 Pentru a activa, obține cheile din contul Netopia (Admin · Securitate) și setează variabilele de mediu:
               </p>
               <ul class="space-y-1.5 text-[13px] font-mono text-white">
                 <li class="px-3 py-2 rounded-lg bg-white/5">NETOPIA_API_KEY</li>
                 <li class="px-3 py-2 rounded-lg bg-white/5">NETOPIA_SIGNATURE</li>
-                <li class="px-3 py-2 rounded-lg bg-white/5">NETOPIA_SANDBOX=1 <span class="text-[#7C9AB4]">(opțional, pentru teste)</span></li>
+                <li class="px-3 py-2 rounded-lg bg-white/5">NETOPIA_SANDBOX=1 <span class="text-[#8FA6BC]">(opțional, pentru teste)</span></li>
               </ul>
             </div>
           )}
@@ -112,7 +112,7 @@ const card = 'bg-white/5 rounded-2xl';
 
       <div class={`${card} p-5 sm:p-6 mt-4`}>
         <h3 class="text-[18px] font-bold text-white mb-3">Cum funcționează linkul de plată</h3>
-        <ol class="space-y-2 text-[14px] text-[#9FB8CC] leading-relaxed list-decimal pl-5">
+        <ol class="space-y-2 text-[14px] text-[#A8BED2] leading-relaxed list-decimal pl-5">
           <li>Deschizi o factură și apeși „Link de plată" (card).</li>
           <li>Clientul plătește pe pagina securizată a procesatorului (Stripe sau Netopia).</li>
           <li>La confirmarea plății, încasarea se înregistrează automat pe factură și statusul devine „Plătită".</li>
@@ -124,12 +124,12 @@ const card = 'bg-white/5 rounded-2xl';
     <section class="mb-10">
       <h2 class="text-[18px] font-bold text-white mb-3">Open banking</h2>
       <div class="flex items-center justify-between gap-4 mb-4">
-        <p class="text-[14px] text-[#9FB8CC] leading-relaxed">
+        <p class="text-[14px] text-[#A8BED2] leading-relaxed">
           Conectează-ți conturile bancare prin GoCardless Bank Account Data și importă tranzacțiile automat,
           gata de reconciliere cu facturile și cheltuielile.
         </p>
-        <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${openBankingOn ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#7C9AB4]'}`}>
-          <span class={`w-1.5 h-1.5 rounded-full ${openBankingOn ? 'bg-[#2E9E6A]' : 'bg-[#7C9AB4]'}`}></span>
+        <span class={`shrink-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-semibold ${openBankingOn ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#8FA6BC]'}`}>
+          <span class={`w-1.5 h-1.5 rounded-full ${openBankingOn ? 'bg-[#2E9E6A]' : 'bg-[#8FA6BC]'}`}></span>
           {openBankingOn ? 'Configurat' : 'Neconfigurat'}
         </span>
       </div>

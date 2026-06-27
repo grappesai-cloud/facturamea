@@ -3,6 +3,7 @@
 // route-map integrity (sha2-512): a8896f90025e8be2277bb2fc03378afd77cec0783794e39d27b4831be5e6e63775065454b729202ec82bcf94641cb10970b94505252ee9b6202db1210e35b623
 import BaseLayout from './BaseLayout.astro';
 import CompanySwitcher from '../components/CompanySwitcher';
+import SupportSheet from '../components/SupportSheet';
 import { NAV_MODULES } from '../lib/nav-modules';
 import { db } from '../db';
 import { users } from '../db/schema';
@@ -39,16 +40,18 @@ const groups: { label: string; items: typeof NAV_MODULES }[] = [
 // Flat solid card colours from the Meadow ramp. fg = heading text, sub = description.
 // Medium-dark tiles so the WHITE title + subtitle read crisply on every card,
 // consistent with the dashboard quick-access cards.
+// One cohesive teal→sea-green→green ramp that flows toward the lime accent
+// (instead of cool blues fighting it). White text reads crisply on all of them.
 const TILE = [
-  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Cerulean
-  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Bondi Blue
-  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Baltic Blue
-  { bg: '#2D8A6E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Pine Green
-  { bg: '#2A7B9B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Ocean
-  { bg: '#1D6E8C', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Deep Teal
-  { bg: '#357A6B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Spruce
-  { bg: '#246A93', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Steel Blue
-  { bg: '#155E75', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Dark Cerulean
+  { bg: '#1C7A8C', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // deep teal
+  { bg: '#1E8C93', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // teal
+  { bg: '#239A8A', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // sea green
+  { bg: '#2BA67E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // jade
+  { bg: '#33A86E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // green
+  { bg: '#2E9A75', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // pine
+  { bg: '#258F88', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // deep sea
+  { bg: '#1F8497', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // cerulean-teal
+  { bg: '#187C8E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // dark teal
 ];
 const tileFor = (key: string) => TILE[Math.max(0, NAV_MODULES.findIndex((m) => m.key === key)) % TILE.length];
 
@@ -88,17 +91,26 @@ const navSections = [
     icon: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z' },
 ];
 const navMobile = navSections.filter((s) => s.mobile);
+// A "hub" page is a top-level nav/dock destination — there's nothing to go back
+// to from it, so the back button is hidden there (shown only on deeper pages).
+const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, ''));
 ---
 
-<BaseLayout title={title} themeColor="#0A2238">
+<BaseLayout title={title} themeColor="#07090f" clientRouter>
   <style is:global>
     /* App shell: lock the page to the viewport width so it can never be dragged
        sideways. `clip` (not hidden) avoids creating a scroll container, so the
        fixed navbar and any sticky elements keep working. */
     html, body { overflow-x: clip; max-width: 100%; }
+    /* Stop the browser from re-anchoring scroll (which shifted sticky panels like
+       the invoice "Sumar" upward) when a portalled dropdown/calendar mounts. */
+    html { overflow-anchor: none; }
     /* No rubber-band / "pull past the content" overscroll. */
     html { overscroll-behavior-y: none; }
-    body { background-color: #0A2238; overscroll-behavior-y: none; }
+    /* Set BOTH html and body so the notch / status-bar / overscroll area is the
+       app's dark background — never white or a stray color on iPhone/Android. */
+    html { background-color: #07090f; }
+    body { background-color: #07090f; overscroll-behavior-y: none; }
 
     /* Form fields always get a visible border — fixes inputs that were styled
        bg-white/5 with no ring (invisible on the dark shell). :where() = zero
@@ -106,7 +118,7 @@ const navMobile = navSections.filter((s) => s.mobile);
     :where([data-app-shell] input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden])),
     :where([data-app-shell] textarea),
     :where([data-app-shell] select) {
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
     }
     :where(html.th-light [data-app-shell] input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=color]):not([type=hidden])),
     :where(html.th-light [data-app-shell] textarea),
@@ -149,6 +161,126 @@ const navMobile = navSections.filter((s) => s.mobile);
     .app-sheet-card::-webkit-scrollbar { width: 0; height: 0; display: none; }
     .app-sheet.is-open .app-sheet-card { transform: translateY(0); }
     .app-sheet-card.dragging { transition: none; }
+    /* Drag-to-close pill — neutral gray visible on any background */
+    .grab-pill { background-color: rgba(128,128,128,0.45); }
+    html.th-light .grab-pill { background-color: rgba(0,0,0,0.2); }
+
+    /* ── Unified close (X) button — ONE style for every popup/sheet/modal,
+       everywhere. Uses a fixed background (not the bg-white/10 utility, which is
+       rewritten differently inside vs outside [data-app-shell]) so it renders
+       identically in any context. Add positioning (shrink-0 / absolute…) on top. */
+    .fm-close-btn {
+      display: grid; place-items: center;
+      width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+      background-color: rgba(255,255,255,0.10); color: #A8BED2;
+      transition: background-color .15s ease, color .15s ease, transform .12s ease;
+    }
+    .fm-close-btn:hover { background-color: rgba(220,75,65,0.18); color: #FF6B5C; }
+    .fm-close-btn:active { transform: scale(.92); }
+    html.th-light .fm-close-btn { background-color: rgba(17,37,58,0.08); color: #5E7385; }
+    html.th-light .fm-close-btn:hover { background-color: rgba(220,75,65,0.14); color: #DC4B41; }
+
+    /* ── View Transitions: keep the persisted dock/navbar glass rock-solid and
+       load page content smoothly. The default root crossfade snapshots the whole
+       page into a top layer, which makes the dock's backdrop-filter sample across
+       the layer boundary and flicker ("the glass disappears for a bit"). Disable
+       that root animation (the chrome is persisted anyway) and instead fade the
+       content area up — so navigation is smooth and the dock never blinks. */
+    ::view-transition-group(root) { animation-duration: 0s; }
+    ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
+    @media (prefers-reduced-motion: no-preference) {
+      .fm-page { animation: fmPageIn .26s cubic-bezier(.22,1,.36,1) both; }
+      @keyframes fmPageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    }
+
+    /* ── Safe-area insets (fullscreen standalone / native with a transparent
+       status bar). env() is 0 on normal web, so these are no-ops there. Higher
+       specificity than the Tailwind pt-3/bottom-0 utilities, so they win. */
+    [data-app-nav].top-0 { padding-top: calc(env(safe-area-inset-top, 0px) + 0.75rem); }
+    [data-app-nav].bottom-0 { padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.25rem); }
+    [data-app-shell] .fm-page { padding-top: calc(env(safe-area-inset-top, 0px) + 6rem); }
+    @media (min-width: 640px) { [data-app-shell] .fm-page { padding-top: calc(env(safe-area-inset-top, 0px) + 7rem); } }
+
+    /* ── Micro-interactions: tasteful entrance + press feedback ── */
+    @keyframes fmRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+    @keyframes fmFadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .fm-rise { animation: fmRise .42s cubic-bezier(.22,1,.36,1) both; }
+    .fm-page { animation: fmFadeUp .42s cubic-bezier(.22,1,.36,1) both; }
+    /* Subtle press feedback for any interactive element opting in. */
+    .fm-press { transition: transform .12s ease; }
+    .fm-press:active:not(:disabled) { transform: scale(.97); }
+    @media (prefers-reduced-motion: reduce) {
+      .fm-rise, .fm-page { animation: none; }
+      .fm-press:active:not(:disabled) { transform: none; }
+    }
+
+    /* Sliding active-page indicator (desktop nav + mobile bottom nav). The pill
+       glides between items: it follows hover on desktop and animates from the
+       previous page's position to the new one on navigation (sessionStorage). */
+    .nav-slider {
+      transition: left .34s cubic-bezier(.34,1.3,.5,1), width .34s cubic-bezier(.34,1.3,.5,1), opacity .2s ease;
+      will-change: left, width;
+    }
+    .nav-slider.no-anim { transition: none; }
+    html.th-light #nav-pill-d { background-color: rgba(17,37,58,0.10); }
+    /* Dock (mobile bottom nav): keep the active selection lime in light mode —
+       a lime pill with dark icon/label so it reads as the brand selection. */
+    html.th-light #nav-pill-m { background-color: #E1FB15; }
+    html.th-light [data-app-nav] a[data-nav-pill][data-active="true"] { color: #07090f !important; }
+    @media (prefers-reduced-motion: reduce) { .nav-slider { transition: opacity .2s ease; } }
+
+    /* ───────────────────────────────────────────────────────────────────────
+       GLOBAL SURFACE TOKENS — one design profile for EVERY sheet, menu,
+       dropdown, popover and select popup, in both light and dark mode. Use
+       `fm-surface` for any floating panel; `fm-pop` adds the shared border +
+       shadow. Never hardcode a per-panel background again. */
+    .fm-surface { background-color: #07090f !important; }
+    html.th-light .fm-surface { background-color: #FFFFFF !important; }
+    .fm-pop {
+      background-color: #07090f !important;
+      border: 1px solid rgba(255,255,255,0.10) !important;
+      box-shadow: 0 16px 48px -12px rgba(0,0,0,0.7) !important;
+      color: #EAF2F8;
+    }
+    html.th-light .fm-pop {
+      background-color: #FFFFFF !important;
+      border-color: rgba(17,37,58,0.10) !important;
+      box-shadow: 0 16px 40px -12px rgba(16,32,56,0.18) !important;
+      color: #11253A;
+    }
+
+    /* Custom <Select> popup (Radix, portalled to <body> so it lives OUTSIDE the
+       app-shell — must theme itself). One look for every dropdown, no OS chrome. */
+    .fm-select-content {
+      background-color: #07090f;
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 16px 48px -12px rgba(0,0,0,0.7);
+    }
+    html.th-light .fm-select-content {
+      background-color: #FFFFFF;
+      border-color: rgba(17,37,58,0.10);
+      box-shadow: 0 16px 40px -12px rgba(16,32,56,0.18);
+    }
+    .fm-select-trigger {
+      background-color: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.22);
+      color: #EAF2F8;
+    }
+    .fm-select-trigger:hover { border-color: rgba(255,255,255,0.38); }
+    html.th-light .fm-select-trigger {
+      background-color: #FFFFFF;
+      border-color: rgba(17,42,67,0.22);
+      color: #11253A;
+    }
+    html.th-light .fm-select-trigger:hover { border-color: rgba(17,42,67,0.38); }
+    .fm-select-item { color: #C8DCE8; }
+    html.th-light .fm-select-item { color: #2B3F52; }
+    .fm-select-item[data-highlighted] { background-color: rgba(255,255,255,0.08); color: #FFFFFF; }
+    html.th-light .fm-select-item[data-highlighted] { background-color: rgba(17,37,58,0.06); color: #11253A; }
+    .fm-select-item[data-state="checked"] { color: #4D8A1A; }
+    html.th-app-dark .fm-select-item[data-state="checked"], .fm-select-item[data-state="checked"] { color: #E1FB15; }
+    html.th-light .fm-select-item[data-state="checked"] { color: #4D8A1A; }
+    .fm-select-muted { color: #8FA6BC; }
     @media (min-width: 640px) {
       .app-sheet-card { transform: translateY(14px) scale(.96); opacity: 0; transition: transform .32s cubic-bezier(.22,1,.36,1), opacity .28s ease; }
       .app-sheet.is-open .app-sheet-card { transform: translateY(0) scale(1); opacity: 1; }
@@ -174,7 +306,7 @@ const navMobile = navSections.filter((s) => s.mobile);
     /* Smooth transition of theme-driven properties only (avoids the chart SVG). */
     [data-app-shell],
     [data-app-shell] .text-white, [data-app-shell] .text-\[\#EAF2F8\], [data-app-shell] .text-\[\#C8DAE8\],
-    [data-app-shell] .text-\[\#9FB8CC\], [data-app-shell] .text-\[\#7C9AB4\],
+    [data-app-shell] .text-\[\#A8BED2\], [data-app-shell] .text-\[\#8FA6BC\],
     [data-app-shell] .border-white\/10, [data-app-shell] .border-white\/20,
     [data-app-nav] .bg-white\/10, [data-app-nav] .text-white, [data-app-nav] .text-\[\#C8DAE8\], [data-app-nav] .text-\[\#D9ED92\],
     #settings-card, #settings-card *, #menu-card, #menu-card *, #help-card, #help-card *,
@@ -221,8 +353,8 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light [data-app-shell] .text-\[\#C8DAE8\] { color: #3A4F63 !important; }
     html.th-light [data-app-shell] .text-\[\#D7E5F0\] { color: #1F3346 !important; }
     html.th-light [data-app-shell] .text-\[\#EAF2F8\] { color: #11253A !important; }
-    html.th-light [data-app-shell] .text-\[\#9FB8CC\] { color: #4F6478 !important; }
-    html.th-light [data-app-shell] .text-\[\#7C9AB4\] { color: #5E7385 !important; }
+    html.th-light [data-app-shell] .text-\[\#A8BED2\] { color: #4F6478 !important; }
+    html.th-light [data-app-shell] .text-\[\#8FA6BC\] { color: #5E7385 !important; }
     html.th-light [data-app-shell] .border-white\/10  { border-color: rgba(17,37,58,0.10) !important; }
     html.th-light [data-app-shell] .border-white\/20  { border-color: rgba(17,37,58,0.18) !important; }
     html.th-light [data-app-shell] .bg-white\/5 { background-color: #FFFFFF !important; border-color: transparent !important; box-shadow: 0 1px 2px rgba(16,32,56,0.05), 0 12px 32px -18px rgba(16,32,56,0.20) !important; }
@@ -231,7 +363,7 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light [data-app-shell] .hover\:bg-white\/20:hover { background-color: rgba(17,37,58,0.13) !important; }
     html.th-light [data-app-shell] .border-white\/10  { border-color: transparent !important; }
     /* "Adaugă o acțiune" picker (rendered inside the shell) */
-    html.th-light [data-app-shell] .bg-\[\#0A2238\]   { background-color: #FFFFFF !important; }
+    html.th-light [data-app-shell] .bg-\[\#07090f\]   { background-color: #FFFFFF !important; }
     html.th-light [data-app-shell] .border-white\/15  { border-color: rgba(17,37,58,0.12) !important; }
 
     /* Floating navbar — light glass with dark text. Kept translucent (not solid)
@@ -240,7 +372,7 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light [data-app-nav] .text-white          { color: #11253A !important; }
     html.th-light [data-app-nav] .text-\[\#C8DAE8\]   { color: #3A4F63 !important; }
     html.th-light [data-app-nav] .text-\[\#D9ED92\]   { color: #6FA021 !important; }
-    html.th-light [data-app-nav] .text-\[\#9FB8CC\]   { color: #3A4F63 !important; }
+    html.th-light [data-app-nav] .text-\[\#A8BED2\]   { color: #3A4F63 !important; }
     html.th-light [data-app-nav] .text-\[\#E1FB15\]   { color: #5FA320 !important; }
     html.th-light [data-app-nav] .hover\:bg-white\/15:hover { background-color: rgba(17,37,58,0.06) !important; }
 
@@ -257,7 +389,7 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light #settings-card .hover\:bg-white\/20:hover { background-color: rgba(17,37,58,0.08) !important; }
     html.th-light #settings-card .hover\:text-white:hover  { color: #11253A !important; }
     html.th-light #settings-card .hover\:bg-white\/\[0\.07\]:hover { background-color: rgba(17,37,58,0.05) !important; }
-    html.th-light #settings-card .bg-\[\#071828\]          { background-color: #FFFFFF !important; box-shadow: 0 4px 20px rgba(16,32,56,0.12) !important; }
+    html.th-light #settings-card .bg-\[\#07090f\]          { background-color: #FFFFFF !important; box-shadow: 0 4px 20px rgba(16,32,56,0.12) !important; }
     html.th-light #settings-card .text-\[\#D7E5F0\]        { color: #1F3346 !important; }
     html.th-light #settings-card .text-\[\#8AA0B4\]        { color: #4A6478 !important; }
     html.th-light #settings-card .bg-white\/10             { background-color: rgba(17,37,58,0.06) !important; }
@@ -265,18 +397,18 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light #settings-card .ring-white\/10           { --tw-ring-color: rgba(17,37,58,0.12) !important; }
     html.th-light #settings-card .border-white\/10         { border-color: rgba(17,37,58,0.10) !important; }
 
-    /* Acțiuni sheet — light */
-    html.th-light #menu-card { background-color: #EEF2F6 !important; }
+    /* Acțiuni sheet — light (unified white surface, same as all other sheets) */
+    html.th-light #menu-card { background-color: #FFFFFF !important; }
     html.th-light #menu-card .text-white         { color: #11253A !important; }
-    html.th-light #menu-card .text-\[\#7C9AB4\]  { color: #5E7385 !important; }
+    html.th-light #menu-card .text-\[\#8FA6BC\]  { color: #5E7385 !important; }
     html.th-light #menu-card .bg-white\/25       { background-color: rgba(17,37,58,0.18) !important; }
 
     /* Ajutor sheet — light */
     html.th-light #help-card { background-color: #FFFFFF !important; }
     html.th-light #help-card .text-white        { color: #11253A !important; }
     html.th-light #help-card .text-\[\#C8DAE8\] { color: #3A4F63 !important; }
-    html.th-light #help-card .text-\[\#7C9AB4\] { color: #5E7385 !important; }
-    html.th-light #help-card .bg-\[\#0A2238\]   { background-color: #E7ECF1 !important; }
+    html.th-light #help-card .text-\[\#8FA6BC\] { color: #5E7385 !important; }
+    html.th-light #help-card .bg-\[\#07090f\]   { background-color: #F1F4F8 !important; }
     html.th-light #help-card .bg-white\/25      { background-color: rgba(17,37,58,0.18) !important; }
     html.th-light #help-card .border-white\/10  { border-color: rgba(17,37,58,0.10) !important; }
 
@@ -298,7 +430,7 @@ const navMobile = navSections.filter((s) => s.mobile);
        it across the app and use the site's meadow lime/green so everything matches.
        Scoped to the app shell so the marketing site is untouched. */
     html [data-app-shell] .bg-\[\#1A759F\],
-    html [data-app-shell] .bg-\[\#168AAD\] { background-color: #E1FB15 !important; color: #0A2238 !important; }
+    html [data-app-shell] .bg-\[\#168AAD\] { background-color: #E1FB15 !important; color: #07090f !important; }
     html [data-app-shell] .hover\:bg-\[\#1A759F\]:hover,
     html [data-app-shell] .hover\:bg-\[\#168AAD\]:hover { background-color: #C6DE0C !important; }
     html [data-app-shell] .text-\[\#1A759F\] { color: #2E9E6A !important; }
@@ -314,11 +446,11 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light [data-app-shell] .hover\:text-\[\#E1FB15\]:hover     { color: #4D8A1A !important; }
     html.th-light [data-app-shell] .hover\:border-\[\#E1FB15\]\/60:hover { border-color: rgba(77,138,26,0.60) !important; }
 
-    /* ── Dark dropdown panels (#071828) → white card in light mode ──────────
+    /* ── Dark dropdown panels (#07090f) → white card in light mode ──────────
        Replaces the old #0B2236 which was too close to the shell background.
        Used in CompanySwitcher, EntryForm, InvoiceEmitForm, InvoiceActions. */
-    html.th-light [data-app-shell] .bg-\[\#071828\],
-    html.th-light [data-app-nav]   .bg-\[\#071828\] {
+    html.th-light [data-app-shell] .bg-\[\#07090f\],
+    html.th-light [data-app-nav]   .bg-\[\#07090f\] {
       background-color: #FFFFFF !important;
       box-shadow: 0 4px 24px rgba(16,32,56,0.14) !important;
     }
@@ -373,7 +505,7 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light [data-app-shell] .text-\[\#8FA8BE\] { color: #4A6478 !important; }
 
     /* ── Input placeholder text — darken for light background ────────────── */
-    html.th-light [data-app-shell] .placeholder\:text-\[\#7C9AB4\]::placeholder { color: #5E7385 !important; }
+    html.th-light [data-app-shell] .placeholder\:text-\[\#8FA6BC\]::placeholder { color: #5E7385 !important; }
     html.th-light [data-app-shell] .placeholder\:text-\[\#8FA8BE\]::placeholder { color: #4A6478 !important; }
 
     /* ── Static lime ring (#E1FB15/30) → dark green in light mode ─────────── */
@@ -389,7 +521,7 @@ const navMobile = navSections.filter((s) => s.mobile);
     html.th-light [data-app-shell] .text-\[\#76C893\] { color: #1F7A3E !important; }
     html.th-light #help-card .text-\[\#76C893\]       { color: #1F7A3E !important; }
 
-    /* ── Remove OS chrome from all <select> in the app — uniform custom chevron ── */
+    /* ── Fully custom <select> — removes all OS chrome, applies app style ── */
     [data-app-shell] select,
     [data-app-nav] select,
     #menu-card select,
@@ -398,14 +530,34 @@ const navMobile = navSections.filter((s) => s.mobile);
       -webkit-appearance: none;
       appearance: none;
       color-scheme: dark;
-      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%237C9AB4%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E") !important;
+      background-color: rgb(255 255 255 / 0.05);
+      color: #EAF2F8;
+      border: 1px solid rgb(255 255 255 / 0.1);
+      border-radius: 0.75rem;
+      padding: 0.625rem 2.5rem 0.625rem 1rem;
+      font-family: inherit;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%238FA6BC%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E") !important;
       background-repeat: no-repeat !important;
       background-position: right 12px center !important;
       background-size: 17px !important;
-      padding-right: 36px !important;
+    }
+    [data-app-shell] select:focus,
+    [data-app-nav] select:focus,
+    #menu-card select:focus,
+    #settings-card select:focus,
+    #help-card select:focus {
+      outline: none;
+      border-color: rgb(225 251 21 / 0.5);
+      box-shadow: 0 0 0 3px rgb(225 251 21 / 0.15);
     }
     html.th-light [data-app-shell] select,
     html.th-light [data-app-nav] select {
+      background-color: rgb(0 0 0 / 0.04);
+      color: #07090f;
+      border-color: rgb(0 0 0 / 0.12);
       background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%234A6478%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E") !important;
     }
 
@@ -424,18 +576,19 @@ const navMobile = navSections.filter((s) => s.mobile);
   </style>
 
   <!-- ───────── Floating navbar (glass) — body-level so nothing can break `fixed` ───────── -->
-  <div data-app-nav class="fixed inset-x-0 top-0 z-50 px-4 sm:px-6 pt-3 pointer-events-none" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+  <div data-app-nav transition:persist="app-navbar" class="fixed inset-x-0 top-0 z-50 px-4 sm:px-6 pt-3 pointer-events-none" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <div class="max-w-[1180px] mx-auto flex items-center justify-between gap-2">
 
       <!-- Primary nav (desktop) + actions -->
-      <div class="pointer-events-auto lg:flex-1 h-14 flex items-center gap-1 px-1.5 rounded-full bg-white/10 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
+      <div id="nav-desktop" class="pointer-events-auto relative lg:flex-1 h-14 flex items-center gap-1 px-1.5 rounded-full bg-white/10 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
+        <span id="nav-pill-d" class="nav-slider pointer-events-none absolute top-1.5 left-0 h-11 rounded-full bg-white/15 opacity-0 hidden lg:block" aria-hidden="true"></span>
         {navSections.map((s) => (
-          <a href={s.href} class:list={['nav-pill hidden lg:inline-flex items-center gap-2 px-3.5 h-11 rounded-full text-[15px] font-semibold transition-colors', s.active ? 'bg-white/15 text-white' : 'text-[#C8DAE8] hover:bg-white/10 hover:text-white']}>
+          <a href={s.href} data-astro-prefetch="viewport" data-nav-pill data-active={s.active ? 'true' : 'false'} class:list={['nav-pill relative z-10 hidden lg:inline-flex items-center gap-2 px-3.5 h-11 rounded-full text-[15px] font-semibold transition-colors', s.active ? 'text-white' : 'text-[#C8DAE8] hover:text-white']}>
             <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={s.icon}/></svg>
             <span>{s.label}</span>
           </a>
         ))}
-        <button id="menu-open" class="hidden lg:inline-flex items-center gap-2 px-3.5 h-11 rounded-full text-white text-[15px] font-semibold hover:bg-white/15 transition-colors">
+        <button id="menu-open" data-nav-pill data-active="false" class="relative z-10 hidden lg:inline-flex items-center gap-2 px-3.5 h-11 rounded-full text-white text-[15px] font-semibold transition-colors">
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z"/></svg>
           <span>Toate</span>
         </button>
@@ -454,7 +607,7 @@ const navMobile = navSections.filter((s) => s.mobile);
       <!-- Quick "new invoice" + settings hamburger -->
       {user && (
         <div class="pointer-events-auto relative shrink-0 flex items-center gap-2">
-          <a href="/app/facturare/emite" aria-label="Factură nouă" title="Factură nouă" class="w-14 h-14 rounded-full bg-[#E1FB15] text-[#0A2238] flex items-center justify-center shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] hover:bg-[#D2EA0E] transition-colors">
+          <a href="/app/facturare/emite" aria-label="Factură nouă" title="Factură nouă" class="w-14 h-14 rounded-full bg-[#E1FB15] text-[#07090f] flex items-center justify-center shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] hover:bg-[#D2EA0E] transition-colors">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
           </a>
           <button id="settings-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Setări" class="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl hover:bg-white/15 flex items-center justify-center text-white shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] transition-colors">
@@ -464,25 +617,19 @@ const navMobile = navSections.filter((s) => s.mobile);
             </svg>
           </button>
 
-          <div id="settings-menu" class="app-sheet hidden fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
-            <div id="settings-card" class="app-sheet-card sheet-content w-full sm:max-w-[440px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#0B2741] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+          <div id="settings-menu" class="app-sheet hidden fixed inset-0 z-[85] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+            <div id="settings-card" class="app-sheet-card sheet-content w-full sm:max-w-[440px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#07090f] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
 
-              <!-- header: grab pill (mobile) + close button (all screen sizes) -->
-              <div class="flex items-center px-3 pt-3.5 pb-2 select-none">
-                <div class="flex-1"></div>
-                <div id="settings-handle" class="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span class="w-10 h-1.5 rounded-full fm-grab pointer-events-none"></span></div>
-                <div class="flex-1 flex justify-end">
-                  <button id="settings-close-btn" type="button" aria-label="Închide" class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                  </button>
-                </div>
+              <!-- header: brand + X close (same row, all screen sizes) -->
+              <div class="flex items-center justify-between gap-3 px-5 pt-5 pb-1">
+                <a href="/app" class="flex items-center gap-2.5">
+                  <img src="/logo.png" alt="facturamea" width="36" height="36" class="w-9 h-9" />
+                  <span class="text-[18px] font-bold tracking-[-0.02em] text-white">factura<span class="text-[#34A0A4]">mea</span></span>
+                </a>
+                <button id="settings-close-btn" type="button" aria-label="Închide" class="shrink-0 fm-close-btn">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
               </div>
-
-              <!-- Brand -->
-              <a href="/app" class="flex items-center gap-2.5 px-5 pt-5 pb-1">
-                <img src="/logo.png" alt="facturamea" width="36" height="36" class="w-9 h-9" />
-                <span class="text-[18px] font-bold tracking-[-0.02em] text-white">factura<span class="text-[#34A0A4]">mea</span></span>
-              </a>
 
               <!-- Identity + theme toggle (one row, no wasted space) -->
               <div class="flex items-center gap-3 px-5 pt-2 pb-4">
@@ -530,6 +677,10 @@ const navMobile = navSections.filter((s) => s.mobile);
                     <svg class="w-6 h-6 shrink-0 text-[#8AA0B4] group-hover:text-[#D9ED92] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                     Toate setările
                   </a>
+                  <button id="support-open" data-support-open type="button" class="group w-full flex items-center gap-3.5 px-3 py-3.5 rounded-2xl text-[16px] text-[#D7E5F0] hover:bg-white/[0.07] active:bg-white/10 hover:text-white transition-colors text-left">
+                    <svg class="w-6 h-6 shrink-0 text-[#8AA0B4] group-hover:text-[#D9ED92] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"/></svg>
+                    Contact & suport
+                  </button>
                 </nav>
 
               <!-- Logout -->
@@ -560,15 +711,16 @@ const navMobile = navSections.filter((s) => s.mobile);
 
   <!-- ───────── Mobile bottom nav ───────── -->
   {user && (
-    <nav data-app-nav class="lg:hidden fixed bottom-0 inset-x-0 z-40 px-3 pb-3 pointer-events-none" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
-      <div class="pointer-events-auto mx-auto max-w-md h-16 flex items-stretch justify-around gap-1 px-2 rounded-full bg-white/10 backdrop-blur-2xl shadow-[0_8px_40px_-10px_rgba(0,0,0,0.6)]">
+    <nav data-app-nav transition:persist="app-dock" class="lg:hidden fixed bottom-0 inset-x-0 z-40 px-3 pb-3 pointer-events-none" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+      <div id="nav-mobile" class="pointer-events-auto relative mx-auto max-w-md h-16 flex items-stretch justify-around gap-1 px-2 rounded-full bg-white/10 backdrop-blur-2xl shadow-[0_8px_40px_-10px_rgba(0,0,0,0.6)]">
+        <span id="nav-pill-m" class="nav-slider pointer-events-none absolute top-2 bottom-2 left-0 rounded-2xl bg-white/12 opacity-0" aria-hidden="true"></span>
         {navMobile.map((s) => (
-          <a href={s.href} class:list={['flex-1 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors', s.active ? 'text-[#E1FB15]' : 'text-[#9FB8CC] active:text-white']}>
+          <a href={s.href} data-astro-prefetch="viewport" data-nav-pill data-active={s.active ? 'true' : 'false'} class:list={['relative z-10 flex-1 flex flex-col items-center justify-center gap-1 rounded-xl transition-colors', s.active ? 'text-[#E1FB15]' : 'text-[#A8BED2] active:text-white']}>
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d={s.icon}/></svg>
             <span class="text-[10px] font-semibold tracking-tight">{s.label}</span>
           </a>
         ))}
-        <button id="menu-open-bottom" type="button" class="flex-1 flex flex-col items-center justify-center gap-1 rounded-xl text-[#9FB8CC] active:text-white transition-colors">
+        <button id="menu-open-bottom" data-nav-pill data-active="false" type="button" class="relative z-10 flex-1 flex flex-col items-center justify-center gap-1 rounded-xl text-[#A8BED2] active:text-white transition-colors">
           <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z"/></svg>
           <span class="text-[10px] font-semibold tracking-tight">Meniu</span>
         </button>
@@ -577,9 +729,9 @@ const navMobile = navSections.filter((s) => s.mobile);
   )}
 
   <!-- ───────── App shell ───────── -->
-  <div data-app-shell class="min-h-screen bg-[#0A2238] text-[#EAF2F8] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+  <div data-app-shell class="min-h-screen bg-[#07090f] text-[#EAF2F8] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <main class="flex-1 w-full">
-      <div class="max-w-[1180px] mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28 lg:pb-10">
+      <div class="fm-page max-w-[1180px] mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28 lg:pb-10">
         {user?.isAdmin && !isImpersonating && (
           <a href="/admin" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#1A759F] rounded-2xl text-[15px] text-white hover:bg-[#1E6091] transition-colors">
             <span class="w-2.5 h-2.5 rounded-full bg-[#E1FB15]"></span>
@@ -588,8 +740,8 @@ const navMobile = navSections.filter((s) => s.mobile);
           </a>
         )}
         {isImpersonating && (
-          <a href="/api/admin/stop-impersonate" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#E8A33C] rounded-2xl text-[15px] text-[#0A2238] hover:bg-[#D9912C] transition-colors">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#0A2238]"></span>
+          <a href="/api/admin/stop-impersonate" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#E8A33C] rounded-2xl text-[15px] text-[#07090f] hover:bg-[#D9912C] transition-colors">
+            <span class="w-2.5 h-2.5 rounded-full bg-[#07090f]"></span>
             <span><strong>Mod impersonare</strong> · vezi contul unui utilizator.</span>
             <span class="ml-auto font-bold">Ieși din impersonare →</span>
           </a>
@@ -601,7 +753,7 @@ const navMobile = navSections.filter((s) => s.mobile);
             <span class="ml-auto font-semibold text-[#E1FB15]">Activează licența pe viață (700 RON) →</span>
           </a>
         )}
-        {!isHome && (
+        {!isHub && (
           <button id="app-back" type="button" aria-label="Înapoi" class="group inline-flex items-center gap-2.5 mb-5 h-10 pl-1.5 pr-4 rounded-full text-[14px] font-semibold text-[#C8DAE8] hover:text-white transition-colors">
             <span class="grid place-items-center w-8 h-8 rounded-full bg-white/10 group-hover:-translate-x-0.5 transition-transform">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg>
@@ -615,12 +767,12 @@ const navMobile = navSections.filter((s) => s.mobile);
 
     {!hideFooter && (
       <footer class="hidden lg:block border-t border-white/10 mt-8">
-        <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[#7C9AB4]">
+        <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-5 flex flex-wrap items-center justify-between gap-2 text-[13px] text-[#8FA6BC]">
           <span>© {new Date().getFullYear()} facturamea</span>
           <div class="flex items-center gap-4">
             <button id="help-open-2" class="hover:text-[#52B69A] transition-colors">Ajutor</button>
             <a href="/termeni" class="hover:text-[#52B69A] transition-colors">Termeni</a>
-            <a href="/#contact" class="hover:text-[#52B69A] transition-colors">Contact</a>
+            <button type="button" data-support-open class="hover:text-[#52B69A] transition-colors">Contact</button>
           </div>
         </div>
       </footer>
@@ -628,35 +780,28 @@ const navMobile = navSections.filter((s) => s.mobile);
   </div>
 
   <!-- ───────── Meniu overlay (quick actions) ───────── -->
-  <div id="menu-overlay" class="app-sheet hidden fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
-    <div id="menu-card" class="app-sheet-card w-full sm:max-w-[820px] max-h-[94vh] sm:max-h-[92vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
-      <!-- header: grab pill (mobile) + close button -->
-      <div class="flex items-center px-3 pt-3.5 pb-1 select-none">
-        <div class="flex-1"></div>
-        <div id="menu-handle" class="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span class="w-10 h-1.5 rounded-full fm-grab pointer-events-none"></span></div>
-        <div class="flex-1 flex justify-end">
-          <button id="menu-close-btn" type="button" aria-label="Închide" class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="sheet-content px-4 sm:px-7 pt-3 sm:pt-7 pb-7">
-      <div class="mb-6">
+  <div id="menu-overlay" transition:persist="app-menu" class="app-sheet hidden fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <div id="menu-card" class="app-sheet-card w-full sm:max-w-[820px] max-h-[80vh] sm:max-h-[86vh] overflow-y-auto bg-[#07090f] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/10 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+      <div class="sheet-content px-4 sm:px-7 pt-5 sm:pt-7 pb-7">
+      <div class="mb-6 flex items-start justify-between gap-3">
         <h2 class="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-white">Ce vrei să faci?</h2>
+        <button id="menu-close-btn" type="button" aria-label="Închide" class="shrink-0 fm-close-btn">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
       {groups.map((g) => g.items.length > 0 && (
         <div class="mb-7">
-          <p class="text-[13px] uppercase tracking-[0.14em] text-[#7C9AB4] font-semibold mb-3">{g.label}</p>
+          <p class="text-[13px] uppercase tracking-[0.14em] text-[#8FA6BC] font-semibold mb-3">{g.label}</p>
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 auto-rows-fr gap-3">
             {g.items.map((m) => {
-              const t = m.primary ? { bg: '#E1FB15', fg: '#0A2238', sub: '#3F4D12' } : tileFor(m.key);
+              const t = m.primary ? { bg: '#E1FB15', fg: '#07090f', sub: '#3F4D12' } : tileFor(m.key);
               const canPin = isPinnable(m.key, m.primary);
               return (
-                <div class="relative h-full">
-                  <a href={m.href} class={`group relative overflow-hidden flex flex-col justify-end h-full min-h-[104px] p-4 ${canPin ? 'pr-12' : ''} rounded-2xl transition-transform hover:-translate-y-0.5`} style={`background:${t.bg}`}>
-                    {/* large icon watermark behind the text, centered */}
-                    <span class="absolute inset-0 z-0 flex items-center justify-center overflow-hidden pointer-events-none">
-                      <svg class="w-[130%] h-[130%] text-white/[0.10]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="0.9"><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
+                <div class="group/tile relative h-full">
+                  <a href={m.href} class={`relative overflow-hidden flex flex-col justify-between h-full min-h-[104px] p-4 rounded-2xl transition-transform group-hover/tile:-translate-y-0.5`} style={`background:${t.bg}`}>
+                    {/* small icon, top-left */}
+                    <span class="relative z-10 inline-flex" aria-hidden="true">
+                      <svg class="w-7 h-7 sm:w-8 sm:h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" style={`color:${t.fg}`}><path stroke-linecap="round" stroke-linejoin="round" d={m.icon}/></svg>
                     </span>
                     {/* title + subtitle — use inline colour so CSS overrides can't invert them */}
                     <span class="tile-text relative z-10 w-full">
@@ -665,7 +810,7 @@ const navMobile = navSections.filter((s) => s.mobile);
                     </span>
                   </a>
                   {canPin && (
-                    <button type="button" class="dash-pin absolute top-2 right-2 w-8 h-8 grid place-items-center rounded-full bg-[#0A2238]/75 backdrop-blur text-white hover:bg-[#0A2238] transition-colors" data-pin={m.key} data-pinned={pinned.has(m.key) ? 'true' : 'false'} aria-label={`Adaugă ${m.label} pe pagina principală`} title="Adaugă pe pagina principală">
+                    <button type="button" class="dash-pin absolute top-2 right-2 w-8 h-8 grid place-items-center rounded-full bg-[#07090f]/75 backdrop-blur text-white hover:bg-[#07090f] transition-all duration-150 opacity-0 lg:group-hover/tile:opacity-100" data-pin={m.key} data-pinned={pinned.has(m.key) ? 'true' : 'false'} aria-label={`Adaugă ${m.label} pe pagina principală`} title="Adaugă pe pagina principală">
                       <svg class="pin-add w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
                       <svg class="pin-on w-4 h-4 text-[#E1FB15]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
                     </button>
@@ -681,20 +826,13 @@ const navMobile = navSections.filter((s) => s.mobile);
   </div>
 
   <!-- ───────── Ajutor sheet ───────── -->
-  <div id="help-modal" class="app-sheet hidden fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
-    <div id="help-card" class="app-sheet-card w-full sm:max-w-[520px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#123455] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/15 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
-      <!-- header: grab pill (mobile) + close button -->
-      <div class="flex items-center px-3 pt-3.5 pb-1 select-none">
-        <div class="flex-1"></div>
-        <div id="help-handle" class="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span class="w-10 h-1.5 rounded-full fm-grab pointer-events-none"></span></div>
-        <div class="flex-1 flex justify-end">
-          <button id="help-close-btn" type="button" aria-label="Închide" class="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="px-5 pt-3 sm:pt-6 pb-1">
+  <div id="help-modal" transition:persist="app-help" class="app-sheet hidden fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <div id="help-card" class="app-sheet-card w-full sm:max-w-[520px] max-h-[92vh] sm:max-h-[88vh] overflow-y-auto bg-[#07090f] rounded-t-[28px] sm:rounded-[28px] ring-1 ring-white/15 shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]">
+      <div class="flex items-center justify-between gap-3 px-5 pt-5 sm:pt-6 pb-1">
         <h3 class="text-[20px] font-bold text-white">Ajutor</h3>
+        <button id="help-close-btn" type="button" aria-label="Închide" class="shrink-0 fm-close-btn">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
       <div class="sheet-content px-5 pt-3 pb-6 space-y-5 text-[15px] leading-relaxed text-[#C8DAE8]">
         <div>
@@ -709,14 +847,16 @@ const navMobile = navSections.filter((s) => s.mobile);
           <p class="font-semibold text-white mb-1">Ai date în Oblio sau SmartBill?</p>
           <p>Le aduci automat din <a href="/app/import" class="text-[#76C893] font-medium underline">Import date</a>.</p>
         </div>
-        <div class="rounded-xl bg-[#0A2238] border border-white/10 p-4">
+        <div class="rounded-xl bg-[#07090f] border border-white/10 p-4">
           <p class="font-semibold text-white mb-1">Ai nevoie de un om?</p>
           <p>Scrie-ne la <a href="mailto:contact@facturamea.com" class="text-[#76C893] font-medium underline">contact@facturamea.com</a> și te ajutăm.</p>
         </div>
-        <p class="text-[13px] text-[#7C9AB4]">Sfat: din meniul cu setări (colțul dreapta sus) poți comuta între tema deschisă și întunecată.</p>
+        <p class="text-[13px] text-[#8FA6BC]">Sfat: din meniul cu setări (colțul dreapta sus) poți comuta între tema deschisă și întunecată.</p>
       </div>
     </div>
   </div>
+
+  {user && <SupportSheet client:load userEmail={user.email} transition:persist="app-support" />}
 
   <script>
     function bind(id: string, fn: () => void) { document.getElementById(id)?.addEventListener('click', fn); }
@@ -734,9 +874,22 @@ const navMobile = navSections.filter((s) => s.mobile);
         overlay.classList.remove('hidden');
         if (card) card.style.transform = '';
         document.documentElement.classList.add('sheet-lock');
-        // Paint the closed state first, THEN flip to open so the enter transition
-        // actually runs (double rAF is more reliable than a reflow on mobile).
-        requestAnimationFrame(() => requestAnimationFrame(() => overlay.classList.add('is-open')));
+        overlay.classList.add('is-open');
+        // Explicitly play the entrance with the Web Animations API. A CSS
+        // transition can't fire here because the sheet starts at display:none
+        // (the .hidden toggle), so there is no painted "from" frame to animate
+        // from — the card would snap straight open. .animate() has no such
+        // limitation: it slides up (mobile) / scale-fades (desktop) every time.
+        if (card && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          const mobile = window.matchMedia('(max-width: 639.5px)').matches;
+          overlay.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease' });
+          card.animate(
+            mobile
+              ? [{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }]
+              : [{ transform: 'translateY(16px) scale(.96)', opacity: 0 }, { transform: 'translateY(0) scale(1)', opacity: 1 }],
+            { duration: mobile ? 440 : 340, easing: 'cubic-bezier(.22,1,.36,1)' },
+          );
+        }
       };
       const close = () => {
         if (!overlay || overlay.classList.contains('hidden')) return;
@@ -750,66 +903,98 @@ const navMobile = navSections.filter((s) => s.mobile);
       const isOpen = () => !!overlay && overlay.classList.contains('is-open');
       const toggle = () => (isOpen() ? close() : open());
       overlay?.addEventListener('click', (e) => { if (e.target === overlay) close(); });
-
-      const dismissThreshold = () => Math.min(110, (card ? card.offsetHeight : 600) * 0.2);
-
-      // (1) Drag the grab handle — touch devices only (not mouse/trackpad).
-      const isMouse = window.matchMedia('(pointer: fine)').matches;
-      if (!isMouse && handle && card) {
-        let dragging = false, hSy = 0, hDy = 0;
-        handle.addEventListener('pointerdown', (e: PointerEvent) => {
-          dragging = true; hSy = e.clientY; hDy = 0;
-          card.classList.add('dragging');
-          handle.setPointerCapture?.(e.pointerId);
-        });
-        handle.addEventListener('pointermove', (e: PointerEvent) => {
-          if (!dragging) return;
-          hDy = Math.max(0, e.clientY - hSy);
-          card.style.transform = `translateY(${hDy}px)`;
-        });
-        const endHandle = () => {
-          if (!dragging) return;
-          dragging = false;
-          card.classList.remove('dragging');
-          if (hDy > dismissThreshold()) close(); else card.style.transform = '';
-        };
-        handle.addEventListener('pointerup', endHandle);
-        handle.addEventListener('pointercancel', endHandle);
-      }
-
-      // (2) Pull-to-dismiss: when scrolled to the very top, keep pulling down on
-      //     the content (touch) and it closes. Pulling up scrolls normally.
-      if (card) {
-        let sy = 0, sScroll = 0, active = false, dy = 0, onHandle = false;
-        card.addEventListener('touchstart', (e: TouchEvent) => {
-          if (e.touches.length !== 1) return;
-          onHandle = !!handle && handle.contains(e.target as Node);
-          sy = e.touches[0].clientY;
-          sScroll = card.scrollTop;
-          active = false; dy = 0;
-        }, { passive: true });
-        card.addEventListener('touchmove', (e: TouchEvent) => {
-          if (onHandle || e.touches.length !== 1) return;
-          const delta = e.touches[0].clientY - sy;
-          if (!active) {
-            if (sScroll <= 0 && delta > 6) { active = true; card.classList.add('dragging'); }
-            else return; // let the content scroll normally
-          }
-          dy = Math.max(0, delta);
-          card.style.transform = `translateY(${dy}px)`;
-          if (e.cancelable) e.preventDefault();
-        }, { passive: false });
-        const endTouch = () => {
-          if (!active) return;
-          active = false;
-          card.classList.remove('dragging');
-          if (dy > dismissThreshold()) close(); else card.style.transform = '';
-        };
-        card.addEventListener('touchend', endTouch);
-        card.addEventListener('touchcancel', endTouch);
-      }
+      // Close via the X button (all screen sizes) + backdrop + Esc. No swipe.
+      void handle;
 
       return { open, close, toggle, isOpen };
+    }
+
+    // ── Sliding active-page pill (desktop nav + mobile bottom nav) ──
+    function setupNavSlider(containerId: string, pillId: string, memKey: string) {
+      const container = document.getElementById(containerId);
+      const pill = document.getElementById(pillId);
+      if (!container || !pill) return null;
+      const items = Array.from(container.querySelectorAll<HTMLElement>('[data-nav-pill]'));
+      if (!items.length) return null;
+      // The menu button is a pill target but never the resting "active" one.
+      let active = items.find((i) => i.dataset.active === 'true') || null;
+      // Active text colors differ per bar (desktop = white, mobile dock = lime).
+      const cOn = containerId === 'nav-mobile' ? 'text-[#E1FB15]' : 'text-white';
+      const cOff = containerId === 'nav-mobile' ? 'text-[#A8BED2]' : 'text-[#C8DAE8]';
+      const place = (el: HTMLElement | null, animate: boolean) => {
+        if (!el) { pill.style.opacity = '0'; return; }
+        if (!animate) pill.classList.add('no-anim');
+        pill.style.left = el.offsetLeft + 'px';
+        pill.style.width = el.offsetWidth + 'px';
+        pill.style.opacity = '1';
+        if (!animate) { void pill.offsetWidth; pill.classList.remove('no-anim'); }
+      };
+      const reset = () => place(active, true);
+      if (active) {
+        // Slide in from the previously-visited section's slot (if different).
+        let prevEl: HTMLElement | null = null;
+        try {
+          const prevHref = sessionStorage.getItem(memKey);
+          if (prevHref) prevEl = items.find((i) => i.getAttribute('href') === prevHref) || null;
+        } catch {}
+        place(prevEl && prevEl !== active ? prevEl : active, false);
+        if (prevEl && prevEl !== active) requestAnimationFrame(() => requestAnimationFrame(() => place(active, true)));
+        try { sessionStorage.setItem(memKey, active.getAttribute('href') || ''); } catch {}
+      } else {
+        place(null, false);
+      }
+      // Slide to an item the moment it's pressed (feels click-driven on mobile
+      // and desktop), before the page navigates / the menu opens.
+      items.forEach((i) => {
+        i.addEventListener('pointerdown', () => place(i, true));
+        i.addEventListener('mouseenter', () => place(i, true)); // desktop hover-follow
+      });
+      container.addEventListener('mouseleave', () => place(active, true));
+      window.addEventListener('resize', () => place(active, false));
+
+      // Re-detect the active section from the current URL and glide the pill —
+      // used after a View-Transition navigation, since the dock is persisted and
+      // keeps the previous page's active state.
+      const syncActive = () => {
+        const path = (location.pathname.replace(/\/+$/, '') || '/');
+        let best: HTMLElement | null = null, bestLen = -1;
+        for (const i of items) {
+          const href = i.getAttribute('href'); if (!href) continue;
+          const h = href.replace(/\/+$/, '') || '/';
+          if ((path === h || path.startsWith(h + '/')) && h.length > bestLen) { best = i; bestLen = h.length; }
+        }
+        active = best;
+        for (const i of items) {
+          if (!i.getAttribute('href')) continue; // skip the menu button
+          const on = i === active;
+          i.dataset.active = on ? 'true' : 'false';
+          i.classList.toggle(cOn, on);
+          i.classList.toggle(cOff, !on);
+        }
+        place(active, true);
+        try { if (active) sessionStorage.setItem(memKey, active.getAttribute('href') || ''); } catch {}
+      };
+      return { reset, syncActive };
+    }
+    const navSliderD = setupNavSlider('nav-desktop', 'nav-pill-d', 'fm-nav-active');
+    const navSliderM = setupNavSlider('nav-mobile', 'nav-pill-m', 'fm-nav-active-m');
+    // Recompute once the webfont has loaded (text width changes the pill size).
+    if ((document as any).fonts?.ready) (document as any).fonts.ready.then(() => window.dispatchEvent(new Event('resize')));
+
+    // ── View-Transitions glue: the navbar/dock/sheets are persisted, so on each
+    // SPA navigation re-sync the active dock pill to the new page. Old content
+    // stays visible until the new page is ready, then crossfades — no blank frame.
+    document.addEventListener('astro:page-load', () => {
+      navSliderD?.syncActive?.(); navSliderM?.syncActive?.();
+    });
+
+    // The menu button slides the pill to itself on press; when the menu sheet
+    // closes again, glide the pill back to the real active page.
+    const menuOverlayEl = document.getElementById('menu-overlay');
+    if (menuOverlayEl) {
+      new MutationObserver(() => {
+        if (!menuOverlayEl.classList.contains('is-open')) { navSliderD?.reset(); navSliderM?.reset(); }
+      }).observe(menuOverlayEl, { attributes: true, attributeFilter: ['class'] });
     }
 
     const settingsBtn = document.getElementById('settings-btn');
@@ -818,17 +1003,20 @@ const navMobile = navSections.filter((s) => s.mobile);
     const help = setupSheet('help-modal', 'help-card', 'help-handle');
 
     // Stylish back button → previous page (falls back to the dashboard).
-    document.getElementById('app-back')?.addEventListener('click', () => {
-      if (history.length > 1 && document.referrer && new URL(document.referrer).origin === location.origin) history.back();
-      else if (history.length > 1) history.back();
+    // Event-delegated: the back button lives in swapped page content, so a direct
+    // listener bound once would be lost after the first SPA navigation.
+    document.addEventListener('click', (e) => {
+      if (!(e.target as Element)?.closest?.('#app-back')) return;
+      if (history.length > 1) history.back();
       else location.href = '/app';
     });
 
     bind('menu-open', menu.open); bind('menu-open-bottom', menu.open);
     bind('help-open', help.open); bind('help-open-2', help.open);
     bind('help-open-settings', () => { settings.close(); setTimeout(() => help.open(), 120); });
-    document.getElementById('settings-close-btn')?.addEventListener('click', settings.close);
+    // Desktop X close buttons (mobile closes by swipe/backdrop instead).
     document.getElementById('menu-close-btn')?.addEventListener('click', menu.close);
+    document.getElementById('settings-close-btn')?.addEventListener('click', settings.close);
     document.getElementById('help-close-btn')?.addEventListener('click', help.close);
     settingsBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -852,6 +1040,8 @@ const navMobile = navSections.filter((s) => s.mobile);
       themeBtn?.setAttribute('aria-pressed', light ? 'true' : 'false');
       moon?.classList.toggle('hidden', light);   // moon shows in dark mode
       sun?.classList.toggle('hidden', !light);   // sun shows in light mode
+      // Keep the status-bar / notch color in sync with the theme (live on toggle).
+      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#EEF2F6' : '#07090f');
     }
     applyTheme(localStorage.getItem(LIGHT_KEY) === '1');
     themeBtn?.addEventListener('click', () => {

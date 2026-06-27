@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Select } from '../ui/Select';
 
 // Open banking (GoCardless Bank Account Data) connect + sync island.
 // - Lists Romanian banks, lets the user connect (opens the GoCardless link).
@@ -31,11 +32,11 @@ const LS_REQ = 'fm-openbanking-requisition';
 
 const card = 'bg-white/5 rounded-2xl';
 const btnPrimary =
-  'inline-flex items-center gap-1.5 justify-center px-5 py-2.5 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed text-[#0A2238] text-[14px] font-bold transition-colors';
+  'inline-flex items-center gap-1.5 justify-center px-5 py-2.5 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed text-[#07090f] text-[14px] font-bold transition-colors';
 const btnGhost =
   'inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-50 text-white text-[14px] font-semibold transition-colors';
 const inputCls =
-  'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+  'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
 
 export default function OpenBankingConnect({ configured, localAccounts = [] }: Props) {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
@@ -177,7 +178,7 @@ export default function OpenBankingConnect({ configured, localAccounts = [] }: P
           <span className="mt-1 w-2 h-2 rounded-full bg-[#E8A33C] shrink-0" />
           <div>
             <h3 className="text-[16px] font-semibold text-white">Open banking neconfigurat</h3>
-            <p className="text-[14px] text-[#9FB8CC] mt-1.5 leading-relaxed">
+            <p className="text-[14px] text-[#A8BED2] mt-1.5 leading-relaxed">
               Conectarea automată la bancă folosește GoCardless Bank Account Data (fost Nordigen). Pentru a o activa,
               creează un cont la GoCardless, generează cheile API și setează-le ca variabile de mediu:
             </p>
@@ -185,7 +186,7 @@ export default function OpenBankingConnect({ configured, localAccounts = [] }: P
               <li className="px-3 py-2 rounded-lg bg-white/5">GOCARDLESS_SECRET_ID</li>
               <li className="px-3 py-2 rounded-lg bg-white/5">GOCARDLESS_SECRET_KEY</li>
             </ul>
-            <p className="text-[13px] text-[#9FB8CC] mt-3">
+            <p className="text-[13px] text-[#A8BED2] mt-3">
               Până atunci poți importa manual extrasul de cont (CSV sau MT940) din pagina Bancă.
             </p>
           </div>
@@ -211,16 +212,15 @@ export default function OpenBankingConnect({ configured, localAccounts = [] }: P
       <div className={`${card} p-6 space-y-4`}>
         <div>
           <h3 className="text-[16px] font-semibold text-white">Conectează o bancă</h3>
-          <p className="text-[14px] text-[#9FB8CC] mt-1">
+          <p className="text-[14px] text-[#A8BED2] mt-1">
             Alege banca, autorizează accesul, apoi importăm tranzacțiile automat.
           </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Bancă</label>
-            <select
-              className={`${inputCls} appearance-none`}
+            <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Bancă</label>
+            <Select
               value={institutionId}
               onChange={(e) => setInstitutionId(e.target.value)}
               disabled={loadingInst || busy}
@@ -231,16 +231,15 @@ export default function OpenBankingConnect({ configured, localAccounts = [] }: P
                   {i.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {localAccounts.length > 0 && (
             <div>
-              <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">
+              <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">
                 Cont local (opțional)
               </label>
-              <select
-                className={`${inputCls} appearance-none`}
+              <Select
                 value={pinnedAccountId}
                 onChange={(e) => setPinnedAccountId(e.target.value)}
                 disabled={busy}
@@ -252,7 +251,7 @@ export default function OpenBankingConnect({ configured, localAccounts = [] }: P
                     {a.iban ? ` · ${a.iban}` : ''}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           )}
         </div>
@@ -273,7 +272,7 @@ export default function OpenBankingConnect({ configured, localAccounts = [] }: P
       <div className={`${card} p-6 space-y-4`}>
         <div>
           <h3 className="text-[16px] font-semibold text-white">Sincronizează tranzacțiile</h3>
-          <p className="text-[14px] text-[#9FB8CC] mt-1">
+          <p className="text-[14px] text-[#A8BED2] mt-1">
             {requisitionId
               ? 'Ai o conexiune activă. Apasă pentru a aduce ultimele mișcări din cont.'
               : 'Conectează mai întâi o bancă pentru a putea sincroniza.'}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Select } from '../ui/Select';
 
 interface Conn {
   id: string;
@@ -190,14 +191,14 @@ export default function ConnectorsManager() {
   };
 
   const card = 'bg-white/5 rounded-2xl';
-  const btnPrimary = 'inline-flex items-center gap-1.5 justify-center px-5 py-2.5 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#0A2238] text-[14px] font-bold transition-colors';
+  const btnPrimary = 'inline-flex items-center gap-1.5 justify-center px-5 py-2.5 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] text-[14px] font-bold transition-colors';
   const btnGhost = 'inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 text-white text-[14px] font-semibold transition-colors';
-  const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+  const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[15px] text-[#9FB8CC]">
+        <p className="text-[15px] text-[#A8BED2]">
           Conectează magazinul tău online. La fiecare comandă nouă putem emite automat factura.
         </p>
         {!showAdd && (
@@ -218,9 +219,8 @@ export default function ConnectorsManager() {
           )}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Platformă</label>
-              <select
-                className={`${inputCls} appearance-none [color-scheme:dark]`}
+              <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Platformă</label>
+              <Select
                 value={draft.provider}
                 onChange={(e) => setDraft({ ...draft, provider: e.target.value as Conn['provider'] })}
               >
@@ -229,10 +229,10 @@ export default function ConnectorsManager() {
                     {p.label}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
-              <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Etichetă (opțional)</label>
+              <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Etichetă (opțional)</label>
               <input
                 className={inputCls}
                 placeholder="ex: Magazinul principal"
@@ -243,7 +243,7 @@ export default function ConnectorsManager() {
           </div>
           {draft.provider !== 'emag' && (
             <div>
-              <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Adresa magazinului (opțional)</label>
+              <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Adresa magazinului (opțional)</label>
               <input
                 className={inputCls}
                 placeholder="ex: https://magazinul-meu.ro"
@@ -255,13 +255,13 @@ export default function ConnectorsManager() {
 
           {draft.provider === 'emag' && (
             <div className="space-y-4 rounded-xl bg-white/5 p-4">
-              <p className="text-[13px] text-[#9FB8CC] leading-relaxed">
+              <p className="text-[13px] text-[#A8BED2] leading-relaxed">
                 Introdu utilizatorul și parola din <strong>contul tău de Marketplace API eMag</strong>. eMag cere și ca
                 IP-ul serverului facturamea să fie adăugat în lista albă din contul tău, altfel sincronizarea e respinsă.
               </p>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Utilizator API</label>
+                  <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Utilizator API</label>
                   <input
                     className={inputCls}
                     autoComplete="off"
@@ -271,7 +271,7 @@ export default function ConnectorsManager() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Parolă API</label>
+                  <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Parolă API</label>
                   <input
                     className={inputCls}
                     type="password"
@@ -283,29 +283,28 @@ export default function ConnectorsManager() {
                 </div>
               </div>
               <div className="max-w-[200px]">
-                <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Platformă</label>
-                <select
-                  className={`${inputCls} appearance-none [color-scheme:dark]`}
+                <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Platformă</label>
+                <Select
                   value={draft.emagPlatform}
                   onChange={(e) => setDraft({ ...draft, emagPlatform: e.target.value })}
                 >
                   <option value="ro">eMag.ro</option>
                   <option value="bg">eMag.bg</option>
                   <option value="hu">eMag.hu</option>
-                </select>
+                </Select>
               </div>
             </div>
           )}
 
           {draft.provider === 'stripe' && (
             <div className="space-y-3 rounded-xl bg-white/5 p-4">
-              <p className="text-[13px] text-[#9FB8CC] leading-relaxed">
+              <p className="text-[13px] text-[#A8BED2] leading-relaxed">
                 În Stripe: <strong>Developers → Webhooks → Add endpoint</strong>, lipește adresa care apare după salvare,
                 alege evenimentul <strong>checkout.session.completed</strong> (sau <strong>payment_intent.succeeded</strong>),
                 apoi copiază aici <strong>Signing secret</strong>-ul (începe cu <code>whsec_</code>).
               </p>
               <div>
-                <label className="block text-[14px] font-medium text-[#9FB8CC] mb-1.5">Signing secret (whsec_…)</label>
+                <label className="block text-[14px] font-medium text-[#A8BED2] mb-1.5">Signing secret (whsec_…)</label>
                 <input
                   className={inputCls}
                   type="password"
@@ -319,7 +318,7 @@ export default function ConnectorsManager() {
           )}
 
           {draft.provider === 'payment' && (
-            <div className="rounded-xl bg-white/5 p-4 text-[13px] text-[#9FB8CC] leading-relaxed">
+            <div className="rounded-xl bg-white/5 p-4 text-[13px] text-[#A8BED2] leading-relaxed">
               Pentru Netopia, PayU sau EuPlătesc: configurează notificarea de plată (IPN) să trimită către adresa care
               apare după salvare, cu un corp JSON semnat (HMAC). Emitem factura automat la fiecare plată confirmată.
             </div>
@@ -344,9 +343,9 @@ export default function ConnectorsManager() {
 
       {/* List */}
       {loading ? (
-        <div className={`${card} px-5 py-12 text-center text-[15px] text-[#9FB8CC]`}>Se încarcă…</div>
+        <div className={`${card} px-5 py-12 text-center text-[15px] text-[#A8BED2]`}>Se încarcă…</div>
       ) : conns.length === 0 ? (
-        <div className={`${card} px-5 py-12 text-center text-[15px] text-[#9FB8CC]`}>
+        <div className={`${card} px-5 py-12 text-center text-[15px] text-[#A8BED2]`}>
           Nicio conexiune încă. Apasă „Adaugă conexiune" ca să conectezi un magazin.
         </div>
       ) : (
@@ -361,21 +360,21 @@ export default function ConnectorsManager() {
                       <h3 className="text-[17px] font-semibold text-white">
                         {c.label || PROVIDER_LABELS[c.provider]}
                       </h3>
-                      <span className="px-2.5 py-1 rounded-full text-[13px] font-medium bg-white/10 text-[#9FB8CC]">
+                      <span className="px-2.5 py-1 rounded-full text-[13px] font-medium bg-white/10 text-[#A8BED2]">
                         {PROVIDER_LABELS[c.provider]}
                       </span>
                       <span
                         className={`px-2.5 py-1 rounded-full text-[13px] font-medium ${
-                          c.isActive ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#9FB8CC]'
+                          c.isActive ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#A8BED2]'
                         }`}
                       >
                         {c.isActive ? 'Activă' : 'Inactivă'}
                       </span>
                     </div>
-                    <p className="text-[14px] text-[#9FB8CC] mt-1">Ultimul eveniment: {fmtDate(c.lastEventAt)}</p>
+                    <p className="text-[14px] text-[#A8BED2] mt-1">Ultimul eveniment: {fmtDate(c.lastEventAt)}</p>
                   </div>
                   <button
-                    className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
+                    className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100"
                     onClick={() => remove(c.id)}
                     title="Șterge conexiunea"
                   >
@@ -437,7 +436,7 @@ export default function ConnectorsManager() {
                         {copied === c.id ? 'Copiat ✓' : 'Copiază'}
                       </button>
                     </div>
-                    <div className="mt-3 text-[14px] text-[#9FB8CC] leading-relaxed">
+                    <div className="mt-3 text-[14px] text-[#A8BED2] leading-relaxed">
                       {c.provider === 'woocommerce' && (
                         <p>
                           În WooCommerce: <strong>Setări → Avansat → Webhooks</strong>, adaugă un webhook nou, alege
@@ -481,7 +480,7 @@ export default function ConnectorsManager() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <p className="text-[14px] font-semibold text-white">Sincronizare comenzi eMag</p>
-                        <p className="text-[13px] text-[#9FB8CC] mt-0.5">
+                        <p className="text-[13px] text-[#A8BED2] mt-0.5">
                           {c.hasCreds ? 'Credențiale salvate.' : 'Lipsesc credențialele API.'} Trage comenzile finalizate
                           și emite facturile, apoi atașează factura înapoi în eMag.
                         </p>
@@ -501,7 +500,7 @@ export default function ConnectorsManager() {
                     )}
                   </div>
                 ) : (
-                  <div className="mt-5 rounded-xl bg-[#E8A33C]/15 p-4 text-[14px] text-[#9FB8CC]">
+                  <div className="mt-5 rounded-xl bg-[#E8A33C]/15 p-4 text-[14px] text-[#A8BED2]">
                     Pentru {PROVIDER_LABELS[c.provider]} integrarea automată prin webhook nu este încă disponibilă.
                     Poți folosi această conexiune pentru organizare; emiterea automată funcționează momentan pentru
                     WooCommerce și Shopify.

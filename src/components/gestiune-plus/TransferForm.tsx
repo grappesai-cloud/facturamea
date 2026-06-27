@@ -76,9 +76,9 @@ export default function TransferForm() {
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
-  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#7C9AB4] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
   const selectCls = `${inputCls} [color-scheme:dark]`;
-  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] shadow-none';
+  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
   const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15';
 
   return (
@@ -91,14 +91,14 @@ export default function TransferForm() {
         <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Din gestiunea *</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Din gestiunea *</Label>
               <Select className={selectCls} value={fromWarehouseId} onChange={(e) => setFromWarehouseId(e.target.value)}>
                 <option value="">Alege sursa</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
               </Select>
             </div>
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC] flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5" /> În gestiunea *</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2] flex items-center gap-1"><ArrowRight className="w-3.5 h-3.5" /> În gestiunea *</Label>
               <Select className={selectCls} value={toWarehouseId} onChange={(e) => setToWarehouseId(e.target.value)}>
                 <option value="">Alege destinația</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -108,17 +108,17 @@ export default function TransferForm() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Produs *</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Produs *</Label>
               <Select className={selectCls} value={productId} onChange={(e) => setProductId(e.target.value)}>
                 <option value="">Alege produsul</option>
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </Select>
             </div>
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Cantitate *</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Cantitate *</Label>
               <Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
               {productId && (
-                <p className="text-xs text-[#9FB8CC] mt-1">Disponibil în sursă: <span className="font-semibold text-white tabular-nums">{qtyFmt(available)}</span></p>
+                <p className="text-xs text-[#A8BED2] mt-1">Disponibil în sursă: <span className="font-semibold text-white tabular-nums">{qtyFmt(available)}</span></p>
               )}
             </div>
           </div>

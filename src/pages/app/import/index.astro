@@ -1,5 +1,6 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
+import EmptyState from '../../../components/ui/EmptyState.astro';
 import ImportWizard from '../../../components/import/ImportWizard.tsx';
 import { db } from '../../../db';
 import { importJobs } from '../../../db/schema';
@@ -48,7 +49,7 @@ const fmtDate = (d: Date | string | null) =>
   <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Import date</h1>
-      <p class="text-[14px] text-[#9FB8CC] mt-2 max-w-2xl">
+      <p class="text-[14px] text-[#A8BED2] mt-2 max-w-2xl">
         Adu-ți clienții, produsele și istoricul de facturi din Oblio, SmartBill, FGO sau dintr-un fișier
         CSV / Excel. Încarci fișierul, verifici maparea coloanelor, apoi confirmi importul.
       </p>
@@ -61,20 +62,22 @@ const fmtDate = (d: Date | string | null) =>
   <div id="import-jobs" class="mt-8 rounded-2xl bg-white/5 overflow-hidden">
     <div class="flex items-center justify-between px-5 py-4">
       <h2 class="text-[18px] font-bold text-white">Importuri recente</h2>
-      <button id="jobs-refresh" type="button" class="text-[13px] font-medium text-[#9FB8CC] hover:text-white transition-colors">
+      <button id="jobs-refresh" type="button" class="text-[13px] font-medium text-[#A8BED2] hover:text-white transition-colors">
         Reîmprospătează
       </button>
     </div>
     <div id="jobs-body">
       {jobs.length === 0 ? (
-        <div class="px-5 py-12 text-center">
-          <p class="text-[14px] text-[#9FB8CC]">Niciun import încă.</p>
+        <div class="p-5">
+          <EmptyState title="Niciun import" description="Importă clienți, produse sau facturi dintr-un fișier.">
+            <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+          </EmptyState>
         </div>
       ) : (
         <div class="overflow-x-auto">
           <table class="w-full text-[13px]">
             <thead>
-              <tr class="text-left text-[12px] font-medium text-[#7C9AB4]">
+              <tr class="text-left text-[12px] font-medium text-[#8FA6BC]">
                 <th class="px-5 py-2.5 font-medium">Data</th>
                 <th class="px-5 py-2.5 font-medium">Sursă</th>
                 <th class="px-5 py-2.5 font-medium">Tip</th>
@@ -88,9 +91,9 @@ const fmtDate = (d: Date | string | null) =>
                 const st = statusLabels[j.status] || statusLabels.pending;
                 return (
                   <tr class="border-t border-white/5">
-                    <td class="px-5 py-3 text-[#9FB8CC] tabular-nums">{fmtDate(j.createdAt)}</td>
+                    <td class="px-5 py-3 text-[#A8BED2] tabular-nums">{fmtDate(j.createdAt)}</td>
                     <td class="px-5 py-3 text-white">{sourceLabels[j.source] || j.source || '—'}</td>
-                    <td class="px-5 py-3 text-[#9FB8CC]">{entityLabels[j.entity] || j.entity || '—'}</td>
+                    <td class="px-5 py-3 text-[#A8BED2]">{entityLabels[j.entity] || j.entity || '—'}</td>
                     <td class="px-5 py-3 text-right font-semibold text-[#2E9E6A] tabular-nums">{j.importedRows ?? 0}</td>
                     <td class="px-5 py-3 text-right text-[#DC4B41] tabular-nums">{j.errorRows ?? 0}</td>
                     <td class="px-5 py-3"><span class={`inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
@@ -126,21 +129,21 @@ const fmtDate = (d: Date | string | null) =>
       if (!res.ok) return;
       const { jobs } = await res.json();
       if (!Array.isArray(jobs) || jobs.length === 0) {
-        body.innerHTML = '<div class="px-5 py-12 text-center"><p class="text-[14px] text-[#9FB8CC]">Niciun import încă.</p></div>';
+        body.innerHTML = '<div class="px-5 py-12 text-center"><p class="text-[14px] text-[#A8BED2]">Niciun import încă.</p></div>';
         return;
       }
       const rows = jobs.map((j: any) => {
         const st = statusLabels[j.status] || statusLabels.pending;
         return `<tr class="border-t border-white/5">
-          <td class="px-5 py-3 text-[#9FB8CC] tabular-nums">${esc(fmtDate(j.createdAt))}</td>
+          <td class="px-5 py-3 text-[#A8BED2] tabular-nums">${esc(fmtDate(j.createdAt))}</td>
           <td class="px-5 py-3 text-white">${esc(sourceLabels[j.source] || j.source || '—')}</td>
-          <td class="px-5 py-3 text-[#9FB8CC]">${esc(entityLabels[j.entity] || j.entity || '—')}</td>
+          <td class="px-5 py-3 text-[#A8BED2]">${esc(entityLabels[j.entity] || j.entity || '—')}</td>
           <td class="px-5 py-3 text-right font-semibold text-[#2E9E6A] tabular-nums">${j.importedRows ?? 0}</td>
           <td class="px-5 py-3 text-right text-[#DC4B41] tabular-nums">${j.errorRows ?? 0}</td>
           <td class="px-5 py-3"><span class="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}">${esc(st.label)}</span></td>
         </tr>`;
       }).join('');
-      body.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-[13px]"><thead><tr class="text-left text-[12px] font-medium text-[#7C9AB4]"><th class="px-5 py-2.5 font-medium">Data</th><th class="px-5 py-2.5 font-medium">Sursă</th><th class="px-5 py-2.5 font-medium">Tip</th><th class="px-5 py-2.5 font-medium text-right">Importate</th><th class="px-5 py-2.5 font-medium text-right">Erori</th><th class="px-5 py-2.5 font-medium">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      body.innerHTML = `<div class="overflow-x-auto"><table class="w-full text-[13px]"><thead><tr class="text-left text-[12px] font-medium text-[#8FA6BC]"><th class="px-5 py-2.5 font-medium">Data</th><th class="px-5 py-2.5 font-medium">Sursă</th><th class="px-5 py-2.5 font-medium">Tip</th><th class="px-5 py-2.5 font-medium text-right">Importate</th><th class="px-5 py-2.5 font-medium text-right">Erori</th><th class="px-5 py-2.5 font-medium">Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     } catch {}
   }
 

@@ -165,9 +165,9 @@ export default function ImportWizard() {
       {/* Stepper header */}
       <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/10 text-[12px]">
         <StepBadge n={1} active={step === 'setup'} done={step !== 'setup'} label="Sursă & fișier" />
-        <span className="text-[#7C9AB4]">→</span>
+        <span className="text-[#8FA6BC]">→</span>
         <StepBadge n={2} active={step === 'mapping'} done={step === 'done'} label="Mapare coloane" />
-        <span className="text-[#7C9AB4]">→</span>
+        <span className="text-[#8FA6BC]">→</span>
         <StepBadge n={3} active={step === 'done'} done={false} label="Finalizare" />
       </div>
 
@@ -182,7 +182,7 @@ export default function ImportWizard() {
         {step === 'setup' && (
           <div className="space-y-6">
             <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#7C9AB4] mb-2.5">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#8FA6BC] mb-2.5">
                 1. De unde imporți?
               </p>
               <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
@@ -198,14 +198,14 @@ export default function ImportWizard() {
                     }`}
                   >
                     <span className="block text-[13px] font-semibold text-white">{s.label}</span>
-                    <span className="block text-[11px] text-[#9FB8CC] mt-0.5">{s.note}</span>
+                    <span className="block text-[11px] text-[#A8BED2] mt-0.5">{s.note}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#7C9AB4] mb-2.5">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#8FA6BC] mb-2.5">
                 2. Ce vrei să imporți?
               </p>
               <div className="grid sm:grid-cols-3 gap-2.5">
@@ -221,18 +221,18 @@ export default function ImportWizard() {
                     }`}
                   >
                     <span className="block text-[13px] font-semibold text-white">{e.label}</span>
-                    <span className="block text-[11px] text-[#9FB8CC] mt-0.5">{e.note}</span>
+                    <span className="block text-[11px] text-[#A8BED2] mt-0.5">{e.note}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#7C9AB4] mb-2.5">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#8FA6BC] mb-2.5">
                 3. Încarcă fișierul
               </p>
               <label className="flex flex-col items-center justify-center gap-2 px-4 py-8 border-2 border-dashed border-white/15 rounded-xl cursor-pointer hover:border-[#E1FB15]/50 hover:bg-white/5 transition-colors">
-                <UploadCloud className="w-7 h-7 text-[#7C9AB4]" />
+                <UploadCloud className="w-7 h-7 text-[#8FA6BC]" />
                 {file ? (
                   <span className="flex items-center gap-2 text-[13px] font-medium text-white">
                     <FileSpreadsheet className="w-4 h-4 text-[#76C893]" />
@@ -243,7 +243,7 @@ export default function ImportWizard() {
                     <span className="text-[13px] font-medium text-white">
                       Trage fișierul aici sau click pentru a selecta
                     </span>
-                    <span className="text-[11px] text-[#7C9AB4]">Acceptăm .csv și .xlsx (max. 15 MB)</span>
+                    <span className="text-[11px] text-[#8FA6BC]">Acceptăm .csv și .xlsx (max. 15 MB)</span>
                   </>
                 )}
                 <input
@@ -257,7 +257,7 @@ export default function ImportWizard() {
             </div>
 
             <div className="flex justify-end">
-              <Button onClick={runPreview} disabled={busy || !file} className="rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E]">
+              <Button onClick={runPreview} disabled={busy || !file} className="rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E]">
                 {busy ? 'Se citește…' : 'Continuă'}
                 <ArrowRight className="w-4 h-4" />
               </Button>
@@ -268,7 +268,7 @@ export default function ImportWizard() {
         {step === 'mapping' && preview && (
           <div className="space-y-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[13px] text-[#9FB8CC]">
+              <p className="text-[13px] text-[#A8BED2]">
                 Am detectat <strong>{preview.headers.length}</strong> coloane și{' '}
                 <strong>{preview.totalRows}</strong> rânduri. Verifică maparea:
               </p>
@@ -283,7 +283,7 @@ export default function ImportWizard() {
             <div className="bg-white/5 rounded-xl overflow-hidden">
               <table className="w-full text-[13px]">
                 <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-[#7C9AB4] border-b border-white/10">
+                  <tr className="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
                     <th className="px-4 py-2.5 font-medium">Coloană din fișier</th>
                     <th className="px-4 py-2.5 font-medium">Câmp facturamea</th>
                   </tr>
@@ -296,7 +296,7 @@ export default function ImportWizard() {
                         <Select
                           value={mapping[h] || ''}
                           onChange={(e) => setColMap(h, e.target.value)}
-                          className="h-9 text-[13px] bg-white/10 text-white placeholder:text-[#7C9AB4] border-0 [color-scheme:dark]"
+                          className="h-9 text-[13px] bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 [color-scheme:dark]"
                         >
                           <option value="">— Ignoră coloana —</option>
                           {preview.targetFields.map((f) => (
@@ -321,13 +321,13 @@ export default function ImportWizard() {
 
             {/* Sample preview */}
             <div>
-              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#7C9AB4] mb-2">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#8FA6BC] mb-2">
                 Previzualizare (primele {preview.sample.length} rânduri)
               </p>
               <div className="bg-white/5 rounded-xl overflow-x-auto">
                 <table className="w-full text-[12px] whitespace-nowrap">
                   <thead>
-                    <tr className="text-left text-[10px] uppercase tracking-wider text-[#7C9AB4] border-b border-white/10">
+                    <tr className="text-left text-[10px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
                       {preview.headers.map((h) => (
                         <th key={h} className="px-3 py-2 font-medium">{h}</th>
                       ))}
@@ -337,7 +337,7 @@ export default function ImportWizard() {
                     {preview.sample.map((row, i) => (
                       <tr key={i} className="border-b border-white/5 last:border-0">
                         {preview.headers.map((h) => (
-                          <td key={h} className="px-3 py-2 text-[#9FB8CC] truncate max-w-[180px]">
+                          <td key={h} className="px-3 py-2 text-[#A8BED2] truncate max-w-[180px]">
                             {row[h]}
                           </td>
                         ))}
@@ -353,7 +353,7 @@ export default function ImportWizard() {
                 <ArrowLeft className="w-4 h-4" />
                 Înapoi
               </Button>
-              <Button onClick={runCommit} disabled={busy || missingRequired.length > 0} className="rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E]">
+              <Button onClick={runCommit} disabled={busy || missingRequired.length > 0} className="rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E]">
                 {busy ? 'Se importă…' : 'Importă datele'}
                 <ArrowRight className="w-4 h-4" />
               </Button>
@@ -373,7 +373,7 @@ export default function ImportWizard() {
                 <h3 className="text-[16px] font-bold text-white">
                   {result.importedRows > 0 ? 'Import finalizat' : 'Niciun rând importat'}
                 </h3>
-                <p className="text-[13px] text-[#9FB8CC]">
+                <p className="text-[13px] text-[#A8BED2]">
                   {result.importedRows} importate · {result.errorRows} cu erori · din{' '}
                   {result.sourceRowCount} rânduri în fișier
                 </p>
@@ -393,8 +393,8 @@ export default function ImportWizard() {
                 </p>
                 <div className="max-h-56 overflow-y-auto divide-y divide-white/5">
                   {result.errors.map((e, i) => (
-                    <p key={i} className="px-4 py-1.5 text-[12px] text-[#9FB8CC]">
-                      <span className="font-mono text-[#7C9AB4]">Rând {e.row}:</span> {e.message}
+                    <p key={i} className="px-4 py-1.5 text-[12px] text-[#A8BED2]">
+                      <span className="font-mono text-[#8FA6BC]">Rând {e.row}:</span> {e.message}
                     </p>
                   ))}
                 </div>
@@ -431,13 +431,13 @@ function StepBadge({
           done
             ? 'bg-[#2E9E6A] text-white'
             : active
-              ? 'bg-[#E1FB15] text-[#0A2238]'
-              : 'bg-white/10 text-[#7C9AB4]'
+              ? 'bg-[#E1FB15] text-[#07090f]'
+              : 'bg-white/10 text-[#8FA6BC]'
         }`}
       >
         {done ? '✓' : n}
       </span>
-      <span className={`${active ? 'text-white font-semibold' : 'text-[#7C9AB4]'}`}>{label}</span>
+      <span className={`${active ? 'text-white font-semibold' : 'text-[#8FA6BC]'}`}>{label}</span>
     </span>
   );
 }

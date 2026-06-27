@@ -14,7 +14,7 @@ const canManage = company?.role === 'owner' || user.isAdmin;
   <div class="max-w-3xl">
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Echipă și roluri</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">
+      <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl">
         {canManage
           ? 'Invită membri în firmă și stabilește ce poate face fiecare.'
           : 'Membrii firmei și rolurile lor. Doar administratorul poate face modificări.'}
@@ -30,7 +30,7 @@ const canManage = company?.role === 'owner' || user.isAdmin;
         {COMPANY_ROLES.map((r) => (
           <div class="flex gap-3">
             <span class="shrink-0 w-[110px] text-[12px] font-medium text-white">{ROLE_LABELS[r]}</span>
-            <span class="text-[12px] text-[#9FB8CC]">{ROLE_DESCRIPTIONS[r]}</span>
+            <span class="text-[12px] text-[#A8BED2]">{ROLE_DESCRIPTIONS[r]}</span>
           </div>
         ))}
       </div>

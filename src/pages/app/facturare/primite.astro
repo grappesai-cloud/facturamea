@@ -25,11 +25,11 @@ try {
   <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Facturi primite</h1>
-      <p class="text-[14px] text-[#9FB8CC] mt-1">Adu facturile de la furnizori din SPV și importă-le ca cheltuieli.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-1">Adu facturile de la furnizori din SPV și importă-le ca cheltuieli.</p>
     </div>
     <a href="/app/setari/integrari-anaf" title={anaf.connected ? 'ANAF conectat' : 'Conectează ANAF'}
       class:list={['inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[14px] font-semibold transition-colors', anaf.connected ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-white hover:bg-white/15']}>
-      <span class:list={['w-2.5 h-2.5 rounded-full', anaf.connected ? 'bg-[#2E9E6A]' : 'bg-[#7C9AB4]']}></span>
+      <span class:list={['w-2.5 h-2.5 rounded-full', anaf.connected ? 'bg-[#2E9E6A]' : 'bg-[#8FA6BC]']}></span>
       ANAF: {anaf.connected ? `conectat${anaf.cif ? ' · CIF ' + anaf.cif : ''}` : 'neconectat'}
     </a>
   </div>

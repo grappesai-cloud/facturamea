@@ -4,7 +4,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Star, X, Loader2 } from 'lucide-react';
+import { Plus, Star, X, Loader2, Hash } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 const INVOICE_KINDS = [
   { id: 'factura', label: 'Facturi' },
@@ -75,28 +76,32 @@ export default function SeriesManager({ kinds = INVOICE_KINDS }: { kinds?: { id:
               </div>
 
               {list.length === 0 ? (
-                <p className="text-xs text-[#9FB8CC]">Nicio serie. Cea implicită va fi creată automat la prima emitere.</p>
+                <EmptyState
+                  icon={<Hash />}
+                  title="Fără serii de documente"
+                  description="Prima serie se creează automat la emiterea documentului."
+                />
               ) : (
                 <ul className="space-y-2">
                   {(expanded[k.id] ? list : list.slice(0, 3)).map((s) => (
                     <li key={s.id} className="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                       <span className="font-mono text-xs px-2 py-0.5 bg-white/10 rounded-full text-white">{s.prefix}</span>
                       <span className="text-[15px] text-white font-bold flex-1 truncate">{s.name}</span>
-                      <span className="text-xs text-[#9FB8CC] hidden md:inline">scope: {s.scope ?? 'oricare'}</span>
-                      <span className="text-xs text-[#9FB8CC] tabular-nums">următor: {s.nextNumber}</span>
+                      <span className="text-xs text-[#A8BED2] hidden md:inline">scope: {s.scope ?? 'oricare'}</span>
+                      <span className="text-xs text-[#A8BED2] tabular-nums">următor: {s.nextNumber}</span>
                       {s.isDefault ? (
                         <span className="text-xs px-2 py-0.5 bg-[#E8A33C]/15 text-[#E8A33C] rounded-full font-semibold flex items-center gap-1"><Star className="w-3 h-3 fill-[#E8A33C]" /> implicit</span>
                       ) : (
-                        <button onClick={() => setDefault(s.id)} className="text-xs text-[#9FB8CC] hover:text-white underline opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">setează implicit</button>
+                        <button onClick={() => setDefault(s.id)} className="text-xs text-[#A8BED2] hover:text-white underline opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">setează implicit</button>
                       )}
-                      <button onClick={() => removeSeries(s.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity" title="Șterge">
+                      <button onClick={() => removeSeries(s.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity" title="Șterge">
                         <X className="w-4 h-4" />
                       </button>
                     </li>
                   ))}
                   {list.length > 3 && (
                     <li>
-                      <button type="button" onClick={() => setExpanded((e) => ({ ...e, [k.id]: !e[k.id] }))} className="mt-1 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+                      <button type="button" onClick={() => setExpanded((e) => ({ ...e, [k.id]: !e[k.id] }))} className="mt-1 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                         {expanded[k.id] ? 'Arată mai puțin' : `Vezi toate (${list.length})`}
                       </button>
                     </li>
@@ -108,19 +113,19 @@ export default function SeriesManager({ kinds = INVOICE_KINDS }: { kinds?: { id:
                 <div className="mt-3 p-4 bg-white/5 rounded-2xl space-y-2">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
                     <div>
-                      <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Nume *</Label>
-                      <Input className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder={`Serie ${k.label.toLowerCase()} TH`} />
+                      <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Nume *</Label>
+                      <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder={`Serie ${k.label.toLowerCase()} TH`} />
                     </div>
                     <div>
-                      <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Prefix *</Label>
-                      <Input className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.prefix} onChange={(e) => setDraft({ ...draft, prefix: e.target.value.toUpperCase() })} placeholder="TH" maxLength={16} />
+                      <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Prefix *</Label>
+                      <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.prefix} onChange={(e) => setDraft({ ...draft, prefix: e.target.value.toUpperCase() })} placeholder="TH" maxLength={16} />
                     </div>
                     <div>
-                      <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Următor #</Label>
-                      <Input className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" type="number" min="1" value={draft.nextNumber} onChange={(e) => setDraft({ ...draft, nextNumber: e.target.value })} />
+                      <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Următor #</Label>
+                      <Input className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" type="number" min="1" value={draft.nextNumber} onChange={(e) => setDraft({ ...draft, nextNumber: e.target.value })} />
                     </div>
                     <div>
-                      <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Scope</Label>
+                      <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Scope</Label>
                       <Select className="[color-scheme:dark] bg-white/10 border-0 text-white hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.scope} onChange={(e) => setDraft({ ...draft, scope: e.target.value })}>
                         <option value="">Oricare</option>
                         <option value="platform">Comenzi TH</option>
@@ -133,7 +138,7 @@ export default function SeriesManager({ kinds = INVOICE_KINDS }: { kinds?: { id:
                     Setează ca serie implicită
                   </label>
                   <div className="flex gap-2">
-                    <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100" disabled={busy || !draft.name || !draft.prefix} onClick={() => addNew(k.id)}>
+                    <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" disabled={busy || !draft.name || !draft.prefix} onClick={() => addNew(k.id)}>
                       {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}
                     </Button>
                     <Button size="sm" variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowNew(null)}>Renunță</Button>

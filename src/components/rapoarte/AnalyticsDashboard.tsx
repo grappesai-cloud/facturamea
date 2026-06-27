@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
+import { DatePicker } from '../ui/DatePicker';
 import { Loader2, SlidersHorizontal, ChevronDown } from 'lucide-react';
 
 interface MonthCents { month: string; cents: number; }
@@ -27,7 +27,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 const STATUS_COLORS: Record<string, string> = {
   paid: '#76C893', sent: '#1A759F', issued: '#34A0A4', partial: '#E8A33C',
-  overdue: '#DC4B41', disputed: '#DC4B41', draft: '#7C9AB4', voided: '#7C9AB4',
+  overdue: '#DC4B41', disputed: '#DC4B41', draft: '#8FA6BC', voided: '#8FA6BC',
 };
 
 const LS_KEY = 'analytics-hidden-cards';
@@ -43,13 +43,13 @@ function monthLabel(m: string) {
 function MonthlyChart({ invoiced, collected }: { invoiced: MonthCents[]; collected: MonthCents[] }) {
   const months = invoiced.map((m) => m.month);
   const max = Math.max(1, ...invoiced.map((m) => m.cents), ...collected.map((m) => m.cents));
-  if (months.length === 0) return <div className="text-[14px] text-[#7C9AB4]">Date insuficiente pentru perioada selectată.</div>;
+  if (months.length === 0) return <div className="text-[14px] text-[#8FA6BC]">Date insuficiente pentru perioada selectată.</div>;
 
   const H = 220;
   const colW = 100 / months.length;
   return (
     <div>
-      <div className="flex items-center gap-4 mb-3 text-[13px] text-[#9FB8CC]">
+      <div className="flex items-center gap-4 mb-3 text-[13px] text-[#A8BED2]">
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#76C893] inline-block" /> Facturat</span>
         <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-[#1A759F] inline-block" /> Încasat</span>
       </div>
@@ -76,7 +76,7 @@ function MonthlyChart({ invoiced, collected }: { invoiced: MonthCents[]; collect
       </div>
       <div className="flex mt-1.5">
         {months.map((m) => (
-          <div key={m} className="text-[11px] text-[#7C9AB4] text-center" style={{ width: `${colW}%` }}>{monthLabel(m)}</div>
+          <div key={m} className="text-[11px] text-[#8FA6BC] text-center" style={{ width: `${colW}%` }}>{monthLabel(m)}</div>
         ))}
       </div>
     </div>
@@ -109,10 +109,10 @@ function XBtn({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute top-3 right-3 w-7 h-7 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-0 group-hover:opacity-100"
+      className="absolute top-3 right-3 fm-close-btn"
       aria-label="Ascunde"
     >
-      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
     </button>
   );
 }
@@ -172,14 +172,14 @@ export default function AnalyticsDashboard() {
 
       {/* KPI row */}
       {visibleKpis.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
           {visibleKpis.map((k) => (
-            <div key={k.id} className="group relative">
-              <Card className="bg-white/5 border-0 shadow-none rounded-2xl">
-                <CardContent className="p-4">
-                  <p className="text-[13px] text-[#9FB8CC]">{k.label}</p>
-                  <p className={`text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] mt-1 tabular-nums ${k.color}`}>{k.value}</p>
-                  {k.sub && <p className="text-[12px] text-[#7C9AB4]">{k.sub}</p>}
+            <div key={k.id} className="group relative h-full">
+              <Card className="bg-white/5 border-0 shadow-none rounded-2xl h-full">
+                <CardContent className="p-4 flex flex-col h-full">
+                  <p className="text-[12px] font-medium text-[#8FA6BC] uppercase tracking-wider">{k.label}</p>
+                  <p className={`text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] mt-2 tabular-nums ${k.color}`}>{k.value}</p>
+                  {k.sub ? <p className="text-[12px] text-[#8FA6BC] mt-1">{k.sub}</p> : <div className="mt-1 h-[18px]" />}
                 </CardContent>
               </Card>
               <XBtn onClick={() => hide(k.id)} />
@@ -188,7 +188,7 @@ export default function AnalyticsDashboard() {
         </div>
       )}
       {hidden.size > 0 && (
-        <button type="button" onClick={resetHidden} className="text-[13px] text-[#9FB8CC] hover:text-white transition-colors">
+        <button type="button" onClick={resetHidden} className="text-[13px] text-[#A8BED2] hover:text-white transition-colors">
           Restabilește cardurile ascunse ({hidden.size})
         </button>
       )}
@@ -210,14 +210,14 @@ export default function AnalyticsDashboard() {
             <CardContent className="p-4">
               <div className="flex items-end gap-3 flex-wrap">
                 <div>
-                  <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">De la</Label>
-                  <Input type="date" value={range.from} onChange={(e) => setRange({ ...range, from: e.target.value })} className="w-auto bg-white/5 text-white [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">De la</Label>
+                  <DatePicker value={range.from} onChange={(v) => setRange({ ...range, from: v })} className="w-auto" />
                 </div>
                 <div>
-                  <Label className="mb-1.5 block text-[14px] text-[#9FB8CC]">Până la</Label>
-                  <Input type="date" value={range.to} onChange={(e) => setRange({ ...range, to: e.target.value })} className="w-auto bg-white/5 text-white [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  <Label className="mb-1.5 block text-[14px] text-[#A8BED2]">Până la</Label>
+                  <DatePicker value={range.to} onChange={(v) => setRange({ ...range, to: v })} className="w-auto" />
                 </div>
-                <Button onClick={() => load(range)} disabled={loading} className="rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E]">
+                <Button onClick={() => load(range)} disabled={loading} className="rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E]">
                   {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Actualizează'}
                 </Button>
               </div>
@@ -230,8 +230,8 @@ export default function AnalyticsDashboard() {
       <Card className="bg-white/5 border-0 shadow-none rounded-2xl">
         <CardContent className="p-5">
           <h3 className="text-[16px] font-bold text-white mb-1">Facturat vs încasat pe luni</h3>
-          <p className="text-[13px] text-[#9FB8CC] mb-4">Evoluția lunară a sumelor facturate și a celor încasate.</p>
-          {data ? <MonthlyChart invoiced={data.monthlyInvoiced} collected={data.monthlyCollected} /> : <div className="text-[14px] text-[#9FB8CC]">Se încarcă...</div>}
+          <p className="text-[13px] text-[#A8BED2] mb-4">Evoluția lunară a sumelor facturate și a celor încasate.</p>
+          {data ? <MonthlyChart invoiced={data.monthlyInvoiced} collected={data.monthlyCollected} /> : <div className="text-[14px] text-[#A8BED2]">Se încarcă...</div>}
         </CardContent>
       </Card>
 
@@ -242,7 +242,7 @@ export default function AnalyticsDashboard() {
             <h3 className="text-[16px] font-bold text-white mb-4">Top clienți</h3>
             <div className="space-y-2.5">
               {(data?.topClients.length || 0) === 0 ? (
-                <p className="text-[14px] text-[#9FB8CC]">Date insuficiente.</p>
+                <p className="text-[14px] text-[#A8BED2]">Date insuficiente.</p>
               ) : data!.topClients.map((c) => <HBar key={c.name} label={c.name} value={c.cents} max={maxClient} color="#34A0A4" />)}
             </div>
           </CardContent>
@@ -254,7 +254,7 @@ export default function AnalyticsDashboard() {
             <h3 className="text-[16px] font-bold text-white mb-4">Top produse / servicii</h3>
             <div className="space-y-2.5">
               {(data?.topProducts.length || 0) === 0 ? (
-                <p className="text-[14px] text-[#9FB8CC]">Date insuficiente.</p>
+                <p className="text-[14px] text-[#A8BED2]">Date insuficiente.</p>
               ) : data!.topProducts.map((p) => <HBar key={p.name} label={p.name} value={p.cents} max={maxProduct} color="#1A759F" />)}
             </div>
           </CardContent>
@@ -267,17 +267,17 @@ export default function AnalyticsDashboard() {
           <h3 className="text-[16px] font-bold text-white mb-4">Distribuție pe status</h3>
           <div className="space-y-2.5">
             {(data?.byStatus.length || 0) === 0 ? (
-              <p className="text-[14px] text-[#9FB8CC]">Date insuficiente.</p>
+              <p className="text-[14px] text-[#A8BED2]">Date insuficiente.</p>
             ) : data!.byStatus.map((s) => (
               <div key={s.status} className="flex items-center gap-3 text-[14px]">
                 <div className="w-36 shrink-0 flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: STATUS_COLORS[s.status] || '#7C9AB4' }} />
+                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: STATUS_COLORS[s.status] || '#8FA6BC' }} />
                   <span className="text-white">{STATUS_LABELS[s.status] || s.status}</span>
                 </div>
                 <div className="flex-1 h-6 bg-white/5 rounded-lg overflow-hidden">
-                  <div className="h-full rounded-lg" style={{ width: `${Math.max((s.cents / maxStatus) * 100, 2)}%`, background: STATUS_COLORS[s.status] || '#7C9AB4' }} />
+                  <div className="h-full rounded-lg" style={{ width: `${Math.max((s.cents / maxStatus) * 100, 2)}%`, background: STATUS_COLORS[s.status] || '#8FA6BC' }} />
                 </div>
-                <div className="w-12 text-right text-[#9FB8CC] tabular-nums">{s.count}</div>
+                <div className="w-12 text-right text-[#A8BED2] tabular-nums">{s.count}</div>
                 <div className="w-28 text-right text-white font-semibold tabular-nums">{ron(s.cents)}</div>
               </div>
             ))}

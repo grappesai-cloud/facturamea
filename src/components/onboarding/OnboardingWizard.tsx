@@ -87,12 +87,12 @@ export default function OnboardingWizard({ initial, companyComplete, isPaid }: P
       {/* progress */}
       <div className="flex items-center gap-2 mb-7">
         <div className={`flex items-center gap-2 text-[13px] font-semibold ${step === 'company' ? 'text-[#E1FB15]' : 'text-[#6EE7B7]'}`}>
-          <span className={`w-6 h-6 rounded-full grid place-items-center text-[12px] ${step === 'company' ? 'bg-[#E1FB15] text-[#0A2238]' : 'bg-[#2E9E6A] text-white'}`}>{step === 'company' ? '1' : <Check className="w-3.5 h-3.5" />}</span>
+          <span className={`w-6 h-6 rounded-full grid place-items-center text-[12px] ${step === 'company' ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-[#2E9E6A] text-white'}`}>{step === 'company' ? '1' : <Check className="w-3.5 h-3.5" />}</span>
           Date firmă
         </div>
         <div className="flex-1 h-[2px] bg-white/15" />
         <div className={`flex items-center gap-2 text-[13px] font-semibold ${step === 'payment' ? 'text-[#E1FB15]' : 'text-[#8FA8BE]'}`}>
-          <span className={`w-6 h-6 rounded-full grid place-items-center text-[12px] ${step === 'payment' ? 'bg-[#E1FB15] text-[#0A2238]' : 'bg-white/10 text-[#8FA8BE]'}`}>2</span>
+          <span className={`w-6 h-6 rounded-full grid place-items-center text-[12px] ${step === 'payment' ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-white/10 text-[#8FA8BE]'}`}>2</span>
           Activare
         </div>
       </div>
@@ -128,7 +128,7 @@ export default function OnboardingWizard({ initial, companyComplete, isPaid }: P
             </div>
           )}
 
-          <button type="submit" disabled={saving || cuiState !== 'found'} className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-[15px] transition-colors">
+          <button type="submit" disabled={saving || cuiState !== 'found'} className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed font-bold text-[15px] transition-colors">
             {saving && <Loader2 className="w-4 h-4 animate-spin" />} Continuă spre activare
           </button>
           {cuiState !== 'found' && <p className="text-[12px] text-[#8FA8BE] text-center">Introdu CIF-ul și ieși din câmp ca să preluăm datele.</p>}
@@ -140,18 +140,18 @@ export default function OnboardingWizard({ initial, companyComplete, isPaid }: P
             <p className="text-[13px] text-[#C8DAE8] mt-1">Datele firmei sunt salvate. Mai e un pas: activează contul printr-o singură plată.</p>
           </div>
           <div className="rounded-2xl bg-[#081B2E] ring-1 ring-white/10 p-6">
-            <div className="inline-block px-3 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold uppercase tracking-wide">Licență pe viață</div>
+            <div className="inline-block px-3 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold uppercase tracking-wide">Licență pe viață</div>
             <div className="flex items-baseline gap-2 mt-3 mb-1">
               <span className="text-4xl font-extrabold text-white tracking-[-0.03em]">700</span>
-              <span className="text-xl font-bold text-[#9FB8CC]">RON</span>
+              <span className="text-xl font-bold text-[#A8BED2]">RON</span>
             </div>
-            <p className="text-[13px] text-[#9FB8CC] mb-4">o singură plată, pentru totdeauna · fără abonament</p>
+            <p className="text-[13px] text-[#A8BED2] mb-4">o singură plată, pentru totdeauna · fără abonament</p>
             <ul className="space-y-2 text-[14px] text-[#EAF2F8] mb-5">
               {['Facturi, proforme, avize, chitanțe', 'e-Factura ANAF + e-Transport', 'Gestiune, cheltuieli, rapoarte, POS', 'Web, iOS și Android'].map((f) => (
-                <li key={f} className="flex items-start gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-[#E1FB15] text-[#0A2238] grid place-items-center text-[11px] font-bold mt-0.5">✓</span> {f}</li>
+                <li key={f} className="flex items-start gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-[#E1FB15] text-[#07090f] grid place-items-center text-[11px] font-bold mt-0.5">✓</span> {f}</li>
               ))}
             </ul>
-            <button onClick={startCheckout} disabled={paying} className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] disabled:opacity-60 font-bold text-[15px] transition-colors">
+            <button onClick={startCheckout} disabled={paying} className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] disabled:opacity-60 font-bold text-[15px] transition-colors">
               {paying && <Loader2 className="w-4 h-4 animate-spin" />} Cumpără acces pe viață
             </button>
           </div>

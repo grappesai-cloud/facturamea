@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 type Audience = 'all' | 'trial' | 'lifetime' | 'custom';
 
 const ORANGE = '#1A759F';
-const INK = '#0A2238';
+const INK = '#07090f';
 const BORDER = '#E3EAF1';
 const MUTED = '#46627A';
 
@@ -44,7 +44,7 @@ const STARTER_BODY = `<p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-
 <p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Scrie mesajul aici.</p>`;
 
 const inputCls =
-  'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#0A2238] focus:outline-none transition-colors';
+  'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#07090f] focus:outline-none transition-colors';
 
 // Client-side mirror of wrapEmailHtml (src/lib/email-campaign.ts) for instant preview.
 function wrapPreview(preheader: string, bodyHtml: string): string {
@@ -264,7 +264,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
 
         <div>
           <label className="block text-[12px] font-medium mb-1.5">
-            Preheader <span className="text-[#9FB8CC] font-normal">(text de previzualizare în inbox)</span>
+            Preheader <span className="text-[#A8BED2] font-normal">(text de previzualizare în inbox)</span>
           </label>
           <input
             className={inputCls}
@@ -284,7 +284,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
           </select>
           <p className="text-[11px] text-[#46627A] mt-1.5">
             Destinatari estimați:{' '}
-            <span className="font-semibold text-[#0A2238]">
+            <span className="font-semibold text-[#07090f]">
               {audienceCount != null ? audienceCount.toLocaleString('ro-RO') : '-'}
             </span>
           </p>
@@ -327,7 +327,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             onChange={onBodyChange}
             spellCheck={false}
           />
-          <p className="text-[11px] text-[#9FB8CC] mt-1.5">
+          <p className="text-[11px] text-[#A8BED2] mt-1.5">
             HTML cu stiluri inline. Antetul, footerul și shell-ul branded se adaugă automat la trimitere.
           </p>
         </div>
@@ -337,7 +337,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             type="button"
             onClick={onSaveDraft}
             disabled={busy != null}
-            className="px-4 py-2.5 border border-[#E3EAF1] text-[#0A2238] font-semibold rounded-xl text-[13px] hover:bg-[#F4F4F0] disabled:opacity-50 transition-colors"
+            className="px-4 py-2.5 border border-[#E3EAF1] text-[#07090f] font-semibold rounded-xl text-[13px] hover:bg-[#F4F4F0] disabled:opacity-50 transition-colors"
           >
             {busy === 'save' ? 'Se salvează...' : 'Salvează schița'}
           </button>
@@ -353,7 +353,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             type="button"
             onClick={onSend}
             disabled={busy != null}
-            className="px-5 py-2.5 bg-[#0A2238] hover:bg-[#1A1A1A] disabled:bg-[#9FB8CC] text-white font-semibold rounded-xl text-[13px] transition-colors"
+            className="px-5 py-2.5 bg-[#07090f] hover:bg-[#1A1A1A] disabled:bg-[#A8BED2] text-white font-semibold rounded-xl text-[13px] transition-colors"
           >
             {busy === 'send' ? 'Se trimite...' : 'Trimite campanie'}
           </button>
@@ -367,7 +367,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
       <div className="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden flex flex-col">
         <div className="px-5 py-3 border-b border-[#E3EAF1] flex items-center justify-between">
           <p className="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Previzualizare</p>
-          <span className="text-[11px] text-[#9FB8CC]">{dirty || !campaignId ? 'Nesalvat' : 'Salvat'}</span>
+          <span className="text-[11px] text-[#A8BED2]">{dirty || !campaignId ? 'Nesalvat' : 'Salvat'}</span>
         </div>
         <iframe
           title="Previzualizare email"

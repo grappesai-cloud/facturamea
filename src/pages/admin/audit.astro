@@ -51,7 +51,7 @@ try {
 } catch {}
 
 const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '—';
-const inputCls = 'h-9 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#0A2238] focus:outline-none transition-colors';
+const inputCls = 'h-9 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#07090f] focus:outline-none transition-colors';
 ---
 
 <AdminLayout title="Jurnal audit" activeTab="audit">
@@ -69,8 +69,8 @@ const inputCls = 'h-9 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[13p
     <select name="days" class={inputCls}>
       {[1, 7, 30, 90].map((d) => <option value={d} selected={days === d}>Ultimele {d} {d === 1 ? 'zi' : 'zile'}</option>)}
     </select>
-    <button type="submit" class="h-9 px-4 bg-[#0A2238] hover:bg-[#1A1A1A] text-white text-[13px] font-semibold rounded-xl transition-colors">Filtrează</button>
-    <a href={`/api/admin/audit?days=${days}&action=${action}&format=csv`} class="h-9 px-4 bg-white border border-[#E3EAF1] hover:border-[#0A2238] text-[#0A2238] text-[13px] font-medium rounded-xl transition-colors flex items-center">CSV</a>
+    <button type="submit" class="h-9 px-4 bg-[#07090f] hover:bg-[#1A1A1A] text-white text-[13px] font-semibold rounded-xl transition-colors">Filtrează</button>
+    <a href={`/api/admin/audit?days=${days}&action=${action}&format=csv`} class="h-9 px-4 bg-white border border-[#E3EAF1] hover:border-[#07090f] text-[#07090f] text-[13px] font-medium rounded-xl transition-colors flex items-center">CSV</a>
   </form>
 
   <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium mb-3">{rows.length} {rows.length === 1 ? 'eveniment' : 'evenimente'}</p>
@@ -91,10 +91,10 @@ const inputCls = 'h-9 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[13p
         {rows.map((r) => (
           <tr class="hover:bg-[#FCFCFA]">
             <td class="px-4 py-2 font-mono text-[#46627A] whitespace-nowrap">{fmt(r.createdAt)}</td>
-            <td class="px-4 py-2 font-mono text-[#0A2238]">{r.action}</td>
-            <td class="px-4 py-2">{r.userName ?? <span class="text-[#9FB8CC]">—</span>}</td>
+            <td class="px-4 py-2 font-mono text-[#07090f]">{r.action}</td>
+            <td class="px-4 py-2">{r.userName ?? <span class="text-[#A8BED2]">—</span>}</td>
             <td class="px-4 py-2 text-[#46627A]">{r.entityType ? `${r.entityType}/${(r.entityId || '').slice(0, 12)}…` : '—'}</td>
-            <td class="px-4 py-2 font-mono text-[#9FB8CC]">{r.ipAddress ?? '—'}</td>
+            <td class="px-4 py-2 font-mono text-[#A8BED2]">{r.ipAddress ?? '—'}</td>
             <td class="px-4 py-2 text-[#46627A] truncate max-w-[260px]">{r.metadata ?? ''}</td>
           </tr>
         ))}

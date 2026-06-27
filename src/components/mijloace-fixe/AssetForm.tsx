@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
+import { DatePicker } from '../ui/DatePicker';
 import { Plus, Loader2 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -74,9 +75,9 @@ export default function AssetForm() {
     }
   };
 
-  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#7C9AB4] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
   const selectCls = `${inputCls} [color-scheme:dark]`;
-  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] shadow-none';
+  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
   const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15 border-0';
 
   if (!open) {
@@ -95,33 +96,33 @@ export default function AssetForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="md:col-span-2">
-            <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Denumire</Label>
+            <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Denumire</Label>
             <Input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="ex. Autoutilitară Ford Transit" />
           </div>
           <div>
-            <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Număr inventar</Label>
+            <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Număr inventar</Label>
             <Input className={inputCls} value={form.inventoryNumber} onChange={(e) => setForm({ ...form, inventoryNumber: e.target.value })} placeholder="ex. MF-0001" />
           </div>
           <div>
-            <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Categorie</Label>
+            <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Categorie</Label>
             <Select className={selectCls} value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </Select>
           </div>
           <div>
-            <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Data achiziției</Label>
-            <Input className={`${inputCls} [color-scheme:dark]`} type="date" value={form.acquisitionDate} onChange={(e) => setForm({ ...form, acquisitionDate: e.target.value })} />
+            <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Data achiziției</Label>
+            <DatePicker value={form.acquisitionDate} onChange={(v) => setForm({ ...form, acquisitionDate: v })} />
           </div>
           <div>
-            <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Valoare de intrare (RON)</Label>
+            <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Valoare de intrare (RON)</Label>
             <Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder="0.00" />
           </div>
           <div>
-            <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Durata de amortizare (luni)</Label>
+            <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Durata de amortizare (luni)</Label>
             <Input className={`${inputCls} [color-scheme:dark]`} type="number" min={1} value={form.usefulLifeMonths} onChange={(e) => setForm({ ...form, usefulLifeMonths: e.target.value })} placeholder="60" />
           </div>
           <div>
-            <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Metodă de amortizare</Label>
+            <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Metodă de amortizare</Label>
             <Select className={selectCls} value={form.method} onChange={(e) => setForm({ ...form, method: e.target.value })}>
               {Object.entries(METHOD_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </Select>
@@ -129,7 +130,7 @@ export default function AssetForm() {
         </div>
 
         {valueCents > 0 && (
-          <p className="text-[14px] text-[#9FB8CC]">
+          <p className="text-[14px] text-[#A8BED2]">
             Amortizare lunară estimată (liniară): <strong className="text-white tabular-nums">{ron(monthlyEstimate)}</strong> pe {months} luni.
           </p>
         )}

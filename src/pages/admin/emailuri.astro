@@ -69,7 +69,7 @@ const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
       <div class="overflow-x-auto">
         <table class="w-full text-[13px]">
           <thead>
-            <tr class="text-left text-[11px] uppercase tracking-[0.12em] text-[#9FB8CC] border-b border-[#E3EAF1]">
+            <tr class="text-left text-[11px] uppercase tracking-[0.12em] text-[#A8BED2] border-b border-[#E3EAF1]">
               <th class="px-5 py-3 font-medium">Subiect</th>
               <th class="px-5 py-3 font-medium">Audiență</th>
               <th class="px-5 py-3 font-medium">Status</th>
@@ -85,7 +85,7 @@ const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
                 <tr>
                   <td class="px-5 py-3 max-w-[280px]">
                     <span class="font-medium truncate block">{c.subject}</span>
-                    <span class="text-[11px] text-[#9FB8CC]">{c.createdByName ?? 'admin'}</span>
+                    <span class="text-[11px] text-[#A8BED2]">{c.createdByName ?? 'admin'}</span>
                   </td>
                   <td class="px-5 py-3 text-[#46627A]">{audienceLabels[c.audience] ?? c.audience}</td>
                   <td class="px-5 py-3">
@@ -96,8 +96,8 @@ const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
                       ? `${c.sentCount ?? 0} / ${c.failedCount ?? 0}${c.totalRecipients ? ` (din ${c.totalRecipients})` : ''}`
                       : '-'}
                   </td>
-                  <td class="px-5 py-3 text-[11px] text-[#9FB8CC]">{fmt(c.createdAt)}</td>
-                  <td class="px-5 py-3 text-[11px] text-[#9FB8CC]">{fmt(c.sentAt)}</td>
+                  <td class="px-5 py-3 text-[11px] text-[#A8BED2]">{fmt(c.createdAt)}</td>
+                  <td class="px-5 py-3 text-[11px] text-[#A8BED2]">{fmt(c.sentAt)}</td>
                 </tr>
               );
             })}

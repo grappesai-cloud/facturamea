@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import type { Locale } from '../../lib/i18n';
 
-const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E2E8EF] rounded-xl text-[14px] text-[#0A2238] placeholder:text-[#7C9AB4] focus:border-[#0A2238] focus:outline-none transition-colors';
-const labelCls = 'block text-[12px] font-medium text-[#0A2238] mb-1.5';
+const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E2E8EF] rounded-xl text-[14px] text-[#07090f] placeholder:text-[#8FA6BC] focus:border-[#07090f] focus:outline-none transition-colors';
+const labelCls = 'block text-[12px] font-medium text-[#07090f] mb-1.5';
 
 // Cloudflare Turnstile site key (public). When unset, no widget renders and the
 // server-side anti-bot check fails open (so behaviour is unchanged).
@@ -107,13 +107,13 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Verifică-ți emailul</h1>
+          <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#07090f] leading-tight">Verifică-ți emailul</h1>
           <p className="text-[13px] text-[#46627A] mt-1.5">
-            Ți-am trimis un link de confirmare la <span className="font-semibold text-[#0A2238]">{email}</span>.
+            Ți-am trimis un link de confirmare la <span className="font-semibold text-[#07090f]">{email}</span>.
             Apasă pe el ca să-ți activezi contul, apoi autentifică-te.
           </p>
         </div>
-        <a href="/auth/login" className="block w-full text-center py-3 bg-[#0A2238] hover:bg-[#14304b] text-white font-semibold rounded-xl text-[14px] transition-colors">
+        <a href="/auth/login" className="block w-full text-center py-3 bg-[#07090f] hover:bg-[#14304b] text-white font-semibold rounded-xl text-[14px] transition-colors">
           Mergi la autentificare
         </a>
       </div>
@@ -122,25 +122,29 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-[#EEF2F6] rounded-full p-1 flex gap-1 mb-6">
+        <a href="/auth/login" className="flex-1 py-2 rounded-full text-[14px] font-semibold text-center transition-all text-[#8FA6BC] hover:text-[#07090f]">Autentificare</a>
+        <span className="flex-1 py-2 rounded-full text-[14px] font-semibold text-center bg-white shadow-sm text-[#07090f]">Cont nou</span>
+      </div>
       <div>
-        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Creează cont</h1>
+        <h1 className="text-[26px] font-bold tracking-[-0.02em] text-[#07090f] leading-tight">Creează cont</h1>
         <p className="text-[13px] text-[#46627A] mt-1.5">Pasul {step} din 2 · facturează în câteva minute</p>
       </div>
 
       {/* OAuth — the onboarding gate still forces CIF + payment afterwards */}
       {step === 1 && (
         <div className="space-y-2">
-          <a href="/api/auth/google" className="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-[#E2E8EF] hover:border-[#0A2238] rounded-xl text-[14px] font-medium text-[#0A2238] transition-colors">
+          <a href="/api/auth/google" className="flex items-center justify-center gap-2 w-full py-2.5 bg-white border border-[#E2E8EF] hover:border-[#07090f] rounded-xl text-[14px] font-medium text-[#07090f] transition-colors">
             <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1Z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84Z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.06l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z"/></svg>
             Continuă cu Google
           </a>
-          <a href="/api/auth/apple" className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#0A2238] hover:bg-[#14304b] rounded-xl text-[14px] font-medium text-white transition-colors">
+          <a href="/api/auth/apple" className="flex items-center justify-center gap-2 w-full py-2.5 bg-[#07090f] hover:bg-[#14304b] rounded-xl text-[14px] font-medium text-white transition-colors">
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M16.36 12.78c.02 2.45 2.15 3.26 2.17 3.27-.02.06-.34 1.16-1.12 2.3-.67.99-1.37 1.97-2.47 1.99-1.08.02-1.43-.64-2.67-.64-1.24 0-1.62.62-2.64.66-1.06.04-1.87-1.07-2.55-2.05-1.38-2-2.44-5.66-1.02-8.13.7-1.23 1.96-2 3.33-2.03 1.04-.02 2.02.7 2.67.7.64 0 1.84-.86 3.1-.74.53.02 2.01.21 2.96 1.61-.08.05-1.77 1.04-1.75 3.1M14.3 4.6c.57-.69.96-1.65.85-2.6-.83.03-1.83.55-2.42 1.24-.53.61-1 1.59-.87 2.52.92.07 1.87-.47 2.44-1.16"/></svg>
             Continuă cu Apple
           </a>
           <div className="flex items-center gap-3 py-1">
             <div className="flex-1 h-px bg-[#E2E8EF]" />
-            <span className="text-[11px] text-[#7C9AB4] uppercase tracking-wider">sau cu email</span>
+            <span className="text-[11px] text-[#8FA6BC] uppercase tracking-wider">sau cu email</span>
             <div className="flex-1 h-px bg-[#E2E8EF]" />
           </div>
         </div>
@@ -148,7 +152,7 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
 
       <div className="flex gap-1.5">
         {[1, 2].map((s) => (
-          <div key={s} className={`h-[3px] flex-1 rounded-full transition-all duration-300 ${s <= step ? 'bg-[#0A2238]' : 'bg-[#E2E8EF]'}`} />
+          <div key={s} className={`h-[3px] flex-1 rounded-full transition-all duration-300 ${s <= step ? 'bg-[#07090f]' : 'bg-[#E2E8EF]'}`} />
         ))}
       </div>
 
@@ -223,10 +227,10 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
               required
-              className="mt-0.5 w-4 h-4 shrink-0 accent-[#0A2238] cursor-pointer"
+              className="mt-0.5 w-4 h-4 shrink-0 accent-[#07090f] cursor-pointer"
             />
             <span className="text-[12px] text-[#46627A] leading-relaxed">
-              Am citit și sunt de acord cu <a href="/termeni" target="_blank" rel="noopener" className="text-[#0A2238] font-semibold underline hover:text-[#1A759F]">Termenii și Condițiile</a> și cu <a href="/confidentialitate" target="_blank" rel="noopener" className="text-[#0A2238] font-semibold underline hover:text-[#1A759F]">Politica de Confidențialitate</a>. <span className="text-[#1A759F]">*</span>
+              Am citit și sunt de acord cu <a href="/termeni" target="_blank" rel="noopener" className="text-[#07090f] font-semibold underline hover:text-[#1A759F]">Termenii și Condițiile</a> și cu <a href="/confidentialitate" target="_blank" rel="noopener" className="text-[#07090f] font-semibold underline hover:text-[#1A759F]">Politica de Confidențialitate</a>. <span className="text-[#1A759F]">*</span>
             </span>
           </label>
           {TURNSTILE_KEY && <div className="cf-turnstile" data-sitekey={TURNSTILE_KEY} />}
@@ -235,19 +239,15 @@ export default function RegisterForm({ locale = 'ro' }: { locale?: Locale } = {}
 
       <div className="flex gap-2 pt-2">
         {step > 1 && (
-          <button type="button" onClick={() => { setError(''); setStep(step - 1); }} className="px-5 py-3 bg-white border border-[#E2E8EF] hover:border-[#0A2238] text-[#0A2238] font-medium rounded-xl text-[14px] transition-colors">
+          <button type="button" onClick={() => { setError(''); setStep(step - 1); }} className="px-5 py-3 bg-white border border-[#E2E8EF] hover:border-[#07090f] text-[#07090f] font-medium rounded-xl text-[14px] transition-colors">
             Înapoi
           </button>
         )}
-        <button type="submit" disabled={loading} className="flex-1 py-3 bg-[#0A2238] hover:bg-[#14304b] disabled:bg-[#0A2238]/60 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-[14px] transition-colors">
+        <button type="submit" disabled={loading} className="flex-1 py-3 bg-[#07090f] hover:bg-[#14304b] disabled:bg-[#07090f]/60 disabled:cursor-not-allowed text-white font-semibold rounded-xl text-[14px] transition-colors">
           {step < 2 ? 'Continuă' : (loading ? 'Se creează…' : 'Creează cont')}
         </button>
       </div>
 
-      <p className="text-center text-[13px] text-[#46627A]">
-        Ai deja cont?{' '}
-        <a href="/auth/login" className="text-[#0A2238] font-semibold hover:text-[#1A759F] transition-colors">Autentifică-te</a>
-      </p>
     </form>
   );
 }

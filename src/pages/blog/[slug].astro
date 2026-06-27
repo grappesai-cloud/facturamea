@@ -54,35 +54,35 @@ const jsonLd = [
   author="facturamea"
   structuredData={jsonLd}>
   <article class="max-w-2xl mx-auto">
-    <nav class="text-[13px] text-[#7C9AB4] mb-5">
+    <nav class="text-[13px] text-[#8FA6BC] mb-5">
       <a href="/blog" class="hover:text-[#34A0A4]">Blog</a> <span class="opacity-50">/</span> <span>{post.category}</span>
     </nav>
-    <h1 class="text-3xl sm:text-[40px] font-extrabold text-[#0A2238] tracking-[-0.03em] leading-[1.08] mb-4">{post.title}</h1>
-    <div class="flex items-center gap-2 text-[13px] text-[#7C9AB4] mb-8">
-      {post.category && <span class="px-2 py-0.5 rounded-full bg-[#E1FB15]/30 text-[#0A2238] font-semibold">{post.category}</span>}
+    <h1 class="text-3xl sm:text-[40px] font-extrabold text-[#07090f] tracking-[-0.03em] leading-[1.08] mb-4">{post.title}</h1>
+    <div class="flex items-center gap-2 text-[13px] text-[#8FA6BC] mb-8">
+      {post.category && <span class="px-2 py-0.5 rounded-full bg-[#E1FB15]/30 text-[#07090f] font-semibold">{post.category}</span>}
       <span>{fmtDate(post.publishedAt)}</span>
       <span>· {post.readMinutes} min citire</span>
     </div>
 
     <div class="post-body" set:html={post.bodyHtml} />
 
-    <div class="mt-12 p-6 rounded-2xl bg-[#0A2238] text-white">
+    <div class="mt-12 p-6 rounded-2xl bg-[#07090f] text-white">
       <p class="text-lg font-bold mb-1.5">Facturezi conform ANAF, fără bătăi de cap.</p>
-      <p class="text-[14px] text-[#9FB8CC] mb-4">facturamea: facturi, e-Factura, gestiune și rapoarte. O singură plată, fără abonament.</p>
-      <a href="/" class="inline-block px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Vezi facturamea</a>
+      <p class="text-[14px] text-[#A8BED2] mb-4">facturamea: facturi, e-Factura, gestiune și rapoarte. O singură plată, fără abonament.</p>
+      <a href="/" class="inline-block px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Vezi facturamea</a>
     </div>
   </article>
 </PublicLayout>
 
 <style is:global>
   .post-body { color: #1C3A52; font-size: 16px; line-height: 1.75; }
-  .post-body h2 { color: #0A2238; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; margin: 2rem 0 0.75rem; }
-  .post-body h3 { color: #0A2238; font-size: 1.18rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
+  .post-body h2 { color: #07090f; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; margin: 2rem 0 0.75rem; }
+  .post-body h3 { color: #07090f; font-size: 1.18rem; font-weight: 700; margin: 1.5rem 0 0.5rem; }
   .post-body p { margin: 0 0 1rem; }
   .post-body ul, .post-body ol { margin: 0 0 1rem 1.25rem; }
   .post-body ul { list-style: disc; }
   .post-body ol { list-style: decimal; }
   .post-body li { margin: 0.35rem 0; }
-  .post-body strong { color: #0A2238; font-weight: 700; }
+  .post-body strong { color: #07090f; font-weight: 700; }
   .post-body a { color: #168AAD; text-decoration: underline; }
 </style>

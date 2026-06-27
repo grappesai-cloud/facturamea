@@ -32,15 +32,15 @@ const effectiveStatus = overdue ? 'overdue' : inv.status;
 
 const kindLabel: Record<string, string> = { factura: 'Factură', proforma: 'Proformă', storno: 'Factură storno', chitanta: 'Chitanță' };
 const statusTone: Record<string, string> = {
-  draft: 'bg-white/10 text-[#9FB8CC]',
+  draft: 'bg-white/10 text-[#A8BED2]',
   issued: 'bg-[#E8A33C]/15 text-[#E8A33C]',
   sent: 'bg-[#34A0A4]/15 text-[#34A0A4]',
   paid: 'bg-[#2E9E6A]/15 text-[#2E9E6A]',
   partial: 'bg-[#E8A33C]/15 text-[#E8A33C]',
   overdue: 'bg-[#DC4B41]/15 text-[#DC4B41]',
   disputed: 'bg-white/10 text-[#C8DAE8]',
-  voided: 'bg-white/10 text-[#7C9AB4]',
-  reversed: 'bg-white/10 text-[#7C9AB4]',
+  voided: 'bg-white/10 text-[#8FA6BC]',
+  reversed: 'bg-white/10 text-[#8FA6BC]',
 };
 const statusLabel: Record<string, string> = {
   draft: '⚪ Ciornă', issued: '🟡 Emisă', sent: '🔵 Trimisă', paid: '🟢 Plătită',
@@ -61,7 +61,7 @@ const efBadge = !efSendable ? null
     ? { cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]', text: '🟢 e-Factura: validată de ANAF', title: inv.efacturaAnafId ? `Index ANAF: ${inv.efacturaAnafId}` : 'Validată de ANAF' }
   : (ef === 'submitted' || ef === 'sent')
     ? { cls: 'bg-[#E8A33C]/15 text-[#E8A33C]', text: '🟡 e-Factura: trimisă, în validare la ANAF', title: inv.efacturaAnafId ? `Index încărcare: ${inv.efacturaAnafId} · verifică starea` : 'Trimisă, ANAF nu a confirmat încă validarea' }
-  : { cls: 'bg-white/10 text-[#9FB8CC]', text: '⚪ e-Factura: netrimisă', title: 'Nu a fost încă trimisă la ANAF' };
+  : { cls: 'bg-white/10 text-[#A8BED2]', text: '⚪ e-Factura: netrimisă', title: 'Nu a fost încă trimisă la ANAF' };
 ---
 
 <AppLayout title={`${kindLabel[inv.kind] ?? 'Document'} ${inv.fullNumber}`} activeTab="facturare">
@@ -78,8 +78,8 @@ const efBadge = !efSendable ? null
             {efBadge.text}
           </span>
         )}
-        <span class="text-[14px] text-[#9FB8CC]">{kindLabel[inv.kind] ?? 'Document'}</span>
-        {inv.dueAt && <span class="text-[14px] text-[#7C9AB4]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
+        <span class="text-[14px] text-[#A8BED2]">{kindLabel[inv.kind] ?? 'Document'}</span>
+        {inv.dueAt && <span class="text-[14px] text-[#8FA6BC]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
       </div>
     </div>
     <InvoiceActions invoiceId={inv.id} kind={inv.kind} status={inv.status} totalCents={inv.totalCents} paidCents={inv.paidCents} currency={inv.currency} clientCompanyId={inv.clientCompanyId} payEnabled={payEnabled} client:load />
@@ -106,23 +106,23 @@ const efBadge = !efSendable ? null
   <div class="rounded-3xl p-6 sm:p-10 bg-white/5 print:bg-transparent print:p-0 print:rounded-none max-w-4xl">
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6 pb-8 border-b border-white/10">
       <div>
-        <p class="text-[13px] font-medium text-[#7C9AB4]">De la</p>
+        <p class="text-[13px] font-medium text-[#8FA6BC]">De la</p>
         <p class="text-[16px] font-bold text-white mt-1.5">{issuer?.name ?? '—'}</p>
-        {issuer?.cui && <p class="text-[13px] text-[#9FB8CC] mt-0.5">CUI: {issuer.cui}</p>}
-        {issuer?.address && <p class="text-[13px] text-[#9FB8CC] mt-0.5">{issuer.address}</p>}
+        {issuer?.cui && <p class="text-[13px] text-[#A8BED2] mt-0.5">CUI: {issuer.cui}</p>}
+        {issuer?.address && <p class="text-[13px] text-[#A8BED2] mt-0.5">{issuer.address}</p>}
       </div>
       <div class="sm:text-right">
-        <p class="text-[13px] font-medium text-[#7C9AB4]">{kindLabel[inv.kind] ?? 'Document'}</p>
+        <p class="text-[13px] font-medium text-[#8FA6BC]">{kindLabel[inv.kind] ?? 'Document'}</p>
         <p class="text-[28px] font-bold tracking-[-0.03em] text-white mt-1.5 font-mono tabular-nums">{inv.fullNumber}</p>
-        <p class="text-[13px] text-[#9FB8CC] mt-1.5">Emis: {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
+        <p class="text-[13px] text-[#A8BED2] mt-1.5">Emis: {inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
       </div>
     </div>
 
     <div class="py-8 border-b border-white/10">
-      <p class="text-[13px] font-medium text-[#7C9AB4]">Către</p>
+      <p class="text-[13px] font-medium text-[#8FA6BC]">Către</p>
       <p class="text-[16px] font-bold text-white mt-1.5">{inv.clientNameSnap}</p>
-      {inv.clientTaxIdSnap && <p class="text-[13px] text-[#9FB8CC] mt-0.5">CUI: {inv.clientTaxIdSnap}</p>}
-      {inv.clientAddressSnap && <p class="text-[13px] text-[#9FB8CC] mt-0.5">{inv.clientAddressSnap}</p>}
+      {inv.clientTaxIdSnap && <p class="text-[13px] text-[#A8BED2] mt-0.5">CUI: {inv.clientTaxIdSnap}</p>}
+      {inv.clientAddressSnap && <p class="text-[13px] text-[#A8BED2] mt-0.5">{inv.clientAddressSnap}</p>}
     </div>
 
     <!-- Line items: airy rows; stacked cards on mobile, table on sm+ -->
@@ -135,14 +135,14 @@ const efBadge = !efSendable ? null
               <p class="text-[14px] font-bold text-white">{l.description}</p>
               <p class="text-[14px] font-bold tabular-nums text-white shrink-0">{fmt(l.lineTotalCents)}</p>
             </div>
-            <p class="text-[13px] text-[#7C9AB4] mt-1.5 tabular-nums">{l.quantity} {l.unit} × {fmt(l.unitPriceCents)} · TVA {l.vatRate}%</p>
+            <p class="text-[13px] text-[#8FA6BC] mt-1.5 tabular-nums">{l.quantity} {l.unit} × {fmt(l.unitPriceCents)} · TVA {l.vatRate}%</p>
           </li>
         ))}
       </ul>
       <!-- desktop -->
       <table class="w-full text-[14px] hidden sm:table">
         <thead>
-          <tr class="text-left text-[12px] text-[#7C9AB4] font-semibold border-b border-white/10">
+          <tr class="text-left text-[12px] text-[#8FA6BC] font-semibold border-b border-white/10">
             <th class="py-2.5 pr-3">Descriere</th>
             <th class="py-2.5 px-2 text-right w-16">Cant.</th>
             <th class="py-2.5 px-2 w-12">UM</th>
@@ -155,10 +155,10 @@ const efBadge = !efSendable ? null
           {lines.map((l) => (
             <tr class="border-t border-white/10">
               <td class="py-4 pr-3 text-white">{l.description}</td>
-              <td class="py-4 px-2 text-right tabular-nums text-[#9FB8CC]">{l.quantity}</td>
-              <td class="py-4 px-2 text-[#9FB8CC]">{l.unit}</td>
-              <td class="py-4 px-2 text-right tabular-nums text-[#9FB8CC]">{fmt(l.unitPriceCents)}</td>
-              <td class="py-4 px-2 text-right tabular-nums text-[#9FB8CC]">{l.vatRate}%</td>
+              <td class="py-4 px-2 text-right tabular-nums text-[#A8BED2]">{l.quantity}</td>
+              <td class="py-4 px-2 text-[#A8BED2]">{l.unit}</td>
+              <td class="py-4 px-2 text-right tabular-nums text-[#A8BED2]">{fmt(l.unitPriceCents)}</td>
+              <td class="py-4 px-2 text-right tabular-nums text-[#A8BED2]">{l.vatRate}%</td>
               <td class="py-4 pl-2 text-right tabular-nums font-semibold text-white">{fmt(l.lineTotalCents)}</td>
             </tr>
           ))}
@@ -168,8 +168,8 @@ const efBadge = !efSendable ? null
 
     <div class="flex justify-end pt-2">
       <div class="w-full sm:w-1/2 space-y-2 text-[14px]">
-        <div class="flex justify-between"><span class="text-[#9FB8CC]">Subtotal</span><span class="tabular-nums text-white">{fmt(inv.subtotalCents)} {inv.currency}</span></div>
-        <div class="flex justify-between"><span class="text-[#9FB8CC]">TVA</span><span class="tabular-nums text-white">{fmt(inv.vatCents)} {inv.currency}</span></div>
+        <div class="flex justify-between"><span class="text-[#A8BED2]">Subtotal</span><span class="tabular-nums text-white">{fmt(inv.subtotalCents)} {inv.currency}</span></div>
+        <div class="flex justify-between"><span class="text-[#A8BED2]">TVA</span><span class="tabular-nums text-white">{fmt(inv.vatCents)} {inv.currency}</span></div>
         <div class="flex justify-between items-baseline text-[20px] font-bold tracking-[-0.02em] border-t border-white/10 pt-3 mt-1 text-white"><span>Total</span><span class="tabular-nums">{fmt(inv.totalCents)} {inv.currency}</span></div>
         {inv.paidCents > 0 && (
           <>
@@ -182,8 +182,8 @@ const efBadge = !efSendable ? null
 
     {inv.notes && (
       <div class="mt-8 pt-8 border-t border-white/10">
-        <p class="text-[13px] font-medium text-[#7C9AB4] mb-1.5">Mențiuni</p>
-        <p class="text-[14px] text-[#9FB8CC] whitespace-pre-wrap">{inv.notes}</p>
+        <p class="text-[13px] font-medium text-[#8FA6BC] mb-1.5">Mențiuni</p>
+        <p class="text-[14px] text-[#A8BED2] whitespace-pre-wrap">{inv.notes}</p>
       </div>
     )}
   </div>
@@ -195,7 +195,7 @@ const efBadge = !efSendable ? null
         {payments.slice(0, 3).map((p) => (
           <li class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
             <div>
-              <p class="text-[12px] text-[#9FB8CC]">
+              <p class="text-[12px] text-[#A8BED2]">
                 {new Date(p.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}
                 {p.method && ` · ${p.method}`}
                 {p.reference && ` · ref ${p.reference}`}
@@ -207,12 +207,12 @@ const efBadge = !efSendable ? null
       </ul>
       {payments.length > 3 && (
         <details class="mt-2.5">
-          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({payments.length})</summary>
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({payments.length})</summary>
           <ul class="space-y-2.5 mt-2.5">
             {payments.slice(3).map((p) => (
               <li class="flex items-center justify-between gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div>
-                  <p class="text-[12px] text-[#9FB8CC]">
+                  <p class="text-[12px] text-[#A8BED2]">
                     {new Date(p.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}
                     {p.method && ` · ${p.method}`}
                     {p.reference && ` · ref ${p.reference}`}

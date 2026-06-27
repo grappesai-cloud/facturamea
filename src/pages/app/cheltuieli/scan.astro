@@ -11,11 +11,11 @@ const ocrEnabled = !!process.env.ANTHROPIC_API_KEY;
 
 <AppLayout title="Scanează bon / factură — facturamea" activeTab="cheltuieli">
   <div class="max-w-3xl mx-auto">
-    <a href="/app/cheltuieli" class="inline-flex items-center gap-1.5 mb-4 text-[14px] font-medium text-[#9FB8CC] hover:text-white transition-colors">← Toate cheltuielile</a>
+    <a href="/app/cheltuieli" class="inline-flex items-center gap-1.5 mb-4 text-[14px] font-medium text-[#A8BED2] hover:text-white transition-colors">← Toate cheltuielile</a>
 
     <div class="mb-6">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Scanează bon sau factură</h1>
-      <p class="text-[14px] text-[#9FB8CC] mt-2">Fotografiază documentul, iar noi citim datele și creăm cheltuiala.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-2">Fotografiază documentul, iar noi citim datele și creăm cheltuiala.</p>
     </div>
 
     {!ocrEnabled && (
@@ -29,7 +29,7 @@ const ocrEnabled = !!process.env.ANTHROPIC_API_KEY;
 
     <div class="mt-6 rounded-2xl p-5 bg-white/5">
       <h2 class="text-[18px] font-bold text-white mb-3">Cum funcționează</h2>
-      <ol class="space-y-2 text-[14px] text-[#9FB8CC] leading-relaxed list-decimal pl-5">
+      <ol class="space-y-2 text-[14px] text-[#A8BED2] leading-relaxed list-decimal pl-5">
         <li>Apeși „Fă o poză" sau „Încarcă fișier" și alegi bonul ori factura.</li>
         <li>Citim furnizorul, numărul, data și sumele (net, TVA, total).</li>
         <li>Verifici datele și corectezi dacă e nevoie, apoi salvezi.</li>

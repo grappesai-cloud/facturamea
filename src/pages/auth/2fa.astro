@@ -11,7 +11,7 @@ if (!handle) return Astro.redirect('/auth/login');
 <AuthLayout title="Verificare în doi pași">
   <div class="space-y-6">
     <div>
-      <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Verificare în doi pași</h1>
+      <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#07090f] leading-tight">Verificare în doi pași</h1>
       <p class="text-[13px] text-[#46627A] mt-1.5">Introdu codul din aplicația ta de autentificare (Google Authenticator, Authy etc.).</p>
     </div>
 
@@ -23,18 +23,18 @@ if (!handle) return Astro.redirect('/auth/login');
     <form id="tfa-form" class="space-y-4">
       <input type="hidden" id="tfa-handle" value={handle} />
       <div>
-        <label id="tfa-label" class="block text-[12px] font-medium text-[#0A2238] mb-1.5">Cod de 6 cifre</label>
+        <label id="tfa-label" class="block text-[12px] font-medium text-[#07090f] mb-1.5">Cod de 6 cifre</label>
         <input id="tfa-code" inputmode="numeric" autocomplete="one-time-code" autofocus
-          class="w-full px-4 py-3 bg-white border border-[#E2E8EF] rounded-xl text-[18px] tracking-[6px] text-center font-mono text-[#0A2238] focus:border-[#0A2238] focus:outline-none transition-colors"
+          class="w-full px-4 py-3 bg-white border border-[#E2E8EF] rounded-xl text-[18px] tracking-[6px] text-center font-mono text-[#07090f] focus:border-[#07090f] focus:outline-none transition-colors"
           placeholder="000000" />
       </div>
       <button type="submit" id="tfa-submit"
-        class="w-full py-3 bg-[#0A2238] hover:bg-[#14304b] disabled:bg-[#0A2238]/60 text-white font-semibold rounded-xl text-[14px] transition-colors">
+        class="w-full py-3 bg-[#07090f] hover:bg-[#14304b] disabled:bg-[#07090f]/60 text-white font-semibold rounded-xl text-[14px] transition-colors">
         Confirmă
       </button>
     </form>
 
-    <button id="tfa-toggle" class="text-[13px] text-[#46627A] hover:text-[#0A2238] transition-colors">
+    <button id="tfa-toggle" class="text-[13px] text-[#46627A] hover:text-[#07090f] transition-colors">
       Nu ai acces la aplicație? Folosește un cod de recuperare
     </button>
   </div>

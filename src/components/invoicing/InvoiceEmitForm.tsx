@@ -5,6 +5,7 @@ import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { Plus, AlertCircle, Search, Save, Check, BookmarkPlus, BookmarkCheck } from 'lucide-react';
+import { isValidCui } from '../../lib/utils';
 
 const PRODUCT_TYPES = ['Servicii', 'Marfuri', 'Produs finit', 'Materii prime', 'Semifabricate', 'Obiecte de inventar', 'Ambalaje'];
 
@@ -94,23 +95,23 @@ interface DossierPrefill {
 
 // ── Shared field styling ──────────────────────────────────────────────────
 // Inputs sit one shade lighter than their card so they always read as a field.
-const FIELD = 'bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
+const FIELD = 'bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
 const SELECT = `[color-scheme:dark] ${FIELD}`;
 // Inset variant — for fields that live inside a line sub-card (which is itself
 // bg-white/10), so the field stays one shade darker than its container.
-const FIELD_INSET = 'bg-white/5 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
+const FIELD_INSET = 'bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
 const SELECT_INSET = `[color-scheme:dark] ${FIELD_INSET}`;
-const LBL = 'mb-1.5 block text-[12px] font-medium text-[#9FB8CC]';
+const LBL = 'mb-1.5 block text-[12px] font-medium text-[#A8BED2]';
 
 // A numbered step card — gives the whole flow an obvious top-to-bottom order.
 function Section({ n, title, desc, children }: { n: number; title: string; desc?: string; children: ReactNode }) {
   return (
     <section className="rounded-3xl bg-white/5 p-5 sm:p-6">
       <div className="flex items-center gap-3 mb-5">
-        <span className="shrink-0 w-7 h-7 rounded-full bg-[#E1FB15] text-[#0A2238] grid place-items-center text-[13px] font-bold tabular-nums">{n}</span>
+        <span className="shrink-0 w-7 h-7 rounded-full bg-[#E1FB15] text-[#07090f] grid place-items-center text-[13px] font-bold tabular-nums">{n}</span>
         <div className="min-w-0">
           <h2 className="text-[16px] font-bold text-white leading-tight">{title}</h2>
-          {desc && <p className="text-[12.5px] text-[#7C9AB4] mt-0.5">{desc}</p>}
+          {desc && <p className="text-[12.5px] text-[#8FA6BC] mt-0.5">{desc}</p>}
         </div>
       </div>
       {children}
@@ -127,7 +128,7 @@ function Toggle({ checked, onChange, title }: { checked: boolean; onChange: (v: 
       className="w-full flex items-center gap-3 text-left p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors"
     >
       <span className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${checked ? 'bg-[#E1FB15]' : 'bg-[#5E6B7C]'}`}>
-        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform ${checked ? 'translate-x-4 bg-[#0A2238]' : 'translate-x-0 bg-white'}`} />
+        <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform ${checked ? 'translate-x-4 bg-[#07090f]' : 'translate-x-0 bg-white'}`} />
       </span>
       <span className="text-[13.5px] font-medium text-white leading-snug">{title}</span>
     </button>
@@ -262,11 +263,15 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   // Refresh BNR rate when currency changes (skipped for RON).
   useEffect(() => {
     if (currency === 'RON') { setBnr(null); return; }
+    // Guard against a race: if currency changes again before this resolves, a
+    // slow earlier response must NOT overwrite the newer rate (last-request wins).
+    let cancelled = false;
     const today = new Date().toISOString().slice(0, 10);
     fetch(`/api/invoicing/fx/bnr?date=${today}&currency=${currency}`)
       .then((r) => r.ok ? r.json() : null)
-      .then((d) => { if (d?.rate) setBnr({ rate: d.rate, date: d.date }); else setBnr(null); })
-      .catch(() => setBnr(null));
+      .then((d) => { if (cancelled) return; if (d?.rate) setBnr({ rate: d.rate, date: d.date }); else setBnr(null); })
+      .catch(() => { if (!cancelled) setBnr(null); });
+    return () => { cancelled = true; };
   }, [currency]);
 
   const applyProductToLine = (i: number, productId: string) => {
@@ -303,8 +308,42 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
 
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // ── Draft autosave ── a 401 / accidental refresh mid-edit must not wipe typed
+  // work. We persist the line items + a few fields to localStorage and offer to
+  // restore them on a fresh (non-prefilled) form. Cleared on successful emit.
+  const DRAFT_KEY = `fm-draft-invoice-${kind}`;
+  const isPrefilled = !!(dossierPrefill || orderId || fromId);
+  const [draftBanner, setDraftBanner] = useState(false);
+  useEffect(() => {
+    if (isPrefilled) return;
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+      if (d?.lines?.some((l: Line) => l.description || l.unitPrice)) setDraftBanner(true);
+    } catch { /* ignore */ }
+  }, [DRAFT_KEY, isPrefilled]);
+  useEffect(() => {
+    if (isPrefilled) return;
+    const id = window.setTimeout(() => {
+      try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ lines, notes, dueDate, currency })); } catch { /* ignore */ }
+    }, 600);
+    return () => window.clearTimeout(id);
+  }, [lines, notes, dueDate, currency, isPrefilled, DRAFT_KEY]);
+  const restoreDraft = () => {
+    try {
+      const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+      if (d?.lines) setLines(d.lines);
+      if (d?.notes != null) setNotes(d.notes);
+      if (d?.dueDate != null) setDueDate(d.dueDate);
+      if (d?.currency) setCurrency(d.currency);
+    } catch { /* ignore */ }
+    setDraftBanner(false);
+  };
+  const discardDraft = () => { try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ } setDraftBanner(false); };
+
   // Inline "save this typed line into the nomenclator" — per-line feedback.
   const [savingProdIdx, setSavingProdIdx] = useState<number | null>(null);
+  const [savingClient, setSavingClient] = useState(false);
   const [savedProdIdx, setSavedProdIdx] = useState<Record<number, boolean>>({});
   // Which line's "save to nomenclator" popover is open.
   const [nomenIdx, setNomenIdx] = useState<number | null>(null);
@@ -359,16 +398,20 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   };
 
   const saveNewClient = async () => {
+    if (savingClient) return; // guard against double-submit (duplicate client)
     if (!newClient.name.trim()) { setError('Numele clientului este obligatoriu'); return; }
-    const res = await fetch('/api/invoicing/clients', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(newClient),
-    });
-    const data = await res.json();
-    if (!res.ok) { setError(data.error || 'Eroare client'); return; }
-    setClients((cs) => [{ id: data.id, ...newClient } as any, ...cs]);
-    setPickedClient({ id: data.id, ...newClient } as any);
-    setShowAddClient(false);
+    setSavingClient(true);
+    try {
+      const res = await fetch('/api/invoicing/clients', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newClient),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Eroare client'); return; }
+      setClients((cs) => [{ id: data.id, ...newClient } as any, ...cs]);
+      setPickedClient({ id: data.id, ...newClient } as any);
+      setShowAddClient(false);
+    } catch { setError('Eroare conexiune'); } finally { setSavingClient(false); }
   };
 
   // Live totals — keep cents internally to avoid float drift
@@ -534,6 +577,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Eroare la emitere'); return; }
+      try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
       // "Încasează acum" → record full payment + emit chitanță for the new invoice.
       if (collectNow && kind === 'factura' && total > 0) {
         await fetch(`/api/invoicing/invoices/${data.id}/chitanta`, {
@@ -555,6 +599,14 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
     <div className="pb-28 lg:pb-6">
       <h1 className="text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] text-white mb-6">{KIND_TITLE[kind]}</h1>
 
+      {draftBanner && (
+        <div className="mb-5 flex flex-wrap items-center gap-3 px-4 py-3 rounded-2xl bg-[#E1FB15]/10 ring-1 ring-[#E1FB15]/25" role="status">
+          <span className="text-[13.5px] text-white flex-1 min-w-0">Ai o ciornă nesalvată din sesiunea anterioară. O restaurezi?</span>
+          <button type="button" onClick={restoreDraft} className="px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[13px] font-bold hover:bg-[#D2EA0E] transition-colors">Restaurează</button>
+          <button type="button" onClick={discardDraft} className="px-3 py-2 rounded-full text-[13px] font-semibold text-[#A8BED2] hover:text-white transition-colors">Ignoră</button>
+        </div>
+      )}
+
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_330px] lg:gap-6 lg:items-start">
         {/* ── Left column: the document ── */}
         <div className="space-y-5 min-w-0">
@@ -565,7 +617,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
               <div className="flex items-center justify-between gap-3 p-4 bg-white/10 rounded-2xl">
                 <div className="min-w-0">
                   <p className="text-[15px] font-bold text-white truncate">{pickedClient.name}</p>
-                  <p className="text-[12.5px] text-[#9FB8CC] truncate">{[pickedClient.taxId, pickedClient.city, pickedClient.country].filter(Boolean).join(' · ') || '—'}</p>
+                  <p className="text-[12.5px] text-[#A8BED2] truncate">{[pickedClient.taxId, pickedClient.city, pickedClient.country].filter(Boolean).join(' · ') || '—'}</p>
                 </div>
                 <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0 shrink-0" onClick={() => setPickedClient(null)}>Schimbă</Button>
               </div>
@@ -573,13 +625,16 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-[13px] font-semibold text-white">Client nou</p>
-                  <button type="button" onClick={() => setShowAddClient(false)} className="text-[13px] text-[#9FB8CC] hover:text-white">Înapoi la căutare</button>
+                  <button type="button" onClick={() => setShowAddClient(false)} className="text-[13px] text-[#A8BED2] hover:text-white">Înapoi la căutare</button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <Label className={LBL}>CUI / Cod fiscal</Label>
-                    <Input value={newClient.taxId} onChange={(e) => setNewClient((c) => ({ ...c, taxId: e.target.value }))} onBlur={lookupCui} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupCui(); } }} placeholder="ex: 14186770 sau RO14186770" className={FIELD} />
+                    <Input autoComplete="off" value={newClient.taxId} onChange={(e) => setNewClient((c) => ({ ...c, taxId: e.target.value }))} onBlur={lookupCui} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupCui(); } }} placeholder="ex: 14186770 sau RO14186770" className={FIELD} />
                     {cuiLookupHint && <p className={`text-[11px] mt-1.5 ${cuiLookupState === 'found' ? 'text-[#2E9E6A]' : 'text-[#E8A33C]'}`}>{cuiLookupHint}</p>}
+                    {!cuiLookupHint && newClient.taxId.trim() && /^(ro)?\s*\d{2,10}$/i.test(newClient.taxId.trim()) && !isValidCui(newClient.taxId) && (
+                      <p className="text-[11px] mt-1.5 text-[#E8A33C]">CUI-ul pare invalid (cifra de control nu corespunde). Verifică-l.</p>
+                    )}
                   </div>
                   <div>
                     <Label className={LBL}>Nume *</Label>
@@ -611,13 +666,13 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                   Plătitor de TVA
                 </label>
                 <div className="flex gap-2 pt-1">
-                  <Button type="button" size="sm" className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100" onClick={saveNewClient}>Salvează client</Button>
+                  <Button type="button" size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" onClick={saveNewClient}>Salvează client</Button>
                   <Button type="button" variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowAddClient(false)}>Renunță</Button>
                 </div>
               </div>
             ) : (
               <div ref={pickerRef} className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7C9AB4] pointer-events-none" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8FA6BC] pointer-events-none" />
                 <Input
                   value={clientSearch}
                   onChange={(e) => { setClientSearch(e.target.value); setDropdownOpen(true); }}
@@ -627,10 +682,10 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                   autoComplete="off"
                 />
                 {dropdownOpen && (
-                  <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-[#071828] ring-1 ring-white/10 rounded-2xl shadow-2xl overflow-hidden">
+                  <div className="absolute left-0 right-0 top-full mt-2 z-20 bg-[#07090f] ring-1 ring-white/10 rounded-2xl shadow-2xl overflow-hidden">
                     {clients.length > 0 ? (
                       <>
-                        <p className="px-3.5 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7C9AB4]">
+                        <p className="px-3.5 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8FA6BC]">
                           {clientSearch ? `${clients.length} rezultate` : 'Clienți recenți'}
                         </p>
                         <ul className="max-h-72 overflow-y-auto">
@@ -642,14 +697,14 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                                 className="w-full text-left px-3.5 py-2.5 hover:bg-white/5 transition-colors"
                               >
                                 <p className="text-[14px] font-medium text-white truncate">{c.name}</p>
-                                <p className="text-[12px] text-[#9FB8CC] truncate">{[c.taxId, c.city, c.country].filter(Boolean).join(' · ') || '—'}</p>
+                                <p className="text-[12px] text-[#A8BED2] truncate">{[c.taxId, c.city, c.country].filter(Boolean).join(' · ') || '—'}</p>
                               </button>
                             </li>
                           ))}
                         </ul>
                       </>
                     ) : (
-                      <p className="px-3.5 py-3 text-[13px] text-[#9FB8CC]">
+                      <p className="px-3.5 py-3 text-[13px] text-[#A8BED2]">
                         {clientSearch ? `Niciun client cu „${clientSearch}".` : 'Niciun client salvat încă.'}
                       </p>
                     )}
@@ -684,7 +739,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <button type="button" onClick={() => setPriceIncludesVat((v) => !v)} className="inline-flex items-center gap-2.5 pl-1.5 pr-3.5 h-9 rounded-full bg-white/10 text-[13px] font-medium text-white hover:bg-white/15 transition-colors">
                   <span className={`relative shrink-0 w-9 h-5 rounded-full transition-colors ${priceIncludesVat ? 'bg-[#E1FB15]' : 'bg-[#5E6B7C]'}`}>
-                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform ${priceIncludesVat ? 'translate-x-4 bg-[#0A2238]' : 'translate-x-0 bg-white'}`} />
+                    <span className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full transition-transform ${priceIncludesVat ? 'translate-x-4 bg-[#07090f]' : 'translate-x-0 bg-white'}`} />
                   </span>
                   Prețurile includ TVA
                 </button>
@@ -737,7 +792,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    <Button type="button" size="sm" disabled={creatingProduct} className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100" onClick={createProduct}>
+                    <Button type="button" size="sm" disabled={creatingProduct} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" onClick={createProduct}>
                       {creatingProduct ? 'Se salvează…' : 'Salvează și adaugă pe factură'}
                     </Button>
                     <Button type="button" variant="outline" size="sm" className="rounded-full bg-white/5 text-white border-0 hover:bg-white/10 hover:border-0" onClick={() => setShowCreateProduct(false)}>Renunță</Button>
@@ -750,13 +805,13 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                 return (
                   <div key={i} className="rounded-2xl bg-white/10 p-4">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7C9AB4]">Linia {i + 1}</span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8FA6BC]">Linia {i + 1}</span>
                       <div className="relative flex items-center gap-1.5">
                         {l.description.trim() && (
                           <button
                             type="button"
                             onClick={() => setNomenIdx(nomenIdx === i ? null : i)}
-                            className={`w-8 h-8 rounded-full bg-white/5 grid place-items-center hover:bg-white/10 transition-colors ${savedProdIdx[i] || alreadyInCatalog(l) ? 'text-[#2E9E6A]' : 'text-[#9FB8CC]'}`}
+                            className={`w-8 h-8 rounded-full bg-white/5 grid place-items-center hover:bg-white/10 transition-colors ${savedProdIdx[i] || alreadyInCatalog(l) ? 'text-[#2E9E6A]' : 'text-[#A8BED2]'}`}
                             aria-label="Salvează în nomenclator"
                             title="Salvează în nomenclator"
                           >
@@ -767,7 +822,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                           type="button"
                           onClick={() => setLines((ls) => ls.filter((_, j) => j !== i))}
                           disabled={lines.length === 1}
-                          className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] disabled:opacity-30 transition-colors"
+                          className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#A8BED2] hover:bg-white/10 hover:text-[#DC4B41] disabled:opacity-30 transition-colors"
                           aria-label="Șterge linia"
                           title="Șterge linia"
                         >
@@ -785,7 +840,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                                 <>
                                   <p className="fm-pop-sub text-[12px] mt-1 mb-3">Salvează produsul ca să-l refolosești pe alte facturi.</p>
                                   <div className="flex gap-2">
-                                    <button type="button" onClick={() => saveLineAsProduct(i)} disabled={savingProdIdx === i} className="flex-1 h-9 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13px] font-semibold hover:bg-[#D2EA0E] disabled:opacity-60 transition-colors">{savingProdIdx === i ? 'Se salvează…' : 'Salvează'}</button>
+                                    <button type="button" onClick={() => saveLineAsProduct(i)} disabled={savingProdIdx === i} className="flex-1 h-9 rounded-full bg-[#E1FB15] text-[#07090f] text-[13px] font-semibold hover:bg-[#D2EA0E] disabled:opacity-60 transition-colors">{savingProdIdx === i ? 'Se salvează…' : 'Salvează'}</button>
                                     <button type="button" onClick={() => setNomenIdx(null)} className="h-9 px-3 rounded-full bg-white/10 text-white text-[13px] font-semibold hover:bg-white/15 transition-colors">Renunță</button>
                                   </div>
                                 </>
@@ -841,11 +896,11 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                       <div>
                         <Label className={LBL}>Cotă TVA</Label>
                         {!companyVatPayer ? (
-                          <div className={`${SELECT_INSET} flex items-center text-[#9FB8CC]`}>Neplătitor TVA</div>
+                          <div className={`${SELECT_INSET} flex items-center text-[#A8BED2]`}>Neplătitor TVA</div>
                         ) : tvaRates.length > 0 ? (
                           <Select value={l.vatRate} onChange={(e) => setLine(i, { vatRate: e.target.value })} className={SELECT_INSET}>
                             {!tvaRates.some((r) => String(r.percent) === l.vatRate) && <option value={l.vatRate}>{l.vatRate}%</option>}
-                            {tvaRates.map((r) => <option key={r.id} value={String(r.percent)}>{r.percent}% · {r.name}</option>)}
+                            {tvaRates.map((r) => <option key={r.id} value={String(r.percent)} title={r.name}>{r.percent}%</option>)}
                           </Select>
                         ) : (
                           <Input type="number" step="1" value={l.vatRate} onChange={(e) => setLine(i, { vatRate: e.target.value })} className={SELECT_INSET} />
@@ -854,9 +909,9 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                     </div>
 
                     <div className="flex items-baseline justify-end gap-2 mt-3 pt-3 border-t border-white/10">
-                      <span className="text-[12px] text-[#7C9AB4]">Valoare</span>
+                      <span className="text-[12px] text-[#8FA6BC]">Valoare</span>
                       <span className="text-[15px] font-bold tabular-nums text-white">{fmt(lc.net)} {currency}</span>
-                      {lc.vat > 0 && <span className="text-[11px] text-[#7C9AB4]">+ {fmt(lc.vat)} TVA</span>}
+                      {lc.vat > 0 && <span className="text-[11px] text-[#8FA6BC]">+ {fmt(lc.vat)} TVA</span>}
                     </div>
                   </div>
                 );
@@ -882,8 +937,8 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                   ))}
                 </Select>
                 {selectedSeries
-                  ? <p className="text-[11px] text-[#9FB8CC] mt-1.5">Următorul număr: <span className="font-mono font-semibold text-white">{seriesNumberPreview(selectedSeries)}</span></p>
-                  : <p className="text-[11px] text-[#9FB8CC] mt-1.5">Gestionează seriile în <a href="/app/facturare/setari" className="text-[#E1FB15] hover:underline">Setări</a>.</p>}
+                  ? <p className="text-[11px] text-[#A8BED2] mt-1.5">Următorul număr: <span className="font-mono font-semibold text-white">{seriesNumberPreview(selectedSeries)}</span></p>
+                  : <p className="text-[11px] text-[#A8BED2] mt-1.5">Gestionează seriile în <a href="/app/facturare/setari" className="text-[#E1FB15] hover:underline">Setări</a>.</p>}
               </div>
               <div>
                 <Label className={LBL}>Monedă</Label>
@@ -907,19 +962,19 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                       const active = dueDate === isoInDays(n);
                       return (
                         <button type="button" key={label} onClick={() => setDueDate(isoInDays(n))}
-                          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${active ? 'bg-[#E1FB15] text-[#0A2238]' : 'bg-white/10 text-[#D7E5F0] hover:bg-white/15'}`}>
+                          className={`px-3 py-1.5 rounded-full text-[13px] font-semibold transition-colors ${active ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-white/10 text-[#D7E5F0] hover:bg-white/15'}`}>
                           {label}
                         </button>
                       );
                     })}
                   </div>
                   <div className="flex items-center gap-2 mt-2.5">
-                    <span className="text-[13px] text-[#9FB8CC]">sau în</span>
+                    <span className="text-[13px] text-[#A8BED2]">sau în</span>
                     <Input type="number" min="0" inputMode="numeric" value={daysFromToday(dueDate)}
                       onChange={(e) => { const v = e.target.value; setDueDate(v === '' ? '' : isoInDays(Math.max(0, parseInt(v) || 0))); }}
                       className={`${SELECT} w-24 text-center`} placeholder="zile" />
-                    <span className="text-[13px] text-[#9FB8CC]">zile de la emitere</span>
-                    {dueDate && <span className="text-[13px] text-[#7C9AB4] ml-auto">scadent {new Date(dueDate + 'T00:00:00').toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
+                    <span className="text-[13px] text-[#A8BED2]">zile de la emitere</span>
+                    {dueDate && <span className="text-[13px] text-[#8FA6BC] ml-auto">scadent {new Date(dueDate + 'T00:00:00').toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
                   </div>
                 </div>
               )}
@@ -961,18 +1016,18 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
         </div>
 
         {/* ── Right column: sticky summary + emit ── */}
-        <aside className="mt-5 lg:mt-0 lg:sticky lg:top-6 lg:self-start space-y-3">
+        <aside className="mt-5 lg:mt-0 lg:sticky lg:top-28 lg:self-start space-y-3">
           <div className="rounded-3xl bg-white/5 p-5 sm:p-6">
             <h2 className="text-[16px] font-bold text-white mb-4">Sumar</h2>
             <div className="space-y-2.5">
-              <div className="flex justify-between text-[14px]"><span className="text-[#9FB8CC]">Subtotal</span><span className="font-mono tabular-nums text-white">{fmt(totals.sub)} {currency}</span></div>
-              <div className="flex justify-between text-[14px]"><span className="text-[#9FB8CC]">TVA</span><span className="font-mono tabular-nums text-white">{fmt(totals.vat)} {currency}</span></div>
+              <div className="flex justify-between text-[14px]"><span className="text-[#A8BED2]">Subtotal</span><span className="font-mono tabular-nums text-white">{fmt(totals.sub)} {currency}</span></div>
+              <div className="flex justify-between text-[14px]"><span className="text-[#A8BED2]">TVA</span><span className="font-mono tabular-nums text-white">{fmt(totals.vat)} {currency}</span></div>
               <div className="flex items-baseline justify-between border-t border-white/10 pt-3 mt-1">
                 <span className="text-[14px] font-semibold text-white">Total</span>
-                <span className="text-[22px] font-bold tabular-nums text-white">{fmt(total)} <span className="text-[14px] text-[#9FB8CC]">{currency}</span></span>
+                <span className="text-[22px] font-bold tabular-nums text-white">{fmt(total)} <span className="text-[14px] text-[#A8BED2]">{currency}</span></span>
               </div>
               {bnr && currency !== 'RON' && (
-                <div className="mt-3 pt-3 border-t border-white/10 text-[12px] text-[#9FB8CC] space-y-1">
+                <div className="mt-3 pt-3 border-t border-white/10 text-[12px] text-[#A8BED2] space-y-1">
                   <div className="flex justify-between"><span>Curs BNR {bnr.date}</span><span className="font-mono">1 {currency} = {bnr.rate.toFixed(4)} RON</span></div>
                   <div className="flex justify-between font-semibold text-white"><span>Echivalent RON</span><span className="font-mono tabular-nums">{(total * bnr.rate).toLocaleString('ro-RO', { minimumFractionDigits: 2 })} RON</span></div>
                 </div>
@@ -991,7 +1046,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
             </div>
           )}
 
-          <Button type="button" disabled={saving} onClick={submit} className="w-full h-[52px] rounded-2xl bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100 text-[15px] font-bold">
+          <Button type="button" disabled={saving} onClick={submit} className="w-full h-[52px] rounded-2xl bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100 text-[15px] font-bold">
             {issueImmediately ? <Check className="w-5 h-5 mr-1.5" /> : <Save className="w-5 h-5 mr-1.5" />}
             {saving ? 'Se salvează…' : (issueImmediately ? 'Emite document' : 'Salvează ciornă')}
           </Button>

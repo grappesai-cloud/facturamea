@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Plus, X, Loader2, KeyRound, Copy, Check, AlertTriangle } from 'lucide-react';
+import { Select } from '../ui/Select';
 
 interface ApiKey {
   id: string;
@@ -104,7 +105,7 @@ export default function ApiKeysManager() {
               <AlertTriangle className="w-4 h-4 text-[#E8A33C] mt-0.5 shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-white">Copiază cheia acum</p>
-                <p className="text-xs text-[#9FB8CC] mt-0.5">Din motive de securitate, nu o vom mai afișa. Dacă o pierzi, generează una nouă.</p>
+                <p className="text-xs text-[#A8BED2] mt-0.5">Din motive de securitate, nu o vom mai afișa. Dacă o pierzi, generează una nouă.</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -120,8 +121,8 @@ export default function ApiKeysManager() {
       )}
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <p className="text-sm text-[#9FB8CC]">Chei pentru autentificarea cererilor către <span className="font-mono text-white">/api/v1</span>.</p>
-        {!creating && <Button onClick={() => { setCreating(true); setError(''); }} className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none"><Plus className="w-4 h-4 mr-1" /> Cheie nouă</Button>}
+        <p className="text-sm text-[#A8BED2]">Chei pentru autentificarea cererilor către <span className="font-mono text-white">/api/v1</span>.</p>
+        {!creating && <Button onClick={() => { setCreating(true); setError(''); }} className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none"><Plus className="w-4 h-4 mr-1" /> Cheie nouă</Button>}
       </div>
 
       {/* Create form */}
@@ -131,23 +132,23 @@ export default function ApiKeysManager() {
             <h3 className="font-semibold text-white">Cheie API nouă</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
-                <Label className="mb-1 block text-xs text-[#9FB8CC]">Nume *</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="ex. Integrare ERP, Zapier..." className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] focus:ring-2 focus:ring-[#E1FB15]/40" />
+                <Label className="mb-1 block text-xs text-[#A8BED2]">Nume *</Label>
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="ex. Integrare ERP, Zapier..." className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
               </div>
               <div>
-                <Label className="mb-1 block text-xs text-[#9FB8CC]">Mod</Label>
-                <select
+                <Label className="mb-1 block text-xs text-[#A8BED2]">Mod</Label>
+                <Select
                   value={mode}
                   onChange={(e) => setMode(e.target.value === 'test' ? 'test' : 'live')}
-                  className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40"
+                  className="w-full"
                 >
                   <option value="live">Live</option>
                   <option value="test">Test</option>
-                </select>
+                </Select>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" disabled={busy || !name.trim()} onClick={create} className="bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none">
+              <Button size="sm" disabled={busy || !name.trim()} onClick={create} className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none">
                 {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generează cheia'}
               </Button>
               <Button size="sm" variant="outline" onClick={() => { setCreating(false); setName(''); setError(''); }} className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full">Renunță</Button>
@@ -160,11 +161,11 @@ export default function ApiKeysManager() {
       <Card className="bg-white/5 border-0 shadow-none">
         <CardContent className="p-0">
           {loading ? (
-            <p className="text-sm text-[#9FB8CC] p-6 text-center"><Loader2 className="w-4 h-4 animate-spin inline mr-1" /> Se încarcă…</p>
+            <p className="text-sm text-[#A8BED2] p-6 text-center"><Loader2 className="w-4 h-4 animate-spin inline mr-1" /> Se încarcă…</p>
           ) : keys.length === 0 ? (
             <div className="p-8 text-center">
-              <KeyRound className="w-6 h-6 text-[#7C9AB4] mx-auto mb-2" />
-              <p className="text-sm text-[#9FB8CC]">Nu ai nicio cheie API. Creează prima cheie pentru a folosi API-ul.</p>
+              <KeyRound className="w-6 h-6 text-[#8FA6BC] mx-auto mb-2" />
+              <p className="text-sm text-[#A8BED2]">Nu ai nicio cheie API. Creează prima cheie pentru a folosi API-ul.</p>
             </div>
           ) : (
             <>
@@ -175,11 +176,11 @@ export default function ApiKeysManager() {
                   <li key={k.id} className="group flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm font-semibold truncate ${revoked ? 'text-[#7C9AB4] line-through' : 'text-white'}`}>{k.name}</p>
+                        <p className={`text-sm font-semibold truncate ${revoked ? 'text-[#8FA6BC] line-through' : 'text-white'}`}>{k.name}</p>
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${k.mode === 'test' ? 'bg-[#E8A33C]/15 text-[#E8A33C]' : 'bg-[#34A0A4]/15 text-[#34A0A4]'}`}>{k.mode === 'test' ? 'test' : 'live'}</span>
                         {revoked && <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-[#DC4B41]/15 text-[#DC4B41]">revocată</span>}
                       </div>
-                      <p className="text-xs text-[#9FB8CC] truncate mt-0.5">
+                      <p className="text-xs text-[#A8BED2] truncate mt-0.5">
                         <span className="font-mono">{k.prefix}…</span>
                         <span className="mx-2">·</span>
                         creată {fmtDate(k.createdAt)}
@@ -188,7 +189,7 @@ export default function ApiKeysManager() {
                       </p>
                     </div>
                     {!revoked && (
-                      <button onClick={() => revoke(k.id)} title="Revocă cheia" className="w-8 h-8 rounded-full grid place-items-center text-[#9FB8CC] hover:text-[#DC4B41] hover:bg-white/10 transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
+                      <button onClick={() => revoke(k.id)} title="Revocă cheia" className="w-8 h-8 rounded-full grid place-items-center text-[#A8BED2] hover:text-[#DC4B41] hover:bg-white/10 transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100">
                         <X className="w-4 h-4" />
                       </button>
                     )}
@@ -197,7 +198,7 @@ export default function ApiKeysManager() {
               })}
             </ul>
             {keys.length > 3 && (
-              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mb-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mb-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                 {showAll ? 'Arată mai puțin' : `Vezi toate (${keys.length})`}
               </button>
             )}

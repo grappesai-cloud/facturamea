@@ -162,15 +162,15 @@ const stats = [
 // All tiles are medium-dark so the WHITE title + subtitle read crisply everywhere
 // (consistent across dashboard / quick-access). fg/sub kept white for clarity.
 const TILE = [
-  { bg: '#1A759F', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Cerulean
-  { bg: '#168AAD', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Bondi Blue
-  { bg: '#1E6091', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Baltic Blue
-  { bg: '#2D8A6E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Pine Green
-  { bg: '#2A7B9B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Ocean
-  { bg: '#1D6E8C', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Deep Teal
-  { bg: '#357A6B', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Spruce
-  { bg: '#246A93', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Steel Blue
-  { bg: '#155E75', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // Dark Cerulean
+  { bg: '#1C7A8C', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // deep teal
+  { bg: '#1E8C93', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // teal
+  { bg: '#239A8A', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // sea green
+  { bg: '#2BA67E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // jade
+  { bg: '#33A86E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // green
+  { bg: '#2E9A75', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // pine
+  { bg: '#258F88', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // deep sea
+  { bg: '#1F8497', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // cerulean-teal
+  { bg: '#187C8E', fg: '#FFFFFF', sub: 'rgba(255,255,255,0.85)' }, // dark teal
 ];
 const tileFor = (key: string) => TILE[Math.max(0, NAV_MODULES.findIndex((m) => m.key === key)) % TILE.length];
 
@@ -254,7 +254,7 @@ const defaultKpis = ['facturi', 'incasari_luna', 'cheltuieli_luna', 'venit_net']
 
 <AppLayout title="Acasă" hideBreadcrumbs>
   <!-- Primary action — standalone lime button -->
-  <a href={primary.href} class="group flex items-center justify-center gap-2.5 w-full px-6 py-4 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[17px] hover:bg-[#D2EA0E] transition-colors mb-6 shadow-[0_10px_30px_-12px_rgba(225,251,21,0.6)]" data-reveal>
+  <a href={primary.href} class="group flex items-center justify-center gap-2.5 w-full px-6 py-4 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[17px] hover:bg-[#D2EA0E] transition-colors mb-6 shadow-[0_10px_30px_-12px_rgba(225,251,21,0.6)]" data-reveal>
     <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d={primary.icon}/></svg>
     {primary.label}
     <svg class="w-5 h-5 shrink-0 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
@@ -297,17 +297,10 @@ const defaultKpis = ['facturi', 'incasari_luna', 'cheltuieli_luna', 'venit_net']
 
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Staggered reveal of the major blocks.
-    const blocks = gsap.utils.toArray<HTMLElement>('[data-reveal]');
-    if (!reduce) {
-      // gsap.from animates FROM hidden to the natural (visible) state, so a
-      // half-failed run can never leave a block stuck at opacity 0.
-      try {
-        gsap.from(blocks, { opacity: 0, y: 22, duration: 0.6, ease: 'power3.out', stagger: 0.09, delay: 0.05, clearProps: 'transform,opacity' });
-      } catch { blocks.forEach((b) => { b.style.opacity = '1'; }); }
-      // Safety net: force-show anything still invisible shortly after load.
-      setTimeout(() => blocks.forEach((b) => { if (getComputedStyle(b).opacity === '0') b.style.opacity = '1'; }), 1500);
-    }
+    // No per-block stagger: the whole page enters as ONE synchronized unit via
+    // the shared .fm-page fade-up, so the big "Emite factură" button and the
+    // cards appear together instead of moving in one after another.
+    void reduce;
 
     // Count-up the KPI numbers.
     document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {

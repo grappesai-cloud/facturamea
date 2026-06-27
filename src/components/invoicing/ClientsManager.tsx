@@ -3,7 +3,8 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Loader2, Pencil, Search, Download, X } from 'lucide-react';
+import { Plus, Loader2, Pencil, Search, Download, X, Users } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Client {
   id: string; name: string; taxId: string | null; isVatPayer: boolean; registryNumber: string | null;
@@ -26,11 +27,19 @@ export default function ClientsManager() {
   const [showAll, setShowAll] = useState(false);
 
   const refresh = async (term = '') => {
-    const r = await fetch(`/api/invoicing/clients${term ? `?q=${encodeURIComponent(term)}` : ''}`);
-    const d = await r.json();
-    setClients(d.results || []);
+    try {
+      const r = await fetch(`/api/invoicing/clients${term ? `?q=${encodeURIComponent(term)}` : ''}`);
+      const d = await r.json();
+      setClients(d.results || []);
+    } catch { /* keep current list on a network blip */ }
   };
   useEffect(() => { refresh(); }, []);
+  // Debounce the live search so a fast typist doesn't fire a request per keystroke.
+  useEffect(() => {
+    const id = window.setTimeout(() => refresh(q), 220);
+    return () => window.clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
 
   const lookupCui = async () => {
     if (!editing?.taxId) return;
@@ -66,8 +75,8 @@ export default function ClientsManager() {
     await refresh(q);
   };
 
-  const fieldCls = 'bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
-  const lblCls = 'mb-1.5 block text-[13px] font-medium text-[#9FB8CC]';
+  const fieldCls = 'bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
+  const lblCls = 'mb-1.5 block text-[13px] font-medium text-[#A8BED2]';
 
   return (
     <div className="space-y-5">
@@ -76,12 +85,12 @@ export default function ClientsManager() {
       {/* Toolbar — search on its own line on mobile, with breathing room before the buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="relative flex-1 min-w-0">
-          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#7C9AB4] pointer-events-none" />
-          <Input className={`pl-11 rounded-full ${fieldCls}`} value={q} onChange={(e) => { setQ(e.target.value); refresh(e.target.value); }} placeholder="Caută după nume sau CUI..." />
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[#8FA6BC] pointer-events-none" />
+          <Input className={`pl-11 rounded-full ${fieldCls}`} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume sau CUI..." />
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <a href="/api/invoicing/clients/export" className="px-4 h-11 inline-flex items-center gap-1.5 text-[14px] font-semibold text-white bg-white/10 rounded-full hover:bg-white/15 transition-colors"><Download className="w-4 h-4" /> Export</a>
-          <Button onClick={() => setEditing({ ...empty })} className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100"><Plus className="w-4 h-4 mr-1" /> Client nou</Button>
+          <Button onClick={() => setEditing({ ...empty })} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100"><Plus className="w-4 h-4 mr-1" /> Client nou</Button>
         </div>
       </div>
 
@@ -92,7 +101,7 @@ export default function ClientsManager() {
           <CardContent className="p-5 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[16px] font-bold text-white">{editing.id ? 'Editează client' : 'Client nou'}</h3>
-              <button type="button" onClick={() => setEditing(null)} className="text-[13px] text-[#9FB8CC] hover:text-white">Închide</button>
+              <button type="button" onClick={() => setEditing(null)} className="text-[13px] text-[#A8BED2] hover:text-white">Închide</button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
@@ -110,7 +119,7 @@ export default function ClientsManager() {
               <div className="md:col-span-2"><Label className={lblCls}>Adresă</Label><Input className={fieldCls} value={editing.address} onChange={(e) => setEditing({ ...editing, address: e.target.value })} placeholder="Strada, număr…" /></div>
               <div><Label className={lblCls}>Telefon</Label><Input className={fieldCls} value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} placeholder="07xx xxx xxx" /></div>
               <div><Label className={lblCls}>Email</Label><Input className={fieldCls} value={editing.email} onChange={(e) => setEditing({ ...editing, email: e.target.value })} placeholder="contact@firma.ro" /></div>
-              <div><Label className={lblCls}>IBAN</Label><Input className={fieldCls} value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value })} placeholder="RO..." /></div>
+              <div><Label className={lblCls}>IBAN</Label><Input autoComplete="off" className={fieldCls} value={editing.iban} onChange={(e) => setEditing({ ...editing, iban: e.target.value })} placeholder="RO..." /></div>
               <div><Label className={lblCls}>Bancă</Label><Input className={fieldCls} value={editing.bank} onChange={(e) => setEditing({ ...editing, bank: e.target.value })} placeholder="ex: BT" /></div>
               <div><Label className={lblCls}>Persoană contact</Label><Input className={fieldCls} value={editing.contactName} onChange={(e) => setEditing({ ...editing, contactName: e.target.value })} placeholder="Nume contact" /></div>
             </div>
@@ -118,7 +127,7 @@ export default function ClientsManager() {
               <input type="checkbox" className="accent-[#E1FB15]" checked={editing.isVatPayer} onChange={(e) => setEditing({ ...editing, isVatPayer: e.target.checked })} /> Plătitor de TVA
             </label>
             <div className="flex gap-2 pt-1">
-              <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100" disabled={busy || !editing.name} onClick={save}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
+              <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" disabled={busy || !editing.name} onClick={save}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
               <Button size="sm" variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setEditing(null)}>Renunță</Button>
             </div>
           </CardContent>
@@ -128,7 +137,11 @@ export default function ClientsManager() {
       <Card className="bg-white/5 border-0 shadow-none hover:shadow-none hover:translate-y-0 rounded-2xl">
         <CardContent className="p-0">
           {clients.length === 0 ? (
-            <p className="text-sm text-[#9FB8CC] p-6 text-center">Niciun client. Adaugă primul client extern.</p>
+            <EmptyState
+              icon={<Users />}
+              title="Niciun client adăugat"
+              description="Adaugă primul client pentru a emite facturi mai rapid."
+            />
           ) : (
             <>
             <ul className="p-2 space-y-2">
@@ -136,7 +149,7 @@ export default function ClientsManager() {
                 <li key={c.id} className="group flex items-center gap-3 p-4 rounded-2xl bg-white/10 hover:bg-white/15 transition-colors">
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] font-bold text-white truncate">{c.name}</p>
-                    <p className="text-xs text-[#9FB8CC] truncate">
+                    <p className="text-xs text-[#A8BED2] truncate">
                       {c.taxId && <span className="font-mono mr-2">{c.taxId}</span>}
                       {[c.city, c.country].filter(Boolean).join(', ')}
                       {c.email && <span className="ml-2">· {c.email}</span>}
@@ -144,8 +157,8 @@ export default function ClientsManager() {
                   </div>
                   {c.isVatPayer && <span className="text-[10px] px-2 py-0.5 bg-[#34A0A4]/15 text-[#34A0A4] rounded-full font-semibold shrink-0">plătitor TVA</span>}
                   <div className="flex items-center gap-1 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditing({ ...empty, ...c, taxId: c.taxId || '', country: c.country || 'Romania' } as any)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-white/15 hover:text-white transition-colors" title="Editează"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => remove(c.id)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge">
+                    <button onClick={() => setEditing({ ...empty, ...c, taxId: c.taxId || '', country: c.country || 'Romania' } as any)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#A8BED2] hover:bg-white/15 hover:text-white transition-colors" title="Editează"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => remove(c.id)} className="w-9 h-9 rounded-full bg-white/5 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge">
                       <X className="w-4 h-4" />
                     </button>
                   </div>
@@ -153,7 +166,7 @@ export default function ClientsManager() {
               ))}
             </ul>
             {clients.length > 3 && (
-              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                 {showAll ? 'Arată mai puțin' : `Vezi toți (${clients.length})`}
               </button>
             )}

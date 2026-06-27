@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Loader2, Plus, Star, Trash2, Upload } from 'lucide-react';
+import { Loader2, Plus, Star, Trash2, Upload, FileText } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 import InvoicePreview from './InvoicePreview';
 
 interface Model { id: string; name: string; layoutKey: string; brandColor: string; logoUrl: string | null; footerText: string | null; isDefault: boolean; showQr: boolean; showShipping: boolean; showEmittedWith: boolean }
 
-const blankDraft = { name: '', layoutKey: 'classic', brandColor: '#0A2238', logoUrl: '', footerText: '', isDefault: false, showQr: false, showShipping: true, showEmittedWith: false };
+const blankDraft = { name: '', layoutKey: 'classic', brandColor: '#07090f', logoUrl: '', footerText: '', isDefault: false, showQr: false, showShipping: true, showEmittedWith: false };
 
 const TEMPLATES: [string, string, string][] = [
   ['classic', 'Clasic', 'bară sus + tabel colorat'],
@@ -25,6 +26,8 @@ export default function ModelEditor() {
   const [editing, setEditing] = useState<Model | null>(null);
   const [draft, setDraft] = useState(blankDraft);
   const fileRef = useRef<HTMLInputElement>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const refresh = async () => {
     const r = await fetch('/api/invoicing/models');
@@ -33,7 +36,14 @@ export default function ModelEditor() {
   };
   useEffect(() => { refresh(); }, []);
 
-  const startNew = () => { setEditing(null); setDraft(blankDraft); setError(''); };
+  const startNew = () => {
+    setEditing(null); setDraft(blankDraft); setError('');
+    // Make it obvious the editor is ready: scroll to it and focus the name.
+    requestAnimationFrame(() => {
+      editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      nameRef.current?.focus();
+    });
+  };
   const startEdit = (m: Model) => { setEditing(m); setDraft({ ...blankDraft, ...m, logoUrl: m.logoUrl || '', footerText: m.footerText || '' }); setError(''); };
 
   const onLogoFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +62,11 @@ export default function ModelEditor() {
   };
 
   const save = async () => {
+    if (!draft.name.trim()) {
+      setError('Dă-i un nume designului ca să îl poți salva.');
+      nameRef.current?.focus();
+      return;
+    }
     setError(''); setBusy(true);
     try {
       const payload = { ...draft, logoUrl: draft.logoUrl || null, footerText: draft.footerText || null };
@@ -85,12 +100,16 @@ export default function ModelEditor() {
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <h3 className="text-[15px] font-bold text-white">Designurile mele</h3>
-          <button onClick={startNew} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13px] font-bold hover:bg-[#D2EA0E] transition-colors">
+          <button onClick={startNew} className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[13px] font-bold hover:bg-[#D2EA0E] transition-colors">
             <Plus className="w-4 h-4" /> Design nou
           </button>
         </div>
         {models.length === 0 ? (
-          <p className="text-[13px] text-[#9FB8CC]">Niciun design salvat încă. Creează unul — îl poți refolosi pe orice factură.</p>
+          <EmptyState
+            icon={<FileText />}
+            title="Niciun design salvat"
+            description="Creează un model reutilizabil pentru facturile tale."
+          />
         ) : (
           <div className="flex gap-2.5 overflow-x-auto pb-1">
             {models.map((m) => (
@@ -100,11 +119,11 @@ export default function ModelEditor() {
                   <span className="text-[13px] font-semibold text-white flex-1 truncate">{m.name}</span>
                 </div>
                 <div className="flex items-center justify-between mt-1.5">
-                  <span className="text-[10px] uppercase tracking-wide text-[#7C9AB4]">{m.layoutKey}</span>
+                  <span className="text-[10px] uppercase tracking-wide text-[#8FA6BC]">{m.layoutKey}</span>
                   {m.isDefault ? (
                     <span className="inline-flex items-center gap-1 text-[10px] text-[#E1FB15] font-semibold"><Star className="w-3 h-3 fill-[#E1FB15]" /> implicit</span>
                   ) : (
-                    <span onClick={(e) => { e.stopPropagation(); setDefault(m.id); }} className="text-[10px] text-[#9FB8CC] hover:text-white underline cursor-pointer">fă implicit</span>
+                    <span onClick={(e) => { e.stopPropagation(); setDefault(m.id); }} className="text-[10px] text-[#A8BED2] hover:text-white underline cursor-pointer">fă implicit</span>
                   )}
                 </div>
               </button>
@@ -116,25 +135,25 @@ export default function ModelEditor() {
       {/* Editor + live preview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Form */}
-        <div className="rounded-2xl bg-white/5 p-5 space-y-3.5">
+        <div ref={editorRef} className="rounded-2xl bg-white/5 p-5 space-y-3.5 scroll-mt-24">
           <div className="flex items-center justify-between">
             <h3 className="text-[15px] font-bold text-white">{editing ? 'Editează design' : 'Design nou'}</h3>
-            {editing && <button onClick={startNew} className="text-[12px] text-[#9FB8CC] hover:text-white">Renunță</button>}
+            {editing && <button onClick={startNew} className="text-[12px] text-[#A8BED2] hover:text-white">Renunță</button>}
           </div>
           {error && <p className="text-[13px] text-[#DC4B41]">{error}</p>}
 
           <div>
-            <Label className="mb-1.5 block text-[13px] text-[#9FB8CC]">Nume design</Label>
-            <Input value={draft.name} onChange={(e) => field('name', e.target.value)} placeholder="ex: Brand albastru" className="bg-white/5 text-white border-0 ring-1 ring-white/15 focus:ring-2 focus:ring-[#E1FB15]/50" />
+            <Label className="mb-1.5 block text-[13px] text-[#A8BED2]">Nume design</Label>
+            <Input ref={nameRef} value={draft.name} onChange={(e) => field('name', e.target.value)} placeholder="ex: Brand albastru" className="bg-white/5 text-white border-0 ring-1 ring-white/15 focus:ring-2 focus:ring-[#E1FB15]/50" />
           </div>
 
           <div>
-            <Label className="mb-1.5 block text-[13px] text-[#9FB8CC]">Șablon</Label>
+            <Label className="mb-1.5 block text-[13px] text-[#A8BED2]">Șablon</Label>
             <div className="grid grid-cols-3 gap-2">
               {TEMPLATES.map(([l, name, desc]) => (
                 <button key={l} type="button" onClick={() => field('layoutKey', l)} className={`text-left px-3 py-2.5 rounded-xl text-xs border transition-colors ${draft.layoutKey === l ? 'border-[#E1FB15] bg-[#E1FB15]/[0.08] text-white' : 'border-white/10 bg-white/5 text-[#C8DAE8] hover:border-white/25'}`}>
                   <span className="block font-semibold">{name}</span>
-                  <span className="block text-[10px] text-[#7C9AB4] mt-0.5">{desc}</span>
+                  <span className="block text-[10px] text-[#8FA6BC] mt-0.5">{desc}</span>
                 </button>
               ))}
             </div>
@@ -142,14 +161,14 @@ export default function ModelEditor() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="mb-1.5 block text-[13px] text-[#9FB8CC]">Culoare brand</Label>
+              <Label className="mb-1.5 block text-[13px] text-[#A8BED2]">Culoare brand</Label>
               <div className="flex gap-2">
                 <input type="color" value={draft.brandColor} onChange={(e) => field('brandColor', e.target.value)} className="w-10 h-10 rounded-lg bg-transparent border border-white/15 cursor-pointer" />
                 <Input value={draft.brandColor} onChange={(e) => field('brandColor', e.target.value)} className="flex-1 bg-white/5 text-white border-0 ring-1 ring-white/15" />
               </div>
             </div>
             <div>
-              <Label className="mb-1.5 block text-[13px] text-[#9FB8CC]">Logo</Label>
+              <Label className="mb-1.5 block text-[13px] text-[#A8BED2]">Logo</Label>
               <div className="flex items-center gap-2">
                 {draft.logoUrl && <img src={draft.logoUrl} alt="" className="w-10 h-10 object-contain rounded-lg bg-white ring-1 ring-white/15" />}
                 <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/10 text-white text-[12px] font-semibold hover:bg-white/15 disabled:opacity-50">
@@ -163,12 +182,12 @@ export default function ModelEditor() {
           </div>
 
           <div>
-            <Label className="mb-1.5 block text-[13px] text-[#9FB8CC]">Footer (text mic la baza facturii)</Label>
-            <textarea rows={2} value={draft.footerText} onChange={(e) => field('footerText', e.target.value)} placeholder="ex: Plata se face în contul RO… deschis la …" className="w-full px-3 py-2 rounded-xl bg-white/5 text-white text-sm border-0 ring-1 ring-white/15 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/50 placeholder:text-[#7C9AB4]" />
+            <Label className="mb-1.5 block text-[13px] text-[#A8BED2]">Footer (text mic la baza facturii)</Label>
+            <textarea rows={2} value={draft.footerText} onChange={(e) => field('footerText', e.target.value)} placeholder="ex: Plata se face în contul RO… deschis la …" className="w-full px-3 py-2 rounded-xl bg-white/5 text-white text-sm border-0 ring-1 ring-white/15 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/50 placeholder:text-[#8FA6BC]" />
           </div>
 
           <div className="border-t border-white/10 pt-3 space-y-2">
-            <p className="text-[10px] uppercase tracking-wider text-[#7C9AB4]">Opțiuni afișare</p>
+            <p className="text-[10px] uppercase tracking-wider text-[#8FA6BC]">Opțiuni afișare</p>
             {([['showShipping', 'Afișează date privind expediția'], ['showQr', 'Afișează cod QR pe factură'], ['showEmittedWith', 'Afișează „Emis cu facturamea”']] as const).map(([k, lbl]) => (
               <label key={k} className="flex items-center gap-2.5 text-[13px] text-[#C8DAE8] cursor-pointer">
                 <input type="checkbox" checked={draft[k] as boolean} onChange={(e) => field(k, e.target.checked)} className="w-4 h-4 accent-[#1A759F]" />
@@ -182,9 +201,9 @@ export default function ModelEditor() {
           </div>
 
           <div className="flex gap-2 pt-1">
-            <Button disabled={busy || !draft.name} onClick={save} className="rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E]">
+            <Button disabled={busy} onClick={save} className="rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] disabled:opacity-60">
               {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
-              {editing ? 'Salvează design' : 'Salvează design'}
+              Salvează design
             </Button>
             {editing && (
               <Button variant="outline" onClick={() => remove(editing.id)} className="rounded-full border-0 bg-white/10 text-white hover:bg-[#DC4B41]/20 hover:text-[#DC4B41]">
@@ -196,9 +215,9 @@ export default function ModelEditor() {
 
         {/* Live preview */}
         <div className="lg:sticky lg:top-4 self-start">
-          <p className="text-[12px] uppercase tracking-wider text-[#7C9AB4] mb-2">Previzualizare live</p>
+          <p className="text-[12px] uppercase tracking-wider text-[#8FA6BC] mb-2">Previzualizare live</p>
           <InvoicePreview draft={draft} />
-          <p className="text-[11px] text-[#7C9AB4] mt-2">Se actualizează pe măsură ce schimbi designul. Date demonstrative.</p>
+          <p className="text-[11px] text-[#8FA6BC] mt-2">Se actualizează pe măsură ce schimbi designul. Date demonstrative.</p>
         </div>
       </div>
     </div>

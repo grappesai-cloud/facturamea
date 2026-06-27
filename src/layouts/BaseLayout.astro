@@ -3,6 +3,7 @@
 // schema integrity (sha2-512): 0a9d0d01f4122a31fb9cf5458a42ad68791299c13b2270b6aded73631ce3aa77728a9fa2acc37590447ed8d7bbe80f16086a867a505da6d74936f3863a3f3513
 import '../styles/global.css';
 import CookieBanner from '../components/CookieBanner.astro';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title: string;
@@ -15,6 +16,9 @@ interface Props {
   author?: string;
   structuredData?: Record<string, unknown> | Record<string, unknown>[];
   themeColor?: string;
+  /** Enable SPA-style View Transitions (used by the app shell for a persistent
+   *  dock/navbar and skeleton-loaded page swaps). Off for marketing pages. */
+  clientRouter?: boolean;
 }
 
 const {
@@ -28,6 +32,7 @@ const {
   author,
   structuredData,
   themeColor = '#0a1929',
+  clientRouter = false,
 } = Astro.props;
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site ?? 'https://facturamea.com').toString();
 const fullTitle = `${title} | facturamea`;
@@ -38,7 +43,15 @@ const locale = Astro.locals?.locale ?? 'ro';
 <html lang={locale}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    {/* Standalone / native (home-screen, Capacitor): run fullscreen with a
+        TRANSPARENT status bar — the web view goes edge-to-edge under the notch
+        instead of leaving an opaque black bar. Safe-area padding (in AppLayout)
+        keeps the chrome clear of the notch + home indicator. */}
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    {clientRouter && <ClientRouter fallback="swap" />}
     <script is:inline>
       // Native app (Capacitor) shell: login-only experience. No landing page, no
       // account creation. The native bridge injects window.Capacitor at document
@@ -157,34 +170,39 @@ const locale = Astro.locals?.locale ?? 'ro';
       [data-native-only] { display: none; }
       .capacitor-native [data-native-only] { display: block !important; }
     </style>
-    {/* ───────────────────────────────────────────────────────────────────────
-        Attribution (web). The FRONTEND UI redesign only — layout, components,
-        styles and UI flows — was authored by Robert Gyorgy (Gyorgy Albert-Robert
-        PFA) under a partnership; see LICENSE.md. The backend, infrastructure and
-        the product/idea itself are NOT his (LICENSE.md states this explicitly).
-        These meta tags are removed in the native app build.
-       ─────────────────────────────────────────────────────────────────────── */}
-    <meta name="author" content="Frontend UI: Robert Gyorgy — Gyorgy Albert-Robert PFA (see LICENSE.md)" />
-    <meta name="copyright" content="© 2026 Robert Gyorgy / Gyorgy Albert-Robert PFA — frontend UI redesign only. See LICENSE.md." />
+
     <script is:inline>
-      // Apply font-scale + dark mode before paint to avoid FOUC.
+      // Apply font-scale + dark mode before paint to avoid FOUC. Wrapped so it
+      // ALSO re-runs on `astro:after-swap` — View Transitions swap the <html>
+      // attributes from the new document, which would otherwise wipe the
+      // client-applied theme/font classes and flash the wrong theme.
       (function(){
-        try {
-          var fs = localStorage.getItem('th-font-scale');
-          if (fs === '75' || fs === '125') document.documentElement.setAttribute('data-fs', fs);
-          var ff = localStorage.getItem('th-font');
-          if (ff === 'system' || ff === 'serif' || ff === 'mono') document.documentElement.setAttribute('data-font', ff);
-          var onApp = location.pathname.indexOf('/app') === 0;
-          var dm = localStorage.getItem('th-dark') === '1';
-          // Marketing pages keep their own dark-mode toggle.
-          if (dm && !onApp) document.documentElement.classList.add('th-dark');
-          // App theme: light (soft light) ↔ dark (near-black chrome + th-dark content).
-          if (onApp) {
-            var al = localStorage.getItem('app-theme-light');
-            if (al === '1') document.documentElement.classList.add('th-light');
-            else document.documentElement.classList.add('th-app-dark', 'th-dark');
-          }
-        } catch(e){}
+        function applyTheme(){
+          try {
+            var el = document.documentElement;
+            var fs = localStorage.getItem('th-font-scale');
+            if (fs === '75' || fs === '125') el.setAttribute('data-fs', fs); else el.removeAttribute('data-fs');
+            var ff = localStorage.getItem('th-font');
+            if (ff === 'system' || ff === 'serif' || ff === 'mono') el.setAttribute('data-font', ff); else el.removeAttribute('data-font');
+            var onApp = location.pathname.indexOf('/app') === 0;
+            var dm = localStorage.getItem('th-dark') === '1';
+            el.classList.remove('th-dark', 'th-light', 'th-app-dark');
+            // Marketing pages keep their own dark-mode toggle.
+            if (dm && !onApp) el.classList.add('th-dark');
+            // App theme: light (soft light) ↔ dark (near-black chrome + th-dark content).
+            if (onApp) {
+              var al = localStorage.getItem('app-theme-light');
+              if (al === '1') el.classList.add('th-light');
+              else el.classList.add('th-app-dark', 'th-dark');
+            }
+            // Status-bar / notch color follows the theme (was a fixed dark, so the
+            // notch stayed black in light mode). Light app → light bar, dark → dark.
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta && onApp) meta.setAttribute('content', el.classList.contains('th-light') ? '#EEF2F6' : '#07090f');
+          } catch(e){}
+        }
+        applyTheme();
+        document.addEventListener('astro:after-swap', applyTheme);
       })();
     </script>
     <title>{fullTitle}</title>
@@ -523,18 +541,7 @@ const locale = Astro.locals?.locale ?? 'ro';
     <slot />
     <CookieBanner />
     <script is:inline>
-      // Frontend/UI attribution (web only — omitted in the native app build).
-      // Scope: the UI redesign only; backend/infrastructure are not covered (LICENSE.md).
-      try {
-        if (!document.documentElement.classList.contains('capacitor-native')) {
-          console.info(
-            '%c Frontend / UI redesign by Robert Gyorgy — Gyorgy Albert-Robert PFA (see LICENSE.md) ',
-            'background:#0A2238;color:#E1FB15;padding:6px 10px;border-radius:6px;font-weight:700;font-size:12px;'
-          );
-        }
-      } catch (e) {}
-    </script>
-    <script is:inline>
+
       if ('serviceWorker' in navigator && location.protocol === 'https:') {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('/sw.js').catch(() => {});

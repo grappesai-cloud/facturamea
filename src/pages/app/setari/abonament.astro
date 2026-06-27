@@ -30,7 +30,7 @@ const features = [
   <div class="max-w-2xl">
     <div class="mb-2">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Licență & plată</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2">O singură plată. Acces pe viață, fără abonament lunar.</p>
+      <p class="text-[13px] text-[#A8BED2] mt-2">O singură plată. Acces pe viață, fără abonament lunar.</p>
     </div>
 
     {status === 'success' && (
@@ -52,14 +52,14 @@ const features = [
           </span>
           <h2 class="text-[18px] font-bold text-white">Licență pe viață activă</h2>
         </div>
-        <p class="text-[13px] text-[#9FB8CC] mt-2">Ai acces complet la toate funcțiile facturamea. Mulțumim!</p>
+        <p class="text-[13px] text-[#A8BED2] mt-2">Ai acces complet la toate funcțiile facturamea. Mulțumim!</p>
       </div>
     ) : (
       <div class="mt-6 grid gap-4">
         <div class="rounded-2xl p-5 bg-white/5 flex items-center justify-between gap-3">
           <div>
             <p class="text-[13px] font-semibold text-white">Cont neactivat</p>
-            <p data-web-only class="text-[12px] text-[#7C9AB4] mt-0.5">
+            <p data-web-only class="text-[12px] text-[#8FA6BC] mt-0.5">
               Activează licența pe viață printr-o singură plată pentru a folosi aplicația.
             </p>
             <p data-native-only class="text-[12px] text-[#7C9AB4] mt-0.5">
@@ -72,26 +72,26 @@ const features = [
         </div>
 
         <div data-web-only class="rounded-3xl p-5 sm:p-6 bg-white/5 text-white relative overflow-hidden">
-          <div class="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#0A2238] text-[11px] font-bold uppercase tracking-wider">Lifetime</div>
-          <p class="text-[13px] font-semibold text-[#9FB8CC]">facturamea</p>
+          <div class="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold uppercase tracking-wider">Lifetime</div>
+          <p class="text-[13px] font-semibold text-[#A8BED2]">facturamea</p>
           <div class="flex items-end gap-2 mt-2">
             <span class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white leading-none">700</span>
             <span class="text-[16px] font-semibold mb-1">RON</span>
-            <span class="text-[13px] text-[#9FB8CC] mb-1.5">· o singură dată</span>
+            <span class="text-[13px] text-[#A8BED2] mb-1.5">· o singură dată</span>
           </div>
           <ul class="mt-5 grid sm:grid-cols-2 gap-y-2 gap-x-4">
             {features.map((f) => (
-              <li class="flex items-start gap-2 text-[13px] text-[#9FB8CC]">
+              <li class="flex items-start gap-2 text-[13px] text-[#A8BED2]">
                 <svg class="w-4 h-4 mt-0.5 shrink-0 text-[#E1FB15]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                 {f}
               </li>
             ))}
           </ul>
-          <button id="buy-lifetime" class="mt-6 w-full py-3 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-60 transition-colors">
+          <button id="buy-lifetime" class="mt-6 w-full py-3 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-60 transition-colors">
             Activează licența pe viață — 700 RON
           </button>
           <p id="buy-error" class="hidden mt-2 text-[12px] text-[#DC4B41]"></p>
-          <p class="mt-3 text-[11px] text-[#7C9AB4] text-center">Plată securizată prin Stripe. Card bancar.</p>
+          <p class="mt-3 text-[11px] text-[#8FA6BC] text-center">Plată securizată prin Stripe. Card bancar.</p>
         </div>
       </div>
     )}

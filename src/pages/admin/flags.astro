@@ -6,7 +6,7 @@ import { featureFlags } from '../../db/schema';
 let flags: typeof featureFlags.$inferSelect[] = [];
 try { flags = await db.select().from(featureFlags); } catch {}
 
-const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#0A2238] focus:outline-none transition-colors';
+const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#07090f] focus:outline-none transition-colors';
 ---
 
 <AdminLayout title="Feature flags" activeTab="flags">
@@ -28,7 +28,7 @@ const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl
         <label class="block text-[11px] text-[#46627A] mb-1">Rollout %</label>
         <input type="number" name="rolloutPercent" min="0" max="100" value="100" class={inputCls} />
       </div>
-      <button type="submit" class="w-full px-5 py-2.5 bg-[#0A2238] hover:bg-[#1A1A1A] text-white font-semibold rounded-xl text-[13px] transition-colors">Adaugă</button>
+      <button type="submit" class="w-full px-5 py-2.5 bg-[#07090f] hover:bg-[#1A1A1A] text-white font-semibold rounded-xl text-[13px] transition-colors">Adaugă</button>
     </form>
 
     <div class="lg:col-span-2 bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
@@ -47,7 +47,7 @@ const inputCls = 'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl
                 {f.enabled ? 'On' : 'Off'}
               </span>
               <span class="text-[12px] tabular-nums text-[#46627A]">{f.rolloutPercent}%</span>
-              <button data-toggle={f.key} data-current={f.enabled} class="text-[12px] text-[#0A2238] hover:text-[#1A759F] font-medium transition-colors">{f.enabled ? 'Dezactivează' : 'Activează'}</button>
+              <button data-toggle={f.key} data-current={f.enabled} class="text-[12px] text-[#07090f] hover:text-[#1A759F] font-medium transition-colors">{f.enabled ? 'Dezactivează' : 'Activează'}</button>
               <button data-delete={f.key} class="text-[12px] text-[#B91C1C] hover:underline">Şterge</button>
             </div>
           </div>

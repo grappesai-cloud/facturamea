@@ -34,7 +34,7 @@ const jsonLd = {
   structuredData={jsonLd}>
   <article class="max-w-none">
     <p class="text-[13px] font-semibold uppercase tracking-wide text-[#34A0A4] mb-2">Blog facturamea</p>
-    <h1 class="text-3xl sm:text-4xl font-extrabold text-[#0A2238] tracking-[-0.03em] mb-3">Ghiduri de facturare, e-Factura și fiscalitate</h1>
+    <h1 class="text-3xl sm:text-4xl font-extrabold text-[#07090f] tracking-[-0.03em] mb-3">Ghiduri de facturare, e-Factura și fiscalitate</h1>
     <p class="text-[#46627A] leading-relaxed mb-8 max-w-2xl">Explicații clare despre e-Factura ANAF, TVA, SAF-T, e-Transport, gestiune și tot ce ține de facturarea unei firme din România. Articol nou în fiecare zi.</p>
 
     {posts.length === 0 ? (
@@ -43,12 +43,12 @@ const jsonLd = {
       <div class="grid sm:grid-cols-2 gap-5">
         {posts.map((p) => (
           <a href={`/blog/${p.slug}`} class="block p-6 rounded-2xl bg-white ring-1 ring-black/[0.06] hover:ring-[#34A0A4]/40 hover:shadow-[0_12px_40px_-18px_rgba(10,34,56,0.25)] transition-all">
-            <div class="flex items-center gap-2 text-[12px] text-[#7C9AB4] mb-2">
-              {p.category && <span class="px-2 py-0.5 rounded-full bg-[#E1FB15]/30 text-[#0A2238] font-semibold">{p.category}</span>}
+            <div class="flex items-center gap-2 text-[12px] text-[#8FA6BC] mb-2">
+              {p.category && <span class="px-2 py-0.5 rounded-full bg-[#E1FB15]/30 text-[#07090f] font-semibold">{p.category}</span>}
               <span>{fmtDate(p.publishedAt)}</span>
               <span>· {p.readMinutes} min</span>
             </div>
-            <h2 class="text-lg font-bold text-[#0A2238] tracking-[-0.02em] mb-1.5 leading-snug">{p.title}</h2>
+            <h2 class="text-lg font-bold text-[#07090f] tracking-[-0.02em] mb-1.5 leading-snug">{p.title}</h2>
             <p class="text-[14px] text-[#46627A] leading-relaxed line-clamp-3">{p.description}</p>
           </a>
         ))}

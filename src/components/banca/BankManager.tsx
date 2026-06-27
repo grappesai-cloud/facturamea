@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { Select } from '../ui/Select';
 
 // ──────────────────────────────────────────────────────────────────────────
 // Types
@@ -80,8 +81,6 @@ export default function BankManager() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loadingSugg, setLoadingSugg] = useState(false);
   const [busyMatch, setBusyMatch] = useState('');
-  const [autoRec, setAutoRec] = useState(false);
-  const [autoRecMsg, setAutoRecMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   const [error, setError] = useState('');
 
@@ -210,28 +209,6 @@ export default function BankManager() {
     } catch { setError('Eroare de rețea.'); }
   };
 
-  // Bulk auto-reconcile: confirms only high-confidence, unambiguous matches;
-  // leaves the rest for manual review and reports transactions with no document.
-  const autoReconcile = async () => {
-    setAutoRec(true); setAutoRecMsg(null); setError('');
-    try {
-      const r = await fetch('/api/banca/reconcile/auto', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(activeId ? { accountId: activeId } : {}),
-      });
-      const d = await r.json();
-      if (!r.ok) { setAutoRecMsg({ kind: 'err', text: d.error || 'Auto-reconcilierea a eșuat.' }); return; }
-      const parts = [`${d.matched} reconciliate automat`];
-      if (d.ambiguous) parts.push(`${d.ambiguous} ambigue (alegi tu)`);
-      if (d.missing) parts.push(`${d.missing} fără document`);
-      if (d.reviewed) parts.push(`${d.reviewed} de verificat`);
-      setAutoRecMsg({ kind: 'ok', text: parts.join(' · ') });
-      await loadAccounts();
-      await loadTransactions(activeId, filter);
-    } catch { setAutoRecMsg({ kind: 'err', text: 'Eroare de rețea.' }); }
-    finally { setAutoRec(false); }
-  };
-
   // ── totals ──
   const totalBalance = accounts.reduce((s, a) => s + (a.balanceCents || 0), 0);
   const totalUnreconciled = accounts.reduce((s, a) => s + (a.unreconciledCount || 0), 0);
@@ -241,37 +218,18 @@ export default function BankManager() {
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-white/5 rounded-2xl p-4 sm:p-5">
-          <p className="text-[14px] text-[#9FB8CC] font-medium">Conturi bancare</p>
+          <p className="text-[14px] text-[#A8BED2] font-medium">Conturi bancare</p>
           <p className="text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 text-white tabular-nums">{accounts.length}</p>
         </div>
         <div className="bg-white/5 rounded-2xl p-4 sm:p-5">
-          <p className="text-[14px] text-[#9FB8CC] font-medium">Sold total</p>
+          <p className="text-[14px] text-[#A8BED2] font-medium">Sold total</p>
           <p className="text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 text-white tabular-nums">{ron(totalBalance)}</p>
         </div>
         <div className="bg-white/5 rounded-2xl p-4 sm:p-5 col-span-2 lg:col-span-1">
-          <p className="text-[14px] text-[#9FB8CC] font-medium">Tranzacții nereconciliate</p>
+          <p className="text-[14px] text-[#A8BED2] font-medium">Tranzacții nereconciliate</p>
           <p className={`text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 tabular-nums ${totalUnreconciled > 0 ? 'text-[#E8A33C]' : 'text-[#2E9E6A]'}`}>{totalUnreconciled}</p>
         </div>
       </div>
-
-      {/* Bulk auto-reconcile */}
-      {totalUnreconciled > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-          <button
-            onClick={autoReconcile}
-            disabled={autoRec}
-            className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
-          >
-            {autoRec ? 'Se reconciliază...' : `Reconciliază automat${activeAccount ? ' (acest cont)' : ''}`}
-          </button>
-          <p className="text-[13px] text-[#7C9AB4]">Confirmă singur doar potrivirile sigure (sumă + partener/număr). Restul rămân pentru tine.</p>
-        </div>
-      )}
-      {autoRecMsg && (
-        <div className={`px-4 py-3 rounded-xl text-[14px] ${autoRecMsg.kind === 'ok' ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-[#DC4B41]/15 text-[#DC4B41]'}`}>
-          {autoRecMsg.text}
-        </div>
-      )}
 
       {error && (
         <div className="flex items-center gap-2 px-4 py-3 bg-[#DC4B41]/15 border-0 rounded-xl text-[15px] text-[#DC4B41]">
@@ -284,7 +242,7 @@ export default function BankManager() {
       <div className="bg-white/5 rounded-2xl overflow-hidden">
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-white/10">
           <h2 className="text-[17px] font-bold text-white">Conturile tale</h2>
-          <button onClick={() => setShowNew((v) => !v)} className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E]">
+          <button onClick={() => setShowNew((v) => !v)} className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E]">
             {showNew ? 'Renunță' : '+ Cont nou'}
           </button>
         </div>
@@ -293,31 +251,31 @@ export default function BankManager() {
           <div className="px-5 sm:px-6 py-5 border-b border-white/10 bg-white/[0.03]">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div>
-                <label className="block text-[13px] font-semibold text-[#9FB8CC] mb-1.5">Nume cont *</label>
+                <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">Nume cont *</label>
                 <input value={naName} onChange={(e) => setNaName(e.target.value)} placeholder="BCR cont curent"
-                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
               </div>
               <div>
-                <label className="block text-[13px] font-semibold text-[#9FB8CC] mb-1.5">IBAN</label>
+                <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">IBAN</label>
                 <input value={naIban} onChange={(e) => setNaIban(e.target.value)} placeholder="RO49AAAA1B31..."
-                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
               </div>
               <div>
-                <label className="block text-[13px] font-semibold text-[#9FB8CC] mb-1.5">Bancă</label>
+                <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">Bancă</label>
                 <input value={naBank} onChange={(e) => setNaBank(e.target.value)} placeholder="BCR"
-                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
               </div>
               <div>
-                <label className="block text-[13px] font-semibold text-[#9FB8CC] mb-1.5">Monedă</label>
-                <select value={naCurrency} onChange={(e) => setNaCurrency(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40">
+                <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">Monedă</label>
+                <Select value={naCurrency} onChange={(e) => setNaCurrency(e.target.value)}
+                  className="w-full">
                   <option value="RON">RON</option><option value="EUR">EUR</option><option value="USD">USD</option>
-                </select>
+                </Select>
               </div>
             </div>
             <div className="mt-4">
               <button onClick={createAccount} disabled={savingAccount}
-                className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[15px] font-bold hover:bg-[#D2EA0E] disabled:opacity-60">
+                className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#07090f] text-[15px] font-bold hover:bg-[#D2EA0E] disabled:opacity-60">
                 {savingAccount ? 'Se salvează...' : 'Salvează contul'}
               </button>
             </div>
@@ -325,7 +283,7 @@ export default function BankManager() {
         )}
 
         {accounts.length === 0 ? (
-          <div className="px-6 py-12 text-center text-[15px] text-[#9FB8CC]">
+          <div className="px-6 py-12 text-center text-[15px] text-[#A8BED2]">
             Niciun cont bancar încă. Adaugă primul cont ca să poți importa extrasul.
           </div>
         ) : (
@@ -337,7 +295,7 @@ export default function BankManager() {
                 <span className={`shrink-0 w-3 h-3 rounded-full ${activeId === a.id ? 'bg-[#E1FB15]' : 'bg-white/20'}`} />
                 <span className="flex-1 min-w-0">
                   <span className="block text-[16px] font-semibold truncate text-white">{a.name}</span>
-                  <span className="block text-[13px] text-[#9FB8CC] truncate">
+                  <span className="block text-[13px] text-[#A8BED2] truncate">
                     {[a.bank, a.iban].filter(Boolean).join(' · ') || 'Fără IBAN'}
                   </span>
                 </span>
@@ -348,7 +306,7 @@ export default function BankManager() {
                 )}
                 <span className="shrink-0 text-[16px] font-bold tabular-nums text-white">{ron(a.balanceCents || 0, a.currency)}</span>
                 <button onClick={(e) => { e.stopPropagation(); deleteAccount(a); }}
-                  className="shrink-0 w-9 h-9 rounded-full border-0 bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Șterge contul">
+                  className="shrink-0 w-9 h-9 rounded-full border-0 bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Șterge contul">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -363,11 +321,11 @@ export default function BankManager() {
           <div className="flex flex-wrap items-center gap-3 px-5 sm:px-6 py-4 border-b border-white/10">
             <div className="flex-1 min-w-[180px]">
               <h2 className="text-[17px] font-bold text-white">{activeAccount.name}</h2>
-              <p className="text-[13px] text-[#9FB8CC]">Extras de cont și reconciliere</p>
+              <p className="text-[13px] text-[#A8BED2]">Extras de cont și reconciliere</p>
             </div>
             <input ref={fileRef} type="file" accept=".csv,.txt,.sta,.mt940,.940,text/csv,text/plain" className="hidden" onChange={onFileChosen} />
             <button onClick={onPickFile} disabled={importing}
-              className="px-4 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-60">
+              className="px-4 h-11 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-60">
               {importing ? 'Se importă...' : 'Importă extras (CSV / MT940)'}
             </button>
           </div>
@@ -382,16 +340,16 @@ export default function BankManager() {
           <div className="flex items-center gap-2 px-5 sm:px-6 py-3 border-b border-white/10">
             {([['unreconciled', 'Nereconciliate'], ['reconciled', 'Reconciliate'], ['all', 'Toate']] as const).map(([key, label]) => (
               <button key={key} onClick={() => setFilter(key)}
-                className={`px-3.5 h-10 rounded-full text-[14px] font-semibold transition-colors ${filter === key ? 'bg-[#E1FB15] text-[#0A2238] font-bold' : 'bg-white/10 border-0 text-[#9FB8CC] hover:bg-white/15'}`}>
+                className={`px-3.5 h-10 rounded-full text-[14px] font-semibold transition-colors ${filter === key ? 'bg-[#E1FB15] text-[#07090f] font-bold' : 'bg-white/10 border-0 text-[#A8BED2] hover:bg-white/15'}`}>
                 {label}
               </button>
             ))}
           </div>
 
           {loadingTx ? (
-            <div className="px-6 py-12 text-center text-[15px] text-[#9FB8CC]">Se încarcă tranzacțiile...</div>
+            <div className="px-6 py-12 text-center text-[15px] text-[#A8BED2]">Se încarcă tranzacțiile...</div>
           ) : transactions.length === 0 ? (
-            <div className="px-6 py-12 text-center text-[15px] text-[#9FB8CC]">
+            <div className="px-6 py-12 text-center text-[15px] text-[#A8BED2]">
               {filter === 'reconciled' ? 'Nicio tranzacție reconciliată încă.' : 'Nicio tranzacție. Importă un extras de cont ca să începi.'}
             </div>
           ) : (
@@ -402,10 +360,10 @@ export default function BankManager() {
                 return (
                   <div key={tx.id}>
                     <div className="flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4">
-                      <span className="shrink-0 w-[88px] text-[14px] text-[#9FB8CC] tabular-nums">{dateLabel(tx.bookingDate)}</span>
+                      <span className="shrink-0 w-[88px] text-[14px] text-[#A8BED2] tabular-nums">{dateLabel(tx.bookingDate)}</span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-[15px] font-semibold truncate text-white">{tx.counterparty || tx.description || '(fără detalii)'}</span>
-                        <span className="block text-[13px] text-[#9FB8CC] truncate">
+                        <span className="block text-[13px] text-[#A8BED2] truncate">
                           {[tx.reference, tx.counterparty ? tx.description : null].filter(Boolean).join(' · ') || tx.counterpartyIban || ''}
                         </span>
                       </span>
@@ -424,7 +382,7 @@ export default function BankManager() {
                         </button>
                       ) : (
                         <button onClick={() => toggleSuggestions(tx)}
-                          className="shrink-0 px-3.5 h-10 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] text-[14px]">
+                          className="shrink-0 px-3.5 h-10 rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] text-[14px]">
                           {open ? 'Închide' : 'Reconciliază'}
                         </button>
                       )}
@@ -433,14 +391,14 @@ export default function BankManager() {
                     {open && !tx.reconciled && (
                       <div className="px-5 sm:px-6 pb-5 bg-white/[0.03]">
                         {loadingSugg ? (
-                          <p className="text-[14px] text-[#9FB8CC] py-3">Caut potriviri...</p>
+                          <p className="text-[14px] text-[#A8BED2] py-3">Caut potriviri...</p>
                         ) : suggestions.length === 0 ? (
-                          <p className="text-[14px] text-[#9FB8CC] py-3">
+                          <p className="text-[14px] text-[#A8BED2] py-3">
                             Nicio potrivire automată. {incoming ? 'Verifică facturile neîncasate.' : 'Verifică cheltuielile neplătite.'}
                           </p>
                         ) : (
                           <div className="space-y-2 pt-3">
-                            <p className="text-[13px] font-semibold text-[#7C9AB4] uppercase tracking-wider">Potriviri sugerate</p>
+                            <p className="text-[13px] font-semibold text-[#8FA6BC] uppercase tracking-wider">Potriviri sugerate</p>
                             {suggestions.map((s) => (
                               <div key={`${s.type}-${s.id}`} className="flex items-center gap-3 bg-white/5 border-0 rounded-xl px-4 py-3">
                                 <span className={`shrink-0 px-2 py-0.5 rounded-full text-[12px] font-semibold ${s.type === 'invoice' ? 'bg-[#34A0A4]/15 text-[#34A0A4]' : 'bg-[#E1FB15]/15 text-[#E1FB15]'}`}>
@@ -448,7 +406,7 @@ export default function BankManager() {
                                 </span>
                                 <span className="flex-1 min-w-0">
                                   <span className="block text-[15px] font-semibold truncate text-white">{s.number} · {s.party}</span>
-                                  <span className="block text-[13px] text-[#9FB8CC]">
+                                  <span className="block text-[13px] text-[#A8BED2]">
                                     De {s.type === 'invoice' ? 'încasat' : 'plătit'}: {s.amountLabel}
                                     {s.reason === 'exact' ? ' · sumă identică' : ' · număr în descriere'}
                                   </span>
@@ -467,7 +425,7 @@ export default function BankManager() {
                 );
               })}
               {transactions.length > 3 && (
-                <button type="button" onClick={() => setShowAllTx((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+                <button type="button" onClick={() => setShowAllTx((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                   {showAllTx ? 'Arată mai puțin' : `Vezi toate (${transactions.length})`}
                 </button>
               )}

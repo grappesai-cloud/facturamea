@@ -37,10 +37,10 @@ const isAuthed = !!Astro.locals.user;
     {status === 'ok' && (
       <>
         <div>
-          <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Email confirmat ✓</h1>
+          <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#07090f] leading-tight">Email confirmat ✓</h1>
           <p class="text-[13px] text-[#46627A] mt-1.5">Adresa ta de email a fost confirmată. Mulțumim!</p>
         </div>
-        <a href={isAuthed ? '/app' : '/auth/login'} class="block w-full text-center py-3 bg-[#0A2238] hover:bg-[#14304b] text-white font-semibold rounded-xl text-[14px] transition-colors">
+        <a href={isAuthed ? '/app' : '/auth/login'} class="block w-full text-center py-3 bg-[#07090f] hover:bg-[#14304b] text-white font-semibold rounded-xl text-[14px] transition-colors">
           {isAuthed ? 'Mergi la dashboard' : 'Autentifică-te'}
         </a>
       </>
@@ -48,17 +48,17 @@ const isAuthed = !!Astro.locals.user;
     {status === 'invalid' && (
       <>
         <div>
-          <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Link invalid sau expirat</h1>
+          <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#07090f] leading-tight">Link invalid sau expirat</h1>
           <p class="text-[13px] text-[#46627A] mt-1.5">Linkul de confirmare nu mai este valid. Contul tău funcționează normal — confirmarea emailului este opțională.</p>
         </div>
-        <a href={isAuthed ? '/app' : '/auth/login'} class="block w-full text-center py-3 bg-white border border-[#E2E8EF] hover:border-[#0A2238] text-[#0A2238] font-semibold rounded-xl text-[14px] transition-colors">
+        <a href={isAuthed ? '/app' : '/auth/login'} class="block w-full text-center py-3 bg-white border border-[#E2E8EF] hover:border-[#07090f] text-[#07090f] font-semibold rounded-xl text-[14px] transition-colors">
           {isAuthed ? 'Mergi la dashboard' : 'Autentifică-te'}
         </a>
       </>
     )}
     {status === 'missing' && (
       <div>
-        <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#0A2238] leading-tight">Token lipsă</h1>
+        <h1 class="text-[26px] font-bold tracking-[-0.02em] text-[#07090f] leading-tight">Token lipsă</h1>
         <p class="text-[13px] text-[#46627A] mt-1.5">Deschide linkul din emailul de confirmare.</p>
       </div>
     )}

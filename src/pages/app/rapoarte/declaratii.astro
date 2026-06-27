@@ -18,31 +18,33 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
   <div class="mb-8 sm:mb-10 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Declarații fiscale</h1>
-      <p class="text-[15px] text-[#9FB8CC] mt-2 max-w-2xl">Generează fișierele pentru depunere la ANAF din facturile emise și cheltuieli. Validează rezultatul în PDF-ul inteligent ANAF înainte de depunere.</p>
+      <p class="text-[15px] text-[#A8BED2] mt-2 max-w-2xl">Generează fișierele pentru depunere la ANAF din facturile emise și cheltuieli. Validează rezultatul în PDF-ul inteligent ANAF înainte de depunere.</p>
     </div>
   </div>
 
   <!-- Period picker -->
   <div class="rounded-2xl p-5 bg-white/5 mb-6">
     <p class="text-[18px] font-bold text-white mb-3">Perioada de raportare</p>
-    <div class="flex items-end gap-3 flex-wrap">
-      <div>
-        <label class="block text-[13px] text-[#9FB8CC] mb-1.5" for="decl-month">Luna</label>
-        <select id="decl-month" class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none min-w-[160px]">
-          {months.map((m) => (
-            <option value={m.v} selected={m.v === currentMonth}>{m.n}</option>
-          ))}
-        </select>
+    <div class="flex flex-col gap-3">
+      <div class="flex gap-3">
+        <div>
+          <label class="block text-[13px] text-[#A8BED2] mb-1.5" for="decl-month">Luna</label>
+          <select id="decl-month" class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none min-w-[160px]">
+            {months.map((m) => (
+              <option value={m.v} selected={m.v === currentMonth}>{m.n}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label class="block text-[13px] text-[#A8BED2] mb-1.5" for="decl-year">An</label>
+          <select id="decl-year" class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none min-w-[120px]">
+            {years.map((y) => (
+              <option value={y} selected={y === currentYear}>{y}</option>
+            ))}
+          </select>
+        </div>
       </div>
-      <div>
-        <label class="block text-[13px] text-[#9FB8CC] mb-1.5" for="decl-year">An</label>
-        <select id="decl-year" class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none min-w-[120px]">
-          {years.map((y) => (
-            <option value={y} selected={y === currentYear}>{y}</option>
-          ))}
-        </select>
-      </div>
-      <p class="text-[12px] text-[#7C9AB4] pb-3">Declarațiile lunare se generează pentru luna și anul selectate.</p>
+      <p class="text-[12px] text-[#8FA6BC]">Declarațiile lunare se generează pentru luna și anul selectate.</p>
     </div>
   </div>
 
@@ -52,11 +54,11 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
     <div class="rounded-2xl p-5 bg-white/5 flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[20px] font-bold tracking-[-0.03em] text-white font-mono">D394</span>
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">XML</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">XML</span>
       </div>
       <h3 class="text-[16px] font-bold text-white">Declarația informativă 394</h3>
-      <p class="text-[13px] text-[#9FB8CC] mt-1.5 flex-1">Livrările și achizițiile pe teritoriul național, grupate pe partener (CUI), cu baza impozabilă și TVA.</p>
-      <button type="button" data-decl="d394" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
+      <p class="text-[13px] text-[#A8BED2] mt-1.5 flex-1">Livrările și achizițiile pe teritoriul național, grupate pe partener (CUI), cu baza impozabilă și TVA.</p>
+      <button type="button" data-decl="d394" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
         <span class="decl-label">Descarcă</span>
       </button>
     </div>
@@ -65,12 +67,12 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
     <div class="rounded-2xl p-5 bg-white/5 flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[20px] font-bold tracking-[-0.03em] text-white font-mono">D300</span>
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">XML / CSV</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">XML / CSV</span>
       </div>
       <h3 class="text-[16px] font-bold text-white">Decont TVA (D300)</h3>
-      <p class="text-[13px] text-[#9FB8CC] mt-1.5 flex-1">TVA colectată din facturi minus TVA deductibilă din cheltuieli, cu soldul de plată sau de recuperat.</p>
+      <p class="text-[13px] text-[#A8BED2] mt-1.5 flex-1">TVA colectată din facturi minus TVA deductibilă din cheltuieli, cu soldul de plată sau de recuperat.</p>
       <div class="mt-4 flex gap-2">
-        <button type="button" data-decl="d300" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
+        <button type="button" data-decl="d300" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
           <span class="decl-label">Descarcă XML</span>
         </button>
         <button type="button" data-decl="d300-csv" class="decl-dl inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors disabled:opacity-50">
@@ -83,10 +85,10 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
     <div class="rounded-2xl p-5 bg-white/5 flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[20px] font-bold tracking-[-0.03em] text-white font-mono">D406</span>
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">SAF-T XML</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">SAF-T XML</span>
       </div>
       <h3 class="text-[16px] font-bold text-white">SAF-T (D406)</h3>
-      <p class="text-[13px] text-[#9FB8CC] mt-1.5 flex-1">Fișierul standard de audit fiscal pentru luna selectată (MasterFiles + facturi emise).</p>
+      <p class="text-[13px] text-[#A8BED2] mt-1.5 flex-1">Fișierul standard de audit fiscal pentru luna selectată (MasterFiles + facturi emise).</p>
       <button type="button" data-decl="d406" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors disabled:opacity-50">
         <span class="decl-label">Descarcă</span>
       </button>
@@ -96,11 +98,11 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
     <div class="rounded-2xl p-5 bg-white/5 flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[20px] font-bold tracking-[-0.03em] text-white font-mono">D390</span>
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">XML</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">XML</span>
       </div>
       <h3 class="text-[16px] font-bold text-white">Declarația 390 (VIES)</h3>
-      <p class="text-[13px] text-[#9FB8CC] mt-1.5 flex-1">Declarația recapitulativă a operațiunilor intracomunitare (livrări și achiziții), grupate pe codul de TVA al partenerului din UE.</p>
-      <button type="button" data-decl="d390" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
+      <p class="text-[13px] text-[#A8BED2] mt-1.5 flex-1">Declarația recapitulativă a operațiunilor intracomunitare (livrări și achiziții), grupate pe codul de TVA al partenerului din UE.</p>
+      <button type="button" data-decl="d390" class="decl-dl mt-4 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
         <span class="decl-label">Descarcă</span>
       </button>
     </div>
@@ -109,19 +111,19 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
     <div class="rounded-2xl p-5 bg-white/5 flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[20px] font-bold tracking-[-0.03em] text-white font-mono">D100</span>
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">XML / CSV</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">XML / CSV</span>
       </div>
       <h3 class="text-[16px] font-bold text-white">Impozit micro (D100)</h3>
-      <p class="text-[13px] text-[#9FB8CC] mt-1.5 flex-1">Impozitul pe veniturile microîntreprinderilor, declarat trimestrial. Se calculează pe cifra de afaceri din trimestrul lunii selectate.</p>
+      <p class="text-[13px] text-[#A8BED2] mt-1.5 flex-1">Impozitul pe veniturile microîntreprinderilor, declarat trimestrial. Se calculează pe cifra de afaceri din trimestrul lunii selectate.</p>
       <div class="mt-3">
-        <label class="block text-[12px] text-[#7C9AB4] mb-1" for="d100-rate">Cota</label>
+        <label class="block text-[12px] text-[#8FA6BC] mb-1" for="d100-rate">Cota</label>
         <select id="d100-rate" class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none w-full [color-scheme:dark]">
           <option value="1">1% (cu salariat)</option>
           <option value="3">3% (fără salariat)</option>
         </select>
       </div>
       <div class="mt-3 flex gap-2">
-        <button type="button" data-decl="d100" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
+        <button type="button" data-decl="d100" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
           <span class="decl-label">Descarcă XML</span>
         </button>
         <button type="button" data-decl="d100-csv" class="decl-dl inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors disabled:opacity-50">
@@ -134,12 +136,12 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
     <div class="rounded-2xl p-5 bg-white/5 flex flex-col">
       <div class="flex items-center justify-between mb-3">
         <span class="text-[20px] font-bold tracking-[-0.03em] text-white font-mono">D212</span>
-        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">XML / CSV</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">XML / CSV</span>
       </div>
       <h3 class="text-[16px] font-bold text-white">Declarația unică (D212)</h3>
-      <p class="text-[13px] text-[#9FB8CC] mt-1.5 flex-1">Pentru PFA/II/IF în sistem real. Impozit pe venit anual (10%) calculat pe încasări minus cheltuieli deductibile, pentru anul selectat. CAS/CASS se confirmă cu contabilul (vezi CSV).</p>
+      <p class="text-[13px] text-[#A8BED2] mt-1.5 flex-1">Pentru PFA/II/IF în sistem real. Impozit pe venit anual (10%) calculat pe încasări minus cheltuieli deductibile, pentru anul selectat. CAS/CASS se confirmă cu contabilul (vezi CSV).</p>
       <div class="mt-4 flex gap-2">
-        <button type="button" data-decl="d212" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
+        <button type="button" data-decl="d212" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
           <span class="decl-label">Descarcă XML</span>
         </button>
         <button type="button" data-decl="d212-csv" class="decl-dl inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors disabled:opacity-50">
@@ -151,14 +153,14 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
 
   <p id="decl-error" class="text-[13px] text-[#DC4B41] mt-4 hidden"></p>
 
-  <div class="mt-8 text-[12px] text-[#7C9AB4] leading-relaxed max-w-3xl space-y-2">
-    <p><strong class="text-[#9FB8CC]">Ce depui, în funcție de tipul firmei:</strong></p>
+  <div class="mt-8 text-[12px] text-[#8FA6BC] leading-relaxed max-w-3xl space-y-2">
+    <p><strong class="text-[#A8BED2]">Ce depui, în funcție de tipul firmei:</strong></p>
     <ul class="list-disc pl-5 space-y-1">
-      <li><strong class="text-[#9FB8CC]">PFA / II / IF:</strong> D212 (anual). Dacă ești plătitor de TVA, în plus D300 / D394 / D390.</li>
-      <li><strong class="text-[#9FB8CC]">SRL micro, neplătitor de TVA:</strong> D100 (trimestrial). SAF-T (D406) după caz.</li>
-      <li><strong class="text-[#9FB8CC]">SRL plătitor de TVA:</strong> D300 + D394 (lunar/trimestrial), D390 dacă ai operațiuni intracomunitare, D406, plus D100 dacă ești micro.</li>
+      <li><strong class="text-[#A8BED2]">PFA / II / IF:</strong> D212 (anual). Dacă ești plătitor de TVA, în plus D300 / D394 / D390.</li>
+      <li><strong class="text-[#A8BED2]">SRL micro, neplătitor de TVA:</strong> D100 (trimestrial). SAF-T (D406) după caz.</li>
+      <li><strong class="text-[#A8BED2]">SRL plătitor de TVA:</strong> D300 + D394 (lunar/trimestrial), D390 dacă ai operațiuni intracomunitare, D406, plus D100 dacă ești micro.</li>
     </ul>
-    <p><strong class="text-[#9FB8CC]">Notă.</strong> Fișierele sunt generate automat din datele tale (facturi și cheltuieli înregistrate). Structura urmează declarațiile ANAF, dar versiunile schemei se schimbă periodic. Validează rezultatul în aplicația PDF inteligent ANAF înainte de depunere. Pentru PFA, impozitul se calculează pe încasări (contabilitate de casă); CAS/CASS depind de plafoane și se confirmă cu contabilul.</p>
+    <p><strong class="text-[#A8BED2]">Notă.</strong> Fișierele sunt generate automat din datele tale (facturi și cheltuieli înregistrate). Structura urmează declarațiile ANAF, dar versiunile schemei se schimbă periodic. Validează rezultatul în aplicația PDF inteligent ANAF înainte de depunere. Pentru PFA, impozitul se calculează pe încasări (contabilitate de casă); CAS/CASS depind de plafoane și se confirmă cu contabilul.</p>
   </div>
 </AppLayout>
 

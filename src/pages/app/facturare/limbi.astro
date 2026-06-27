@@ -15,18 +15,18 @@ const LANGS = [
 <AppLayout title="Limbi" activeTab="facturare">
   <div class="mb-8">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Limbi</h1>
-    <p class="text-[14px] text-[#9FB8CC] mt-1">Limba documentului PDF se alege la emitere, în câmpul „Limbă”. Etichetele se traduc automat.</p>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Limba documentului PDF se alege la emitere, în câmpul „Limbă”. Etichetele se traduc automat.</p>
   </div>
 
   <ul class="max-w-3xl space-y-2.5">
     {LANGS.map((l) => (
       <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-        <span class="font-mono text-[11px] px-2 py-1 bg-white/10 text-[#9FB8CC] rounded-lg uppercase">{l.code}</span>
+        <span class="font-mono text-[11px] px-2 py-1 bg-white/10 text-[#A8BED2] rounded-lg uppercase">{l.code}</span>
         <div class="flex-1 min-w-0">
           <p class="text-[14px] font-bold text-white">{l.name}</p>
-          <p class="text-[12px] text-[#9FB8CC]">{l.sample}</p>
+          <p class="text-[12px] text-[#A8BED2]">{l.sample}</p>
         </div>
-        <span class="text-[12px] text-[#7C9AB4] shrink-0">{l.note}</span>
+        <span class="text-[12px] text-[#8FA6BC] shrink-0">{l.note}</span>
       </li>
     ))}
   </ul>

@@ -59,6 +59,19 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
     return () => { document.removeEventListener('mousedown', onDoc); document.removeEventListener('keydown', onKey); };
   }, [open]);
 
+  // Only one popover open at a time: close when any Select/other calendar opens.
+  const myId = React.useId();
+  React.useEffect(() => {
+    const onOther = (e: Event) => { if ((e as CustomEvent).detail !== myId) setOpen(false); };
+    window.addEventListener('fm-popover-open', onOther);
+    return () => window.removeEventListener('fm-popover-open', onOther);
+  }, [myId]);
+  const openCalendar = () => setOpen((o) => {
+    const next = !o;
+    if (next) window.dispatchEvent(new CustomEvent('fm-popover-open', { detail: myId }));
+    return next;
+  });
+
   // Build the day grid (Monday-first). 0 = leading blank.
   const firstDow = (new Date(view.y, view.m, 1).getDay() + 6) % 7; // Mon=0
   const daysInMonth = new Date(view.y, view.m + 1, 0).getDate();
@@ -89,14 +102,14 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
       <button
         type="button"
         disabled={disabled}
-        onClick={() => setOpen((o) => !o)}
+        onClick={openCalendar}
         className={cn(
-          'fm-cal-trigger flex h-11 w-full items-center justify-between gap-2 rounded-xl border-0 bg-white/5 px-4 text-left text-sm text-white transition-all duration-200',
+          'fm-cal-trigger fm-select-trigger flex h-11 w-full items-center justify-between gap-2 rounded-xl px-4 text-left text-sm transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 disabled:cursor-not-allowed disabled:opacity-50',
           className,
         )}
       >
-        <span className={cn('truncate', !value && 'text-[#7C9AB4]')}>{value ? formatHuman(value) : placeholder}</span>
+        <span className={cn('truncate', !value && 'text-[#8FA6BC]')}>{value ? formatHuman(value) : placeholder}</span>
         <svg className="w-4 h-4 shrink-0 opacity-80" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 2v3m8-3v3M3.5 9h17M5 4.5h14A1.5 1.5 0 0 1 20.5 6v13A1.5 1.5 0 0 1 19 20.5H5A1.5 1.5 0 0 1 3.5 19V6A1.5 1.5 0 0 1 5 4.5Z" />
         </svg>
@@ -145,7 +158,7 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
                   onClick={() => { setView({ ...view, m: i }); setHeaderMode(null); }}
                   className={cn(
                     'py-2 rounded-lg text-[13px] font-medium transition-colors',
-                    view.m === i ? 'bg-[#E1FB15] text-[#0A2238] font-bold' : 'fm-cal-day hover:bg-white/8',
+                    view.m === i ? 'bg-[#E1FB15] text-[#07090f] font-bold' : 'fm-cal-day hover:bg-white/8',
                   )}
                 >
                   {label}
@@ -164,7 +177,7 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
                   onClick={() => { setView({ ...view, y }); setHeaderMode(null); }}
                   className={cn(
                     'w-full text-center py-1.5 rounded-lg text-[13px] font-medium transition-colors',
-                    view.y === y ? 'bg-[#E1FB15] text-[#0A2238] font-bold' : 'fm-cal-day hover:bg-white/8',
+                    view.y === y ? 'bg-[#E1FB15] text-[#07090f] font-bold' : 'fm-cal-day hover:bg-white/8',
                   )}
                 >
                   {y}

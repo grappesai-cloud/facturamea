@@ -36,32 +36,32 @@ const navLinks = [
   author={author}
   structuredData={structuredData}
 >
-  <div class="min-h-screen flex flex-col bg-[#EDF1F5] text-[#0A2238]" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+  <div class="min-h-screen flex flex-col bg-[#EDF1F5] text-[#07090f]" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <!-- Header (clean, matches the landing) -->
     <header class="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-black/[0.05]">
       <div class="max-w-[1180px] mx-auto px-4 sm:px-6">
         <div class="flex items-center justify-between h-16 sm:h-[72px]">
           <a href={homeHref} class="flex items-center gap-2.5 group shrink-0">
             <img src="/logo.png" alt="facturamea" width="44" height="44" class="w-11 h-11 transition-transform group-hover:rotate-6" />
-            <span class="text-lg font-bold text-[#0A2238] tracking-[-0.02em]">factura<span class="text-[#1A759F]">mea</span></span>
+            <span class="text-lg font-bold text-[#07090f] tracking-[-0.02em]">factura<span class="text-[#1A759F]">mea</span></span>
           </a>
 
           <nav class="hidden lg:flex items-center gap-1">
             {navLinks.map((link) => (
               <a href={link.href} class:list={[
                 'px-4 py-2 rounded-full text-[14px] font-semibold transition-colors',
-                isActive(link.match) ? 'bg-[#0A2238] text-white' : 'text-[#46627A] hover:text-[#0A2238] hover:bg-black/[0.04]'
+                isActive(link.match) ? 'bg-[#07090f] text-white' : 'text-[#46627A] hover:text-[#07090f] hover:bg-black/[0.04]'
               ]}>{link.label}</a>
             ))}
           </nav>
 
           <div class="flex items-center gap-2">
             {user ? (
-              <a href="/app" class="inline-flex items-center px-5 h-10 rounded-full bg-[#0A2238] text-white text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Dashboard</a>
+              <a href="/app" class="inline-flex items-center px-5 h-10 rounded-full bg-[#07090f] text-white text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Dashboard</a>
             ) : (
               <>
-                <a href="/auth/login" class="hidden sm:inline-flex items-center whitespace-nowrap px-4 h-10 rounded-full ring-1 ring-[#0A2238]/15 text-[#0A2238] text-[14px] font-semibold hover:bg-black/[0.04] transition-colors">Autentifică-te</a>
-                <a href="/auth/register" class="inline-flex items-center whitespace-nowrap px-5 h-10 rounded-full bg-[#0A2238] text-white text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Începe gratuit</a>
+                <a href="/auth/login" class="hidden sm:inline-flex items-center whitespace-nowrap px-4 h-10 rounded-full ring-1 ring-[#07090f]/15 text-[#07090f] text-[14px] font-semibold hover:bg-black/[0.04] transition-colors">Autentifică-te</a>
+                <a href="/auth/register" class="inline-flex items-center whitespace-nowrap px-5 h-10 rounded-full bg-[#07090f] text-white text-[14px] font-bold hover:bg-[#14304b] transition-colors" data-magnetic>Începe gratuit</a>
               </>
             )}
           </div>

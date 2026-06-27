@@ -1,0 +1,26 @@
+---
+// Friendly empty state for Astro pages — twin of the React ui/EmptyState.tsx.
+// Usage:
+//   <EmptyState title="..." description="...">
+//     <svg slot="icon" ... />            (optional icon)
+//     <a href="..." slot="action">...</a> (optional CTA)
+//   </EmptyState>
+interface Props {
+  title: string;
+  description?: string;
+  class?: string;
+}
+const { title, description, class: className = '' } = Astro.props;
+const hasIcon = Astro.slots.has('icon');
+const hasAction = Astro.slots.has('action');
+---
+<div class:list={['flex flex-col items-center justify-center text-center py-12 px-4 rounded-2xl border-2 border-dashed border-white/10 bg-white/5', className]}>
+  {hasIcon && (
+    <div class="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-4 text-[#8FA6BC]">
+      <slot name="icon" />
+    </div>
+  )}
+  <h3 class="text-base font-semibold text-white mb-1">{title}</h3>
+  {description && <p class="text-sm text-[#A8BED2] max-w-md mb-4">{description}</p>}
+  {hasAction && <slot name="action" />}
+</div>

@@ -40,9 +40,9 @@ const opsNav = [
 ];
 ---
 
-<BaseLayout title={`Admin — ${title}`} themeColor="#0A2238">
+<BaseLayout title={`Admin — ${title}`} themeColor="#07090f">
   {requireTotpSetup && !isOnSecurityPage && (
-    <div class="min-h-screen flex items-center justify-center bg-[#EDF1F5] text-[#0A2238] px-6" style="font-family:'Outfit',sans-serif">
+    <div class="min-h-screen flex items-center justify-center bg-[#EDF1F5] text-[#07090f] px-6" style="font-family:'Outfit',sans-serif">
       <div class="max-w-md w-full p-8 bg-white border border-[#E3EAF1] rounded-xl text-center">
         <div class="inline-block w-12 h-12 bg-[#1A759F]/10 rounded-full flex items-center justify-center mb-4">
           <span class="text-[#1A759F] text-[20px] font-bold">!</span>
@@ -59,7 +59,7 @@ const opsNav = [
     </div>
   )}
   {!requireTotpSetup && (
-  <div class="min-h-screen flex bg-[#EDF1F5] text-[#0A2238]" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+  <div class="min-h-screen flex bg-[#EDF1F5] text-[#07090f]" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <!-- Sidebar -->
     <aside class="w-[240px] bg-white border-r border-[#E3EAF1] flex flex-col shrink-0 sticky top-0 h-screen">
       <div class="px-5 py-5 border-b border-[#E3EAF1]">
@@ -75,7 +75,7 @@ const opsNav = [
       </div>
 
       <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#9FB8CC] font-medium px-3 mb-2">Conţinut</p>
+        <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8BED2] font-medium px-3 mb-2">Conţinut</p>
         {navItems.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -83,8 +83,8 @@ const opsNav = [
               href={item.href}
               class:list={[
                 'flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl text-[13px] transition-colors relative',
-                active ? 'text-[#0A2238] font-semibold bg-[#E3EAF1]'
-                       : 'text-[#46627A] hover:text-[#0A2238] hover:bg-[#F4F4F0] font-medium',
+                active ? 'text-[#07090f] font-semibold bg-[#E3EAF1]'
+                       : 'text-[#46627A] hover:text-[#07090f] hover:bg-[#F4F4F0] font-medium',
               ]}
             >
               {active && <span class="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#1A759F] rounded-r-sm"></span>}
@@ -93,7 +93,7 @@ const opsNav = [
           );
         })}
 
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#9FB8CC] font-medium px-3 mt-6 mb-2">Operaţiuni</p>
+        <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8BED2] font-medium px-3 mt-6 mb-2">Operaţiuni</p>
         {opsNav.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -101,8 +101,8 @@ const opsNav = [
               href={item.href}
               class:list={[
                 'flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl text-[13px] transition-colors relative',
-                active ? 'text-[#0A2238] font-semibold bg-[#E3EAF1]'
-                       : 'text-[#46627A] hover:text-[#0A2238] hover:bg-[#F4F4F0] font-medium',
+                active ? 'text-[#07090f] font-semibold bg-[#E3EAF1]'
+                       : 'text-[#46627A] hover:text-[#07090f] hover:bg-[#F4F4F0] font-medium',
               ]}
             >
               {active && <span class="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#1A759F] rounded-r-sm"></span>}
@@ -113,7 +113,7 @@ const opsNav = [
       </nav>
 
       <div class="p-3 border-t border-[#E3EAF1]">
-        <a href="/app" class="block px-4 py-2 text-[12px] text-[#46627A] hover:text-[#0A2238] transition-colors">← Înapoi la platformă</a>
+        <a href="/app" class="block px-4 py-2 text-[12px] text-[#46627A] hover:text-[#07090f] transition-colors">← Înapoi la platformă</a>
       </div>
     </aside>
 
@@ -123,7 +123,7 @@ const opsNav = [
         <h1 class="text-[15px] font-semibold">{title}</h1>
         <div class="flex items-center gap-3">
           <span class="text-[12px] text-[#46627A]">{user?.name}</span>
-          <span class="px-2 py-0.5 bg-[#0A2238] text-white text-[10px] font-bold uppercase tracking-wider rounded">Admin</span>
+          <span class="px-2 py-0.5 bg-[#07090f] text-white text-[10px] font-bold uppercase tracking-wider rounded">Admin</span>
         </div>
       </header>
 

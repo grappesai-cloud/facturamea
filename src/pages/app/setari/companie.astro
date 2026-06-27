@@ -15,20 +15,20 @@ if (user.companyId) {
     .limit(1);
 }
 
-const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
-const inputDisabledCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-[#9FB8CC]';
-const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] focus:outline-none focus:ring-2 focus:ring-[#D9ED92]/40';
+const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
+const inputDisabledCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-[#A8BED2]';
+const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#D9ED92]/40';
 ---
 
 <AppLayout title="Setări companie — facturamea" activeTab="setari" breadcrumbTitle="Companie">
   <div class="max-w-3xl">
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Companie</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl">Datele companiei tale.</p>
+      <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl">Datele companiei tale.</p>
     </div>
 
     {!company ? (
-      <p class="text-[13px] text-[#9FB8CC]">Niciun cont de companie asociat.</p>
+      <p class="text-[13px] text-[#A8BED2]">Niciun cont de companie asociat.</p>
     ) : (
       <section class="mb-10 space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-2xl p-5 bg-white/5">
@@ -39,14 +39,14 @@ const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-whi
           <div><label class={labelCls}>Telefon</label><input type="text" value={company.phone ?? '—'} disabled class={inputDisabledCls} /></div>
         </div>
 
-        <p class="text-[12px] text-[#7C9AB4]">
+        <p class="text-[12px] text-[#8FA6BC]">
           Datele legale (denumire, CUI) sunt fixate la înregistrare. Pentru corecții, contactează suportul.
         </p>
 
         <form id="bank-form" class="rounded-2xl p-5 bg-white/5 space-y-3">
           <div>
             <p class="text-[16px] font-bold text-white">Cont bancar (apare pe facturi)</p>
-            <p class="text-[12px] text-[#7C9AB4] mt-0.5">IBAN-ul se afișează automat pe orice factură emiți, la datele tale de emitent.</p>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5">IBAN-ul se afișează automat pe orice factură emiți, la datele tale de emitent.</p>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div class="sm:col-span-2"><label class={labelCls}>IBAN</label><input id="iban" name="iban" type="text" value={billing?.iban ?? ''} placeholder="RO00 BANK 0000 0000 0000 0000" class={inputCls} /></div>
@@ -54,8 +54,8 @@ const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-whi
             <div><label class={labelCls}>Telefon</label><input id="phone" name="phone" type="text" value={company.phone ?? ''} placeholder="ex: 07xx xxx xxx" class={inputCls} /></div>
           </div>
           <div class="flex items-center gap-3 pt-1">
-            <button type="submit" id="bank-save" class="px-5 py-2.5 rounded-full bg-[#D9ED92] text-[#0A2238] font-semibold text-[14px] hover:bg-[#c9e06f] transition-colors">Salvează</button>
-            <span id="bank-status" class="text-[13px] text-[#9FB8CC]"></span>
+            <button type="submit" id="bank-save" class="px-5 py-2.5 rounded-full bg-[#D9ED92] text-[#07090f] font-semibold text-[14px] hover:bg-[#c9e06f] transition-colors">Salvează</button>
+            <span id="bank-status" class="text-[13px] text-[#A8BED2]"></span>
           </div>
         </form>
 

@@ -13,21 +13,21 @@ const t = tFn(Astro.locals.locale);
 ---
 
 <BaseLayout title={title} themeColor="#EDF1F5">
-  <div class="min-h-screen bg-[#EDF1F5] text-[#0A2238] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+  <div class="min-h-screen bg-[#EDF1F5] text-[#07090f] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <!-- Top bar with logo + back to landing -->
     <header class="px-6 lg:px-10 py-5 flex items-center justify-between border-b border-black/[0.06]">
       <a href="/" class="flex items-center gap-2.5 group">
         <img src="/logo.png" alt="facturamea" width="32" height="32" class="w-8 h-8 transition-transform group-hover:rotate-6" />
         <span class="text-[15px] font-bold tracking-[-0.02em]">factura<span class="text-[#1A759F]">mea</span></span>
       </a>
-      <a href="/" data-web-only class="text-[12.5px] text-[#46627A] hover:text-[#0A2238] transition-colors">{t('pages.auth.back_to_site')}</a>
+      <a href="/" data-web-only class="text-[12.5px] text-[#46627A] hover:text-[#07090f] transition-colors">{t('pages.auth.back_to_site')}</a>
     </header>
 
     <!-- Centered content — single clean card -->
     <main class="flex-1 flex items-center justify-center px-5 py-12">
       <div class="w-full max-w-[420px]">
         {tagline && (
-          <p class="text-[11px] uppercase tracking-[0.18em] text-[#7C9AB4] font-semibold text-center mb-3">{tagline}</p>
+          <p class="text-[11px] uppercase tracking-[0.18em] text-[#8FA6BC] font-semibold text-center mb-3">{tagline}</p>
         )}
         <div class="rounded-[24px] bg-white ring-1 ring-black/[0.05] shadow-[0_26px_70px_-42px_rgba(16,42,67,0.45)] p-7 sm:p-9">
           <slot />
@@ -36,7 +36,7 @@ const t = tFn(Astro.locals.locale);
     </main>
 
     <!-- Trust footer -->
-    <footer class="px-6 lg:px-10 py-5 border-t border-black/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#7C9AB4]">
+    <footer class="px-6 lg:px-10 py-5 border-t border-black/[0.06] flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-[#8FA6BC]">
       <p>© {new Date().getFullYear()} facturamea. Facturare cu licență pe viață.</p>
       <div class="flex items-center gap-4">
         <a href="/termeni" class="hover:text-[#1A759F] transition-colors">Termeni</a>

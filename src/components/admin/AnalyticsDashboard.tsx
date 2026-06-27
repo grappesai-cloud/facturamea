@@ -14,11 +14,11 @@ function Bar({ value, max, label, suffix }: { value: number; max: number; label:
   const pct = max > 0 ? Math.max((value / max) * 100, 2) : 0;
   return (
     <div className="flex items-center gap-3 text-sm">
-      <div className="w-32 shrink-0 truncate text-[#0A2238]">{label}</div>
+      <div className="w-32 shrink-0 truncate text-[#07090f]">{label}</div>
       <div className="flex-1 h-6 bg-[#E3EAF1] rounded-xl overflow-hidden">
         <div className="h-full bg-[#1A759F]" style={{ width: `${pct}%` }} />
       </div>
-      <div className="w-16 text-right text-[#0A2238] font-medium tabular-nums">{value.toLocaleString()}{suffix}</div>
+      <div className="w-16 text-right text-[#07090f] font-medium tabular-nums">{value.toLocaleString()}{suffix}</div>
     </div>
   );
 }
@@ -47,7 +47,7 @@ export default function AnalyticsDashboard() {
   const maxStatus = Math.max(...data.orderStatuses.map((s) => s.count), 1);
 
   return (
-    <div className="space-y-6 text-[#0A2238]">
+    <div className="space-y-6 text-[#07090f]">
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <Card><CardContent className="p-4"><div className="text-xs text-[#46627A]">Utilizatori</div><div className="text-2xl font-bold">{data.totals.users}</div><div className="text-[11px] text-emerald-600">+{data.last30.newUsers} (30 zile)</div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="text-xs text-[#46627A]">Companii</div><div className="text-2xl font-bold">{data.totals.companies}</div></CardContent></Card>

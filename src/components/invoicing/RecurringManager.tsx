@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
-import { Plus, Pause, Play, X } from 'lucide-react';
+import { DatePicker } from '../ui/DatePicker';
+import { Select } from '../ui/Select';
+import { Plus, Pause, Play, X, Repeat } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Item {
   id: string;
@@ -141,7 +144,7 @@ export default function RecurringManager({ initial, internalClients, externalCli
     <div className="space-y-4">
       <div className="flex items-center justify-end">
         {!creating && (
-          <Button onClick={() => setCreating(true)} className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100">
+          <Button onClick={() => setCreating(true)} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100">
             <Plus className="w-4 h-4 mr-1.5" /> Abonament nou
           </Button>
         )}
@@ -152,95 +155,95 @@ export default function RecurringManager({ initial, internalClients, externalCli
           <h3 className="font-bold text-white">Abonament nou</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Nume abonament *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Curse săptămânale București-Berlin" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Nume abonament *</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Curse săptămânale București-Berlin" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Frecvență</Label>
-              <select value={frequency} onChange={(e) => setFrequency(e.target.value as any)} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Frecvență</Label>
+              <Select value={frequency} onChange={(e) => setFrequency(e.target.value as any)} className="w-full">
                 {Object.entries(FREQ_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Începe pe</Label>
-              <Input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Începe pe</Label>
+              <DatePicker value={startAt} onChange={(v) => setStartAt(v)} />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Se termină pe (opțional)</Label>
-              <Input type="date" value={endAt} onChange={(e) => setEndAt(e.target.value)} className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Se termină pe (opțional)</Label>
+              <DatePicker value={endAt} onChange={(v) => setEndAt(v)} />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Max rulări (opțional)</Label>
-              <Input type="number" value={maxRuns} onChange={(e) => setMaxRuns(e.target.value)} placeholder="6 = doar 6 facturi" className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Max rulări (opțional)</Label>
+              <Input type="number" value={maxRuns} onChange={(e) => setMaxRuns(e.target.value)} placeholder="6 = doar 6 facturi" className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
 
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Tip client</Label>
-              <select value={clientKind} onChange={(e) => { setClientKind(e.target.value as any); setClientId(''); }} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Tip client</Label>
+              <Select value={clientKind} onChange={(e) => { setClientKind(e.target.value as any); setClientId(''); }} className="w-full">
                 <option value="internal">Companie TH</option>
                 <option value="external">Client extern</option>
                 <option value="none">Fără client legat</option>
-              </select>
+              </Select>
             </div>
             <div className="md:col-span-2">
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Client</Label>
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Client</Label>
               {clientKind === 'none' ? (
-                <p className="text-xs text-[#9FB8CC] mt-2">Vei completa clientul manual la fiecare emitere.</p>
+                <p className="text-xs text-[#A8BED2] mt-2">Vei completa clientul manual la fiecare emitere.</p>
               ) : (
-                <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+                <Select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full">
                   <option value="">— alege —</option>
                   {clientsForKind.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}{c.cui || c.taxId ? ` (${c.cui || c.taxId})` : ''}
                     </option>
                   ))}
-                </select>
+                </Select>
               )}
             </div>
 
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Monedă</Label>
-              <select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Monedă</Label>
+              <Select value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full">
                 <option>RON</option><option>EUR</option><option>USD</option><option>GBP</option>
-              </select>
+              </Select>
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Termen plată (zile)</Label>
-              <Input type="number" value={paymentTerm} onChange={(e) => setPaymentTerm(Number(e.target.value))} className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Termen plată (zile)</Label>
+              <Input type="number" value={paymentTerm} onChange={(e) => setPaymentTerm(Number(e.target.value))} className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-[#9FB8CC]">Email destinatar (opțional)</Label>
-              <Input type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="contact@client.ro" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Label className="text-[13px] font-medium text-[#A8BED2]">Email destinatar (opțional)</Label>
+              <Input type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="contact@client.ro" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
           </div>
 
           <div className="border-t border-white/10 pt-4">
-            <Label className="block mb-2 text-[13px] font-medium text-[#9FB8CC]">Linii factură</Label>
+            <Label className="block mb-2 text-[13px] font-medium text-[#A8BED2]">Linii factură</Label>
             <div className="space-y-2">
               {lines.map((l, idx) => (
                 <div key={idx} className="grid grid-cols-12 gap-2 items-end">
                   <div className="col-span-5">
-                    <Input value={l.description} onChange={(e) => updateLine(idx, { description: e.target.value })} placeholder="Descriere serviciu" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+                    <Input value={l.description} onChange={(e) => updateLine(idx, { description: e.target.value })} placeholder="Descriere serviciu" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
                   <div className="col-span-1">
-                    <Input type="number" step="0.01" value={l.quantity} onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) })} placeholder="Cant." className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+                    <Input type="number" step="0.01" value={l.quantity} onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) })} placeholder="Cant." className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
                   <div className="col-span-1">
-                    <Input value={l.unit || ''} onChange={(e) => updateLine(idx, { unit: e.target.value })} placeholder="UM" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+                    <Input value={l.unit || ''} onChange={(e) => updateLine(idx, { unit: e.target.value })} placeholder="UM" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
                   <div className="col-span-2">
-                    <Input type="number" step="0.01" value={(l.unitPriceCents / 100).toString()} onChange={(e) => updateLine(idx, { unitPriceCents: Math.round(Number(e.target.value) * 100) })} placeholder="Preț unit." className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+                    <Input type="number" step="0.01" value={(l.unitPriceCents / 100).toString()} onChange={(e) => updateLine(idx, { unitPriceCents: Math.round(Number(e.target.value) * 100) })} placeholder="Preț unit." className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
                   <div className="col-span-1">
-                    <select value={l.vatRate} onChange={(e) => updateLine(idx, { vatRate: Number(e.target.value) })} className="w-full rounded-xl bg-white/10 px-3 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+                    <Select value={l.vatRate} onChange={(e) => updateLine(idx, { vatRate: Number(e.target.value) })} className="w-full">
                       <option value={21}>21%</option><option value={11}>11%</option><option value={9}>9%</option><option value={5}>5%</option><option value={0}>0%</option>
-                    </select>
+                    </Select>
                   </div>
                   <div className="col-span-2 text-right tabular-nums text-sm pr-2 text-white">
                     {((l.quantity * l.unitPriceCents) / 100 * (1 + l.vatRate / 100)).toLocaleString('ro-RO', { minimumFractionDigits: 2 })}
                   </div>
                   {lines.length > 1 && (
-                    <button onClick={() => removeLine(idx)} className="w-7 h-7 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge rândul">
+                    <button onClick={() => removeLine(idx)} className="w-7 h-7 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge rândul">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   )}
@@ -251,12 +254,12 @@ export default function RecurringManager({ initial, internalClients, externalCli
           </div>
 
           <div>
-            <Label className="text-[13px] font-medium text-[#9FB8CC]">Note (opțional)</Label>
-            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Apar pe factură ca mențiuni" className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+            <Label className="text-[13px] font-medium text-[#A8BED2]">Note (opțional)</Label>
+            <Input value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Apar pe factură ca mențiuni" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={create} disabled={busy} className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100">Salvează abonament</Button>
+            <Button onClick={create} disabled={busy} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100">Salvează abonament</Button>
             <Button variant="outline" onClick={reset} className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0">Anulează</Button>
           </div>
         </div>
@@ -265,7 +268,7 @@ export default function RecurringManager({ initial, internalClients, externalCli
       <div className="bg-white/5 rounded-2xl overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wide text-[#7C9AB4]">
+            <tr className="text-left text-[11px] uppercase tracking-wide text-[#8FA6BC]">
               <th className="py-3 px-4">Nume</th>
               <th className="py-3 px-4">Client</th>
               <th className="py-3 px-4">Frecvență</th>
@@ -276,25 +279,33 @@ export default function RecurringManager({ initial, internalClients, externalCli
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-[#7C9AB4]">Niciun abonament. Adaugă unul ca să generezi automat facturi.</td></tr>}
+            {items.length === 0 && (
+              <tr><td colSpan={7}>
+                <EmptyState
+                  icon={<Repeat />}
+                  title="Nicio facturare recurentă"
+                  description="Configurează un abonament și emitem automat facturile."
+                />
+              </td></tr>
+            )}
             {(showAll ? items : items.slice(0, 3)).map((i) => (
               <tr key={i.id} className="group hover:bg-white/5">
                 <td className="py-3 px-4 font-medium text-white">{i.name}</td>
-                <td className="py-3 px-4 text-[#9FB8CC]">{i.clientName}</td>
+                <td className="py-3 px-4 text-[#A8BED2]">{i.clientName}</td>
                 <td className="py-3 px-4 text-white">{FREQ_LABEL[i.frequency] || i.frequency}</td>
                 <td className="py-3 px-4 tabular-nums text-white">{i.nextRunAt}</td>
                 <td className="py-3 px-4 text-right tabular-nums text-white">{i.totalRuns || 0}{i.maxRuns ? ` / ${i.maxRuns}` : ''}</td>
                 <td className="py-3 px-4">
                   {i.isActive
                     ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#2E9E6A]/15 text-[#2E9E6A]">activ</span>
-                    : <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-[#9FB8CC]">pauzat</span>}
+                    : <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">pauzat</span>}
                 </td>
                 <td className="py-3 px-4 text-right">
                   <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     <button onClick={() => toggle(i.id, !!i.isActive)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/15 transition-colors" title={i.isActive ? 'Pune pe pauză' : 'Repornește'}>
-                      {i.isActive ? <Pause className="w-3.5 h-3.5 text-[#9FB8CC]" /> : <Play className="w-3.5 h-3.5 text-[#2E9E6A]" />}
+                      {i.isActive ? <Pause className="w-3.5 h-3.5 text-[#A8BED2]" /> : <Play className="w-3.5 h-3.5 text-[#2E9E6A]" />}
                     </button>
-                    <button onClick={() => remove(i.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează permanent"><X className="w-4 h-4" /></button>
+                    <button onClick={() => remove(i.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează permanent"><X className="w-4 h-4" /></button>
                   </div>
                 </td>
               </tr>
@@ -302,7 +313,7 @@ export default function RecurringManager({ initial, internalClients, externalCli
             {items.length > 3 && (
               <tr>
                 <td colSpan={7} className="py-3 px-4">
-                  <button type="button" onClick={() => setShowAll((s) => !s)} className="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+                  <button type="button" onClick={() => setShowAll((s) => !s)} className="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                     {showAll ? 'Arată mai puțin' : `Vezi toate (${items.length})`}
                   </button>
                 </td>

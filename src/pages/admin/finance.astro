@@ -140,7 +140,7 @@ const tierLabels: Record<string, string> = { free: 'Free', sprinter: 'Sprinter',
         {topCustomers.map((c, i) => (
           <a href={`/admin/companies?id=${c.id}`} class="px-5 py-3 flex items-center justify-between text-[13px] hover:bg-[#FCFCFA] transition-colors">
             <span class="flex items-center gap-3">
-              <span class="text-[#9FB8CC] font-mono w-6 text-right">{i + 1}.</span>
+              <span class="text-[#A8BED2] font-mono w-6 text-right">{i + 1}.</span>
               <span class="font-medium">{c.name}</span>
             </span>
             <span class="font-semibold tabular-nums">{ron(c.total)} RON</span>

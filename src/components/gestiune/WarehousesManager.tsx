@@ -4,7 +4,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Warehouse as WarehouseIcon } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Warehouse {
   id: string; name: string; code: string | null; type: string;
@@ -54,9 +55,9 @@ export default function WarehousesManager() {
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
-  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#7C9AB4] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
   const selectCls = `${inputCls} [color-scheme:dark]`;
-  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] shadow-none';
+  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
   const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15 border-0';
 
   return (
@@ -70,7 +71,11 @@ export default function WarehousesManager() {
       <Card className="bg-white/5 border-0 rounded-2xl shadow-none hover:shadow-none hover:translate-y-0">
         <CardContent className="p-2">
           {items.length === 0 ? (
-            <p className="text-sm text-[#9FB8CC] p-6 text-center">Nicio gestiune. Adaugă primul depozit sau magazin.</p>
+            <EmptyState
+              icon={<WarehouseIcon />}
+              title="Nicio gestiune"
+              description="Adaugă primul depozit sau magazin pentru a urmări stocul."
+            />
           ) : (
             <>
             <ul className="space-y-2">
@@ -79,21 +84,21 @@ export default function WarehousesManager() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-white truncate">
                       {w.name}
-                      {w.code && <span className="font-mono text-xs text-[#9FB8CC] ml-2">{w.code}</span>}
+                      {w.code && <span className="font-mono text-xs text-[#A8BED2] ml-2">{w.code}</span>}
                     </p>
-                    <p className="text-xs text-[#9FB8CC] truncate">
+                    <p className="text-xs text-[#A8BED2] truncate">
                       {TYPE_LABELS[w.type] || w.type}
                       {w.managementType && <span> · {MGMT_LABELS[w.managementType] || w.managementType}</span>}
                       {w.address && <span> · {w.address}</span>}
                     </p>
                   </div>
                   {w.isDefault && <span className="text-[10px] px-2 py-0.5 bg-[#E1FB15]/15 text-[#E1FB15] rounded-full font-semibold">implicită</span>}
-                  {!w.isActive && <span className="text-[10px] px-2 py-0.5 bg-white/10 text-[#9FB8CC] rounded-full font-semibold">inactivă</span>}
+                  {!w.isActive && <span className="text-[10px] px-2 py-0.5 bg-white/10 text-[#A8BED2] rounded-full font-semibold">inactivă</span>}
                 </li>
               ))}
             </ul>
             {items.length > 3 && (
-              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                 {showAll ? 'Arată mai puțin' : `Vezi toate (${items.length})`}
               </button>
             )}
@@ -107,10 +112,10 @@ export default function WarehousesManager() {
           <CardContent className="p-4 sm:p-5 space-y-4">
             <h3 className="font-semibold text-white">Gestiune nouă</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Denumire *</Label><Input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Depozit central" /></div>
-              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Cod</Label><Input className={inputCls} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="DEP01" /></div>
+              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Denumire *</Label><Input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Depozit central" /></div>
+              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Cod</Label><Input className={inputCls} value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="DEP01" /></div>
               <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Tip</Label>
+                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Tip</Label>
                 <Select className={selectCls} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                   <option value="depozit">Depozit</option>
                   <option value="magazin">Magazin</option>
@@ -118,13 +123,13 @@ export default function WarehousesManager() {
                 </Select>
               </div>
               <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Tip gestiune</Label>
+                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Tip gestiune</Label>
                 <Select className={selectCls} value={form.managementType} onChange={(e) => setForm({ ...form, managementType: e.target.value })}>
                   <option value="cantitativ_valoric">Cantitativ-valoric</option>
                   <option value="global_valoric">Global-valoric</option>
                 </Select>
               </div>
-              <div className="md:col-span-2"><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Adresă</Label><Input className={inputCls} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
+              <div className="md:col-span-2"><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Adresă</Label><Input className={inputCls} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
             </div>
             <label className="flex items-center gap-2 text-xs text-white">
               <input type="checkbox" checked={form.isDefault} onChange={(e) => setForm({ ...form, isDefault: e.target.checked })} className="[color-scheme:dark] accent-[#E1FB15]" /> Gestiune implicită

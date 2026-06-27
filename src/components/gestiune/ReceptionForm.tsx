@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
+import { DatePicker } from '../ui/DatePicker';
 import { Plus, X, Loader2, Check } from 'lucide-react';
 
 interface Warehouse { id: string; name: string; }
@@ -118,10 +119,10 @@ export default function ReceptionForm() {
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
-  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#7C9AB4] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
   const selectCls = `${inputCls} [color-scheme:dark]`;
-  const lineLabel = 'mb-1 block text-[10px] uppercase tracking-wider text-[#7C9AB4]';
-  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] shadow-none';
+  const lineLabel = 'mb-1 block text-[10px] uppercase tracking-wider text-[#8FA6BC]';
+  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
   const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15 border-0';
 
   return (
@@ -135,7 +136,7 @@ export default function ReceptionForm() {
         <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Gestiune *</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Gestiune *</Label>
               <Select className={selectCls} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
                 <option value="">Alege gestiunea</option>
                 {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
@@ -147,15 +148,15 @@ export default function ReceptionForm() {
               )}
             </div>
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Furnizor</Label>
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Furnizor</Label>
               <Select className={selectCls} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
                 <option value="">Fără furnizor</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </Select>
             </div>
-            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Data recepției</Label><Input className={`${inputCls} [color-scheme:dark]`} type="date" value={receptionDate} onChange={(e) => setReceptionDate(e.target.value)} /></div>
-            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Număr NIR *</Label><Input className={inputCls} value={nirNumber} onChange={(e) => setNirNumber(e.target.value)} placeholder="NIR-001" /></div>
-            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Nr. factură furnizor</Label><Input className={inputCls} value={supplierInvoiceNumber} onChange={(e) => setSupplierInvoiceNumber(e.target.value)} /></div>
+            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Data recepției</Label><DatePicker value={receptionDate} onChange={(v) => setReceptionDate(v)} /></div>
+            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Număr NIR *</Label><Input className={inputCls} value={nirNumber} onChange={(e) => setNirNumber(e.target.value)} placeholder="NIR-001" /></div>
+            <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Nr. factură furnizor</Label><Input className={inputCls} value={supplierInvoiceNumber} onChange={(e) => setSupplierInvoiceNumber(e.target.value)} /></div>
           </div>
         </CardContent>
       </Card>
@@ -203,15 +204,15 @@ export default function ReceptionForm() {
                   <Input className={`${inputCls} [color-scheme:dark]`} type="number" step="any" value={l.vatRate} onChange={(e) => updateLine(i, { vatRate: e.target.value })} />
                 </div>
                 <div className="md:col-span-1 flex justify-end">
-                  <button onClick={() => setLines((ls) => ls.length > 1 ? ls.filter((_, idx) => idx !== i) : ls)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge linia"><X className="w-4 h-4" /></button>
+                  <button onClick={() => setLines((ls) => ls.length > 1 ? ls.filter((_, idx) => idx !== i) : ls)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge linia"><X className="w-4 h-4" /></button>
                 </div>
               </div>
             ))}
           </div>
 
           <div className="flex flex-col items-end gap-0.5 pt-2 text-sm">
-            <p className="text-[#9FB8CC]">Net: <span className="font-semibold text-white tabular-nums">{ron(totals.net)}</span></p>
-            <p className="text-[#9FB8CC]">TVA: <span className="font-semibold text-white tabular-nums">{ron(totals.vat)}</span></p>
+            <p className="text-[#A8BED2]">Net: <span className="font-semibold text-white tabular-nums">{ron(totals.net)}</span></p>
+            <p className="text-[#A8BED2]">TVA: <span className="font-semibold text-white tabular-nums">{ron(totals.vat)}</span></p>
             <p className="text-white text-[22px] font-bold tabular-nums">Total: {ron(totals.total)}</p>
           </div>
 

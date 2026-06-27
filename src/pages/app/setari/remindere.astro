@@ -24,7 +24,7 @@ try {
   <div class="max-w-3xl">
     <div class="mb-6 sm:mb-8">
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Remindere de încasare</h1>
-      <p class="text-[13px] text-[#9FB8CC] mt-2 max-w-2xl leading-relaxed">
+      <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl leading-relaxed">
         Trimitem automat e-mailuri de reamintire către clienții tăi pentru facturile cu scadență apropiată sau restante.
         Funcționează doar pentru facturile la care clientul are o adresă de e-mail.
       </p>
@@ -33,7 +33,7 @@ try {
     {!canManage && (
       <div class="mb-4 flex flex-wrap items-center gap-2.5 px-4 py-3 rounded-xl bg-[#E8A33C]/15">
         <span class="w-2 h-2 rounded-full bg-[#E8A33C]"></span>
-        <p class="text-[14px] text-[#9FB8CC]">Doar administratorul firmei poate modifica acest setaj.</p>
+        <p class="text-[14px] text-[#A8BED2]">Doar administratorul firmei poate modifica acest setaj.</p>
       </div>
     )}
 
@@ -41,7 +41,7 @@ try {
     <div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl p-5 bg-white/5">
       <div class="flex-1 min-w-[220px]">
         <p class="text-[16px] font-semibold text-white">Trimitere automată de remindere</p>
-        <p class="text-[13px] text-[#9FB8CC] mt-0.5">Când e pornit, clienții primesc remindere prin e-mail după programul de mai jos.</p>
+        <p class="text-[13px] text-[#A8BED2] mt-0.5">Când e pornit, clienții primesc remindere prin e-mail după programul de mai jos.</p>
       </div>
       <button id="dunning-toggle" role="switch" aria-checked={enabled ? 'true' : 'false'} disabled={!canManage}
         class:list={['relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0', enabled ? 'bg-[#E1FB15]' : 'bg-white/15', !canManage && 'opacity-50 cursor-not-allowed']}>
@@ -53,22 +53,22 @@ try {
     <!-- Schedule explainer -->
     <div class="mb-4 rounded-2xl p-5 bg-white/5">
       <h2 class="text-[18px] font-bold text-white mb-3">Când se trimit remindere</h2>
-      <ul class="space-y-2.5 text-[14px] text-[#9FB8CC] leading-relaxed">
+      <ul class="space-y-2.5 text-[14px] text-[#A8BED2] leading-relaxed">
         <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-[#34A0A4] shrink-0"></span><span><strong class="text-white">Cu 3 zile înainte</strong> de scadență — un reminder amabil.</span></li>
         <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-[#E8A33C] shrink-0"></span><span><strong class="text-white">În ziua scadenței</strong> — factura este de plată astăzi.</span></li>
         <li class="flex gap-3"><span class="mt-2 w-2 h-2 rounded-full bg-[#DC4B41] shrink-0"></span><span><strong class="text-white">La 7 zile după</strong> scadență — factura figurează ca restantă.</span></li>
       </ul>
-      <p class="text-[13px] text-[#7C9AB4] mt-4">Fiecare tip de reminder se trimite o singură dată per factură. Facturile achitate sunt excluse automat.</p>
+      <p class="text-[13px] text-[#8FA6BC] mt-4">Fiecare tip de reminder se trimite o singură dată per factură. Facturile achitate sunt excluse automat.</p>
     </div>
 
     {canManage && (
       <div class="flex flex-wrap items-center gap-3 rounded-2xl p-5 bg-white/5">
         <div class="flex-1 min-w-[220px]">
           <p class="text-[16px] font-semibold text-white">Trimite remindere acum</p>
-          <p class="text-[13px] text-[#9FB8CC] mt-0.5">Rulează verificarea imediat pentru facturile tale, fără să aștepți programul zilnic.</p>
+          <p class="text-[13px] text-[#A8BED2] mt-0.5">Rulează verificarea imediat pentru facturile tale, fără să aștepți programul zilnic.</p>
         </div>
-        <button id="run-now" class="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors whitespace-nowrap">Trimite remindere acum</button>
-        <span id="run-result" class="text-[14px] text-[#9FB8CC]"></span>
+        <button id="run-now" class="px-5 h-11 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors whitespace-nowrap">Trimite remindere acum</button>
+        <span id="run-result" class="text-[14px] text-[#A8BED2]"></span>
       </div>
     )}
   </div>

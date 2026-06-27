@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Select } from '../ui/Select';
 
 interface GoodsLine { name: string; qty: string; value: string; ncCode: string; unit: string; }
 
@@ -18,8 +19,8 @@ const toNum = (v: string) => {
   return isNaN(n) ? 0 : n;
 };
 
-const labelCls = 'block text-[13px] font-medium text-[#9FB8CC] mb-1.5';
-const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#7C9AB4] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
+const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
 const card = 'bg-white/5 rounded-2xl p-4 sm:p-5';
 
 export default function EtransportForm() {
@@ -85,9 +86,9 @@ export default function EtransportForm() {
 
       <div className={card}>
         <label className={labelCls}>Tip operațiune</label>
-        <select value={operationType} onChange={(e) => setOperationType(e.target.value)} className={`${inputCls} [color-scheme:dark]`}>
+        <Select value={operationType} onChange={(e) => setOperationType(e.target.value)}>
           {OPERATION_TYPES.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        </Select>
       </div>
 
       <div className={card}>
@@ -126,20 +127,20 @@ export default function EtransportForm() {
           {goods.map((g, i) => (
             <div key={i} className="grid grid-cols-1 sm:grid-cols-12 gap-2 items-end">
               <div className="sm:col-span-5">
-                <label className="text-[13px] text-[#9FB8CC]">Denumire</label>
+                <label className="text-[13px] text-[#A8BED2]">Denumire</label>
                 <input className={inputCls} value={g.name} onChange={(e) => setLine(i, { name: e.target.value })} placeholder="Denumirea bunului" />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-[13px] text-[#9FB8CC]">Cantitate</label>
+                <label className="text-[13px] text-[#A8BED2]">Cantitate</label>
                 <input className={inputCls} value={g.qty} onChange={(e) => setLine(i, { qty: e.target.value })} inputMode="decimal" />
               </div>
               <div className="sm:col-span-3">
-                <label className="text-[13px] text-[#9FB8CC]">Valoare (RON, fără TVA)</label>
+                <label className="text-[13px] text-[#A8BED2]">Valoare (RON, fără TVA)</label>
                 <input className={inputCls} value={g.value} onChange={(e) => setLine(i, { value: e.target.value })} inputMode="decimal" placeholder="0" />
               </div>
               <div className="sm:col-span-2 flex justify-end items-end pb-0.5">
                 <button type="button" onClick={() => removeLine(i)} disabled={goods.length === 1}
-                  className="w-10 h-10 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors disabled:opacity-40"
+                  className="w-10 h-10 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors disabled:opacity-40"
                   title="Șterge rândul">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
@@ -148,14 +149,14 @@ export default function EtransportForm() {
           ))}
         </div>
         <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between">
-          <span className="text-[15px] text-[#9FB8CC]">Valoare totală (fără TVA)</span>
+          <span className="text-[15px] text-[#A8BED2]">Valoare totală (fără TVA)</span>
           <span className="text-[22px] font-bold tabular-nums text-white">{ron(total)}</span>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <button onClick={submit} disabled={busy}
-          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-50">
+          className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-50">
           {busy ? 'Se trimite...' : 'Salvează și trimite la ANAF'}
         </button>
         <a href="/app/etransport" className="px-4 py-2.5 inline-flex items-center rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">

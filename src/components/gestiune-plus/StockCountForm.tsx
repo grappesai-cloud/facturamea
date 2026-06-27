@@ -4,7 +4,9 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Loader2, Check, ClipboardList } from 'lucide-react';
+import { DatePicker } from '../ui/DatePicker';
+import { Loader2, Check, ClipboardList, Boxes } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Warehouse { id: string; name: string; }
 interface CountLine {
@@ -89,9 +91,9 @@ export default function StockCountForm() {
 
   const diffFor = (l: CountLine) => (Number(counted[l.id] ?? l.systemQty) || 0) - (Number(l.systemQty) || 0);
 
-  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#7C9AB4] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
   const selectCls = `${inputCls} [color-scheme:dark]`;
-  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#0A2238] font-bold hover:bg-[#D2EA0E] shadow-none';
+  const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
   const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15';
 
   if (phase === 'pick') {
@@ -102,13 +104,13 @@ export default function StockCountForm() {
           <CardContent className="p-4 sm:p-5 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Gestiune *</Label>
+                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Gestiune *</Label>
                 <Select className={selectCls} value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
                   <option value="">Alege gestiunea</option>
                   {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </Select>
               </div>
-              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Data inventarului</Label><Input className={`${inputCls} [color-scheme:dark]`} type="date" value={countDate} onChange={(e) => setCountDate(e.target.value)} /></div>
+              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Data inventarului</Label><DatePicker value={countDate} onChange={(v) => setCountDate(v)} /></div>
             </div>
             <Button className={btnPrimary} disabled={busy} onClick={startCount}>
               {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ClipboardList className="w-4 h-4 mr-1" /> Pornește inventarul</>}
@@ -129,16 +131,20 @@ export default function StockCountForm() {
         <CardContent className="p-4 sm:p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-white text-sm">Inventar {number}</h3>
-            <span className="text-xs text-[#9FB8CC]">{lines.length} produse</span>
+            <span className="text-xs text-[#A8BED2]">{lines.length} produse</span>
           </div>
 
           {lines.length === 0 ? (
-            <p className="text-sm text-[#9FB8CC] py-6 text-center">Nu există stoc în această gestiune. Inventarul e gol.</p>
+            <EmptyState
+              icon={<Boxes />}
+              title="Stoc gol"
+              description="Nu există produse în această gestiune pentru inventar."
+            />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-[#7C9AB4] border-b border-white/10">
+                  <tr className="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
                     <th className="py-2 pr-3 font-medium">Produs</th>
                     <th className="py-2 px-3 font-medium text-right">Scriptic</th>
                     <th className="py-2 px-3 font-medium text-right">Faptic</th>
@@ -148,11 +154,11 @@ export default function StockCountForm() {
                 <tbody>
                   {lines.map((l) => {
                     const d = diffFor(l);
-                    const dCls = d === 0 ? 'text-[#9FB8CC]' : d > 0 ? 'text-[#2E9E6A]' : 'text-[#DC4B41]';
+                    const dCls = d === 0 ? 'text-[#A8BED2]' : d > 0 ? 'text-[#2E9E6A]' : 'text-[#DC4B41]';
                     return (
                       <tr key={l.id} className="border-b border-white/5">
-                        <td className="py-2 pr-3 text-white">{l.productName || l.productId} {l.productCode ? <span className="text-[#7C9AB4]">({l.productCode})</span> : null}</td>
-                        <td className="py-2 px-3 text-right text-[#9FB8CC] tabular-nums">{qtyFmt(l.systemQty)}</td>
+                        <td className="py-2 pr-3 text-white">{l.productName || l.productId} {l.productCode ? <span className="text-[#8FA6BC]">({l.productCode})</span> : null}</td>
+                        <td className="py-2 px-3 text-right text-[#A8BED2] tabular-nums">{qtyFmt(l.systemQty)}</td>
                         <td className="py-2 px-3 text-right w-[120px]">
                           <Input type="number" step="any" className={`${inputCls} [color-scheme:dark] text-right`}
                             value={counted[l.id] ?? ''}

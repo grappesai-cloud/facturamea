@@ -59,6 +59,9 @@ function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () =
 
   // drag-to-dismiss (pointer on handle + pull from top + trackpad overscroll)
   useEffect(() => {
+    // Swipe/drag-to-close gestures disabled — closing is via X button, backdrop, Esc only.
+    const GESTURES_DISABLED = true;
+    if (GESTURES_DISABLED) return;
     if (!mounted) return;
     const card = cardRef.current; const handle = handleRef.current;
     if (!card) return;
@@ -113,17 +116,11 @@ function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () =
 
   if (!mounted) return null;
   return (
-    <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
-      <div ref={cardRef} className="app-sheet-card w-full sm:max-w-[520px] max-h-[88vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center px-3 pt-3.5 pb-1 select-none">
-          <div className="flex-1" />
-          <div ref={handleRef} className="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span className="w-10 h-1.5 rounded-full fm-grab pointer-events-none" /></div>
-          <div className="flex-1 flex justify-end">
-            <button type="button" onClick={onClose} aria-label="Închide" className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
-        </div>
+    <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
+      <div ref={cardRef} className="app-sheet-card relative w-full sm:max-w-[520px] max-h-[80vh] sm:max-h-[86vh] overflow-y-auto bg-[#07090f] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]" onClick={(e) => e.stopPropagation()}>
+        <button type="button" onClick={onClose} aria-label="Închide" className="absolute top-4 right-4 z-10 fm-close-btn">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
         {children}
       </div>
     </div>
@@ -257,14 +254,14 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
         style={{ transform: open ? `translateX(${-OPEN_W}px)` : 'translateX(0px)', touchAction: 'pan-y' }}
       >
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[13px] font-medium text-[#7C9AB4]">{def.label}</p>
+          <p className="text-[13px] font-medium text-[#8FA6BC]">{def.label}</p>
           <div className="flex items-center gap-1 shrink-0">
             {/* desktop-only hover X to remove the KPI card */}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); startRemove(); }}
               title="Elimină"
-              className="hidden lg:grid w-7 h-7 place-items-center rounded-full text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-0 group-hover:opacity-100"
+              className="hidden lg:grid w-7 h-7 place-items-center rounded-full bg-white/10 text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-0 group-hover:opacity-100"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -275,7 +272,7 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
         </div>
         {activeBar !== null && def.barValues && def.barLabels ? (
           <>
-            <p className="text-[12px] font-medium text-[#7C9AB4] mt-2">{def.barLabels[activeBar]}</p>
+            <p className="text-[12px] font-medium text-[#8FA6BC] mt-2">{def.barLabels[activeBar]}</p>
             <p className="tabular-nums tracking-[-0.03em] leading-none mt-0.5">
               <span className="text-[28px] sm:text-[32px] font-bold text-white">{def.barValues[activeBar]}</span>
             </p>
@@ -284,9 +281,9 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
           <>
             <p className="mt-2 tabular-nums tracking-[-0.03em] leading-none">
               <span className="text-[30px] sm:text-[34px] font-bold text-white">{def.whole}</span>
-              {def.kind === 'money' && <span className="text-[19px] font-bold text-[#7C9AB4]">,{def.dec} RON</span>}
+              {def.kind === 'money' && <span className="text-[19px] font-bold text-[#8FA6BC]">,{def.dec} RON</span>}
             </p>
-            {def.note && <p className="text-[12px] text-[#7C9AB4] mt-1.5">{def.note}</p>}
+            {def.note && <p className="text-[12px] text-[#8FA6BC] mt-1.5">{def.note}</p>}
           </>
         )}
         {def.bars && def.bars.length > 0 ? (
@@ -311,7 +308,7 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
                   {def.barLabels && (
                     <div className="flex gap-1.5 mt-1.5">
                       {def.barLabels.map((l, i) => (
-                        <span key={i} className={`flex-1 text-center text-[9px] tabular-nums ${i === ai ? 'text-white font-semibold' : 'text-[#7C9AB4]'}`}>{l}</span>
+                        <span key={i} className={`flex-1 text-center text-[9px] tabular-nums ${i === ai ? 'text-white font-semibold' : 'text-[#8FA6BC]'}`}>{l}</span>
                       ))}
                     </div>
                   )}
@@ -323,7 +320,7 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
           <div className="mt-auto pt-4 space-y-2">
             {def.extra.slice(0, 2).map((row, i) => (
               <div key={i} className="flex items-center justify-between gap-2 border-t border-white/10 pt-2 first:border-t-0 first:pt-0">
-                <span className="text-[12px] text-[#7C9AB4] truncate">{row.label}</span>
+                <span className="text-[12px] text-[#8FA6BC] truncate">{row.label}</span>
                 <span className="text-[12.5px] font-semibold text-white tabular-nums shrink-0">{row.value}</span>
               </div>
             ))}
@@ -377,7 +374,7 @@ export default function DashboardKpis({ catalog, initialSelected }: { catalog: K
           <button
             type="button"
             onClick={() => setPicker(true)}
-            className="rounded-3xl border-2 border-dashed border-white/15 min-h-[150px] h-full flex flex-col items-center justify-center gap-2 text-[#7C9AB4] hover:border-[#E1FB15]/60 hover:text-[#E1FB15] transition-colors"
+            className="rounded-3xl border-2 border-dashed border-white/15 min-h-[150px] h-full flex flex-col items-center justify-center gap-2 text-[#8FA6BC] hover:border-[#E1FB15]/60 hover:text-[#E1FB15] transition-colors"
           >
             <Plus className="w-7 h-7" />
             <span className="text-[13px] font-semibold">Adaugă indicator</span>
@@ -388,18 +385,18 @@ export default function DashboardKpis({ catalog, initialSelected }: { catalog: K
       {/* Info sheet */}
       <BottomSheet open={!!infoDef} onClose={() => setInfoKey(null)}>
         {infoDef && (
-          <div className="px-5 sm:px-6 pt-2 pb-6">
-            <div className="flex items-center gap-3">
+          <div className="px-5 sm:px-6 pt-5 pb-6">
+            <div className="flex items-center gap-3 pr-10">
               <span className="w-11 h-11 rounded-2xl grid place-items-center shrink-0" style={{ background: infoDef.accent + '26', color: infoDef.accent }}>
                 <Glyph d={infoDef.icon} className="w-6 h-6" />
               </span>
-              <p className="text-[14px] font-medium text-[#9FB8CC]">{infoDef.label}</p>
+              <p className="text-[14px] font-medium text-[#A8BED2]">{infoDef.label}</p>
             </div>
             <p className="mt-3 tabular-nums tracking-[-0.03em] leading-none">
               <span className="text-[34px] font-bold text-white">{infoDef.whole}</span>
-              {infoDef.kind === 'money' && <span className="text-[18px] font-bold text-[#7C9AB4]">,{infoDef.dec} RON</span>}
+              {infoDef.kind === 'money' && <span className="text-[18px] font-bold text-[#8FA6BC]">,{infoDef.dec} RON</span>}
             </p>
-            {infoDef.note && <p className="text-[13px] text-[#7C9AB4] mt-1.5">{infoDef.note}</p>}
+            {infoDef.note && <p className="text-[13px] text-[#8FA6BC] mt-1.5">{infoDef.note}</p>}
             {infoDef.bars && infoDef.bars.length > 0 && (
               <div className="mt-5">
                 <div className="flex items-end gap-2 h-24">
@@ -410,7 +407,7 @@ export default function DashboardKpis({ catalog, initialSelected }: { catalog: K
                 {infoDef.barLabels && infoDef.barLabels.length === infoDef.bars.length && (
                   <div className="flex gap-2 mt-2">
                     {infoDef.barLabels.map((l, i) => (
-                      <span key={i} className={`flex-1 text-center text-[11px] ${i === infoDef.barLabels!.length - 1 ? 'text-white font-semibold' : 'text-[#7C9AB4]'}`}>{l}</span>
+                      <span key={i} className={`flex-1 text-center text-[11px] ${i === infoDef.barLabels!.length - 1 ? 'text-white font-semibold' : 'text-[#8FA6BC]'}`}>{l}</span>
                     ))}
                   </div>
                 )}
@@ -421,7 +418,7 @@ export default function DashboardKpis({ catalog, initialSelected }: { catalog: K
               <div className="mt-4 rounded-2xl bg-white/10 overflow-hidden">
                 {infoDef.extra.map((row, i) => (
                   <div key={i} className={`flex items-center justify-between px-4 py-3 ${i > 0 ? 'border-t border-white/10' : ''}`}>
-                    <span className="text-[13px] text-[#9FB8CC]">{row.label}</span>
+                    <span className="text-[13px] text-[#A8BED2]">{row.label}</span>
                     <span className="text-[14px] font-semibold text-white tabular-nums">{row.value}</span>
                   </div>
                 ))}
@@ -438,11 +435,11 @@ export default function DashboardKpis({ catalog, initialSelected }: { catalog: K
 
       {/* Add-indicator picker */}
       <BottomSheet open={picker} onClose={() => setPicker(false)}>
-        <div className="px-4 sm:px-6 pt-2 pb-6">
-          <h3 className="text-[20px] font-bold text-white">Adaugă indicator</h3>
-          <p className="text-[13px] text-[#7C9AB4] mt-1 mb-4">Alege ce vrei să urmărești pe pagina principală.</p>
+        <div className="px-4 sm:px-6 pt-5 pb-6">
+          <h3 className="text-[20px] font-bold text-white pr-12">Adaugă indicator</h3>
+          <p className="text-[13px] text-[#8FA6BC] mt-1 mb-4">Alege ce vrei să urmărești pe pagina principală.</p>
           {available.length === 0 ? (
-            <p className="text-center text-[#7C9AB4] py-8">Ai adăugat toți indicatorii disponibili.</p>
+            <p className="text-center text-[#8FA6BC] py-8">Ai adăugat toți indicatorii disponibili.</p>
           ) : (
             <div className="space-y-2">
               {available.map((d) => (
@@ -452,7 +449,7 @@ export default function DashboardKpis({ catalog, initialSelected }: { catalog: K
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[14px] font-semibold text-white truncate">{d.label}</span>
-                    <span className="block text-[12px] text-[#9FB8CC] truncate">{d.info}</span>
+                    <span className="block text-[12px] text-[#A8BED2] truncate">{d.info}</span>
                   </span>
                   <Plus className="w-5 h-5 text-[#E1FB15] shrink-0" />
                 </button>

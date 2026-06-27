@@ -52,11 +52,11 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
 <AdminLayout title="Licențe" activeTab="licente">
   <!-- Grant lifetime -->
   <div class="bg-white border border-[#E3EAF1] rounded-2xl p-5 mb-6 max-w-2xl">
-    <h3 class="text-[14px] font-semibold text-[#0A2238] mb-1">Acordă licență lifetime</h3>
+    <h3 class="text-[14px] font-semibold text-[#07090f] mb-1">Acordă licență lifetime</h3>
     <p class="text-[12px] text-[#46627A] mb-4">Acordare manuală (white-label). Compania primește acces permanent imediat.</p>
     <div id="grant-error" class="hidden mb-3 px-4 py-3 bg-white border border-[#B91C1C]/30 rounded-xl text-[13px] text-[#B91C1C]"></div>
     <form id="grant-form" class="flex flex-col sm:flex-row gap-3">
-      <select name="companyId" required class="flex-1 h-11 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[14px] text-[#0A2238] focus:border-[#0A2238] focus:outline-none transition-colors">
+      <select name="companyId" required class="flex-1 h-11 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[14px] text-[#07090f] focus:border-[#07090f] focus:outline-none transition-colors">
         <option value="">Alege compania...</option>
         {companyOptions.map((c) => (
           <option value={c.id} selected={c.id === preselect}>{c.name}</option>
@@ -72,7 +72,7 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
     <div class="overflow-x-auto">
       <table class="w-full text-[13px]">
         <thead>
-          <tr class="text-left text-[11px] uppercase tracking-wider text-[#7C9AB4] border-b border-[#E3EAF1]">
+          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-[#E3EAF1]">
             <th class="px-5 py-2.5 font-medium">Companie</th>
             <th class="px-5 py-2.5 font-medium">Plan</th>
             <th class="px-5 py-2.5 font-medium">Status</th>
@@ -87,11 +87,11 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
             const pl = planLabel[l.plan] || { label: l.plan, cls: 'bg-[#E3EAF1] text-[#46627A]' };
             return (
               <tr class="border-b border-[#F6F6F2] hover:bg-[#EDF1F5] transition-colors">
-                <td class="px-5 py-3 font-medium text-[#0A2238]">{l.companyName || l.companyId}</td>
+                <td class="px-5 py-3 font-medium text-[#07090f]">{l.companyName || l.companyId}</td>
                 <td class="px-5 py-3"><span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${pl.cls}`}>{pl.label}</span></td>
                 <td class="px-5 py-3 text-[#46627A]">{statusLabel[l.status] || l.status}</td>
                 <td class="px-5 py-3 text-[#46627A]">{l.plan === 'trial' ? fmt(l.trialEndsAt) : '-'}</td>
-                <td class="px-5 py-3 text-right font-semibold text-[#0A2238]">{l.plan === 'lifetime' ? ron(l.amountCents) : '-'}</td>
+                <td class="px-5 py-3 text-right font-semibold text-[#07090f]">{l.plan === 'lifetime' ? ron(l.amountCents) : '-'}</td>
                 <td class="px-5 py-3 text-[#46627A]">{fmt(l.updatedAt)}</td>
                 <td class="px-5 py-3 text-right">
                   <div class="flex items-center justify-end gap-2">
@@ -101,7 +101,7 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
                     {l.status === 'active' ? (
                       <button data-company-id={l.companyId} class="revoke-btn px-3 py-1.5 text-[12px] font-medium text-[#B91C1C] hover:bg-[#FDECEC] rounded-lg transition-colors">Revocă</button>
                     ) : (
-                      <span class="text-[12px] text-[#9FB8CC]">-</span>
+                      <span class="text-[12px] text-[#A8BED2]">-</span>
                     )}
                   </div>
                 </td>

@@ -67,7 +67,7 @@ const cards = [
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Stocuri</h1>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
-      <a href="/app/gestiune/nir" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Recepție (NIR)</a>
+      <a href="/app/gestiune/nir" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Recepție (NIR)</a>
       <a href="/app/gestiune/depozite" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Gestiuni</a>
     </div>
   </div>
@@ -75,7 +75,7 @@ const cards = [
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
     {cards.map((c) => (
       <div class="rounded-2xl p-5 bg-white/5">
-        <p class="text-[13px] font-medium text-[#7C9AB4]">{c.label}</p>
+        <p class="text-[13px] font-medium text-[#8FA6BC]">{c.label}</p>
         <p class={`text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums mt-2 ${c.accent}`}>{c.value}</p>
       </div>
     ))}
@@ -84,7 +84,7 @@ const cards = [
   <h2 class="text-[18px] font-bold text-white mb-3">Produse în stoc</h2>
   {rows.length === 0 ? (
     <div class="rounded-2xl p-5 bg-white/5 text-center py-10">
-      <p class="text-[13px] text-[#9FB8CC]">Niciun stoc înregistrat încă.</p>
+      <p class="text-[13px] text-[#A8BED2]">Niciun stoc înregistrat încă.</p>
       <a href="/app/gestiune/nir" class="inline-block mt-3 text-[13px] font-semibold text-[#E1FB15] hover:underline">Înregistrează o recepție →</a>
     </div>
   ) : (
@@ -95,35 +95,35 @@ const cards = [
             <div class="min-w-0 flex-1">
               <p class="font-bold text-white truncate">
                 {r.productName || '—'}
-                {r.productCode && <span class="font-mono text-[12px] font-normal text-[#7C9AB4] ml-2">{r.productCode}</span>}
+                {r.productCode && <span class="font-mono text-[12px] font-normal text-[#8FA6BC] ml-2">{r.productCode}</span>}
                 {r.low && <span class="ml-2 text-[11px] px-2 py-0.5 bg-[#DC4B41]/15 text-[#DC4B41] rounded-full font-semibold">sub minim</span>}
               </p>
-              <p class="text-[13px] text-[#7C9AB4] mt-0.5">{r.warehouseName || '—'} · {ron(r.avgCostCents)} / {r.um || 'um'}</p>
+              <p class="text-[13px] text-[#8FA6BC] mt-0.5">{r.warehouseName || '—'} · {ron(r.avgCostCents)} / {r.um || 'um'}</p>
             </div>
             <div class="text-right shrink-0">
               <p class="font-bold text-white tabular-nums">{ron(r.valueCents)}</p>
-              <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{qty(Number(r.quantity))} {r.um || ''}</p>
+              <p class="text-[13px] text-[#A8BED2] tabular-nums mt-0.5">{qty(Number(r.quantity))} {r.um || ''}</p>
             </div>
           </li>
         ))}
       </ul>
       {display.length > 3 && (
         <details class="mt-2.5">
-          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({display.length})</summary>
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({display.length})</summary>
           <ul class="space-y-2.5 mt-2.5">
             {display.slice(3).map((r) => (
               <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <div class="min-w-0 flex-1">
                   <p class="font-bold text-white truncate">
                     {r.productName || '—'}
-                    {r.productCode && <span class="font-mono text-[12px] font-normal text-[#7C9AB4] ml-2">{r.productCode}</span>}
+                    {r.productCode && <span class="font-mono text-[12px] font-normal text-[#8FA6BC] ml-2">{r.productCode}</span>}
                     {r.low && <span class="ml-2 text-[11px] px-2 py-0.5 bg-[#DC4B41]/15 text-[#DC4B41] rounded-full font-semibold">sub minim</span>}
                   </p>
-                  <p class="text-[13px] text-[#7C9AB4] mt-0.5">{r.warehouseName || '—'} · {ron(r.avgCostCents)} / {r.um || 'um'}</p>
+                  <p class="text-[13px] text-[#8FA6BC] mt-0.5">{r.warehouseName || '—'} · {ron(r.avgCostCents)} / {r.um || 'um'}</p>
                 </div>
                 <div class="text-right shrink-0">
                   <p class="font-bold text-white tabular-nums">{ron(r.valueCents)}</p>
-                  <p class="text-[13px] text-[#9FB8CC] tabular-nums mt-0.5">{qty(Number(r.quantity))} {r.um || ''}</p>
+                  <p class="text-[13px] text-[#A8BED2] tabular-nums mt-0.5">{qty(Number(r.quantity))} {r.um || ''}</p>
                 </div>
               </li>
             ))}

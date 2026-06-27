@@ -49,7 +49,7 @@ export default function SignaturePad({
     ctx.scale(dpr, dpr);
     ctx.lineWidth = 1.8;
     ctx.lineCap = 'round';
-    ctx.strokeStyle = '#0A2238';
+    ctx.strokeStyle = '#07090f';
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, rect.width, rect.height);
   }, []);
@@ -126,7 +126,7 @@ export default function SignaturePad({
   if (signedHash) {
     return (
       <div className="p-5 bg-white border border-[#15803D]/30 rounded-xl">
-        <p className="text-[13px] font-semibold text-[#0A2238]">Semnătură înregistrată ✓</p>
+        <p className="text-[13px] font-semibold text-[#07090f]">Semnătură înregistrată ✓</p>
         <p className="text-[11px] text-[#46627A] mt-1">Hash SHA-256: <code className="font-mono">{signedHash.slice(0, 16)}…</code></p>
       </div>
     );
@@ -135,16 +135,16 @@ export default function SignaturePad({
   return (
     <div className="space-y-3">
       <div>
-        <label className="block text-[12px] font-medium text-[#0A2238] mb-1.5">Nume semnatar</label>
+        <label className="block text-[12px] font-medium text-[#07090f] mb-1.5">Nume semnatar</label>
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Ion Popescu"
-          className="w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[14px] focus:border-[#0A2238] focus:outline-none transition-colors"
+          className="w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[14px] focus:border-[#07090f] focus:outline-none transition-colors"
         />
       </div>
       <div>
-        <label className="block text-[12px] font-medium text-[#0A2238] mb-1.5">Semnătură</label>
+        <label className="block text-[12px] font-medium text-[#07090f] mb-1.5">Semnătură</label>
         <div className="border border-[#E3EAF1] rounded-xl overflow-hidden">
           <canvas
             ref={canvasRef}

@@ -32,7 +32,7 @@ const fmtDate = (s: string | null) => {
 function statusPill(status: string) {
   switch (status) {
     case 'importat': return { label: 'Importată', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' };
-    case 'ignorat': return { label: 'Ignorată', cls: 'bg-white/10 text-[#9FB8CC]' };
+    case 'ignorat': return { label: 'Ignorată', cls: 'bg-white/10 text-[#A8BED2]' };
     default: return { label: 'Nouă', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' };
   }
 }
@@ -118,7 +118,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <p className="text-[15px] text-[#9FB8CC]">
+        <p className="text-[15px] text-[#A8BED2]">
           {rows.length === 0 ? 'Nicio factură primită încă.' : `${rows.length} facturi primite din SPV.`}
         </p>
         <div className="flex flex-wrap items-center gap-2.5">
@@ -134,7 +134,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
           <button
             onClick={sync}
             disabled={syncing || importingAll || !connected}
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {syncing ? 'Se sincronizează...' : 'Sincronizează din SPV'}
           </button>
@@ -149,7 +149,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
 
       <div className="bg-white/5 rounded-2xl overflow-hidden">
         {rows.length === 0 ? (
-          <div className="px-5 py-14 text-center text-[15px] text-[#9FB8CC]">
+          <div className="px-5 py-14 text-center text-[15px] text-[#A8BED2]">
             {connected
               ? 'Apasă „Sincronizează din SPV” pentru a aduce facturile primite de la ANAF.'
               : 'Conectează firma la ANAF pentru a vedea facturile primite.'}
@@ -158,7 +158,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-[15px]">
               <thead>
-                <tr className="text-left text-[12px] uppercase tracking-wider text-[#7C9AB4] border-b border-white/10">
+                <tr className="text-left text-[12px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
                   <th className="px-5 py-3 font-medium">Furnizor</th>
                   <th className="px-5 py-3 font-medium">Nr. mesaj</th>
                   <th className="px-5 py-3 font-medium">Data</th>
@@ -178,11 +178,11 @@ export default function InboxManager({ initialRows, connected }: Props) {
                           {row.supplierName || row.fromCif || 'Furnizor necunoscut'}
                         </button>
                         {row.fromCif && row.supplierName && (
-                          <span className="block text-[13px] text-[#7C9AB4]">CIF {row.fromCif}</span>
+                          <span className="block text-[13px] text-[#8FA6BC]">CIF {row.fromCif}</span>
                         )}
                       </td>
-                      <td className="px-5 py-4 font-mono text-[14px] text-[#9FB8CC]">{row.detail || row.anafMsgId}</td>
-                      <td className="px-5 py-4 text-[#9FB8CC]">{fmtDate(row.issueDate || row.receivedAt)}</td>
+                      <td className="px-5 py-4 font-mono text-[14px] text-[#A8BED2]">{row.detail || row.anafMsgId}</td>
+                      <td className="px-5 py-4 text-[#A8BED2]">{fmtDate(row.issueDate || row.receivedAt)}</td>
                       <td className="px-5 py-4 text-right font-semibold text-white tabular-nums">
                         {row.totalCents != null ? ron(row.totalCents, row.currency || 'RON') : '-'}
                       </td>
@@ -215,7 +215,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
                             <button
                               onClick={() => importExpense(row)}
                               disabled={busyId === row.id}
-                              className="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50 whitespace-nowrap"
+                              className="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50 whitespace-nowrap"
                             >
                               {busyId === row.id ? 'Se importă...' : 'Importă ca cheltuială'}
                             </button>
@@ -228,7 +228,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
                 {rows.length > 3 && (
                   <tr>
                     <td colSpan={6} className="px-5 py-4">
-                      <button type="button" onClick={() => setShowAll((s) => !s)} className="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+                      <button type="button" onClick={() => setShowAll((s) => !s)} className="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
                         {showAll ? 'Arată mai puțin' : `Vezi toate (${rows.length})`}
                       </button>
                     </td>
@@ -241,14 +241,14 @@ export default function InboxManager({ initialRows, connected }: Props) {
       </div>
 
       {selected && (
-        <div className="fixed inset-0 z-[90] bg-[#0A2238]/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6" onClick={() => setSelected(null)}>
+        <div className="fixed inset-0 z-[90] bg-black/70 flex items-end sm:items-center justify-center p-0 sm:p-6" onClick={() => setSelected(null)}>
           <div className="bg-[#0E2A45] w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl ring-1 ring-white/10 shadow-2xl max-h-[88vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[12px] uppercase tracking-wider text-[#7C9AB4]">Factură primită</p>
+                <p className="text-[12px] uppercase tracking-wider text-[#8FA6BC]">Factură primită</p>
                 <h3 className="text-[18px] font-bold text-white mt-0.5 truncate">{selected.supplierName || selected.fromCif || 'Furnizor necunoscut'}</h3>
               </div>
-              <button type="button" onClick={() => setSelected(null)} aria-label="Închide" className="shrink-0 w-9 h-9 grid place-items-center rounded-full text-[#9FB8CC] hover:bg-white/10 hover:text-[#DC4B41] transition-colors"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
+              <button type="button" onClick={() => setSelected(null)} aria-label="Închide" className="shrink-0 fm-close-btn"><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg></button>
             </div>
             <div className="px-6 py-5 space-y-3">
               {([
@@ -262,7 +262,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
                 ['Status', statusPill(selected.status).label],
               ] as [string, string][]).map(([k, v]) => (
                 <div key={k} className="flex items-start justify-between gap-4 text-[14px]">
-                  <span className="text-[#7C9AB4] shrink-0">{k}</span>
+                  <span className="text-[#8FA6BC] shrink-0">{k}</span>
                   <span className="text-white font-medium text-right break-words">{v}</span>
                 </div>
               ))}
@@ -272,7 +272,7 @@ export default function InboxManager({ initialRows, connected }: Props) {
               {selected.status === 'importat' ? (
                 <a href="/app/cheltuieli" className="px-5 py-2.5 rounded-full bg-[#2E9E6A]/15 text-[#2E9E6A] text-[14px] font-semibold">Vezi cheltuiala</a>
               ) : (
-                <button type="button" onClick={() => { importExpense(selected); setSelected(null); }} className="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E]">Importă ca cheltuială</button>
+                <button type="button" onClick={() => { importExpense(selected); setSelected(null); }} className="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E]">Importă ca cheltuială</button>
               )}
             </div>
           </div>

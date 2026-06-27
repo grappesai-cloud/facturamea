@@ -21,7 +21,7 @@ const [c] = await db.select({
 <AppLayout title="Design factură" activeTab="facturare">
   <div class="mb-8">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Design factură</h1>
-    <p class="text-[14px] text-[#9FB8CC] mt-1">Tot ce ține de aspectul facturilor, într-un singur loc — șablon, culoare, logo, footer, ștampilă și semnătură. Vezi schimbările în timp real și salvează designuri pe care le poți refolosi.</p>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Tot ce ține de aspectul facturilor, într-un singur loc — șablon, culoare, logo, footer, ștampilă și semnătură. Vezi schimbările în timp real și salvează designuri pe care le poți refolosi.</p>
   </div>
 
   <div class="max-w-6xl space-y-10">
@@ -31,7 +31,7 @@ const [c] = await db.select({
     <!-- Company assets shared by all designs -->
     <section>
       <h2 class="text-[18px] font-bold text-white mb-1">Ștampilă, semnătură & regim TVA</h2>
-      <p class="text-[13px] text-[#9FB8CC] mb-4">Acestea se aplică pe toate designurile.</p>
+      <p class="text-[13px] text-[#A8BED2] mb-4">Acestea se aplică pe toate designurile.</p>
       <InvoicingSettings initial={c || { invoiceLogoUrl: null, invoiceStampUrl: null, invoiceSignatureUrl: null, invoiceFooterText: null, tvaAtCollection: false }} client:load />
     </section>
   </div>

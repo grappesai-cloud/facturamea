@@ -1,4 +1,6 @@
+// Yields a reusable bottom-sheet: slide-up panel on mobile, centered modal on desktop.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 
 /**
  * Reusable bottom-sheet (slide-up on mobile, centered modal on desktop) with the
@@ -14,13 +16,32 @@ export function BottomSheet({ open, onClose, children, cardClassName }: { open: 
   useEffect(() => {
     if (open) {
       setMounted(true);
-      requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
     } else {
       setShown(false);
       const t = window.setTimeout(() => setMounted(false), 420);
       return () => window.clearTimeout(t);
     }
   }, [open]);
+
+  // Once mounted, flip to the open resting state AND explicitly play the entrance
+  // with the Web Animations API. A CSS transition is unreliable for a freshly
+  // mounted element (no painted "from" frame → the card snaps open); .animate()
+  // always slides up (mobile) / scale-fades (desktop), the same as the app menus.
+  useEffect(() => {
+    if (!mounted) return;
+    setShown(true);
+    const card = cardRef.current;
+    if (card && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const mobile = window.matchMedia('(max-width: 639.5px)').matches;
+      card.parentElement?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, easing: 'ease' });
+      card.animate(
+        mobile
+          ? [{ transform: 'translateY(100%)' }, { transform: 'translateY(0)' }]
+          : [{ transform: 'translateY(16px) scale(.96)', opacity: 0 }, { transform: 'translateY(0) scale(1)', opacity: 1 }],
+        { duration: mobile ? 440 : 340, easing: 'cubic-bezier(.22,1,.36,1)' },
+      );
+    }
+  }, [mounted]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -31,6 +52,9 @@ export function BottomSheet({ open, onClose, children, cardClassName }: { open: 
   }, [mounted]);
 
   useEffect(() => {
+    // Swipe/drag-to-close gestures disabled — closing is via X button, backdrop, Esc only.
+    const GESTURES_DISABLED = true;
+    if (GESTURES_DISABLED) return;
     if (!mounted) return;
     const card = cardRef.current; const handle = handleRef.current;
     if (!card) return;
@@ -83,21 +107,21 @@ export function BottomSheet({ open, onClose, children, cardClassName }: { open: 
     };
   }, [mounted]);
 
-  if (!mounted) return null;
-  return (
-    <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-sm`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
-      <div ref={cardRef} className={`app-sheet-card w-full max-h-[90vh] overflow-y-auto bg-[#0A2238] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)] ${cardClassName ?? 'sm:max-w-[520px]'}`} onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center px-3 pt-3.5 pb-1 select-none">
-          <div className="flex-1" />
-          <div ref={handleRef} className="touch-none cursor-grab active:cursor-grabbing flex justify-center flex-1"><span className="w-10 h-1.5 rounded-full fm-grab pointer-events-none" /></div>
-          <div className="flex-1 flex justify-end">
-            <button type="button" onClick={onClose} aria-label="Închide" className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </div>
-        </div>
+  if (!mounted || typeof document === 'undefined') return null;
+  // Portal to <body> so `position: fixed` is relative to the VIEWPORT, not to a
+  // transformed/filtered ancestor (e.g. the dashboard shell). Without this, the
+  // overlay sizes itself to the page content and the card lands off-screen below
+  // the fold — the "backdrop shows but the sheet doesn't open" bug.
+  return createPortal(
+    <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
+      <div ref={cardRef} className={`app-sheet-card relative w-full max-h-[80vh] sm:max-h-[86vh] overflow-y-auto bg-[#07090f] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)] ${cardClassName ?? 'sm:max-w-[520px]'}`} onClick={(e) => e.stopPropagation()}>
+        {/* X sits on the same level as the sheet's title (top-right) */}
+        <button type="button" onClick={onClose} aria-label="Închide" className="absolute top-4 right-4 z-10 fm-close-btn">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+        </button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

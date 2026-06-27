@@ -4,7 +4,8 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Star, X, Loader2 } from 'lucide-react';
+import { Plus, Star, X, Loader2, Percent } from 'lucide-react';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Rate { id: string; name: string; percent: number; regime: string; description: string | null; isDefault: boolean; isActive: boolean; position: number }
 
@@ -69,27 +70,34 @@ export default function TvaRatesManager() {
           <Button size="sm" variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowNew(!showNew)}><Plus className="w-4 h-4 mr-1" /> Adaugă cotă</Button>
         </div>
 
+        {rates.length === 0 && (
+          <EmptyState
+            icon={<Percent />}
+            title="Nicio cotă TVA definită"
+            description="Adaugă o cotă; cele standard se aplică implicit."
+          />
+        )}
         <ul className="space-y-2">
           {(showAll ? rates : rates.slice(0, 3)).map((r) => (
             <li key={r.id} className={`group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors ${!r.isActive ? 'opacity-50' : ''}`}>
               <span className="font-mono text-xs px-2 py-0.5 bg-white/10 rounded-full text-white tabular-nums w-14 text-center">{r.percent}%</span>
               <span className="text-[15px] text-white font-bold">{r.name}</span>
-              {r.description && <span className="text-xs text-[#9FB8CC] hidden md:inline flex-1 truncate">{r.description}</span>}
+              {r.description && <span className="text-xs text-[#A8BED2] hidden md:inline flex-1 truncate">{r.description}</span>}
               {!r.description && <span className="flex-1" />}
               <div className="flex items-center gap-2 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                 {r.isDefault ? (
                   <span className="text-xs px-2 py-0.5 bg-[#E8A33C]/15 text-[#E8A33C] rounded-full font-semibold flex items-center gap-1"><Star className="w-3 h-3 fill-[#E8A33C]" /> implicit</span>
                 ) : (
-                  <button onClick={() => patch(r.id, { isDefault: true })} className="text-xs text-[#9FB8CC] hover:text-white underline">implicit</button>
+                  <button onClick={() => patch(r.id, { isDefault: true })} className="text-xs text-[#A8BED2] hover:text-white underline">implicit</button>
                 )}
-                <button onClick={() => patch(r.id, { isActive: !r.isActive })} className="text-xs text-[#9FB8CC] hover:text-white underline">{r.isActive ? 'dezactivează' : 'activează'}</button>
-                <button onClick={() => remove(r.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#9FB8CC] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41]" title="Șterge"><X className="w-4 h-4" /></button>
+                <button onClick={() => patch(r.id, { isActive: !r.isActive })} className="text-xs text-[#A8BED2] hover:text-white underline">{r.isActive ? 'dezactivează' : 'activează'}</button>
+                <button onClick={() => remove(r.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41]" title="Șterge"><X className="w-4 h-4" /></button>
               </div>
             </li>
           ))}
         </ul>
         {rates.length > 3 && (
-          <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+          <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
             {showAll ? 'Arată mai puțin' : `Vezi toate (${rates.length})`}
           </button>
         )}
@@ -98,29 +106,29 @@ export default function TvaRatesManager() {
           <div className="mt-3 p-4 bg-white/5 rounded-2xl space-y-2">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Nume cotă *</Label>
-                <Input className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Normală" />
+                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Nume cotă *</Label>
+                <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Normală" />
               </div>
               <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Procent *</Label>
-                <Input className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" type="number" min="0" step="0.5" value={draft.percent} onChange={(e) => setDraft({ ...draft, percent: e.target.value })} />
+                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Procent *</Label>
+                <Input className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" type="number" min="0" step="0.5" value={draft.percent} onChange={(e) => setDraft({ ...draft, percent: e.target.value })} />
               </div>
               <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Regim</Label>
+                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Regim</Label>
                 <Select className="[color-scheme:dark] bg-white/10 border-0 text-white hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.regime} onChange={(e) => setDraft({ ...draft, regime: e.target.value })}>
                   {REGIMES.map((rg) => <option key={rg.id} value={rg.id}>{rg.label}</option>)}
                 </Select>
               </div>
             </div>
             <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#9FB8CC]">Descriere (opțional)</Label>
-              <Input className="bg-white/10 border-0 text-white placeholder:text-[#7C9AB4] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Taxare inversă conform Art. 331..." />
+              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Descriere (opțional)</Label>
+              <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Taxare inversă conform Art. 331..." />
             </div>
             <label className="flex items-center gap-2 text-xs text-white">
               <input type="checkbox" checked={draft.isDefault} onChange={(e) => setDraft({ ...draft, isDefault: e.target.checked })} /> Cotă implicită
             </label>
             <div className="flex gap-2">
-              <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#0A2238] hover:bg-[#D2EA0E] active:scale-100" disabled={busy || !draft.name} onClick={add}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
+              <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" disabled={busy || !draft.name} onClick={add}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
               <Button size="sm" variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowNew(false)}>Renunță</Button>
             </div>
           </div>
