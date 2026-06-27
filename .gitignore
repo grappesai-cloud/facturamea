@@ -22,3 +22,4 @@ secrets/
 # macOS
 .DS_Store
 **/.DS_Store
+store-assets/
