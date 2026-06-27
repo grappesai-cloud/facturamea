@@ -186,8 +186,8 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const [seriesId, setSeriesId] = useState('');
   // Mark the invoice paid + emit a chitanță in one go (only for kind=factura).
   const [collectNow, setCollectNow] = useState(false);
-  // e-Factura: trimite la ANAF la emitere. Implicit = setajul firmei (auto-send).
-  const [sendEfactura, setSendEfactura] = useState(efacturaAutoSend);
+  // e-Factura se trimite automat la ANAF la emitere (setarea firmei efacturaAutoSend,
+  // default ON) — fără toggle manual aici.
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [bnr, setBnr] = useState<{ rate: number; date: string } | null>(null);
 
@@ -520,7 +520,6 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
           attachmentName: attachmentName.trim() || null,
           dueAt: dueDate || null,
           issueImmediately,
-          sendEfactura: kind === 'factura' ? sendEfactura : false,
           notes: notes || null,
           lines: lines.map((l) => ({
             productId: l.productId || null,
@@ -984,13 +983,6 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
           <Toggle checked={issueImmediately} onChange={setIssueImmediately} title="Emite imediat (altfel rămâne ciornă)" />
           {kind === 'factura' && (
             <Toggle checked={collectNow} onChange={setCollectNow} title="Încasează acum (emite chitanță)" />
-          )}
-          {kind === 'factura' && issueImmediately && (
-            <Toggle
-              checked={sendEfactura}
-              onChange={setSendEfactura}
-              title={<>Trimite la e-Factura (ANAF){!anafConnected && <span className="text-[#E8A33C]"> · neconectat</span>}</>}
-            />
           )}
 
           {error && (

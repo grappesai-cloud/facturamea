@@ -40,6 +40,7 @@ function statusPill(status: string) {
 export default function InboxManager({ initialRows, connected }: Props) {
   const [rows, setRows] = useState<InboxRow[]>(initialRows || []);
   const [syncing, setSyncing] = useState(false);
+  const [importingAll, setImportingAll] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -89,6 +90,29 @@ export default function InboxManager({ initialRows, connected }: Props) {
     }
   };
 
+  // Bulk import every not-yet-imported invoice. Kept SEPARATE from sync on
+  // purpose — syncing only fetches from SPV; importing creates accounting rows.
+  const importAll = async () => {
+    const pending = rows.filter((r) => r.status !== 'importat' && r.status !== 'ignorat');
+    if (pending.length === 0) return;
+    setImportingAll(true); setMsg(null);
+    let ok = 0, fail = 0;
+    for (const row of pending) {
+      try {
+        const r = await fetch(`/api/anaf/inbox/${row.id}/import`, { method: 'POST' });
+        const d = await r.json();
+        if (d.ok) {
+          ok++;
+          setRows((prev) => prev.map((x) => x.id === row.id ? { ...x, status: 'importat', importedExpenseId: d.expenseId } : x));
+        } else { fail++; }
+      } catch { fail++; }
+    }
+    setImportingAll(false);
+    setMsg({ kind: fail ? 'err' : 'ok', text: fail ? `${ok} importate, ${fail} eșuate.` : `${ok} facturi importate în Cheltuieli.` });
+  };
+
+  const pendingCount = rows.filter((r) => r.status !== 'importat' && r.status !== 'ignorat').length;
+
   useEffect(() => { /* initialRows already hydrated */ }, []);
 
   return (
@@ -97,13 +121,24 @@ export default function InboxManager({ initialRows, connected }: Props) {
         <p className="text-[15px] text-[#9FB8CC]">
           {rows.length === 0 ? 'Nicio factură primită încă.' : `${rows.length} facturi primite din SPV.`}
         </p>
-        <button
-          onClick={sync}
-          disabled={syncing || !connected}
-          className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {syncing ? 'Se sincronizează...' : 'Sincronizează din SPV'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5">
+          {pendingCount > 0 && (
+            <button
+              onClick={importAll}
+              disabled={importingAll || syncing || !!busyId}
+              className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {importingAll ? 'Se importă...' : `Importă toate (${pendingCount})`}
+            </button>
+          )}
+          <button
+            onClick={sync}
+            disabled={syncing || importingAll || !connected}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {syncing ? 'Se sincronizează...' : 'Sincronizează din SPV'}
+          </button>
+        </div>
       </div>
 
       {msg && (

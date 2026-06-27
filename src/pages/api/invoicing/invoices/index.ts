@@ -253,17 +253,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
   }
 
-  // e-Factura auto-send: per-invoice `sendEfactura` flag wins; otherwise the
-  // company's `efacturaAutoSend` default. Only issued facturi. Best-effort —
-  // never blocks invoice creation.
+  // e-Factura: auto-trimitere la ANAF la emitere, controlată de setarea firmei
+  // `efacturaAutoSend` (default ON). Nu mai există buton/checkbox manual per
+  // factură. Best-effort — nu blochează crearea facturii.
   let efactura: { sent: boolean; ok?: boolean; error?: string } | undefined;
   if (kind === 'factura' && status === 'issued') {
-    let sendFlag: boolean | undefined = typeof body.sendEfactura === 'boolean' ? body.sendEfactura : undefined;
-    if (sendFlag === undefined) {
-      const [co] = await db.select({ auto: companies.efacturaAutoSend }).from(companies).where(eq(companies.id, cid)).limit(1);
-      sendFlag = !!co?.auto;
-    }
-    if (sendFlag) {
+    const [co] = await db.select({ auto: companies.efacturaAutoSend }).from(companies).where(eq(companies.id, cid)).limit(1);
+    if (co?.auto !== false) {
       try {
         const r = await submitInvoiceToAnaf(invoiceId, { userId: locals.user.id });
         efactura = { sent: true, ok: r.ok, error: r.ok ? undefined : r.error };

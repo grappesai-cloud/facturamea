@@ -71,6 +71,13 @@
       "when": 1782553774243,
       "tag": "0009_long_photon",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1782555175816,
+      "tag": "0010_slippery_logan",
+      "breakpoints": true
     }
   ]
 }

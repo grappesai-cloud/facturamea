@@ -125,8 +125,9 @@ export const companies = pgTable('companies', {
   // VAT-payer status (plătitor TVA) — captured from ANAF at onboarding. Non-payers
   // issue invoices without VAT and their e-Factura must NOT declare a VAT scheme.
   isVatPayer: boolean('is_vat_payer'),
-  // e-Factura: when true, every issued invoice is auto-submitted to ANAF SPV on creation.
-  efacturaAutoSend: boolean('efactura_auto_send').default(false),
+  // e-Factura: when true (default), every issued invoice is auto-submitted to ANAF SPV
+  // on creation. No manual per-invoice toggle/button; controlled here at company level.
+  efacturaAutoSend: boolean('efactura_auto_send').default(true),
   // Automated payment reminders (dunning) to clients.
   dunningEnabled: boolean('dunning_enabled').default(false),
   // Inventory cost method: cmp (weighted avg) | fifo | lifo.

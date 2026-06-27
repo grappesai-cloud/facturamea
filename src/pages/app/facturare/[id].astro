@@ -7,6 +7,9 @@ import { transportInvoices, transportInvoiceLines, transportInvoicePayments } fr
 import { eq, asc, desc } from 'drizzle-orm';
 import { loadIssuer } from '../../../lib/invoicing';
 import { isOverdue } from '../../../lib/dates';
+import { isStripeConfigured } from '../../../lib/stripe';
+
+const payEnabled = isStripeConfigured();
 
 const user = Astro.locals.user!;
 const id = Astro.params.id!;
@@ -79,7 +82,7 @@ const efBadge = !efSendable ? null
         {inv.dueAt && <span class="text-[14px] text-[#7C9AB4]">· Scadență {new Date(inv.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}</span>}
       </div>
     </div>
-    <InvoiceActions invoiceId={inv.id} kind={inv.kind} status={inv.status} totalCents={inv.totalCents} paidCents={inv.paidCents} currency={inv.currency} clientCompanyId={inv.clientCompanyId} efacturaStatus={inv.efacturaStatus} client:load />
+    <InvoiceActions invoiceId={inv.id} kind={inv.kind} status={inv.status} totalCents={inv.totalCents} paidCents={inv.paidCents} currency={inv.currency} clientCompanyId={inv.clientCompanyId} payEnabled={payEnabled} client:load />
   </div>
 
   {nudges.length > 0 && (

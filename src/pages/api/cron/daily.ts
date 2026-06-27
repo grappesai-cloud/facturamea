@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 import { refreshExpiringTokens } from '../../../lib/anaf/tokens';
 import { syncEfacturaStatuses } from '../../../lib/anaf/efactura-sync';
+import { syncAllInboxes } from '../../../lib/anaf/inbox-sync';
 import { startOfTodayRO } from '../../../lib/dates';
 
 // facturamea — daily maintenance cron (06:00 UTC, see vercel.json).
@@ -51,6 +52,15 @@ export const GET: APIRoute = async ({ request }) => {
     efChecked = r.checked; efValidated = r.validated; efRejected = r.rejected;
   } catch { /* never hard-fail the cron */ }
 
+  // SPV inbox auto-sync: pull received supplier e-Facturi for every connected
+  // company so they show up in "Facturi primite" ready to import, without the
+  // user having to press "Sincronizează".
+  let inboxCompanies = 0, inboxSynced = 0;
+  try {
+    const r = await syncAllInboxes();
+    inboxCompanies = r.companies; inboxSynced = r.synced;
+  } catch { /* never hard-fail the cron */ }
+
   // GDPR right-to-erasure: scrub residual PII from accounts soft-deleted >30 days
   // ago (name/phone/credentials/2FA/avatar). Fiscally-mandated documents stay; the
   // person is no longer identifiable. (A hard row delete is blocked by FKs.)
@@ -65,7 +75,7 @@ export const GET: APIRoute = async ({ request }) => {
     gdprPurged = (res as any)?.rowCount ?? 0;
   } catch (e) { console.error('gdpr purge failed:', e); }
 
-  return new Response(JSON.stringify({ ok: true, overdueMarked, anafRefreshed, anafFailed, efChecked, efValidated, efRejected, gdprPurged, ranAt: new Date().toISOString() }), {
+  return new Response(JSON.stringify({ ok: true, overdueMarked, anafRefreshed, anafFailed, efChecked, efValidated, efRejected, inboxCompanies, inboxSynced, gdprPurged, ranAt: new Date().toISOString() }), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
   });

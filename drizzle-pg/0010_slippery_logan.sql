@@ -1,0 +1,1 @@
+ALTER TABLE "companies" ALTER COLUMN "efactura_auto_send" SET DEFAULT true;
