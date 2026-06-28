@@ -1,0 +1,57 @@
+---
+import PublicLayout from '../layouts/PublicLayout.astro';
+
+Astro.response.headers.set('Cache-Control', 'public, s-maxage=600, stale-while-revalidate=1200');
+---
+
+<PublicLayout
+  title="Ștergerea contului și a datelor — facturamea"
+  description="Cum îți ștergi contul facturamea și datele asociate. Ștergere directă din aplicație sau la cerere prin email, conform GDPR."
+>
+  <p class="text-xs uppercase tracking-[0.18em] text-[#FF5C00] font-semibold mb-3">Ștergerea datelor</p>
+  <h1 class="text-4xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-2">Ștergerea contului și a datelor</h1>
+  <p class="text-[#6B6B68] mb-10 max-w-2xl">
+    Îți poți șterge contul facturamea și toate datele asociate în orice moment, direct
+    din aplicație sau trimițându-ne o cerere. Drept garantat de GDPR (Art. 17).
+  </p>
+
+  <div class="space-y-10 max-w-2xl">
+    <section>
+      <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-4 pb-2 border-b border-[#E8E8E4]">Din aplicație (recomandat)</h2>
+      <ol class="list-decimal pl-5 space-y-2 text-[#3D3D3A] leading-relaxed">
+        <li>Deschide aplicația și autentifică-te.</li>
+        <li>Mergi la <strong>Setări → Securitate</strong>.</li>
+        <li>În secțiunea <strong>Datele tale (GDPR)</strong> apasă <strong>Șterge contul</strong>.</li>
+        <li>Confirmă tastând textul cerut și parola, apoi confirmă ștergerea.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-4 pb-2 border-b border-[#E8E8E4]">Prin email</h2>
+      <p class="text-[#3D3D3A] leading-relaxed">
+        Dacă nu mai ai acces la cont, scrie-ne de pe adresa de email a contului la
+        <a href="mailto:support@facturamea.com?subject=Cerere%20stergere%20cont" class="text-[#FF5C00] hover:underline font-medium">support@facturamea.com</a>
+        cu subiectul „Cerere ștergere cont". Verificăm identitatea și procesăm cererea.
+      </p>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-bold text-[#0A0A0A] tracking-[-0.02em] mb-4 pb-2 border-b border-[#E8E8E4]">Ce se șterge și în cât timp</h2>
+      <ul class="list-disc pl-5 space-y-2 text-[#3D3D3A] leading-relaxed">
+        <li>Contul este marcat pentru ștergere imediat și nu mai poate fi folosit.</li>
+        <li>Datele asociate (profil, firmă, facturi, clienți, produse, cheltuieli, documente)
+          sunt șterse definitiv după <strong>30 de zile</strong>.</li>
+        <li>Excepție: documentele și înregistrările pe care legislația fiscală ne obligă
+          să le păstrăm o anumită perioadă sunt reținute strict cât cere legea, apoi șterse.</li>
+      </ul>
+      <p class="text-[#6B6B68] text-sm mt-4">
+        Poți cere oricând și un <strong>export</strong> al datelor tale (fișier JSON) din
+        Setări → Securitate, înainte de ștergere.
+      </p>
+    </section>
+
+    <p class="text-sm text-[#6B6B68]">
+      Detalii complete în <a href="/confidentialitate" class="text-[#FF5C00] hover:underline">Politica de confidențialitate</a>.
+    </p>
+  </div>
+</PublicLayout>

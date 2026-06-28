@@ -38,6 +38,6 @@ Advertising/Marketing. Scopuri = **App functionality** (+ Account management).
 - **Privacy policy URL:** https://facturamea.com/confidentialitate
 - **Account/data deletion:** utilizatorii pot șterge contul direct din aplicație
   (Setări → Securitate → Șterge contul; ștergere definitivă după 30 zile, GDPR Art. 17).
-- Dacă Play cere un **URL public de ștergere**, folosește pagina de confidențialitate
-  (care descrie procesul) sau adaugă o pagină simplă tip `/stergere-cont`. Spune-mi
-  și ți-o fac — e o pagină statică ce explică pașii + un contact.
+- **URL public de ștergere (pentru câmpul „Account deletion" din Data Safety):**
+  `https://facturamea.com/stergere-cont` — pagină publică ce explică ștergerea din
+  app + prin email (support@facturamea.com) + ce se șterge și în 30 de zile.

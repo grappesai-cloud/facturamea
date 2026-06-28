@@ -10,10 +10,12 @@ interface TextRecognitionPlugin {
 
 const TextRecognition = registerPlugin<TextRecognitionPlugin>('TextRecognition');
 
-/** True only inside the native iOS app where the Vision plugin exists. */
+/** True inside the native apps where on-device OCR exists: iOS (Vision) and Android (ML Kit). */
 export function isNativeOcrAvailable(): boolean {
   try {
-    return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios';
+    if (!Capacitor.isNativePlatform()) return false;
+    const p = Capacitor.getPlatform();
+    return p === 'ios' || p === 'android';
   } catch {
     return false;
   }
