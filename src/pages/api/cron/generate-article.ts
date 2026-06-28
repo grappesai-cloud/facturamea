@@ -78,9 +78,14 @@ export const GET: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ ok: true, published }, null, 2), {
         status: 200, headers: { 'Content-Type': 'application/json' },
       });
-    } catch (e) {
+    } catch (e: any) {
       console.error('generate-article failed:', e);
-      return new Response(JSON.stringify({ ok: false, error: String((e as Error).message) }), { status: 500 });
+      return new Response(JSON.stringify({
+        ok: false,
+        error: String(e?.message || e).slice(0, 200),
+        cause: String(e?.cause?.message || e?.cause || '').slice(0, 300),
+        detail: String(e?.cause?.detail || e?.cause?.constraint || e?.cause?.code || ''),
+      }), { status: 500 });
     }
   }
 
