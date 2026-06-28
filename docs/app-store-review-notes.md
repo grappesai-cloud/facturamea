@@ -13,7 +13,8 @@ clients, products, an expense), so the full app is available immediately.
 
 ## Native iOS features (this is a native app, not a website wrapper)
 - Push notifications (APNs) — payment reminders, e-Factura status, account alerts.
-- Camera — scan paper receipts/invoices to record expenses (uses the camera).
+- Camera + on-device OCR — scan paper receipts/invoices; text is recognised
+  locally with Apple's Vision framework (no server round-trip) to pre-fill expenses.
 - Face ID / Touch ID — optional biometric lock for the app (Settings → Security).
 - Native share sheet — share invoices as PDF.
 - Local notifications, status-bar and splash handled natively.
