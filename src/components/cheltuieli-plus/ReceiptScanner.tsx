@@ -75,6 +75,24 @@ export default function ReceiptScanner() {
     if (!file) return;
     setError(''); setNote(''); setFileName(file.name); setPhase('scanning');
 
+    // On the native iOS app, read images on-device with Apple Vision (free, no AI
+    // cost). PDFs and the web/Android build fall through to the server OCR below.
+    try {
+      const { isNativeOcrAvailable, recognizeTextNative, fileToBase64 } = await import('../../lib/native-ocr');
+      if (isNativeOcrAvailable() && file.type.startsWith('image/')) {
+        const text = await recognizeTextNative(await fileToBase64(file));
+        if (text.trim()) {
+          const { parseReceiptText } = await import('../../lib/receipt-parse');
+          setForm(fieldsToForm(parseReceiptText(text)));
+          setNote('Am citit datele pe dispozitiv. Verifică-le și salvează.');
+          setPhase('review');
+          return;
+        }
+      }
+    } catch {
+      // Native OCR unavailable or failed — fall back to server OCR.
+    }
+
     try {
       const body = new FormData();
       body.append('file', file);
