@@ -25,8 +25,12 @@ Reguli stricte:
 - Menționează facturamea natural, de maximum 1-2 ori, ca soluție practică (ex: "într-un program ca facturamea poți..."), fără să sune ca reclamă.
 - Lungime: 1000-1500 cuvinte.
 - Output: DOAR HTML pentru corpul articolului (fără <html>, <head>, <h1>, fără markdown). Permise: <h2> <h3> <p> <ul> <ol> <li> <strong> <em> <a>. Fără stiluri inline, fără clase.
-Răspunde EXCLUSIV cu un obiect JSON valid, fără text în plus, de forma:
-{"title":"...","description":"...(max 155 caractere, meta description)","keywords":"kw1, kw2, kw3","bodyHtml":"<h2>...</h2><p>...</p>...","readMinutes":6}`;
+Răspunde EXACT în formatul de mai jos, fără text în plus, fără markdown, fără JSON. Câmpurile de antet pe câte o linie, apoi marcajul ===CORP=== și DOAR corpul HTML după el:
+TITLU: <titlul rafinat>
+DESCRIERE: <meta description, maximum 155 caractere>
+KEYWORDS: <cuvant1, cuvant2, cuvant3>
+===CORP===
+<h2>...</h2><p>...</p>...`;
 
 function stripFence(s: string): string {
   return s.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
@@ -44,19 +48,25 @@ Ce trebuie să acopere: ${topic.brief}
 Rafinează titlul ca să fie atractiv și bun pentru SEO. Returnează DOAR JSON-ul.`;
   const resp = await client.messages.create({
     model,
-    max_tokens: 4096,
+    max_tokens: 8192,
     system: SYSTEM,
     messages: [{ role: 'user', content: user }],
   });
   const text = resp.content.filter((b: any) => b.type === 'text').map((b: any) => b.text).join('');
-  const parsed = JSON.parse(stripFence(text));
-  const bodyHtml = String(parsed.bodyHtml || '').replace(/—/g, ', ').trim();
+  // Delimiter format (not JSON): the HTML body lives after ===CORP=== and needs no
+  // escaping, so unescaped quotes/newlines in the article can't break parsing.
+  const parts = text.split(/===\s*CORP\s*===/i);
+  const head = parts[0] || '';
+  const bodyHtml = (parts[1] || '')
+    .replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/, '')
+    .replace(/—/g, ', ').trim();
   if (!bodyHtml || bodyHtml.length < 200) throw new Error('corp prea scurt');
+  const grab = (k: string) => head.match(new RegExp(`${k}\\s*:\\s*(.+)`, 'i'))?.[1].trim() || '';
   const words = bodyHtml.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
   return {
-    title: String(parsed.title || topic.title).slice(0, 295).replace(/—/g, ','),
-    description: String(parsed.description || '').slice(0, 395).replace(/—/g, ','),
-    keywords: String(parsed.keywords || topic.keywords).slice(0, 500),
+    title: (grab('TITLU') || topic.title).slice(0, 295).replace(/—/g, ','),
+    description: grab('DESCRIERE').slice(0, 395).replace(/—/g, ','),
+    keywords: (grab('KEYWORDS') || topic.keywords).slice(0, 500),
     bodyHtml,
     readMinutes: Math.max(2, Math.round(words / 200)),
   };
