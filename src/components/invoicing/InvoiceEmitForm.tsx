@@ -898,7 +898,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                       <div>
                         <Label className={LBL}>Cotă TVA</Label>
                         {!companyVatPayer ? (
-                          <div className={`${SELECT_INSET} flex items-center text-[#A8BED2]`}>Neplătitor TVA</div>
+                          <div className="flex h-11 w-full items-center rounded-xl border border-white/[0.12] bg-white/5 px-4 py-2.5 text-sm text-[#A8BED2]">Neplătitor TVA</div>
                         ) : tvaRates.length > 0 ? (
                           <Select value={l.vatRate} onChange={(e) => setLine(i, { vatRate: e.target.value })} className={SELECT_INSET}>
                             {!tvaRates.some((r) => String(r.percent) === l.vatRate) && <option value={l.vatRate}>{l.vatRate}%</option>}
