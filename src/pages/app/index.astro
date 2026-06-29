@@ -182,9 +182,13 @@ try {
   companyCount = Number(r[0]?.c ?? 1);
 } catch { /* DB not ready */ }
 const hideCockpit = companyCount <= 1;
+// e-Transport (UIT) needs ANAF connected — keep it out of the shortcut catalog until then.
+const anafConnected = Astro.locals.anafConnected;
 
 const primary = NAV_MODULES.find((m) => m.primary)!;
-const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import' && !(hideCockpit && m.key === 'cockpit'));
+const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import'
+  && !(hideCockpit && m.key === 'cockpit')
+  && !(!anafConnected && m.key === 'etransport'));
 
 // Full catalog (with flat tile colours) the user can pin to the launcher.
 const shortcutCatalog = rest.map((m) => {

@@ -46,6 +46,9 @@ if (user) {
 }
 const menuHide = new Set(MENU_HIDE);
 if (companyCount <= 1) menuHide.add('cockpit');
+// e-Transport (UIT) needs ANAF connected — hide it until then, the way the user
+// connects it is via Setări → Integrare ANAF.
+if (!anafConnected) menuHide.add('etransport');
 const groups: { label: string; items: typeof NAV_MODULES }[] = [
   { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare' && !menuHide.has(m.key)) },
   { label: 'Vânzări', items: NAV_MODULES.filter((m) => m.group === 'Vanzari' && !menuHide.has(m.key)) },
