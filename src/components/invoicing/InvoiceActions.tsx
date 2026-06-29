@@ -4,7 +4,7 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
 import { BottomSheet } from '../ui/BottomSheet';
-import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat, CreditCard } from 'lucide-react';
+import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat, CreditCard, RefreshCw } from 'lucide-react';
 
 export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId, efacturaStatus, payEnabled }: {
   invoiceId: string;
@@ -118,6 +118,17 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
+  const verifyAnaf = async () => {
+    setBusy(true); setError('');
+    try {
+      const res = await fetch(`/api/invoicing/invoices/${invoiceId}/efactura-status`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error || 'Nu am putut verifica la ANAF'); return; }
+      if (data.processing) { setError('ANAF încă procesează factura. Reîncearcă în câteva minute.'); return; }
+      window.location.reload();
+    } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
+  };
+
   const submitPayment = async (amountCents: number, method: string, reference: string, emitReceipt: boolean) => {
     setBusy(true); setError('');
     try {
@@ -193,6 +204,12 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
         <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={submitSpv}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Send className="w-4 h-4 mr-1.5" />}
           Trimite la ANAF
+        </Button>
+      )}
+      {efacturaStatus === 'submitted' && (
+        <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={verifyAnaf}>
+          {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <RefreshCw className="w-4 h-4 mr-1.5" />}
+          Verifică la ANAF
         </Button>
       )}
       {canStorno && (

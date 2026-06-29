@@ -79,6 +79,15 @@ function resolveCountyCode(addr: { street?: string; city?: string; countrySubent
     const key = normRo(explicit).replace(/^jude[t]ul?\.?\s*/, '').replace(/^jud\.?\s*/, '');
     if (RO_COUNTIES[key]) return RO_COUNTIES[key];
   }
+  // 1b. ANAF CIF lookups store the address as one string like "JUD. ILFOV, ORȘ.
+  //     VOLUNTARI, ȘOS. BUCUREȘTI NORD". Parse the explicit "JUD(EȚUL). X" marker —
+  //     it's authoritative and beats any county name that appears in a street.
+  const judMatch = normRo(`${addr.city || ''} ${addr.street || ''}`)
+    .match(/\bjud(?:et)?(?:ul)?\.?\s+([a-z][a-z\s-]{2,20}?)(?=\s*,|\s+(?:mun|munic|ors|oras|com|sat|str|sos|sec|bd|cal|nr|bl|sc|et|ap|loc)\b|$)/);
+  if (judMatch) {
+    const jk = judMatch[1].trim();
+    if (RO_COUNTIES[jk]) return RO_COUNTIES[jk];
+  }
   // 2. Fall back to scanning city + street for the longest county name. "bucuresti"
   //    is only inferred from the CITY (a Bucharest buyer has city = a sector / the
   //    capital), never from a street name, to avoid the false RO-B above.
