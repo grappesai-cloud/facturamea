@@ -111,6 +111,7 @@
     "stripe": "^22.1.0",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
+    "tesseract.js": "^7.0.0",
     "typescript": "^5.9.3",
     "web-push": "^3.6.7",
     "zod": "^4.3.6"

@@ -47,7 +47,12 @@ export async function parseExpensePdf(bytes: Uint8Array, ownCui?: string | null)
   try { text = await extractPdfText(bytes); } catch { return { ok: false, error: 'pdf-no-text' }; }
   // Scanned image / no text layer → not enough to parse.
   if (!text || text.replace(/\s+/g, '').length < 25) return { ok: false, error: 'pdf-no-text' };
+  return parseExpenseText(text, ownCui);
+}
 
+// Parse invoice fields from already-extracted text — shared by the PDF text-layer
+// reader and the Tesseract image OCR.
+export async function parseExpenseText(text: string, ownCui?: string | null): Promise<PdfExpenseResult> {
   const own = (ownCui || '').replace(/^RO/i, '').replace(/\D/g, '');
 
   // --- Supplier CUI: validated CUIs in the text, excluding the buyer (our own). ---
