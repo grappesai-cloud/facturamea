@@ -21,12 +21,15 @@ export const GET: APIRoute = async ({ request }) => {
   try {
     await ensureColumn();
     const rows = await db.execute(sql`
-      SELECT id, platform_id, email, name, is_admin, admin_role
-      FROM users
-      WHERE lower(email) LIKE '%robert%' OR lower(email) LIKE '%gyorgy%'
-         OR lower(name)  LIKE '%robert%' OR lower(name)  LIKE '%gyorgy%'
-         OR lower(platform_id) LIKE '%robert%' OR lower(platform_id) LIKE '%gyorgy%'
-      ORDER BY name
+      SELECT u.id, u.platform_id, u.email, u.name, u.is_admin, u.admin_role,
+             u.company_id, c.name AS company_name, l.plan AS license_plan, l.status AS license_status
+      FROM users u
+      LEFT JOIN companies c ON c.id = u.company_id
+      LEFT JOIN app_licenses l ON l.company_id = u.company_id
+      WHERE lower(u.email) LIKE '%robert%' OR lower(u.email) LIKE '%gyorgy%'
+         OR lower(u.name)  LIKE '%robert%' OR lower(u.name)  LIKE '%gyorgy%'
+         OR lower(u.platform_id) LIKE '%robert%' OR lower(u.platform_id) LIKE '%gyorgy%'
+      ORDER BY u.name
     `);
     return json({ columnReady: true, candidates: (rows as any).rows ?? rows });
   } catch (e: any) {
