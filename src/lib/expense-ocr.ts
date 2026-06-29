@@ -170,7 +170,8 @@ export async function ocrExpense(bytes: Uint8Array, mediaType: string): Promise<
       return { ok: false, error: 'Nu am găsit o sumă pe document. Completează manual.' };
     }
     return { ok: true, fields };
-  } catch (err) {
-    return { ok: false, error: 'Eroare la procesarea documentului. Încearcă din nou sau completează manual.' };
+  } catch (err: any) {
+    console.error('[ocr] error', err?.status, err?.message || err);
+    return { ok: false, error: 'Eroare la procesarea documentului. Încearcă din nou sau completează manual.', _debug: String(err?.message || err).slice(0, 240) } as any;
   }
 }
