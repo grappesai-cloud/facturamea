@@ -172,6 +172,14 @@ export async function ocrExpense(bytes: Uint8Array, mediaType: string): Promise<
     return { ok: true, fields };
   } catch (err: any) {
     console.error('[ocr] error', err?.status, err?.message || err);
-    return { ok: false, error: 'Eroare la procesarea documentului. Încearcă din nou sau completează manual.', _debug: String(err?.message || err).slice(0, 240) } as any;
+    const msg = String(err?.message || '');
+    // Distinguish the cause so the user knows whether to just complete manually.
+    if (err?.status === 400 && /credit balance|billing|quota|insufficient/i.test(msg)) {
+      return { ok: false, error: 'Scanarea automată e temporar indisponibilă. Completează manual sau încarcă XML-ul e-Factura.' };
+    }
+    if (err?.status === 429 || err?.status === 529) {
+      return { ok: false, error: 'Serviciul de scanare e ocupat acum. Reîncearcă în câteva secunde sau completează manual.' };
+    }
+    return { ok: false, error: 'Nu am putut citi documentul automat. Completează manual sau încarcă XML-ul e-Factura.' };
   }
 }
