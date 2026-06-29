@@ -56,7 +56,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
   const dl = await downloadMessage(companyId, row.anafMsgId);
   if (!dl.ok || !dl.bytes) return errJson(dl.error || 'Nu s-a putut descărca din SPV.');
 
-  const xml = extractInvoiceXml(dl.bytes);
+  const xml = extractInvoiceXml(new Uint8Array(dl.bytes as ArrayBuffer));
   if (xml && looksLikeInvoice(xml)) {
     try { await db.update(efacturaInbox).set({ xml }).where(eq(efacturaInbox.id, row.id)); } catch { /* best-effort cache */ }
     return respondXml(xml);
