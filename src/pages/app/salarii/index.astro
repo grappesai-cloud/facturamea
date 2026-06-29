@@ -1,0 +1,175 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import EmployeesManager from '../../../components/salarii/EmployeesManager.tsx';
+import EmptyState from '../../../components/ui/EmptyState.astro';
+import { db } from '../../../db';
+import { payrollRuns } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+import { MONTHS_RO } from '../../../lib/payroll';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let runs: any[] = [];
+try {
+  runs = await db.select().from(payrollRuns)
+    .where(eq(payrollRuns.companyId, companyId))
+    .orderBy(desc(payrollRuns.year), desc(payrollRuns.month))
+    .limit(200);
+} catch (e) { /* DB not provisioned */ }
+
+const latest = runs[0] || null;
+
+const now = new Date();
+const curMonthNum = now.getUTCMonth() + 1;
+const curYearNum = now.getUTCFullYear();
+const yearChoices = [curYearNum - 1, curYearNum, curYearNum + 1];
+---
+
+<AppLayout title="Salarii" activeTab="salarii">
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Salarii</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-2">Angajați, calculul lunar al salariilor și statele de plată (CAS, CASS, impozit, CAM).</p>
+  </div>
+
+  <!-- KPI: latest run -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+    <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#8FA6BC]">Total brut{latest ? ` · ${MONTHS_RO[(latest.month || 1) - 1]} ${latest.year}` : ''}</p>
+      <p class="text-[20px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2 break-words">{ron(latest?.totalGrossCents || 0)}</p>
+    </div>
+    <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#8FA6BC]">Total net</p>
+      <p class="text-[20px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2 break-words">{ron(latest?.totalNetCents || 0)}</p>
+    </div>
+    <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#8FA6BC]">Contribuții angajat</p>
+      <p class="text-[20px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white mt-2 break-words">{ron((latest?.totalCasCents || 0) + (latest?.totalCassCents || 0) + (latest?.totalTaxCents || 0))}</p>
+    </div>
+    <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <p class="text-[13px] font-medium text-[#8FA6BC]">Cost angajator</p>
+      <p class="text-[20px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-2 break-words">{ron((latest?.totalGrossCents || 0) + (latest?.totalCamCents || 0))}</p>
+    </div>
+  </div>
+
+  <!-- Employees -->
+  <section class="mb-10">
+    <h2 class="text-[18px] sm:text-[22px] font-semibold tracking-[-0.02em] text-white mb-3">Angajați</h2>
+    <EmployeesManager client:load />
+  </section>
+
+  <!-- Payroll runs -->
+  <section>
+    <h2 class="text-[18px] sm:text-[22px] font-semibold tracking-[-0.02em] text-white mb-3">Ștate de plată</h2>
+
+    <div class="rounded-2xl p-4 sm:p-5 bg-white/5 mb-5">
+      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
+        <div>
+          <p class="text-[15px] font-semibold text-white">Calculează luna</p>
+          <p class="text-[13px] text-[#8FA6BC] mt-0.5">Generează statul de plată pentru toți angajații activi pe luna aleasă.</p>
+        </div>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 shrink-0">
+          <div class="flex gap-2">
+            <select id="run-month" aria-label="Luna"
+              class="flex-1 rounded-xl bg-white/5 px-3 py-2.5 text-[14px] text-white border border-white/[0.12] focus:outline-none [color-scheme:dark]">
+              {MONTHS_RO.map((m, i) => (
+                <option value={String(i + 1)} selected={i + 1 === curMonthNum}>{m}</option>
+              ))}
+            </select>
+            <select id="run-year" aria-label="Anul"
+              class="rounded-xl bg-white/5 px-3 py-2.5 text-[14px] text-white border border-white/[0.12] focus:outline-none [color-scheme:dark]">
+              {yearChoices.map((y) => (
+                <option value={String(y)} selected={y === curYearNum}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <button id="run-calc" class="inline-flex justify-center items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors whitespace-nowrap">
+            Calculează luna
+          </button>
+        </div>
+      </div>
+    </div>
+    <p id="run-msg" class="text-[14px] mb-4 hidden"></p>
+
+    {runs.length === 0 ? (
+      <EmptyState title="Niciun stat de plată" description="Alege o lună și apasă „Calculează luna” pentru a genera primul stat de plată.">
+        <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0V12a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 12V5.25"/></svg>
+      </EmptyState>
+    ) : (
+      <ul class="space-y-2.5">
+        {runs.map((r) => {
+          const employerCost = (r.totalGrossCents || 0) + (r.totalCamCents || 0);
+          const finalized = r.status === 'finalized';
+          return (
+            <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+              <div class="min-w-0 flex-1">
+                <p class="truncate">
+                  <a href={`/app/salarii/${r.id}`} class="font-bold text-white hover:text-[#E1FB15] transition-colors">{MONTHS_RO[(r.month || 1) - 1]} {r.year}</a>
+                  <span class:list={['ml-2 inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold align-middle', finalized ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#A8BED2]']}>
+                    {finalized ? 'Finalizat' : 'Ciornă'}
+                  </span>
+                </p>
+                <p class="text-[13px] text-[#8FA6BC] mt-0.5 truncate">
+                  Brut {ron(r.totalGrossCents)} · Net {ron(r.totalNetCents)}
+                </p>
+              </div>
+              <div class="text-right shrink-0">
+                <p class="font-bold text-white tabular-nums">{ron(employerCost)}</p>
+                <p class="text-[13px] text-[#8FA6BC] tabular-nums mt-0.5">cost angajator</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    )}
+  </section>
+
+  <script is:inline>
+    document.addEventListener('astro:page-load', function () {
+      const btn = document.getElementById('run-calc');
+      if (!btn || btn.dataset.fmBound) return;
+      btn.dataset.fmBound = '1';
+      const monthEl = document.getElementById('run-month');
+      const yearEl = document.getElementById('run-year');
+      const msg = document.getElementById('run-msg');
+
+      function show(text, ok) {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.className = 'text-[14px] mb-4 ' + (ok ? 'text-[#2E9E6A]' : 'text-[#DC4B41]');
+      }
+
+      btn.addEventListener('click', async function () {
+        const month = monthEl ? Number(monthEl.value) : 0;
+        const year = yearEl ? Number(yearEl.value) : 0;
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Se calculează...';
+        try {
+          const res = await fetch('/api/salarii/runs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ year: year, month: month }),
+          });
+          const data = await res.json().catch(function () { return {}; });
+          if (res.ok && data.id) {
+            show('Stat de plată calculat (' + (data.count || 0) + ' angajați). Deschidem...', true);
+            setTimeout(function () { window.location.href = '/app/salarii/' + data.id; }, 800);
+          } else {
+            show(data.error || 'Eroare la calcul.', false);
+            btn.disabled = false;
+            btn.textContent = original;
+          }
+        } catch (e) {
+          show('Eroare de conexiune.', false);
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      });
+    });
+  </script>
+</AppLayout>

@@ -1,0 +1,142 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { payrollRuns, payrollItems } from '../../../db/schema';
+import { and, eq, asc } from 'drizzle-orm';
+import { MONTHS_RO } from '../../../lib/payroll';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+const id = Astro.params.id!;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+let run: any = null;
+let items: any[] = [];
+try {
+  const [r] = await db.select().from(payrollRuns)
+    .where(and(eq(payrollRuns.id, id), eq(payrollRuns.companyId, companyId))).limit(1);
+  run = r || null;
+  if (run) {
+    items = await db.select().from(payrollItems)
+      .where(eq(payrollItems.runId, id))
+      .orderBy(asc(payrollItems.employeeNameSnap));
+  }
+} catch (e) { /* DB not provisioned */ }
+
+if (!run) return Astro.redirect('/app/salarii');
+
+const finalized = run.status === 'finalized';
+const period = `${MONTHS_RO[(run.month || 1) - 1]} ${run.year}`;
+const employerCost = (run.totalGrossCents || 0) + (run.totalCamCents || 0);
+---
+
+<AppLayout title={`Stat de plată · ${period}`} activeTab="salarii">
+  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+    <div>
+      <a href="/app/salarii" class="text-[13px] text-[#8FA6BC] hover:text-white transition-colors">← Salarii</a>
+      <h1 class="text-[26px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white mt-1">Stat de plată · {period}</h1>
+      <p class="text-[14px] text-[#A8BED2] mt-2">
+        <span class:list={['inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold align-middle', finalized ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#A8BED2]']}>
+          {finalized ? 'Finalizat' : 'Ciornă'}
+        </span>
+        <span class="ml-2">{items.length} angajați · cost angajator {ron(employerCost)}</span>
+      </p>
+    </div>
+    <div class="flex gap-2 shrink-0">
+      <a id="dl-d112" href={`/api/salarii/runs/${run.id}/d112`} class="inline-flex justify-center items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors whitespace-nowrap">
+        Descarcă D112 (sumar)
+      </a>
+      {!finalized && (
+        <button id="finalize-btn" class="inline-flex justify-center items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors whitespace-nowrap">
+          Finalizează
+        </button>
+      )}
+    </div>
+  </div>
+  <p id="run-msg" class="text-[14px] mb-4 hidden"></p>
+
+  <div class="rounded-2xl bg-white/5 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-[13px] sm:text-[14px]">
+        <thead>
+          <tr class="text-left text-[#8FA6BC] border-b border-white/[0.08]">
+            <th class="px-4 py-3 font-medium">Angajat</th>
+            <th class="px-4 py-3 font-medium text-right tabular-nums">Brut</th>
+            <th class="px-4 py-3 font-medium text-right tabular-nums">CAS 25%</th>
+            <th class="px-4 py-3 font-medium text-right tabular-nums">CASS 10%</th>
+            <th class="px-4 py-3 font-medium text-right tabular-nums">Impozit</th>
+            <th class="px-4 py-3 font-medium text-right tabular-nums">Net</th>
+            <th class="px-4 py-3 font-medium text-right tabular-nums">CAM angajator</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((it) => (
+            <tr class="border-b border-white/[0.05] last:border-0">
+              <td class="px-4 py-3 text-white font-medium whitespace-nowrap">{it.employeeNameSnap || '—'}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-white">{ron(it.grossCents)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-[#A8BED2]">{ron(it.casCents)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-[#A8BED2]">{ron(it.cassCents)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-[#A8BED2]">{ron(it.taxCents)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-white font-semibold">{ron(it.netCents)}</td>
+              <td class="px-4 py-3 text-right tabular-nums text-[#E8A33C]">{ron(it.camCents)}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr class="border-t border-white/[0.12] font-bold text-white">
+            <td class="px-4 py-3">TOTAL</td>
+            <td class="px-4 py-3 text-right tabular-nums">{ron(run.totalGrossCents)}</td>
+            <td class="px-4 py-3 text-right tabular-nums">{ron(run.totalCasCents)}</td>
+            <td class="px-4 py-3 text-right tabular-nums">{ron(run.totalCassCents)}</td>
+            <td class="px-4 py-3 text-right tabular-nums">{ron(run.totalTaxCents)}</td>
+            <td class="px-4 py-3 text-right tabular-nums">{ron(run.totalNetCents)}</td>
+            <td class="px-4 py-3 text-right tabular-nums text-[#E8A33C]">{ron(run.totalCamCents)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <p class="mt-6 text-[12px] text-[#8FA6BC] max-w-2xl leading-relaxed">
+    Contribuții 2026: CAS 25% și CASS 10% reținute de la angajat, impozit 10% pe baza impozabilă (brut − CAS − CASS − deducere), CAM 2.25% suportat de angajator. „Descarcă D112 (sumar)” exportă un CSV de verificare, nu declarația ANAF completă.
+  </p>
+
+  <script is:inline define:vars={{ runId: run.id }}>
+    document.addEventListener('astro:page-load', function () {
+      const btn = document.getElementById('finalize-btn');
+      const msg = document.getElementById('run-msg');
+      function show(text, ok) {
+        if (!msg) return;
+        msg.textContent = text;
+        msg.className = 'text-[14px] mb-4 ' + (ok ? 'text-[#2E9E6A]' : 'text-[#DC4B41]');
+      }
+      if (!btn || btn.dataset.fmBound) return;
+      btn.dataset.fmBound = '1';
+      btn.addEventListener('click', async function () {
+        if (!confirm('Finalizezi statul de plată? După finalizare nu mai poate fi recalculat sau șters.')) return;
+        const original = btn.textContent;
+        btn.disabled = true;
+        btn.textContent = 'Se finalizează...';
+        try {
+          const res = await fetch('/api/salarii/runs/' + runId, { method: 'PATCH' });
+          const data = await res.json().catch(function () { return {}; });
+          if (res.ok && data.ok) {
+            show('Stat de plată finalizat. Reîncărcăm...', true);
+            setTimeout(function () { window.location.reload(); }, 800);
+          } else {
+            show(data.error || 'Eroare la finalizare.', false);
+            btn.disabled = false;
+            btn.textContent = original;
+          }
+        } catch (e) {
+          show('Eroare de conexiune.', false);
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      });
+    });
+  </script>
+</AppLayout>

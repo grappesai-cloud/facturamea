@@ -1904,6 +1904,65 @@ export const depreciationEntries = pgTable('depreciation_entries', {
   index('idx_depreciation_company').on(table.companyId),
 ]);
 
+// ─── Salarii (payroll) ─────────────────────────────────────
+// Employees + monthly payroll runs. RO 2026 contributions computed in lib/payroll.ts.
+export const employees = pgTable('employees', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  fullName: varchar('full_name', { length: 200 }).notNull(),
+  cnp: varchar('cnp', { length: 13 }),
+  position: varchar('position', { length: 120 }),
+  baseSalaryCents: integer('base_salary_cents').notNull().default(0), // salariu brut lunar
+  deductionCents: integer('deduction_cents').notNull().default(0),     // deducere personală lunară
+  employmentType: varchar('employment_type', { length: 16 }).notNull().default('full_time'), // full_time | part_time
+  iban: varchar('iban', { length: 34 }),
+  hiredAt: date('hired_at', { mode: 'string' }),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_employees_company').on(table.companyId),
+]);
+
+export const payrollRuns = pgTable('payroll_runs', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
+  month: integer('month').notNull(), // 1-12
+  status: varchar('status', { length: 16 }).notNull().default('draft'), // draft | finalized
+  // Totals snapshot (cents).
+  totalGrossCents: integer('total_gross_cents').notNull().default(0),
+  totalNetCents: integer('total_net_cents').notNull().default(0),
+  totalCasCents: integer('total_cas_cents').notNull().default(0),
+  totalCassCents: integer('total_cass_cents').notNull().default(0),
+  totalTaxCents: integer('total_tax_cents').notNull().default(0),
+  totalCamCents: integer('total_cam_cents').notNull().default(0),
+  postedJournalId: text('posted_journal_id'),
+  finalizedAt: timestamp('finalized_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('uq_payroll_run_period').on(table.companyId, table.year, table.month),
+  index('idx_payroll_runs_company').on(table.companyId),
+]);
+
+export const payrollItems = pgTable('payroll_items', {
+  id: text('id').primaryKey(),
+  runId: text('run_id').notNull().references(() => payrollRuns.id, { onDelete: 'cascade' }),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  employeeId: text('employee_id').notNull().references(() => employees.id, { onDelete: 'cascade' }),
+  employeeNameSnap: varchar('employee_name_snap', { length: 200 }),
+  grossCents: integer('gross_cents').notNull().default(0),
+  casCents: integer('cas_cents').notNull().default(0),        // 25% angajat
+  cassCents: integer('cass_cents').notNull().default(0),      // 10% angajat
+  deductionCents: integer('deduction_cents').notNull().default(0),
+  taxCents: integer('tax_cents').notNull().default(0),        // impozit 10%
+  netCents: integer('net_cents').notNull().default(0),
+  camCents: integer('cam_cents').notNull().default(0),        // 2.25% angajator
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  uniqueIndex('uq_payroll_item').on(table.runId, table.employeeId),
+  index('idx_payroll_items_company').on(table.companyId),
+]);
+
 // Purchase & sales orders (comenzi furnizori / clienți).
 export const purchaseOrders = pgTable('purchase_orders', {
   id: text('id').primaryKey(),

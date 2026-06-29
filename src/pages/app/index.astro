@@ -183,7 +183,7 @@ try {
 } catch { /* DB not ready */ }
 const isSingleFirm = companyCount <= 1;
 // Accountant-suite modules — only relevant for accountants managing multiple firms.
-const accountantOnly = new Set(['cockpit', 'contabilitate', 'cereri']);
+const accountantOnly = new Set(['cockpit', 'contabilitate', 'cereri', 'salarii']);
 // e-Transport (UIT) needs ANAF connected — keep it out of the shortcut catalog until then.
 const anafConnected = Astro.locals.anafConnected;
 

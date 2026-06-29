@@ -1,0 +1,139 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { buildBilant, type BilantResult } from '../../../lib/bilant';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+
+// Year selector: default current year, options last ~4 years.
+const currentYear = new Date().getFullYear();
+const yearParam = Number(Astro.url.searchParams.get('year'));
+const year = Number.isFinite(yearParam) && yearParam >= 2000 && yearParam <= currentYear + 1 ? yearParam : currentYear;
+const yearOptions = [0, 1, 2, 3].map((i) => currentYear - i);
+
+let b: BilantResult | null = null;
+try {
+  b = await buildBilant(companyId, year);
+} catch {
+  b = null;
+}
+
+const hasData = !!b && (b.activ.total !== 0 || b.pasiv.total !== 0 || b.pnl.venituri !== 0 || b.pnl.cheltuieli !== 0);
+const rezultat = b?.pnl.rezultat ?? 0;
+---
+
+<AppLayout title="Bilanț" activeTab="contabilitate">
+  <div class="mb-6 sm:mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Bilanț</h1>
+      <p class="text-[15px] text-[#A8BED2] mt-2">Poziția financiară și rezultatul, derivate din balanța de verificare.</p>
+    </div>
+    <form method="GET" class="flex items-center gap-2">
+      <label for="year" class="text-[13px] font-medium text-[#A8BED2]">An</label>
+      <select id="year" name="year" onchange="this.form.submit()"
+        class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white focus:outline-none">
+        {yearOptions.map((y) => (
+          <option value={y} selected={y === year}>{y}</option>
+        ))}
+      </select>
+      <noscript><button type="submit" class="rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] px-4 py-2.5">Vezi</button></noscript>
+    </form>
+  </div>
+
+  {!hasData || !b ? (
+    <div class="rounded-2xl bg-white/5 p-8 sm:p-10 text-center">
+      <div class="w-14 h-14 rounded-2xl bg-[#E1FB15]/15 text-[#E1FB15] flex items-center justify-center mx-auto mb-4">
+        <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+      </div>
+      <h2 class="text-[19px] font-bold text-white">Niciun rezultat pentru {year}</h2>
+      <p class="text-[14px] text-[#A8BED2] mt-1.5 max-w-[460px] mx-auto">Adaugă note contabile (sau generează-le din facturi și cheltuieli) pentru ca bilanțul să se poată calcula din balanța de verificare.</p>
+      <a href="/app/contabilitate" class="mt-5 inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Mergi la contabilitate</a>
+    </div>
+  ) : (
+    <>
+      <!-- KPI row -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div class="rounded-2xl p-5 bg-white/5">
+          <p class="text-[13px] text-[#A8BED2]">Total activ</p>
+          <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] mt-3 tabular-nums text-white whitespace-nowrap">{ron(b.activ.total)}</p>
+        </div>
+        <div class="rounded-2xl p-5 bg-white/5">
+          <p class="text-[13px] text-[#A8BED2]">Capitaluri proprii</p>
+          <p class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] mt-3 tabular-nums text-white whitespace-nowrap">{ron(b.pasiv.capitaluri)}</p>
+        </div>
+        <div class="rounded-2xl p-5 bg-white/5">
+          <p class="text-[13px] text-[#A8BED2]">{rezultat >= 0 ? 'Profit' : 'Pierdere'}</p>
+          <p class={`text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] mt-3 tabular-nums whitespace-nowrap ${rezultat >= 0 ? 'text-[#2E9E6A]' : 'text-[#DC4B41]'}`}>{ron(rezultat)}</p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <!-- Activ -->
+        <div class="rounded-2xl bg-white/5 p-5 sm:p-6">
+          <h2 class="text-[16px] font-bold text-white mb-4">Activ</h2>
+          <div class="divide-y divide-white/10">
+            {b.activ.lines.map((l) => (
+              <div class="flex items-center justify-between gap-3 py-2.5 text-[14px]">
+                <span class="text-[#A8BED2]">{l.label}</span>
+                <span class="tabular-nums text-white whitespace-nowrap">{ron(l.amountCents)}</span>
+              </div>
+            ))}
+          </div>
+          <div class="border-t border-white/15 mt-1 pt-3.5 flex items-center justify-between gap-3 font-bold text-[15px]">
+            <span class="text-white">TOTAL ACTIV</span>
+            <span class="tabular-nums text-white whitespace-nowrap">{ron(b.activ.total)}</span>
+          </div>
+        </div>
+
+        <!-- Pasiv -->
+        <div class="rounded-2xl bg-white/5 p-5 sm:p-6">
+          <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 class="text-[16px] font-bold text-white">Pasiv</h2>
+            {!b.balanced && (
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#E8A33C]/15 text-[#E8A33C] text-[11.5px] font-semibold">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+                Activ ≠ Pasiv — verifică înregistrările
+              </span>
+            )}
+          </div>
+          <div class="divide-y divide-white/10">
+            {b.pasiv.lines.map((l) => (
+              <div class="flex items-center justify-between gap-3 py-2.5 text-[14px]">
+                <span class="text-[#A8BED2]">{l.label}</span>
+                <span class="tabular-nums text-white whitespace-nowrap">{ron(l.amountCents)}</span>
+              </div>
+            ))}
+          </div>
+          <div class="border-t border-white/15 mt-1 pt-3.5 flex items-center justify-between gap-3 font-bold text-[15px]">
+            <span class="text-white">TOTAL PASIV</span>
+            <span class="tabular-nums text-white whitespace-nowrap">{ron(b.pasiv.total)}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cont de profit și pierdere -->
+      <div class="rounded-2xl bg-white/5 p-5 sm:p-6 mb-6">
+        <h2 class="text-[16px] font-bold text-white mb-4">Cont de profit și pierdere</h2>
+        <div class="divide-y divide-white/10">
+          {b.pnl.lines.map((l, i) => {
+            const isResult = i === b.pnl.lines.length - 1;
+            return (
+              <div class={`flex items-center justify-between gap-3 py-2.5 ${isResult ? 'text-[15px] font-bold' : 'text-[14px]'}`}>
+                <span class={isResult ? 'text-white' : 'text-[#A8BED2]'}>{l.label}</span>
+                <span class={`tabular-nums whitespace-nowrap ${isResult ? (l.amountCents >= 0 ? 'text-[#2E9E6A]' : 'text-[#DC4B41]') : 'text-white'}`}>{ron(l.amountCents)}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <p class="text-[13px] text-[#8FA6BC]">
+        Bilanț calculat din balanța de verificare. Pentru depunerea oficială (F1010/F2010), validează cu aplicația ANAF.
+      </p>
+    </>
+  )}
+</AppLayout>
