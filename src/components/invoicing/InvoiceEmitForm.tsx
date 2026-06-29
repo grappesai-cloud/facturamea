@@ -73,6 +73,14 @@ interface Line {
 }
 
 interface TvaRate { id: string; name: string; percent: number; regime: string; isDefault: boolean; isActive: boolean }
+// Standard Romanian VAT rates (2026), fixed by law — no per-company setting.
+// A line's rate comes from the product (its default) or is picked here; manual
+// lines default to 21%.
+const RO_VAT_RATES: TvaRate[] = [
+  { id: 'std',  name: 'Standard',     percent: 21, regime: 'standard', isDefault: true,  isActive: true },
+  { id: 'red',  name: 'Redusă',       percent: 11, regime: 'standard', isDefault: false, isActive: true },
+  { id: 'zero', name: 'Scutit / 0%',  percent: 0,  regime: 'standard', isDefault: false, isActive: true },
+];
 
 function emptyLine(vatRate = '21'): Line {
   return { code: '', description: '', quantity: '1', unit: 'buc', unitPrice: '', vatRate };
@@ -172,7 +180,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const [precision, setPrecision] = useState('2');
   const [attachmentUrl, setAttachmentUrl] = useState('');
   const [attachmentName, setAttachmentName] = useState('');
-  const [tvaRates, setTvaRates] = useState<TvaRate[]>([]);
+  const tvaRates = RO_VAT_RATES;
   const defaultVat = tvaRates.find((r) => r.isDefault) || tvaRates[0];
   // Series picker (Oblio-style): choose which series numbers this document.
   const [seriesList, setSeriesList] = useState<Series[]>([]);
@@ -188,19 +196,6 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   useEffect(() => {
     fetch('/api/invoicing/products?active=1').then((r) => r.ok ? r.json() : { results: [] })
       .then((d) => setProducts(d.results || []))
-      .catch(() => {});
-  }, []);
-
-  // Load this company's VAT-rate catalogue (Cote TVA) for the per-line selector.
-  useEffect(() => {
-    fetch('/api/invoicing/tva').then((r) => r.ok ? r.json() : { results: [] })
-      .then((d) => {
-        const rates: TvaRate[] = (d.results || []).filter((r: TvaRate) => r.isActive);
-        setTvaRates(rates);
-        const def = rates.find((r) => r.isDefault) || rates[0];
-        // Apply default cota to any line still on the hardcoded default.
-        if (def) setLines((ls) => ls.map((x) => (x.vatRate === '21' || x.vatRate === '19') ? { ...x, vatRate: String(def.percent) } : x));
-      })
       .catch(() => {});
   }, []);
 

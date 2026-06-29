@@ -1,7 +1,6 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
 import SeriesManager from '../../../components/invoicing/SeriesManager';
-import TvaRatesManager from '../../../components/invoicing/TvaRatesManager';
 import ModelEditor from '../../../components/invoicing/ModelEditor';
 import InvoicingSettings from '../../../components/invoicing/InvoicingSettings';
 import { db } from '../../../db';
@@ -24,7 +23,6 @@ const [c] = await db.select({
 // (Language is chosen per document at emit time, so there's no language setting here.)
 const SECTIONS = [
   { id: 'serii', anchor: 'serii', title: 'Serii documente', desc: 'Factură, proformă, storno, chitanță — numerotarea ta.', icon: 'hash' },
-  { id: 'tva', anchor: 'tva', title: 'Cote TVA', desc: 'Cotele selectabile la emitere și cota implicită.', icon: 'percent' },
   { id: 'model', anchor: 'model', title: 'Design factură', desc: 'Șablon, culoare, logo, ștampilă și semnătură.', icon: 'palette' },
 ];
 ---
@@ -34,7 +32,7 @@ const SECTIONS = [
     <!-- ============ HEADER ============ -->
     <div class="mb-8 sm:mb-10">
       <h1 class="text-[26px] sm:text-[38px] font-semibold tracking-[-0.03em] text-white">Setări facturare</h1>
-      <p class="text-[14px] text-[#A8BED2] mt-2 max-w-2xl">Serii de documente, cote TVA și designul facturii — alege ce vrei să configurezi.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-2 max-w-2xl">Serii de documente și designul facturii — alege ce vrei să configurezi.</p>
     </div>
 
     <!-- ============ OVERVIEW / HUB ============ -->
@@ -87,13 +85,6 @@ const SECTIONS = [
           </div>
         )}
 
-        {s.id === 'tva' && (
-          <div class="rounded-2xl bg-white/5 ring-1 ring-white/10 p-6 sm:p-8">
-            <h2 class="text-[18px] font-bold text-white mb-1.5">Cote TVA</h2>
-            <p class="text-[13px] text-[#A8BED2] mb-7 max-w-2xl leading-relaxed">Cotele selectabile la emitere. Cota implicită se aplică automat liniilor noi.</p>
-            <TvaRatesManager client:load />
-          </div>
-        )}
 
 
         {s.id === 'model' && (

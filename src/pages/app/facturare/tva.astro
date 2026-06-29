@@ -1,4 +1,5 @@
 ---
-// Consolidated into Setări facturare — kept as a redirect so old links work.
-return Astro.redirect('/app/facturare/setari#tva', 302);
+// VAT rates are the fixed RO rates (chosen per line / from the product), so there's
+// no Cote TVA setting anymore. Old links land on the invoicing settings hub.
+return Astro.redirect('/app/facturare/setari', 302);
 ---
