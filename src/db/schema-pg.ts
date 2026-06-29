@@ -12,6 +12,10 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }).notNull(),
   userType: varchar('user_type', { length: 50 }).notNull(), // transportator, intermediar, client_direct, partener, admin
   isAdmin: boolean('is_admin').default(false),
+  // Admin scope when isAdmin=true. 'full' = unrestricted (default). 'viewer' =
+  // read-only partner access: sees ONLY /admin/incasari (company name + license
+  // payments), no other admin page, no write/API actions. Enforced in middleware.
+  adminRole: varchar('admin_role', { length: 20 }).notNull().default('full'),
   // FK to companies (nullable); SET NULL on company delete so a company removal
   // doesn't cascade-delete its users.
   companyId: text('company_id').references(() => companies.id, { onDelete: 'set null' }),

@@ -19,21 +19,29 @@ const user = Astro.locals.user;
 if (!user) return Astro.redirect('/auth/login?next=' + encodeURIComponent(Astro.url.pathname));
 if (!user.isAdmin && !import.meta.env.DEV) return Astro.redirect('/app');
 
-const [u] = await db.select({ totpEnabled: users.totpEnabled })
+const [u] = await db.select({ totpEnabled: users.totpEnabled, adminRole: users.adminRole })
   .from(users).where(eq(users.id, user.id));
 const requireTotpSetup = !u?.totpEnabled;
+// Read-only partner account: only the Încasări page exists for them.
+const isViewer = (u?.adminRole || 'full') === 'viewer';
 // Only the dedicated /app/setari/securitate page is reachable when 2FA is missing.
 const isOnSecurityPage = Astro.url.pathname === '/app/setari/securitate';
 
-const navItems = [
+const fullNav = [
   { href: '/admin',           label: 'Tablou',          id: 'dashboard' },
   { href: '/admin/companies', label: 'Companii',        id: 'companies' },
+  { href: '/admin/incasari',  label: 'Încasări',        id: 'incasari' },
   { href: '/admin/users',     label: 'Utilizatori',     id: 'users' },
   { href: '/admin/licente',   label: 'Licențe',         id: 'licente' },
   { href: '/admin/revshare',  label: 'Revenue share',   id: 'revshare' },
 ];
 
-const opsNav = [
+// Viewers see only the read-only Încasări entry.
+const navItems = isViewer
+  ? [{ href: '/admin/incasari', label: 'Încasări', id: 'incasari' }]
+  : fullNav;
+
+const opsNav = isViewer ? [] : [
   { href: '/admin/analytics', label: 'Analiză',         id: 'analytics' },
   { href: '/admin/emailuri',  label: 'Emailuri',        id: 'emailuri' },
   { href: '/admin/audit',     label: 'Jurnal audit',    id: 'audit' },
@@ -93,7 +101,7 @@ const opsNav = [
           );
         })}
 
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8BED2] font-medium px-3 mt-6 mb-2">Operaţiuni</p>
+        {opsNav.length > 0 && <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8BED2] font-medium px-3 mt-6 mb-2">Operaţiuni</p>}
         {opsNav.map((item) => {
           const active = activeTab === item.id;
           return (
@@ -123,7 +131,7 @@ const opsNav = [
         <h1 class="text-[15px] font-semibold">{title}</h1>
         <div class="flex items-center gap-3">
           <span class="text-[12px] text-[#46627A]">{user?.name}</span>
-          <span class="px-2 py-0.5 bg-[#07090f] text-white text-[10px] font-bold uppercase tracking-wider rounded">Admin</span>
+          <span class="px-2 py-0.5 bg-[#07090f] text-white text-[10px] font-bold uppercase tracking-wider rounded">{isViewer ? 'Vizualizare' : 'Admin'}</span>
         </div>
       </header>
 

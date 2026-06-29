@@ -1,0 +1,95 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { db } from '../../db';
+import { appLicenses, companies } from '../../db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+// Read-only revenue view. Shown to full admins AND to viewer (partner) accounts.
+// Strictly: company name + the lifetime payment (700 RON). No actions, no edits.
+
+const ron = (cents: number | null) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 0 }).format((cents || 0) / 100);
+
+const dt = (d: Date | null) =>
+  d ? new Intl.DateTimeFormat('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(d)) : '—';
+
+let payments: Array<{
+  companyName: string | null; amountCents: number | null; status: string; activatedAt: Date | null;
+}> = [];
+
+try {
+  payments = await db
+    .select({
+      companyName: companies.name,
+      amountCents: appLicenses.amountCents,
+      status: appLicenses.status,
+      activatedAt: appLicenses.activatedAt,
+    })
+    .from(appLicenses)
+    .leftJoin(companies, eq(appLicenses.companyId, companies.id))
+    .where(eq(appLicenses.plan, 'lifetime'))
+    .orderBy(desc(appLicenses.activatedAt));
+} catch {
+  payments = [];
+}
+
+const active = payments.filter((p) => p.status === 'active');
+const totalCents = active.reduce((s, p) => s + (p.amountCents || 0), 0);
+
+const statusLabel: Record<string, { label: string; cls: string }> = {
+  active:   { label: 'Activă',   cls: 'bg-[#E7F7EC] text-[#15803D]' },
+  canceled: { label: 'Revocată', cls: 'bg-[#FBE9E9] text-[#B91C1C]' },
+  expired:  { label: 'Expirată', cls: 'bg-[#F1F3F6] text-[#46627A]' },
+};
+---
+
+<AdminLayout title="Încasări" activeTab="incasari">
+  <div class="max-w-4xl">
+    <div class="flex items-baseline justify-between mb-6">
+      <div>
+        <h2 class="text-[20px] font-bold tracking-[-0.02em]">Încasări licențe</h2>
+        <p class="text-[13px] text-[#46627A] mt-1">Companiile care au achiziționat licența lifetime (700 RON).</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4 mb-8">
+      <div class="bg-white border border-[#E3EAF1] rounded-xl p-5">
+        <p class="text-[11px] uppercase tracking-[0.14em] text-[#A8BED2] font-semibold">Licențe active</p>
+        <p class="text-[28px] font-bold tracking-[-0.02em] mt-1">{active.length}</p>
+      </div>
+      <div class="bg-white border border-[#E3EAF1] rounded-xl p-5">
+        <p class="text-[11px] uppercase tracking-[0.14em] text-[#A8BED2] font-semibold">Total încasat</p>
+        <p class="text-[28px] font-bold tracking-[-0.02em] mt-1">{ron(totalCents)}</p>
+      </div>
+    </div>
+
+    <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
+      <table class="w-full text-[13px]">
+        <thead>
+          <tr class="border-b border-[#E3EAF1] text-left text-[#46627A]">
+            <th class="font-medium px-5 py-3">Companie</th>
+            <th class="font-medium px-5 py-3">Plată</th>
+            <th class="font-medium px-5 py-3">Status</th>
+            <th class="font-medium px-5 py-3">Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          {payments.length === 0 && (
+            <tr><td colspan="4" class="px-5 py-10 text-center text-[#46627A]">Nicio încasare încă.</td></tr>
+          )}
+          {payments.map((p) => {
+            const s = statusLabel[p.status] || statusLabel.expired;
+            return (
+              <tr class="border-b border-[#F1F3F6] last:border-0">
+                <td class="px-5 py-3 font-semibold text-[#07090f]">{p.companyName || '—'}</td>
+                <td class="px-5 py-3 tabular-nums">{ron(p.amountCents)}</td>
+                <td class="px-5 py-3"><span class={`px-2 py-0.5 rounded text-[11px] font-semibold ${s.cls}`}>{s.label}</span></td>
+                <td class="px-5 py-3 text-[#46627A]">{dt(p.activatedAt)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</AdminLayout>

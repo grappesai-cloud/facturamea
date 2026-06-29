@@ -388,6 +388,20 @@ export const onRequest = defineMiddleware(async (context, next) => {
           }
           return context.redirect('/app/setari/securitate?2fa=admin');
         }
+        // Viewer admins (read-only partner access) see ONLY /admin/incasari and
+        // have no API/write access at all. Everything else redirects there.
+        const adminRole = (user as any).adminRole || 'full';
+        if (adminRole === 'viewer') {
+          if (isApi) {
+            return new Response(JSON.stringify({ error: 'Acces interzis (cont de vizualizare)' }), {
+              status: 403,
+              headers: { 'Content-Type': 'application/json', ...(cors || {}) },
+            });
+          }
+          if (pathname !== '/admin/incasari') {
+            return context.redirect('/admin/incasari');
+          }
+        }
       }
     } catch (err) {
       await captureError(err, { route: pathname, method });
