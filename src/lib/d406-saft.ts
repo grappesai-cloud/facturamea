@@ -36,7 +36,20 @@ const cents = (c: number) => (c / 100).toFixed(2);
 const day = (d: Date | string | null | undefined) => (d ? new Date(d).toISOString().slice(0, 10) : '2026-01-01');
 const ctry = (c: string | null | undefined) => (!c ? 'RO' : c.toLowerCase().startsWith('rom') ? 'RO' : c.slice(0, 2).toUpperCase());
 const vatCode = (rate: number) => (rate === 0 ? 'SDD' : rate === 5 ? 'R5' : rate === 9 ? 'R9' : rate === 11 ? 'R11' : 'S');
-const acctType = (t: string | null | undefined) => (t === 'A' ? 'Activ' : t === 'P' ? 'Pasiv' : 'Bifunctional');
+// SAF-T XSD allows only Activ/Pasiv/Venit/Cheltuiala (NOT "Bifunctional"). Map our
+// A/P/V/C types directly; bifunctional (B) or unknown → derive from the account
+// class (first digit): 6=Cheltuiala, 7=Venit, 1=Pasiv, else Activ.
+const acctType = (t: string | null | undefined, code?: string | null) => {
+  if (t === 'A') return 'Activ';
+  if (t === 'P') return 'Pasiv';
+  if (t === 'V') return 'Venit';
+  if (t === 'C') return 'Cheltuiala';
+  const d = (code || '').charAt(0);
+  if (d === '6') return 'Cheltuiala';
+  if (d === '7') return 'Venit';
+  if (d === '1') return 'Pasiv';
+  return 'Activ';
+};
 
 // AmountStructure: Amount (RON) + CurrencyCode + CurrencyAmount (original).
 const amt = (ronCents: number, cur = 'RON', curCents?: number) =>
@@ -79,7 +92,7 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
         <AccountID>${esc(a.code)}</AccountID>
         <AccountDescription>${esc(a.name)}</AccountDescription>
         <StandardAccountID>${esc(a.code)}</StandardAccountID>
-        <AccountType>${acctType(a.type)}</AccountType>
+        <AccountType>${acctType(a.type, a.code)}</AccountType>
         ${bal('Opening', b.openD - b.openC)}
         ${bal('Closing', b.closeD - b.closeC)}
       </Account>`;
@@ -109,7 +122,8 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
           <RegistrationNumber>${esc(c.taxId || c.id)}</RegistrationNumber>
           <Name>${esc(c.name)}</Name>
           <Address>${addr(c.city, c.country)}</Address>
-          ${c.taxId ? `<TaxRegistration><TaxRegistrationNumber>${esc(c.taxId)}</TaxRegistrationNumber></TaxRegistration>` : ''}
+          <TaxRegistration><TaxRegistrationNumber>${esc(c.taxId || c.id)}</TaxRegistrationNumber></TaxRegistration>
+          <BankAccount><IBANNumber>RO00BANK0000000000000000</IBANNumber></BankAccount>
         </CompanyStructure>
         <CustomerID>${esc(c.id)}</CustomerID>
         <AccountID>4111</AccountID>
@@ -144,7 +158,7 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
     salesBlocks.push(`
         <Invoice>
           <InvoiceNo>${esc(inv.fullNumber)}</InvoiceNo>
-          <CustomerInfo><BillingAddress>${addr('-', 'RO')}</BillingAddress></CustomerInfo>
+          <CustomerInfo><CustomerID>${esc(inv.clientTaxIdSnap || inv.clientNameSnap)}</CustomerID><BillingAddress>${addr('-', 'RO')}</BillingAddress></CustomerInfo>
           <AccountID>4111</AccountID>
           <InvoiceDate>${day(inv.issuedAt)}</InvoiceDate>
           <InvoiceType>380</InvoiceType>
@@ -170,7 +184,7 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
     return `
         <Invoice>
           <InvoiceNo>${esc(e.documentNumber || e.id)}</InvoiceNo>
-          <SupplierInfo><BillingAddress>${addr('-', 'RO')}</BillingAddress></SupplierInfo>
+          <SupplierInfo><SupplierID>${esc(supId)}</SupplierID><BillingAddress>${addr('-', 'RO')}</BillingAddress></SupplierInfo>
           <AccountID>401</AccountID>
           <InvoiceDate>${esc(e.issueDate || from)}</InvoiceDate>
           <InvoiceType>380</InvoiceType>
@@ -195,7 +209,8 @@ export async function generateD406Xml(args: D406Args): Promise<string> {
           <RegistrationNumber>${esc(s.taxId || s.id)}</RegistrationNumber>
           <Name>${esc(s.name)}</Name>
           <Address>${addr(s.city, s.country)}</Address>
-          ${s.taxId ? `<TaxRegistration><TaxRegistrationNumber>${esc(s.taxId)}</TaxRegistrationNumber></TaxRegistration>` : ''}
+          <TaxRegistration><TaxRegistrationNumber>${esc(s.taxId || s.id)}</TaxRegistrationNumber></TaxRegistration>
+          <BankAccount><IBANNumber>RO00BANK0000000000000000</IBANNumber></BankAccount>
         </CompanyStructure>
         <SupplierID>${esc(s.id)}</SupplierID>
         <AccountID>401</AccountID>
