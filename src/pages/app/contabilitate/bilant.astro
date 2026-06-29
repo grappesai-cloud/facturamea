@@ -34,9 +34,9 @@ const rezultat = b?.pnl.rezultat ?? 0;
     </div>
     <div class="flex flex-wrap items-end gap-2">
       <a href={`/api/contabilitate/f1010-xml?year=${year}`}
-        class="inline-flex items-center gap-1.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] px-4 py-2.5 hover:bg-[#D2EA0E] transition-colors">
+        class="inline-flex items-center gap-1.5 rounded-full bg-white/10 text-white font-semibold text-[14px] px-4 py-2.5 hover:bg-white/15 transition-colors">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-        Descarcă F1010 (XML)
+        F1010 XML (draft)
       </a>
       <form method="GET" class="flex items-center gap-2">
         <label for="year" class="text-[13px] font-medium text-[#A8BED2]">An</label>
@@ -139,7 +139,7 @@ const rezultat = b?.pnl.rezultat ?? 0;
       </div>
 
       <p class="text-[13px] text-[#8FA6BC]">
-        Bilanț calculat din balanța de verificare. Pentru depunerea oficială (F1010/F2010), validează cu aplicația ANAF.
+        Bilanț calculat din balanța de verificare. „F1010 XML (draft)” e o structură PROVIZORIE, NU corespunde încă schemei oficiale ANAF — nu o depune încă. Calculul (Activ/Pasiv/rezultat) e corect; XML-ul oficial îl finalizăm.
       </p>
     </>
   )}

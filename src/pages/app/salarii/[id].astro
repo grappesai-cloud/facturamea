@@ -47,8 +47,8 @@ const cmCodeEntries = Object.entries(CM_CODES).map(([code, v]) => ({ code, label
       </p>
     </div>
     <div class="flex gap-2 shrink-0">
-      <a id="dl-d112-xml" href={`/api/salarii/runs/${run.id}/d112-xml`} class="inline-flex justify-center items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors whitespace-nowrap">
-        D112 XML (oficial)
+      <a id="dl-d112-xml" href={`/api/salarii/runs/${run.id}/d112-xml`} class="inline-flex justify-center items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors whitespace-nowrap">
+        D112 XML (draft)
       </a>
       <a id="dl-d112" href={`/api/salarii/runs/${run.id}/d112`} class="inline-flex justify-center items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors whitespace-nowrap">
         D112 (sumar CSV)
@@ -142,7 +142,7 @@ const cmCodeEntries = Object.entries(CM_CODES).map(([code, v]) => ({ code, label
   </p>
 
   <p class="mt-6 text-[12px] text-[#8FA6BC] max-w-2xl leading-relaxed">
-    Contribuții 2026: CAS 25% și CASS 10% reținute de la angajat, impozit 10% pe baza impozabilă (brut − CAS − CASS − deducere), CAM 2.25% suportat de angajator. „D112 XML (oficial)” generează declarația în format ANAF (angajator + creanțe fiscale + evidența nominală); validează-o cu DUK Integrator înainte de depunere. „D112 (sumar CSV)” e un export de verificare.
+    Contribuții 2026: CAS 25% și CASS 10% reținute de la angajat, impozit 10% pe baza impozabilă (brut − CAS − CASS − deducere), CAM 2.25% suportat de angajator. „D112 XML (draft)” e o structură PROVIZORIE — încă NU corespunde schemei oficiale ANAF (declaratieUnica v6, cu blocurile angajator A–F și asigurat). NU o depune încă; o finalizăm. „D112 (sumar CSV)” e un export de verificare a calculelor.
   </p>
 
   <script is:inline define:vars={{ runId: run.id }}>

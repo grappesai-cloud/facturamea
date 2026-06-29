@@ -5,7 +5,7 @@ import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
 import { DatePicker } from '../ui/DatePicker';
 import { EmptyState } from '../ui/EmptyState';
-import { Plus, X, Loader2, Check, ArrowLeft, Receipt, Wallet } from 'lucide-react';
+import { Plus, X, Loader2, Check, ArrowLeft, Receipt, Wallet, Upload } from 'lucide-react';
 
 const ron = (cents: number) =>
   new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
@@ -72,6 +72,11 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
   const [form, setForm] = useState<typeof emptyForm | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  // Upload-to-autofill on the new-expense form: extracts supplier/amount/date
+  // from an e-Factura XML (free) or a PDF/photo (Claude vision) so foreign /
+  // non-SPV invoices can be captured without retyping.
+  const [extracting, setExtracting] = useState(false);
+  const [extractError, setExtractError] = useState('');
   const [showAll, setShowAll] = useState(false);
   // SPV e-Factura invoices not yet recorded — shown at the top of the same list,
   // tagged "e-Factura", with a one-tap Confirmă that imports them as an expense.
@@ -165,6 +170,55 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
       if (!res.ok) { setError(data.error || 'Eroare'); return; }
       setForm(null); await refresh();
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
+  };
+
+  // Upload a foreign / non-SPV invoice and auto-fill the form. XML/ZIP goes to
+  // the free structured parser; PDF/photo goes to the (paid) OCR endpoint.
+  const extractFromFile = async (file: File) => {
+    setExtractError('');
+    const name = (file.name || '').toLowerCase();
+    const type = (file.type || '').toLowerCase();
+    const isXml = name.endsWith('.xml') || name.endsWith('.zip') || type.includes('xml') || type.includes('zip');
+    const endpoint = isXml ? '/api/cheltuieli/import-xml' : '/api/cheltuieli/ocr';
+    setExtracting(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(endpoint, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!data.ok) { setExtractError(data.error || 'Nu am putut extrage datele.'); return; }
+      const f = data.fields || {};
+      const lei = (cents: number) => (Number(cents) > 0 ? (Number(cents) / 100).toFixed(2) : '');
+      // If only a total is legible (net/vat 0), drop the total into Net so the
+      // amount isn't lost; the user can split it before saving.
+      const netCents = Number(f.netCents) || 0;
+      const vatCents = Number(f.vatCents) || 0;
+      const totalCents = Number(f.totalCents) || 0;
+      const netStr = netCents > 0 ? lei(netCents) : (vatCents === 0 && totalCents > 0 ? lei(totalCents) : '');
+      setForm((prev) => {
+        const base = prev || { ...emptyForm };
+        const cur = typeof f.currency === 'string' && CURRENCIES.includes(f.currency.toUpperCase())
+          ? f.currency.toUpperCase() : base.currency;
+        const cat = typeof f.category === 'string' && CATEGORIES.includes(f.category)
+          ? f.category : base.category;
+        return {
+          ...base,
+          // Foreign / extracted supplier is free text — use the manual name field.
+          supplierId: '',
+          supplierNameSnap: f.supplierName || base.supplierNameSnap,
+          documentNumber: f.documentNumber || base.documentNumber,
+          issueDate: f.issueDate || base.issueDate,
+          net: netStr || base.net,
+          vat: vatCents > 0 ? lei(vatCents) : base.vat,
+          currency: cur,
+          category: cat,
+        };
+      });
+    } catch {
+      setExtractError('Eroare la încărcarea fișierului.');
+    } finally {
+      setExtracting(false);
+    }
   };
 
   // Apply the page-level "Tip" filter (from ?tip=…) to the rendered list.
@@ -297,6 +351,27 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
           </div>
 
           <div className="space-y-4">
+            {/* Upload → auto-fill (foreign / non-SPV invoices) */}
+            <section className="rounded-3xl bg-white/5 p-5 sm:p-6">
+              <label className={`flex items-center gap-4 cursor-pointer ${extracting ? 'pointer-events-none opacity-70' : ''}`}>
+                <span className="w-11 h-11 rounded-full bg-[#E1FB15]/15 text-[#E1FB15] grid place-items-center shrink-0">
+                  {extracting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-semibold text-white">{extracting ? 'Se extrage…' : 'Încarcă factură (auto-completează)'}</span>
+                  <span className="block text-[12px] text-[#8FA6BC] mt-0.5 leading-snug">XML e-Factura sau PDF/poză — extragem automat furnizorul, suma și data. Util pentru facturi din afara RO care nu intră prin SPV.</span>
+                </span>
+                <input
+                  type="file"
+                  accept=".xml,.zip,application/pdf,image/*"
+                  className="sr-only"
+                  disabled={extracting}
+                  onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) extractFromFile(file); }}
+                />
+              </label>
+              {extractError && <p className="mt-3 text-[13px] text-[#DC4B41]">{extractError}</p>}
+            </section>
+
             {/* Section 1 — Document & furnizor */}
             <section className="rounded-3xl bg-white/5 p-5 sm:p-6">
               <div className="flex items-center gap-2.5 mb-5">
