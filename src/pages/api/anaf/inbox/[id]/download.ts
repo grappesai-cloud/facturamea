@@ -9,6 +9,10 @@ import { efacturaInbox } from '../../../../../db/schema';
 import { and, eq } from 'drizzle-orm';
 import { getAnafStatus } from '../../../../../lib/anaf/tokens';
 import { downloadMessage } from '../../../../../lib/anaf/efactura-client';
+import { extractInvoiceXml } from '../../../../../lib/efactura-parse';
+
+// A real UBL invoice XML (not a zip decoded as garbage, not a signature file).
+const looksLikeInvoice = (s: string) => /<(\w+:)?(Invoice|CreditNote)\b/.test(s);
 
 const errJson = (error: string, status = 400) =>
   new Response(JSON.stringify({ ok: false, error }), { status, headers: { 'Content-Type': 'application/json' } });
@@ -39,10 +43,12 @@ export const GET: APIRoute = async ({ params, locals }) => {
       },
     });
 
-  if (row.xml && row.xml.trim()) return respondXml(row.xml);
+  // Only trust the cache if it's a real invoice XML — an earlier bug cached the
+  // zip decoded as garbage text; re-fetch in that case.
+  if (row.xml && looksLikeInvoice(row.xml)) return respondXml(row.xml);
 
-  // Not cached yet — fetch from SPV. ANAF returns a ZIP (XML + signature); we
-  // store the raw response decoded as text. The browser still gets a download.
+  // Not cached (or cached badly) — fetch from SPV. ANAF returns a ZIP (invoice
+  // XML + signature); extract the invoice XML so the viewer can render it.
   let anaf: { connected: boolean; cif: string | null };
   try { anaf = await getAnafStatus(companyId); } catch { anaf = { connected: false, cif: null }; }
   if (!anaf.connected) return errJson('ANAF nu este conectat. Conectează firma din Setări → Integrare ANAF.');
@@ -50,19 +56,13 @@ export const GET: APIRoute = async ({ params, locals }) => {
   const dl = await downloadMessage(companyId, row.anafMsgId);
   if (!dl.ok || !dl.bytes) return errJson(dl.error || 'Nu s-a putut descărca din SPV.');
 
-  // ANAF returns a ZIP archive — proxy the raw bytes for download. We also
-  // best-effort cache a decoded preview so the next call is instant.
-  let preview: string | null = null;
-  try {
-    const text = new TextDecoder('utf-8', { fatal: false }).decode(dl.bytes);
-    if (text.includes('<')) preview = text;
-  } catch { /* binary zip, skip preview */ }
-  if (preview) {
-    try {
-      await db.update(efacturaInbox).set({ xml: preview }).where(eq(efacturaInbox.id, row.id));
-    } catch { /* best-effort cache */ }
+  const xml = extractInvoiceXml(dl.bytes);
+  if (xml && looksLikeInvoice(xml)) {
+    try { await db.update(efacturaInbox).set({ xml }).where(eq(efacturaInbox.id, row.id)); } catch { /* best-effort cache */ }
+    return respondXml(xml);
   }
 
+  // Couldn't extract a clean invoice XML — return the raw zip for manual download.
   return new Response(dl.bytes, {
     headers: {
       'Content-Type': dl.contentType || 'application/zip',
