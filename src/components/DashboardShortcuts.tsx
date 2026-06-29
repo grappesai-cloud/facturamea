@@ -204,7 +204,7 @@ export default function DashboardShortcuts({
         ))}
       </div>
 
-      <BottomSheet open={picker} onClose={closePicker} cardClassName="sm:max-w-[820px]">
+      <BottomSheet open={picker} onClose={closePicker} align="top" cardClassName="sm:max-w-[820px]">
         <div className="sheet-content px-4 sm:px-7 pt-5 sm:pt-7 pb-7">
           <div className="mb-6 pr-12">
             <h2 className="text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] text-white">Adaugă o acțiune</h2>

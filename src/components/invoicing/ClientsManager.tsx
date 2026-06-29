@@ -75,7 +75,7 @@ export default function ClientsManager() {
     await refresh(q);
   };
 
-  const fieldCls = 'bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
+  const fieldCls = 'bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40';
   const lblCls = 'mb-1.5 block text-[13px] font-medium text-[#A8BED2]';
 
   return (

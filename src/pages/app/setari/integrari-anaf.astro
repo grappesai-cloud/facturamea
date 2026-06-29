@@ -163,11 +163,11 @@ const tabs = [
         <form id="inbox-form" class="flex flex-wrap items-end gap-3 mb-4 p-4 bg-white/5 rounded-xl">
           <div>
             <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">CIF firmă</label>
-            <input id="inbox-cif" type="text" value={defaultCif} class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none font-mono w-[140px]" required />
+            <input id="inbox-cif" type="text" value={defaultCif} class="rounded-xl bg-white/5 border border-white/[0.12] px-3 py-2 text-[13px] text-white focus:outline-none focus:border-[#E1FB15]/50 font-mono w-[140px]" required />
           </div>
           <div>
             <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Zile înapoi (max 60)</label>
-            <input id="inbox-days" type="number" value="30" min="1" max="60" class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none w-[100px]" />
+            <input id="inbox-days" type="number" value="30" min="1" max="60" class="rounded-xl bg-white/5 border border-white/[0.12] px-3 py-2 text-[13px] text-white focus:outline-none focus:border-[#E1FB15]/50 w-[100px]" />
           </div>
           <button type="submit" class="px-4 py-2 text-[13px] font-bold rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] transition-colors">Caută</button>
         </form>
@@ -189,11 +189,11 @@ const tabs = [
         <form id="etr-form" class="flex flex-wrap items-end gap-3 mb-4 p-4 bg-white/5 rounded-xl">
           <div>
             <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">CIF firmă</label>
-            <input id="etr-cif" type="text" value={defaultCif} class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none font-mono w-[140px]" required />
+            <input id="etr-cif" type="text" value={defaultCif} class="rounded-xl bg-white/5 border border-white/[0.12] px-3 py-2 text-[13px] text-white focus:outline-none focus:border-[#E1FB15]/50 font-mono w-[140px]" required />
           </div>
           <div>
             <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Zile înapoi (max 60)</label>
-            <input id="etr-days" type="number" value="30" min="1" max="60" class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none w-[100px]" />
+            <input id="etr-days" type="number" value="30" min="1" max="60" class="rounded-xl bg-white/5 border border-white/[0.12] px-3 py-2 text-[13px] text-white focus:outline-none focus:border-[#E1FB15]/50 w-[100px]" />
           </div>
           <button type="submit" class="px-4 py-2 text-[13px] font-bold rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] transition-colors">Caută</button>
         </form>
@@ -208,15 +208,15 @@ const tabs = [
         <form action="/api/invoicing/reports/saft-d406" method="GET" class="flex flex-wrap items-end gap-3 p-4 bg-white/5 rounded-xl">
           <div>
             <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">De la</label>
-            <input type="date" name="from" value={saftFrom} class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none" required />
+            <input type="date" name="from" value={saftFrom} class="rounded-xl bg-white/5 border border-white/[0.12] px-3 py-2 text-[13px] text-white focus:outline-none focus:border-[#E1FB15]/50 [color-scheme:dark]" required />
           </div>
           <div>
             <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Până la</label>
-            <input type="date" name="to" value={saftTo} class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none" required />
+            <input type="date" name="to" value={saftTo} class="rounded-xl bg-white/5 border border-white/[0.12] px-3 py-2 text-[13px] text-white focus:outline-none focus:border-[#E1FB15]/50 [color-scheme:dark]" required />
           </div>
           <div>
             <label class="block text-[13px] font-medium text-[#A8BED2] mb-1.5">Tip declarație</label>
-            <select name="type" class="rounded-xl bg-white/5 px-3 py-2 text-[13px] text-white focus:outline-none">
+            <select name="type" class="rounded-xl bg-white/5 border border-white/[0.12] px-3 py-2 text-[13px] text-white focus:outline-none focus:border-[#E1FB15]/50 [color-scheme:dark]">
               <option value="L">L — Lunar</option>
               <option value="T">T — Trimestrial</option>
               <option value="A">A — Anual</option>

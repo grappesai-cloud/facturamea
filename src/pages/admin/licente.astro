@@ -42,66 +42,72 @@ try {
 }
 
 const planLabel: Record<string, { label: string; cls: string }> = {
-  lifetime: { label: 'Lifetime', cls: 'bg-[#E7F7EC] text-[#15803D]' },
-  trial: { label: 'Trial', cls: 'bg-[#FFF7E6] text-[#B45309]' },
+  lifetime: { label: 'Lifetime', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  trial: { label: 'Trial', cls: 'bg-[#E8A33C]/15 text-[#E8A33C]' },
 };
 const statusLabel: Record<string, string> = { active: 'Activă', expired: 'Expirată', canceled: 'Revocată' };
 const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Bucharest' }) : '-';
 ---
 
 <AdminLayout title="Licențe" activeTab="licente">
+  <div class="mb-6">
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Licențe</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Acordă, revocă și rambursează licențe lifetime.</p>
+  </div>
+
   <!-- Grant lifetime -->
-  <div class="bg-white border border-[#E3EAF1] rounded-2xl p-5 mb-6 max-w-2xl">
-    <h3 class="text-[14px] font-semibold text-[#07090f] mb-1">Acordă licență lifetime</h3>
-    <p class="text-[12px] text-[#46627A] mb-4">Acordare manuală (white-label). Compania primește acces permanent imediat.</p>
-    <div id="grant-error" class="hidden mb-3 px-4 py-3 bg-white border border-[#B91C1C]/30 rounded-xl text-[13px] text-[#B91C1C]"></div>
+  <div class="rounded-2xl bg-white/5 p-5 sm:p-6 mb-6 max-w-2xl">
+    <h3 class="text-[15px] font-semibold text-white mb-1">Acordă licență lifetime</h3>
+    <p class="text-[13px] text-[#8FA6BC] mb-4">Acordare manuală (white-label). Compania primește acces permanent imediat.</p>
+    <div id="grant-error" class="hidden mb-3 px-4 py-3 rounded-xl bg-[#DC4B41]/15 text-[13px] text-[#DC4B41]"></div>
     <form id="grant-form" class="flex flex-col sm:flex-row gap-3">
-      <select name="companyId" required class="flex-1 h-11 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[14px] text-[#07090f] focus:border-[#07090f] focus:outline-none transition-colors">
+      <select name="companyId" required class="flex-1 h-11 px-3 rounded-xl bg-white/5 text-[14px] text-white ring-1 ring-white/10 focus:ring-[#34A0A4]/50 focus:outline-none transition-all">
         <option value="">Alege compania...</option>
         {companyOptions.map((c) => (
           <option value={c.id} selected={c.id === preselect}>{c.name}</option>
         ))}
       </select>
-      <button type="submit" class="h-11 px-6 bg-[#1A759F] hover:bg-[#168AAD] text-white font-semibold rounded-xl text-[13px] transition-colors shrink-0">Acordă lifetime</button>
+      <button type="submit" class="h-11 px-6 bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] font-bold rounded-full text-[13.5px] transition-colors shrink-0">Acordă lifetime</button>
     </form>
   </div>
 
-  <p class="text-[13px] text-[#46627A] mb-3">{licenseList.length} licențe</p>
+  <p class="text-[13px] text-[#8FA6BC] mb-3">{licenseList.length} licențe</p>
 
-  <div class="bg-white border border-[#E3EAF1] rounded-2xl overflow-hidden">
+  <!-- Desktop table -->
+  <div class="hidden sm:block rounded-2xl bg-white/5 overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-[13px]">
         <thead>
-          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-[#E3EAF1]">
-            <th class="px-5 py-2.5 font-medium">Companie</th>
-            <th class="px-5 py-2.5 font-medium">Plan</th>
-            <th class="px-5 py-2.5 font-medium">Status</th>
-            <th class="px-5 py-2.5 font-medium">Trial până</th>
-            <th class="px-5 py-2.5 font-medium text-right">Sumă</th>
-            <th class="px-5 py-2.5 font-medium">Actualizat</th>
-            <th class="px-5 py-2.5 font-medium text-right">Acțiuni</th>
+          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
+            <th class="px-5 py-3 font-semibold">Companie</th>
+            <th class="px-5 py-3 font-semibold">Plan</th>
+            <th class="px-5 py-3 font-semibold">Status</th>
+            <th class="px-5 py-3 font-semibold">Trial până</th>
+            <th class="px-5 py-3 font-semibold text-right">Sumă</th>
+            <th class="px-5 py-3 font-semibold">Actualizat</th>
+            <th class="px-5 py-3 font-semibold text-right">Acțiuni</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-white/5">
           {licenseList.map((l) => {
-            const pl = planLabel[l.plan] || { label: l.plan, cls: 'bg-[#E3EAF1] text-[#46627A]' };
+            const pl = planLabel[l.plan] || { label: l.plan, cls: 'bg-white/10 text-[#A8BED2]' };
             return (
-              <tr class="border-b border-[#F6F6F2] hover:bg-[#EDF1F5] transition-colors">
-                <td class="px-5 py-3 font-medium text-[#07090f]">{l.companyName || l.companyId}</td>
-                <td class="px-5 py-3"><span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${pl.cls}`}>{pl.label}</span></td>
-                <td class="px-5 py-3 text-[#46627A]">{statusLabel[l.status] || l.status}</td>
-                <td class="px-5 py-3 text-[#46627A]">{l.plan === 'trial' ? fmt(l.trialEndsAt) : '-'}</td>
-                <td class="px-5 py-3 text-right font-semibold text-[#07090f]">{l.plan === 'lifetime' ? ron(l.amountCents) : '-'}</td>
-                <td class="px-5 py-3 text-[#46627A]">{fmt(l.updatedAt)}</td>
-                <td class="px-5 py-3 text-right">
-                  <div class="flex items-center justify-end gap-2">
+              <tr class="hover:bg-white/[0.03] transition-colors">
+                <td class="px-5 py-3.5 font-semibold text-white whitespace-nowrap">{l.companyName || l.companyId}</td>
+                <td class="px-5 py-3.5"><span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pl.cls}`}>{pl.label}</span></td>
+                <td class="px-5 py-3.5 text-[#A8BED2]">{statusLabel[l.status] || l.status}</td>
+                <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">{l.plan === 'trial' ? fmt(l.trialEndsAt) : '-'}</td>
+                <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums whitespace-nowrap">{l.plan === 'lifetime' ? ron(l.amountCents) : '-'}</td>
+                <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">{fmt(l.updatedAt)}</td>
+                <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                  <div class="flex items-center justify-end gap-1.5">
                     {l.plan === 'lifetime' && (
-                      <button data-company-id={l.companyId} class="refund-btn px-3 py-1.5 text-[12px] font-medium text-[#B45309] hover:bg-[#FEF3C7] rounded-lg transition-colors">Refund</button>
+                      <button data-company-id={l.companyId} class="refund-btn px-3 py-1.5 text-[12px] font-semibold text-[#E8A33C] bg-[#E8A33C]/10 hover:bg-[#E8A33C]/20 rounded-full transition-colors">Refund</button>
                     )}
                     {l.status === 'active' ? (
-                      <button data-company-id={l.companyId} class="revoke-btn px-3 py-1.5 text-[12px] font-medium text-[#B91C1C] hover:bg-[#FDECEC] rounded-lg transition-colors">Revocă</button>
+                      <button data-company-id={l.companyId} class="revoke-btn px-3 py-1.5 text-[12px] font-semibold text-[#DC4B41] bg-[#DC4B41]/10 hover:bg-[#DC4B41]/20 rounded-full transition-colors">Revocă</button>
                     ) : (
-                      <span class="text-[12px] text-[#A8BED2]">-</span>
+                      <span class="text-[12px] text-[#5E7385]">-</span>
                     )}
                   </div>
                 </td>
@@ -109,11 +115,41 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
             );
           })}
           {licenseList.length === 0 && (
-            <tr><td colspan="7" class="px-5 py-12 text-center text-[14px] text-[#46627A]">Nicio licență încă.</td></tr>
+            <tr><td colspan="7" class="px-5 py-12 text-center text-[14px] text-[#8FA6BC]">Nicio licență încă.</td></tr>
           )}
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="sm:hidden space-y-2.5">
+    {licenseList.length === 0 ? (
+      <div class="rounded-2xl bg-white/5 py-10 text-center text-[14px] text-[#8FA6BC]">Nicio licență încă.</div>
+    ) : licenseList.map((l) => {
+      const pl = planLabel[l.plan] || { label: l.plan, cls: 'bg-white/10 text-[#A8BED2]' };
+      return (
+        <div class="rounded-2xl bg-white/5 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[14px] font-semibold text-white truncate">{l.companyName || l.companyId}</p>
+              <p class="text-[12px] text-[#8FA6BC] mt-0.5">{statusLabel[l.status] || l.status} · {l.plan === 'lifetime' ? ron(l.amountCents) : (l.plan === 'trial' ? `trial ${fmt(l.trialEndsAt)}` : '-')}</p>
+            </div>
+            <span class={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pl.cls}`}>{pl.label}</span>
+          </div>
+          {(l.plan === 'lifetime' || l.status === 'active') && (
+            <div class="flex items-center gap-1.5 mt-3 pt-3 border-t border-white/10">
+              {l.plan === 'lifetime' && (
+                <button data-company-id={l.companyId} class="refund-btn px-3 py-1.5 text-[12px] font-semibold text-[#E8A33C] bg-[#E8A33C]/10 rounded-full transition-colors">Refund</button>
+              )}
+              {l.status === 'active' && (
+                <button data-company-id={l.companyId} class="revoke-btn px-3 py-1.5 text-[12px] font-semibold text-[#DC4B41] bg-[#DC4B41]/10 rounded-full transition-colors">Revocă</button>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    })}
   </div>
 
   <script>

@@ -250,6 +250,9 @@ const kpiCatalog: KpiDef[] = [
   { key: 'medie', label: 'Medie lunară', kind: 'money', whole: splitRon(avgInc).whole, dec: splitRon(avgInc).dec, accent: '#D9ED92', icon: ICON.bars, info: 'Media încasărilor pe lunile active din an.', href: '/app/rapoarte', extra: [{ label: 'Încasat anual', value: ron(yearly.collected) }, { label: 'Cea mai bună lună', value: bestMonth }] },
 ];
 const defaultKpis = ['facturi', 'incasari_luna', 'cheltuieli_luna', 'venit_net'];
+
+// New supplier e-Factura invoices (ANAF SPV) live in Cheltuieli + Notificări now,
+// not on the dashboard.
 ---
 
 <AppLayout title="Acasă" hideBreadcrumbs>
@@ -260,13 +263,14 @@ const defaultKpis = ['facturi', 'incasari_luna', 'cheltuieli_luna', 'venit_net']
     <svg class="w-5 h-5 shrink-0 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
   </a>
 
+
   <!-- Quick actions (above the KPI cards so they're reachable straight away) -->
-  <div class="mb-7" data-reveal>
+  <div class="mb-8" data-reveal>
     <DashboardShortcuts client:load catalog={shortcutCatalog} initialSelected={selectedModules} />
   </div>
 
   <!-- Customizable KPI cards: swipe-left to reveal Info / Delete, tap + to add more -->
-  <div class="mb-4" data-reveal>
+  <div data-reveal>
     <DashboardKpis client:load catalog={kpiCatalog} initialSelected={defaultKpis} />
   </div>
 

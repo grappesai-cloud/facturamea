@@ -151,13 +151,22 @@ export default function OnboardingWizard({ initial, companyComplete, isPaid }: P
                 <li key={f} className="flex items-start gap-2.5"><span className="shrink-0 w-5 h-5 rounded-full bg-[#E1FB15] text-[#07090f] grid place-items-center text-[11px] font-bold mt-0.5">✓</span> {f}</li>
               ))}
             </ul>
-            <button onClick={startCheckout} disabled={paying} className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] disabled:opacity-60 font-bold text-[15px] transition-colors">
-              {paying && <Loader2 className="w-4 h-4 animate-spin" />} Cumpără acces pe viață
-            </button>
+            {isPaid ? (
+              <a href="/app" className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] font-bold text-[15px] transition-colors">
+                Intră în aplicație
+              </a>
+            ) : (
+              <button onClick={startCheckout} disabled={paying} className="w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] disabled:opacity-60 font-bold text-[15px] transition-colors">
+                {paying && <Loader2 className="w-4 h-4 animate-spin" />} Cumpără acces pe viață
+              </button>
+            )}
           </div>
           <p className="text-[12px] text-[#8FA8BE] leading-relaxed">
             Semnătura digitală (conectarea la ANAF / SPV pentru e-Factura) se activează separat din Setări, după aprobarea ANAF. Nu este necesară pentru a începe.
           </p>
+          <a href="/app" className="block text-center text-[13px] text-[#8FA8BE] hover:text-white transition-colors">
+            Mergi la aplicație
+          </a>
         </div>
       )}
     </div>

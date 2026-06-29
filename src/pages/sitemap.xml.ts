@@ -5,7 +5,7 @@ import { eq, desc } from 'drizzle-orm';
 // Only public, indexable pages (auth/app/api are disallowed in robots.txt).
 const STATIC_PATHS = [
   '', 'comparatie', 'preturi', 'faq', 'despre', 'blog',
-  'contact', 'dezvoltatori', 'asistenta', 'termeni', 'confidentialitate', 'stergere-cont',
+  'contact', 'dezvoltatori', 'asistenta', 'termeni', 'confidentialitate',
 ];
 
 function urlEntry(loc: string, lastmod: string, priority: string, changefreq = 'weekly') {

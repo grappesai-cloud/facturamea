@@ -18,6 +18,9 @@ export interface SelectProps {
   addNewLabel?: string;
   /** Message shown when there are no selectable options. */
   emptyLabel?: string;
+  /** Force-show a search box at the top of the dropdown. Auto-enabled for long lists. */
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 // Global "only one popover open at a time" coordination — a Select opening
@@ -63,7 +66,7 @@ function parseChildren(children: React.ReactNode, explicitPlaceholder?: string):
 }
 
 const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
-  ({ value, defaultValue, onChange, className, children, disabled, placeholder, name, id, style, onAddNew, addNewLabel, emptyLabel }, ref) => {
+  ({ value, defaultValue, onChange, className, children, disabled, placeholder, name, id, style, onAddNew, addNewLabel, emptyLabel, searchable, searchPlaceholder }, ref) => {
     const strValue = value !== undefined ? String(value) : undefined;
     const strDefault = defaultValue !== undefined ? String(defaultValue) : undefined;
     const { placeholder: parsedPlaceholder, items } = parseChildren(children, placeholder);
@@ -72,6 +75,14 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
 
     const myId = React.useId();
     const [open, setOpen] = React.useState(false);
+    const [query, setQuery] = React.useState('');
+    // Show a search box when requested, or auto for long lists, so users can
+    // filter suppliers / products instead of scrolling.
+    const showSearch = searchable === true || (searchable !== false && items.length > 8);
+    const q = query.trim().toLowerCase();
+    const visibleItems = q ? items.filter((o) => o.label.toLowerCase().includes(q)) : items;
+    // Reset the query whenever the dropdown closes.
+    React.useEffect(() => { if (!open) setQuery(''); }, [open]);
     // Close this dropdown when any other popover (Select or DatePicker) opens.
     React.useEffect(() => {
       const onOther = (e: Event) => { if ((e as CustomEvent).detail !== myId) setOpen(false); };
@@ -94,8 +105,8 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
           id={id}
           style={style}
           className={cn(
-            'fm-select-trigger flex h-11 w-full items-center justify-between gap-2 rounded-xl px-4 py-2.5 text-sm transition-all duration-150',
-            'focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40',
+            'fm-select-trigger flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-white/[0.12] px-4 py-2.5 text-sm transition-all duration-150',
+            'focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30',
             'disabled:cursor-not-allowed disabled:opacity-50',
             className,
           )}
@@ -124,11 +135,22 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
             sideOffset={6}
             avoidCollisions={false}
           >
+            {showSearch && (
+              <div className="p-1.5 pb-1 border-b border-white/10" onKeyDown={(e) => e.stopPropagation()}>
+                <input
+                  autoFocus
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder={searchPlaceholder ?? 'Caută...'}
+                  className="fm-select-search w-full h-9 rounded-lg border border-white/[0.12] bg-white/5 px-3 text-sm text-white placeholder:text-[#8FA6BC] focus:outline-none focus:border-[#E1FB15]/50"
+                />
+              </div>
+            )}
             <RadixSelect.ScrollUpButton className="fm-select-muted flex items-center justify-center h-7">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m18 15-6-6-6 6" /></svg>
             </RadixSelect.ScrollUpButton>
             <RadixSelect.Viewport className="p-1.5">
-              {items.map((opt, i) => (
+              {visibleItems.map((opt, i) => (
                 <RadixSelect.Item
                   key={`${i}-${opt.value}`}
                   value={opt.value}
@@ -144,8 +166,8 @@ const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
                   </RadixSelect.ItemIndicator>
                 </RadixSelect.Item>
               ))}
-              {items.length === 0 && !onAddNew && (
-                <div className="fm-select-muted px-3 py-3 text-sm text-center">{emptyLabel ?? 'Nicio opțiune'}</div>
+              {visibleItems.length === 0 && !onAddNew && (
+                <div className="fm-select-muted px-3 py-3 text-sm text-center">{q ? 'Niciun rezultat' : (emptyLabel ?? 'Nicio opțiune')}</div>
               )}
               {onAddNew && (
                 <button

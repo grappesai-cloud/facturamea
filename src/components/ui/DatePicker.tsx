@@ -116,7 +116,7 @@ export function DatePicker({ value, onChange, placeholder = 'Alege data', classN
       </button>
 
       {open && (
-        <div className="fm-cal-pop absolute left-0 z-50 mt-1.5 w-[300px] max-w-[88vw] rounded-2xl p-3">
+        <div className="fm-cal-pop fm-reveal absolute left-0 z-50 mt-1.5 w-[300px] max-w-[88vw] rounded-2xl p-3">
 
           {/* ── Header: prev arrow | month dropdown | year dropdown | next arrow ── */}
           <div className="flex items-center justify-between mb-2">

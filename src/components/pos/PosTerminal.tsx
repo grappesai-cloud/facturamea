@@ -233,7 +233,7 @@ export default function PosTerminal() {
       <div className="lg:col-span-2 space-y-3">
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA6BC] z-10" />
-          <Input className="pl-9 rounded-full bg-white/5 text-white border-0 placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută produs..." />
+          <Input className="pl-9 rounded-full bg-white/5 text-white border border-white/[0.12] placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută produs..." />
         </div>
         {products.length === 0 ? (
           <Card className="bg-white/5 border-0 shadow-none rounded-2xl"><CardContent className="p-6 text-center text-sm text-[#A8BED2]">
@@ -269,7 +269,7 @@ export default function PosTerminal() {
                       <p className="text-xs text-[#A8BED2]">{ron(l.unitPriceCents)} · TVA {l.vatRate}%</p>
                     </div>
                     <button onClick={() => setQty(i, -1)} className="p-1 text-[#A8BED2] hover:text-[#DC4B41] transition-colors"><Minus className="w-3.5 h-3.5" /></button>
-                    <Input className="w-12 h-8 text-center px-1 bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" value={l.quantity} onChange={(e) => setQtyExact(i, Number(e.target.value))} />
+                    <Input className="w-12 h-8 text-center px-1 bg-white/10 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" value={l.quantity} onChange={(e) => setQtyExact(i, Number(e.target.value))} />
                     <button onClick={() => setQty(i, 1)} className="p-1 text-[#A8BED2] hover:text-white"><Plus className="w-3.5 h-3.5" /></button>
                     <button onClick={() => removeLine(i)} className="p-1 text-[#A8BED2] hover:text-[#DC4B41] transition-colors" title="Elimină"><X className="w-3.5 h-3.5" /></button>
                   </li>
@@ -286,7 +286,7 @@ export default function PosTerminal() {
             {warehouses.length > 0 && (
               <div>
                 <Label className="mb-1 block text-xs text-[#A8BED2]">Gestiune (descarcă stoc)</Label>
-                <Select className="bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
+                <Select className="bg-white/10 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)}>
                   <option value="">Fără descărcare stoc</option>
                   {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </Select>
@@ -295,7 +295,7 @@ export default function PosTerminal() {
 
             <div>
               <Label className="mb-1 block text-xs text-[#A8BED2]">Metodă de plată</Label>
-              <Select className="bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+              <Select className="bg-white/10 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] [color-scheme:dark] focus:ring-2 focus:ring-[#E1FB15]/40" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                 <option value="cash">Numerar</option>
                 <option value="card">Card</option>
                 <option value="mixed">Mixt</option>
@@ -305,7 +305,7 @@ export default function PosTerminal() {
             {paymentMethod === 'cash' && (
               <div>
                 <Label className="mb-1 block text-xs text-[#A8BED2]">Suma primită (RON)</Label>
-                <Input className="bg-white/10 text-white border-0 [color-scheme:dark] placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" step="any" value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} placeholder="0.00" />
+                <Input className="bg-white/10 text-white border border-white/[0.12] [color-scheme:dark] placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" step="any" value={cashReceived} onChange={(e) => setCashReceived(e.target.value)} placeholder="0.00" />
                 {change > 0 && <p className="text-sm text-[#2E9E6A] font-semibold mt-1 tabular-nums">Rest: {ron(change)}</p>}
               </div>
             )}

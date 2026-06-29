@@ -50,101 +50,101 @@ export default function RevShareAdmin() {
     } catch { setMsg({ kind: 'err', text: 'Eroare la salvare.' }); } finally { setBusy(''); }
   };
 
-  if (!st) return <p className="text-[13px] text-[#6B6B68]">Se încarcă…</p>;
+  if (!st) return <p className="text-[13px] text-[#8FA6BC]">Se încarcă…</p>;
 
   const a = st.account;
   const ready = a?.chargesEnabled && a?.payoutsEnabled;
-  const card = 'bg-white border border-[#E8E8E4] rounded-xl p-5';
+  const card = 'rounded-2xl bg-white/5 p-5 sm:p-6 [color-scheme:dark]';
 
   return (
-    <div className="space-y-4 max-w-3xl">
-      {msg && <div className={`text-[13px] rounded-lg px-4 py-2.5 ${msg.kind === 'ok' ? 'bg-[#1A759F]/8 text-[#155e7f]' : 'bg-[#DC4B41]/8 text-[#b3392f]'}`}>{msg.text}</div>}
+    <div className="space-y-3 max-w-3xl">
+      {msg && <div className={`text-[13px] rounded-xl px-4 py-2.5 ${msg.kind === 'ok' ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-[#DC4B41]/15 text-[#DC4B41]'}`}>{msg.text}</div>}
 
       {/* Cont asociat */}
       <div className={card}>
         <div className="flex items-center justify-between gap-3 mb-3">
-          <h2 className="font-semibold text-[#0A0A0A] text-[15px]">Cont asociat (Stripe Connect)</h2>
+          <h2 className="font-semibold text-white text-[15px]">Cont asociat (Stripe Connect)</h2>
           {a && (
-            <span className={`text-[12px] font-semibold px-2.5 py-1 rounded-full ${ready ? 'bg-[#2E9E6A]/12 text-[#1f7a50]' : 'bg-[#E8A33D]/15 text-[#9a6b14]'}`}>
+            <span className={`text-[12px] font-semibold px-2.5 py-1 rounded-full ${ready ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-[#E8A33C]/15 text-[#E8A33C]'}`}>
               {ready ? 'Activ' : a.detailsSubmitted ? 'În verificare' : 'Neonboardat'}
             </span>
           )}
         </div>
         {!st.config.accountId ? (
-          <p className="text-[13px] text-[#6B6B68] mb-3">Niciun cont creat. Apasă pentru a crea contul Express al asociatului și a genera linkul de onboarding (date firmă + cont bancar).</p>
+          <p className="text-[13px] text-[#8FA6BC] mb-3">Niciun cont creat. Apasă pentru a crea contul Express al asociatului și a genera linkul de onboarding (date firmă + cont bancar).</p>
         ) : (
-          <div className="text-[13px] text-[#6B6B68] mb-3 space-y-0.5">
-            <p>Cont: <span className="font-mono text-[#0A0A0A]">{st.config.accountId}</span></p>
-            {a?.error ? <p className="text-[#b3392f]">{a.error}</p> : (
+          <div className="text-[13px] text-[#8FA6BC] mb-3 space-y-0.5">
+            <p>Cont: <span className="font-mono text-white">{st.config.accountId}</span></p>
+            {a?.error ? <p className="text-[#DC4B41]">{a.error}</p> : (
               <p>Plăți: {a?.chargesEnabled ? '✓' : '✕'} · Payout: {a?.payoutsEnabled ? '✓' : '✕'} · Date trimise: {a?.detailsSubmitted ? '✓' : '✕'}{a?.requirementsDue ? ` · ${a.requirementsDue} cerințe rămase` : ''}</p>
             )}
           </div>
         )}
         <button onClick={onboard} disabled={busy === 'onboard'}
-          className="px-5 py-2.5 bg-[#1A759F] hover:bg-[#168AAD] text-white font-semibold rounded-lg text-[13px] disabled:opacity-60">
+          className="px-5 py-2.5 bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] font-bold rounded-full text-[13px] disabled:opacity-60 transition-colors">
           {busy === 'onboard' ? 'Se generează…' : st.config.accountId ? (ready ? 'Re-onboarding / actualizare' : 'Continuă onboarding') : 'Creează cont + link onboarding'}
         </button>
       </div>
 
       {/* Config split */}
       <div className={card}>
-        <h2 className="font-semibold text-[#0A0A0A] text-[15px] mb-3">Cota asociatului</h2>
+        <h2 className="font-semibold text-white text-[15px] mb-3">Cota asociatului</h2>
         <div className="flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-[12px] text-[#6B6B68] mb-1">Procent</label>
+            <label className="block text-[12px] text-[#8FA6BC] mb-1.5">Procent</label>
             <div className="flex items-center gap-1.5">
               <input type="number" min={1} max={100} value={pct} onChange={(e) => setPct(Number(e.target.value))}
-                className="w-20 px-3 py-2 border border-[#E8E8E4] rounded-lg text-[13px]" />
-              <span className="text-[13px] text-[#6B6B68]">%</span>
+                className="w-20 px-3 py-2 rounded-xl bg-white/5 text-white ring-1 ring-white/10 focus:ring-[#34A0A4]/50 focus:outline-none text-[13px] transition-all" />
+              <span className="text-[13px] text-[#8FA6BC]">%</span>
             </div>
           </div>
           <div className="min-w-[220px]">
-            <label className="block text-[12px] text-[#6B6B68] mb-1">Bază de calcul</label>
-            <select value={base} onChange={(e) => setBase(e.target.value)} className="w-full px-3 py-2 border border-[#E8E8E4] rounded-lg text-[13px]">
+            <label className="block text-[12px] text-[#8FA6BC] mb-1.5">Bază de calcul</label>
+            <select value={base} onChange={(e) => setBase(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-white/5 text-white ring-1 ring-white/10 focus:ring-[#34A0A4]/50 focus:outline-none text-[13px] transition-all">
               <option value="net_after_fee">{BASE_LABELS.net_after_fee}</option>
               <option value="gross">{BASE_LABELS.gross}</option>
               <option value="net_after_vat">{BASE_LABELS.net_after_vat}</option>
             </select>
           </div>
           <button onClick={() => saveConfig({ bps: Math.round(pct * 100), base })} disabled={busy === 'config'}
-            className="px-5 py-2.5 bg-[#0A0A0A] text-white font-semibold rounded-lg text-[13px] disabled:opacity-60">Salvează cota</button>
+            className="px-5 py-2.5 bg-white/10 hover:bg-white/15 text-[#D7E5F0] font-semibold rounded-full text-[13px] disabled:opacity-60 transition-colors">Salvează cota</button>
         </div>
 
-        <div className="mt-4 pt-4 border-t border-[#E8E8E4] flex items-center justify-between">
+        <div className="mt-4 pt-4 border-t border-white/10 flex items-center justify-between gap-3">
           <div>
-            <p className="text-[13px] font-medium text-[#0A0A0A]">Transfer automat la fiecare vânzare</p>
-            <p className="text-[12px] text-[#6B6B68]">{st.config.enabled ? `Activ — ${(st.config.bps / 100).toFixed(0)}% ${BASE_LABELS[st.config.base] || ''}` : 'Dezactivat — nu se transferă nimic'}</p>
+            <p className="text-[13px] font-semibold text-white">Transfer automat la fiecare vânzare</p>
+            <p className="text-[12px] text-[#8FA6BC]">{st.config.enabled ? `Activ — ${(st.config.bps / 100).toFixed(0)}% ${BASE_LABELS[st.config.base] || ''}` : 'Dezactivat — nu se transferă nimic'}</p>
           </div>
           <button onClick={() => saveConfig({ enabled: !st.config.enabled })} disabled={busy === 'config'}
-            className={`relative h-7 w-12 rounded-full transition-colors ${st.config.enabled ? 'bg-[#2E9E6A]' : 'bg-[#D7D7D2]'}`}>
+            className={`relative h-7 w-12 rounded-full transition-colors shrink-0 ${st.config.enabled ? 'bg-[#2E9E6A]' : 'bg-white/15'}`}>
             <span className={`absolute top-1 h-5 w-5 rounded-full bg-white transition-all ${st.config.enabled ? 'left-6' : 'left-1'}`} />
           </button>
         </div>
         {st.config.enabled && !ready && (
-          <p className="mt-3 text-[12px] text-[#9a6b14] bg-[#E8A33D]/10 rounded-lg px-3 py-2">Activat, dar contul asociatului nu e încă gata. Transferurile vor fi marcate „skipped" până se termină onboarding-ul.</p>
+          <p className="mt-3 text-[12px] text-[#E8A33C] bg-[#E8A33C]/15 rounded-xl px-3 py-2">Activat, dar contul asociatului nu e încă gata. Transferurile vor fi marcate „skipped" până se termină onboarding-ul.</p>
         )}
       </div>
 
       {/* Istoric transferuri */}
       <div className={card}>
-        <h2 className="font-semibold text-[#0A0A0A] text-[15px] mb-3">Ultimele transferuri</h2>
+        <h2 className="font-semibold text-white text-[15px] mb-3">Ultimele transferuri</h2>
         {st.payouts.length === 0 ? (
-          <p className="text-[13px] text-[#6B6B68]">Niciun transfer încă.</p>
+          <p className="text-[13px] text-[#8FA6BC]">Niciun transfer încă.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-[12.5px]">
-              <thead><tr className="text-left text-[#6B6B68] border-b border-[#E8E8E4]">
-                <th className="py-2 pr-3">Data</th><th className="py-2 pr-3">Brut</th><th className="py-2 pr-3">Comision</th><th className="py-2 pr-3">Transferat</th><th className="py-2 pr-3">Status</th>
+              <thead><tr className="text-left text-[#8FA6BC] border-b border-white/10">
+                <th className="py-2.5 pr-3 font-semibold">Data</th><th className="py-2.5 pr-3 font-semibold">Brut</th><th className="py-2.5 pr-3 font-semibold">Comision</th><th className="py-2.5 pr-3 font-semibold">Transferat</th><th className="py-2.5 pr-3 font-semibold">Status</th>
               </tr></thead>
               <tbody>
                 {st.payouts.map((p) => (
-                  <tr key={p.id} className="border-b border-[#F0F0EC]">
-                    <td className="py-2 pr-3 text-[#6B6B68] tabular-nums">{fmtDate(p.createdAt)}</td>
-                    <td className="py-2 pr-3 tabular-nums">{ron(p.grossCents)}</td>
-                    <td className="py-2 pr-3 tabular-nums text-[#6B6B68]">{ron(p.feeCents)}</td>
-                    <td className="py-2 pr-3 tabular-nums font-semibold">{ron(p.amountCents)}</td>
-                    <td className="py-2 pr-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${p.status === 'paid' ? 'bg-[#2E9E6A]/12 text-[#1f7a50]' : p.status === 'error' ? 'bg-[#DC4B41]/12 text-[#b3392f]' : 'bg-[#E8E8E4] text-[#6B6B68]'}`} title={p.error || ''}>{p.status}</span>
+                  <tr key={p.id} className="border-b border-white/5">
+                    <td className="py-2.5 pr-3 text-[#8FA6BC] tabular-nums whitespace-nowrap">{fmtDate(p.createdAt)}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-white">{ron(p.grossCents)}</td>
+                    <td className="py-2.5 pr-3 tabular-nums text-[#8FA6BC]">{ron(p.feeCents)}</td>
+                    <td className="py-2.5 pr-3 tabular-nums font-semibold text-white">{ron(p.amountCents)}</td>
+                    <td className="py-2.5 pr-3">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${p.status === 'paid' ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : p.status === 'error' ? 'bg-[#DC4B41]/15 text-[#DC4B41]' : 'bg-white/10 text-[#8FA6BC]'}`} title={p.error || ''}>{p.status}</span>
                     </td>
                   </tr>
                 ))}

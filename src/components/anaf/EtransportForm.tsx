@@ -20,7 +20,7 @@ const toNum = (v: string) => {
 };
 
 const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
-const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition';
 const card = 'bg-white/5 rounded-2xl p-4 sm:p-5';
 
 export default function EtransportForm() {

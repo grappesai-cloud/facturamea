@@ -60,7 +60,7 @@ export default function LotForm() {
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
-  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:ring-2 focus:ring-[#E1FB15]/40';
   const selectCls = `${inputCls} [color-scheme:dark]`;
   const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
 
@@ -75,7 +75,7 @@ export default function LotForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Produs *</Label>
-              <Select className={selectCls} value={productId} onChange={(e) => setProductId(e.target.value)}>
+              <Select className={selectCls} value={productId} onChange={(e) => setProductId(e.target.value)} searchable={products.length > 5} searchPlaceholder="Caută produs...">
                 <option value="">Alege produsul</option>
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </Select>

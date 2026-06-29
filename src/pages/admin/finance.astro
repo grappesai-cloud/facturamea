@@ -70,60 +70,60 @@ const tierLabels: Record<string, string> = { free: 'Free', sprinter: 'Sprinter',
 
 <AdminLayout title="Finance" activeTab="finance">
   <div class="mb-6">
-    <h2 class="text-[22px] font-bold tracking-[-0.02em]">Finance</h2>
-    <p class="text-[13px] text-[#46627A] mt-1">MRR, încasări, clienţi top, aging facturi.</p>
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Finance</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">MRR, încasări, clienţi top, aging facturi.</p>
   </div>
 
   <!-- Hero numbers -->
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[#E3EAF1] border border-[#E3EAF1] rounded-xl overflow-hidden mb-8">
-    <div class="bg-white px-5 py-5">
-      <p class="text-[10px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Încasat 30 zile</p>
-      <p class="text-[28px] font-bold mt-2 leading-none tabular-nums">{ron(paidThisMonth[0]?.t ?? 0)} <span class="text-[14px] text-[#46627A] font-medium">RON</span></p>
-      <p class="text-[11px] text-[#46627A] mt-1">{paidThisMonth[0]?.c} facturi</p>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+    <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
+      <p class="text-[12px] font-medium text-[#8FA6BC]">Încasat 30 zile</p>
+      <p class="text-[22px] sm:text-[28px] font-bold mt-1.5 leading-none tabular-nums text-white whitespace-nowrap">{ron(paidThisMonth[0]?.t ?? 0)} <span class="text-[13px] text-[#8FA6BC] font-semibold">RON</span></p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1.5">{paidThisMonth[0]?.c} facturi</p>
     </div>
-    <div class="bg-white px-5 py-5">
-      <p class="text-[10px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Încasat YTD</p>
-      <p class="text-[28px] font-bold mt-2 leading-none tabular-nums">{ron(paidYTD[0]?.t ?? 0)} <span class="text-[14px] text-[#46627A] font-medium">RON</span></p>
-      <p class="text-[11px] text-[#46627A] mt-1">{paidYTD[0]?.c} facturi</p>
+    <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
+      <p class="text-[12px] font-medium text-[#8FA6BC]">Încasat YTD</p>
+      <p class="text-[22px] sm:text-[28px] font-bold mt-1.5 leading-none tabular-nums text-[#2E9E6A] whitespace-nowrap">{ron(paidYTD[0]?.t ?? 0)} <span class="text-[13px] text-[#2E9E6A]/70 font-semibold">RON</span></p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1.5">{paidYTD[0]?.c} facturi</p>
     </div>
-    <div class="bg-white px-5 py-5">
-      <p class="text-[10px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Restant</p>
-      <p class="text-[28px] font-bold mt-2 leading-none tabular-nums text-[#B45309]">{ron(overdue[0]?.t ?? 0)}</p>
-      <p class="text-[11px] text-[#46627A] mt-1">{overdue[0]?.c} facturi</p>
+    <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
+      <p class="text-[12px] font-medium text-[#8FA6BC]">Restant</p>
+      <p class="text-[22px] sm:text-[28px] font-bold mt-1.5 leading-none tabular-nums text-[#DC4B41] whitespace-nowrap">{ron(overdue[0]?.t ?? 0)} <span class="text-[13px] text-[#DC4B41]/70 font-semibold">RON</span></p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1.5">{overdue[0]?.c} facturi</p>
     </div>
-    <div class="bg-white px-5 py-5">
-      <p class="text-[10px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Emise neîncasate</p>
-      <p class="text-[28px] font-bold mt-2 leading-none tabular-nums">{ron(draft[0]?.t ?? 0)}</p>
-      <p class="text-[11px] text-[#46627A] mt-1">{draft[0]?.c} facturi</p>
+    <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
+      <p class="text-[12px] font-medium text-[#8FA6BC]">Emise neîncasate</p>
+      <p class="text-[22px] sm:text-[28px] font-bold mt-1.5 leading-none tabular-nums text-[#E8A33C] whitespace-nowrap">{ron(draft[0]?.t ?? 0)} <span class="text-[13px] text-[#E8A33C]/70 font-semibold">RON</span></p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1.5">{draft[0]?.c} facturi</p>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-    <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
-      <div class="px-5 py-3 border-b border-[#E3EAF1]"><p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Companii pe abonament</p></div>
-      <div class="divide-y divide-[#E3EAF1]">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
+    <div class="rounded-2xl bg-white/5 overflow-hidden">
+      <div class="px-5 py-4 border-b border-white/10"><p class="text-[13px] font-semibold text-white">Companii pe abonament</p></div>
+      <div class="divide-y divide-white/5">
         {tiers.length === 0 ? (
-          <div class="px-5 py-6 text-center text-[12px] text-[#46627A]">Fără date</div>
+          <div class="px-5 py-8 text-center text-[13px] text-[#8FA6BC]">Fără date</div>
         ) : tiers.map((t) => (
           <div class="px-5 py-3 flex items-center justify-between text-[13px]">
-            <span class="font-medium">{tierLabels[t.tier] || t.tier}</span>
-            <span class="font-semibold tabular-nums">{t.c}</span>
+            <span class="font-medium text-white">{tierLabels[t.tier] || t.tier}</span>
+            <span class="font-semibold tabular-nums text-[#A8BED2]">{t.c}</span>
           </div>
         ))}
       </div>
     </div>
 
-    <div class="bg-white border border-[#E8E8E4] rounded-xl overflow-hidden">
-      <div class="px-5 py-3 border-b border-[#E8E8E4]"><p class="text-[11px] uppercase tracking-[0.16em] text-[#6B6B68] font-medium">Vechime facturi restante</p></div>
-      <div class="divide-y divide-[#E8E8E4]">
+    <div class="rounded-2xl bg-white/5 overflow-hidden">
+      <div class="px-5 py-4 border-b border-white/10"><p class="text-[13px] font-semibold text-white">Vechime facturi restante</p></div>
+      <div class="divide-y divide-white/5">
         {aging.length === 0 ? (
-          <div class="px-5 py-6 text-center text-[12px] text-[#46627A]">Fără restanţe</div>
+          <div class="px-5 py-8 text-center text-[13px] text-[#8FA6BC]">Fără restanţe</div>
         ) : aging.map((a) => (
-          <div class="px-5 py-3 flex items-center justify-between text-[13px]">
-            <span class="font-medium">{a.bucket}</span>
-            <span class="text-right">
-              <span class="font-semibold tabular-nums">{ron(a.total)} RON</span>
-              <span class="text-[#46627A] ml-2">({a.c})</span>
+          <div class="px-5 py-3 flex items-center justify-between text-[13px] gap-3">
+            <span class="font-medium text-white">{a.bucket}</span>
+            <span class="text-right whitespace-nowrap">
+              <span class="font-semibold tabular-nums text-white">{ron(a.total)} RON</span>
+              <span class="text-[#8FA6BC] ml-2">({a.c})</span>
             </span>
           </div>
         ))}
@@ -131,19 +131,19 @@ const tierLabels: Record<string, string> = { free: 'Free', sprinter: 'Sprinter',
     </div>
   </div>
 
-  <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
-    <div class="px-5 py-3 border-b border-[#E3EAF1]"><p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Top 10 clienţi după venit</p></div>
+  <div class="rounded-2xl bg-white/5 overflow-hidden">
+    <div class="px-5 py-4 border-b border-white/10"><p class="text-[13px] font-semibold text-white">Top 10 clienţi după venit</p></div>
     {topCustomers.length === 0 ? (
-      <div class="px-5 py-8 text-center text-[12px] text-[#46627A]">Fără date</div>
+      <div class="px-5 py-10 text-center text-[13px] text-[#8FA6BC]">Fără date</div>
     ) : (
-      <div class="divide-y divide-[#E3EAF1]">
+      <div class="divide-y divide-white/5">
         {topCustomers.map((c, i) => (
-          <a href={`/admin/companies?id=${c.id}`} class="px-5 py-3 flex items-center justify-between text-[13px] hover:bg-[#FCFCFA] transition-colors">
-            <span class="flex items-center gap-3">
-              <span class="text-[#A8BED2] font-mono w-6 text-right">{i + 1}.</span>
-              <span class="font-medium">{c.name}</span>
+          <a href={`/admin/companies?id=${c.id}`} class="px-5 py-3 flex items-center justify-between text-[13px] hover:bg-white/[0.03] transition-colors gap-3">
+            <span class="flex items-center gap-3 min-w-0">
+              <span class="text-[#5E7385] font-mono w-6 text-right shrink-0">{i + 1}.</span>
+              <span class="font-medium text-white truncate">{c.name}</span>
             </span>
-            <span class="font-semibold tabular-nums">{ron(c.total)} RON</span>
+            <span class="font-semibold tabular-nums text-[#A8BED2] shrink-0 whitespace-nowrap">{ron(c.total)} RON</span>
           </a>
         ))}
       </div>

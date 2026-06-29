@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
  * same drag-to-dismiss feel as the app menus: drag the grab handle or pull from the
  * top on touch devices. Esc + backdrop click + X button also close.
  */
-export function BottomSheet({ open, onClose, children, cardClassName }: { open: boolean; onClose: () => void; children: ReactNode; cardClassName?: string }) {
+export function BottomSheet({ open, onClose, children, cardClassName, align = 'center' }: { open: boolean; onClose: () => void; children: ReactNode; cardClassName?: string; align?: 'center' | 'top' }) {
   const [mounted, setMounted] = useState(open);
   const [shown, setShown] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -113,7 +113,7 @@ export function BottomSheet({ open, onClose, children, cardClassName }: { open: 
   // overlay sizes itself to the page content and the card lands off-screen below
   // the fold — the "backdrop shows but the sheet doesn't open" bug.
   return createPortal(
-    <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
+    <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end justify-center p-0 sm:p-4 bg-black/70 ${align === 'top' ? 'sm:items-start sm:pt-[7vh]' : 'sm:items-center'}`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
       <div ref={cardRef} className={`app-sheet-card relative w-full max-h-[80vh] sm:max-h-[86vh] overflow-y-auto bg-[#07090f] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)] ${cardClassName ?? 'sm:max-w-[520px]'}`} onClick={(e) => e.stopPropagation()}>
         {/* X sits on the same level as the sheet's title (top-right) */}
         <button type="button" onClick={onClose} aria-label="Închide" className="absolute top-4 right-4 z-10 fm-close-btn">

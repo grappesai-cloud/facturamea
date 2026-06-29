@@ -37,54 +37,54 @@ const active = payments.filter((p) => p.status === 'active');
 const totalCents = active.reduce((s, p) => s + (p.amountCents || 0), 0);
 
 const statusLabel: Record<string, { label: string; cls: string }> = {
-  active:   { label: 'Activă',   cls: 'bg-[#E7F7EC] text-[#15803D]' },
-  canceled: { label: 'Revocată', cls: 'bg-[#FBE9E9] text-[#B91C1C]' },
-  expired:  { label: 'Expirată', cls: 'bg-[#F1F3F6] text-[#46627A]' },
+  active:   { label: 'Activă',   cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  canceled: { label: 'Revocată', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
+  expired:  { label: 'Expirată', cls: 'bg-white/10 text-[#A8BED2]' },
 };
 ---
 
 <AdminLayout title="Încasări" activeTab="incasari">
-  <div class="max-w-4xl">
-    <div class="flex items-baseline justify-between mb-6">
-      <div>
-        <h2 class="text-[20px] font-bold tracking-[-0.02em]">Încasări licențe</h2>
-        <p class="text-[13px] text-[#46627A] mt-1">Companiile care au achiziționat licența lifetime (700 RON).</p>
-      </div>
-    </div>
+  <div class="mb-6">
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Încasări licențe</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Companiile care au achiziționat licența lifetime (700 RON).</p>
+  </div>
 
-    <div class="grid grid-cols-2 gap-4 mb-8">
-      <div class="bg-white border border-[#E3EAF1] rounded-xl p-5">
-        <p class="text-[11px] uppercase tracking-[0.14em] text-[#A8BED2] font-semibold">Licențe active</p>
-        <p class="text-[28px] font-bold tracking-[-0.02em] mt-1">{active.length}</p>
-      </div>
-      <div class="bg-white border border-[#E3EAF1] rounded-xl p-5">
-        <p class="text-[11px] uppercase tracking-[0.14em] text-[#A8BED2] font-semibold">Total încasat</p>
-        <p class="text-[28px] font-bold tracking-[-0.02em] mt-1">{ron(totalCents)}</p>
-      </div>
+  <div class="grid grid-cols-2 gap-4 mb-8 max-w-2xl">
+    <div class="rounded-2xl bg-white/5 p-5">
+      <p class="text-[11px] uppercase tracking-[0.14em] text-[#5E7385] font-semibold">Licențe active</p>
+      <p class="text-[28px] font-bold tracking-[-0.02em] mt-1 text-white">{active.length}</p>
     </div>
+    <div class="rounded-2xl bg-white/5 p-5">
+      <p class="text-[11px] uppercase tracking-[0.14em] text-[#5E7385] font-semibold">Total încasat</p>
+      <p class="text-[28px] font-bold tracking-[-0.02em] mt-1 text-[#E1FB15]">{ron(totalCents)}</p>
+    </div>
+  </div>
 
-    <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
+  <p class="text-[13px] text-[#8FA6BC] mb-3">{payments.length} licențe lifetime</p>
+
+  <div class="rounded-2xl bg-white/5 overflow-hidden">
+    <div class="overflow-x-auto">
       <table class="w-full text-[13px]">
         <thead>
-          <tr class="border-b border-[#E3EAF1] text-left text-[#46627A]">
-            <th class="font-medium px-5 py-3">Companie</th>
-            <th class="font-medium px-5 py-3">Plată</th>
-            <th class="font-medium px-5 py-3">Status</th>
-            <th class="font-medium px-5 py-3">Data</th>
+          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
+            <th class="px-5 py-3 font-semibold">Companie</th>
+            <th class="px-5 py-3 font-semibold text-right">Plată</th>
+            <th class="px-5 py-3 font-semibold">Status</th>
+            <th class="px-5 py-3 font-semibold">Data</th>
           </tr>
         </thead>
         <tbody>
           {payments.length === 0 && (
-            <tr><td colspan="4" class="px-5 py-10 text-center text-[#46627A]">Nicio încasare încă.</td></tr>
+            <tr><td colspan="4" class="px-5 py-10 text-center text-[#8FA6BC]">Nicio încasare încă.</td></tr>
           )}
           {payments.map((p) => {
             const s = statusLabel[p.status] || statusLabel.expired;
             return (
-              <tr class="border-b border-[#F1F3F6] last:border-0">
-                <td class="px-5 py-3 font-semibold text-[#07090f]">{p.companyName || '—'}</td>
-                <td class="px-5 py-3 tabular-nums">{ron(p.amountCents)}</td>
-                <td class="px-5 py-3"><span class={`px-2 py-0.5 rounded text-[11px] font-semibold ${s.cls}`}>{s.label}</span></td>
-                <td class="px-5 py-3 text-[#46627A]">{dt(p.activatedAt)}</td>
+              <tr class="border-b border-white/5 last:border-0">
+                <td class="px-5 py-3 font-semibold text-white">{p.companyName || '—'}</td>
+                <td class="px-5 py-3 text-right tabular-nums text-white">{ron(p.amountCents)}</td>
+                <td class="px-5 py-3"><span class={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${s.cls}`}>{s.label}</span></td>
+                <td class="px-5 py-3 text-[#A8BED2]">{dt(p.activatedAt)}</td>
               </tr>
             );
           })}

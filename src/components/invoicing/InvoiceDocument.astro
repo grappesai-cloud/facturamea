@@ -54,13 +54,13 @@ const LINE = '#E3EAF1';
 const LINE2 = '#EFF3F7';
 
 const shellStyle = [
-  `max-width:210mm; min-height:297mm; color:${INK};`,
+  `max-width:210mm; min-height:297mm;`,
   cfg.topBar ? `border-top:8px solid ${brand};` : '',
   cfg.stripe ? `border-left:10px solid ${brand}; padding-left:2.5rem;` : '',
 ].join(' ');
 ---
 
-<div class="doc-shell mx-auto bg-white p-10" style={shellStyle}>
+<div class="fm-invoice-paper doc-shell mx-auto p-10" style={shellStyle}>
   {cfg.band ? (
     <div class="-mx-10 -mt-10 mb-7 px-10 py-7 text-white" style={`background:${brand}`}>
       <div class="flex items-start justify-between gap-6">
@@ -242,3 +242,40 @@ const shellStyle = [
     <p class="mt-4 text-[9px] text-center" style={`color:${FAINT}`}>{t('Emis cu', 'Issued with')} facturamea · facturamea.com</p>
   )}
 </div>
+
+<style is:global>
+  /* The invoice is paper: always a white sheet with dark ink, in BOTH the
+     light and dark app themes, and in print. We deliberately scope every
+     paper colour to this dedicated class with !important so the global
+     `html.th-dark .bg-white { … }` (and friends) in BaseLayout / AppLayout
+     can never reach inside the rendered document and make text illegible. */
+  .fm-invoice-paper,
+  /* Out-specify the dark-theme overrides in BaseLayout / AppLayout, including
+     the inline-style attribute catch-all `html.th-dark [style*="background:#fff"]`.
+     Doubling the class raises specificity so the sheet always wins. */
+  html.th-dark .fm-invoice-paper.fm-invoice-paper,
+  html.th-app-dark .fm-invoice-paper.fm-invoice-paper,
+  html.th-light .fm-invoice-paper.fm-invoice-paper {
+    background: #ffffff !important;
+    color: #07090f !important;
+    color-scheme: light;
+  }
+  /* Default ink for any descendant that relies on inheritance (e.g. table
+     cells with no inline colour). Elements with their own inline `style`
+     colour keep it — inline styles outrank this selector. */
+  .fm-invoice-paper, .fm-invoice-paper * {
+    border-color: inherit;
+  }
+  .fm-invoice-paper td,
+  .fm-invoice-paper th,
+  .fm-invoice-paper p,
+  .fm-invoice-paper span,
+  .fm-invoice-paper div {
+    color: inherit;
+  }
+  /* White text on coloured bands/headers/totals must stay white. */
+  .fm-invoice-paper .text-white,
+  .fm-invoice-paper .text-white * {
+    color: #ffffff !important;
+  }
+</style>

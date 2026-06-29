@@ -1,0 +1,277 @@
+---
+// Cockpit — "Toate firmele tale într-o privire".
+// Multi-tenant overview: one compact KPI card per company the signed-in user is
+// a member of, so they can scan all their businesses and jump into any one.
+//
+// All money math stays server-side. Every per-company KPI query is wrapped so a
+// single failing company can never 500 the whole page (worst case: that card
+// shows zeros).
+import AppLayout from '../../layouts/AppLayout.astro';
+import { db } from '../../db';
+import { companies, userCompanyMemberships, transportInvoices, expenses } from '../../db/schema';
+import { and, eq, gte, lte, sql, notInArray } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+const activeCompanyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 0 }).format((cents || 0) / 100);
+
+const now = new Date();
+const yearStart = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+const yearLabel = String(now.getUTCFullYear());
+// "Live" invoices = real documents (exclude drafts / voided / reversed).
+const LIVE = ['draft', 'voided', 'reversed'] as const;
+
+type CompanyCard = {
+  id: string;
+  name: string;
+  cui: string | null;
+  role: string | null;
+  isActive: boolean;
+  // KPIs (RON cents)
+  revenueYear: number;   // invoiced (subtotal-equivalent) this year
+  collectedYear: number; // cash collected this year
+  outstanding: number;   // issued − collected, still owed
+  invoiceCount: number;  // # live invoices this year
+  overdueCount: number;  // # invoices past due, not paid
+  expensesYear: number;  // expenses this year
+};
+
+// 1) Companies the user belongs to (membership table — the multi-tenant source).
+let memberships: { id: string; name: string; cui: string | null; role: string | null }[] = [];
+try {
+  memberships = await db
+    .select({
+      id: userCompanyMemberships.companyId,
+      name: companies.name,
+      cui: companies.cui,
+      role: userCompanyMemberships.role,
+    })
+    .from(userCompanyMemberships)
+    .innerJoin(companies, eq(companies.id, userCompanyMemberships.companyId))
+    .where(eq(userCompanyMemberships.userId, user.id))
+    .orderBy(companies.name);
+} catch { /* DB not ready — render empty state */ }
+
+// 2) Per-company KPIs. Each company is computed independently and defensively so
+//    one failure doesn't break the rest of the cockpit.
+async function kpisFor(companyId: string) {
+  const base = and(
+    eq(transportInvoices.companyId, companyId),
+    eq(transportInvoices.kind, 'factura'),
+    notInArray(transportInvoices.status, [...LIVE]),
+  );
+  const out = { revenueYear: 0, collectedYear: 0, outstanding: 0, invoiceCount: 0, overdueCount: 0, expensesYear: 0 };
+
+  try {
+    const [r] = await db.select({
+      count: sql<number>`COUNT(*)`,
+      // Prefer the RON-frozen totals (declarations basis); fall back to raw cents.
+      revenue: sql<number>`COALESCE(SUM(COALESCE(${transportInvoices.totalRonCents}, ${transportInvoices.totalCents})), 0)`,
+      collected: sql<number>`COALESCE(SUM(${transportInvoices.paidCents}), 0)`,
+    }).from(transportInvoices).where(and(base, gte(transportInvoices.issuedAt, yearStart)));
+    out.invoiceCount = Number(r?.count ?? 0);
+    out.revenueYear = Number(r?.revenue ?? 0);
+    out.collectedYear = Number(r?.collected ?? 0);
+    out.outstanding = Math.max(0, out.revenueYear - out.collectedYear);
+  } catch { /* leave zeros */ }
+
+  // Overdue: live invoices past their due date that aren't fully paid.
+  try {
+    const [r] = await db.select({ count: sql<number>`COUNT(*)` })
+      .from(transportInvoices)
+      .where(and(
+        eq(transportInvoices.companyId, companyId),
+        eq(transportInvoices.kind, 'factura'),
+        notInArray(transportInvoices.status, [...LIVE, 'paid']),
+        lte(transportInvoices.dueAt, now),
+        sql`${transportInvoices.paidCents} < ${transportInvoices.totalCents}`,
+      ));
+    out.overdueCount = Number(r?.count ?? 0);
+  } catch { /* leave zero */ }
+
+  // Expenses this year (date column is a string).
+  try {
+    const yearStartStr = yearStart.toISOString().slice(0, 10);
+    const [r] = await db.select({
+      total: sql<number>`COALESCE(SUM(${expenses.totalCents}), 0)`,
+    }).from(expenses).where(and(eq(expenses.companyId, companyId), gte(expenses.issueDate, yearStartStr)));
+    out.expensesYear = Number(r?.total ?? 0);
+  } catch { /* leave zero */ }
+
+  return out;
+}
+
+const cards: CompanyCard[] = await Promise.all(
+  memberships.map(async (m) => ({
+    id: m.id,
+    name: m.name,
+    cui: m.cui,
+    role: m.role,
+    isActive: m.id === activeCompanyId,
+    ...(await kpisFor(m.id)),
+  })),
+);
+
+// Portfolio totals across every company (the "all at a glance" headline).
+const totals = cards.reduce(
+  (a, c) => ({
+    revenue: a.revenue + c.revenueYear,
+    outstanding: a.outstanding + c.outstanding,
+    invoices: a.invoices + c.invoiceCount,
+    overdue: a.overdue + c.overdueCount,
+  }),
+  { revenue: 0, outstanding: 0, invoices: 0, overdue: 0 },
+);
+
+const single = cards.length === 1;
+---
+
+<AppLayout title="Cockpit" activeTab="cockpit">
+  <!-- Header -->
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4" data-reveal>
+    <div>
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Cockpit</h1>
+      <p class="text-[14px] text-[#A8BED2] mt-1">
+        Toate firmele tale într-o privire — KPI-urile cheie pe {yearLabel}, fără să schimbi compania.
+      </p>
+    </div>
+    <a href="/app/setari/companie"
+       class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/5 text-[#A8BED2] text-[13px] font-semibold hover:bg-white/10 hover:text-white transition-colors">
+      <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+      </svg>
+      Adaugă firmă
+    </a>
+  </div>
+
+  {cards.length === 0 && (
+    <div class="rounded-2xl bg-white/5 p-8 text-center" data-reveal>
+      <p class="text-[15px] text-white font-semibold">Nicio firmă încă</p>
+      <p class="text-[13px] text-[#8FA6BC] mt-1">Adaugă prima ta firmă ca să o vezi aici.</p>
+      <a href="/app/setari/companie" class="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors">
+        Adaugă firmă
+      </a>
+    </div>
+  )}
+
+  {/* Portfolio summary — only meaningful when there's more than one company. */}
+  {cards.length > 1 && (
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5" data-reveal>
+      <div class="rounded-2xl p-4 bg-white/5">
+        <p class="text-[12px] font-medium text-[#8FA6BC]">Facturat · {yearLabel}</p>
+        <p class="text-[18px] sm:text-[22px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5">{ron(totals.revenue)}</p>
+      </div>
+      <div class="rounded-2xl p-4 bg-white/5">
+        <p class="text-[12px] font-medium text-[#8FA6BC]">De încasat</p>
+        <p class="text-[18px] sm:text-[22px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-1.5">{ron(totals.outstanding)}</p>
+      </div>
+      <div class="rounded-2xl p-4 bg-white/5">
+        <p class="text-[12px] font-medium text-[#8FA6BC]">Facturi · {yearLabel}</p>
+        <p class="text-[18px] sm:text-[22px] font-bold tabular-nums text-white mt-1.5">{totals.invoices}</p>
+      </div>
+      <div class="rounded-2xl p-4 bg-white/5">
+        <p class="text-[12px] font-medium text-[#8FA6BC]">Restante</p>
+        <p class={`text-[18px] sm:text-[22px] font-bold tabular-nums mt-1.5 ${totals.overdue > 0 ? 'text-[#DC4B41]' : 'text-white'}`}>{totals.overdue}</p>
+      </div>
+    </div>
+  )}
+
+  <!-- Company cards -->
+  <div class={`grid gap-4 ${single ? 'grid-cols-1 max-w-xl' : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-3'}`}>
+    {cards.map((c) => (
+      <div class="rounded-2xl bg-white/5 p-5 flex flex-col" data-reveal>
+        <!-- Identity -->
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex items-center gap-2">
+              <h2 class="text-[18px] font-bold tracking-[-0.02em] text-white truncate">{c.name}</h2>
+              {c.isActive && (
+                <span class="shrink-0 px-2 py-0.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[10px] font-bold uppercase tracking-wide">Activă</span>
+              )}
+            </div>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5 truncate">
+              {c.cui || 'Fără CUI'}{c.role && <span class="text-[#7E97AC]"> · {c.role}</span>}
+            </p>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 gap-2.5 mt-4">
+          <div class="rounded-xl bg-white/5 p-3">
+            <p class="text-[11px] font-medium text-[#8FA6BC]">Facturat · {yearLabel}</p>
+            <p class="text-[17px] font-bold tracking-[-0.02em] tabular-nums text-white mt-1 whitespace-nowrap">{ron(c.revenueYear)}</p>
+          </div>
+          <div class="rounded-xl bg-white/5 p-3">
+            <p class="text-[11px] font-medium text-[#8FA6BC]">De încasat</p>
+            <p class="text-[17px] font-bold tracking-[-0.02em] tabular-nums text-[#E8A33C] mt-1 whitespace-nowrap">{ron(c.outstanding)}</p>
+          </div>
+          <div class="rounded-xl bg-white/5 p-3">
+            <p class="text-[11px] font-medium text-[#8FA6BC]">Facturi · {yearLabel}</p>
+            <p class="text-[17px] font-bold tabular-nums text-white mt-1">{c.invoiceCount}</p>
+          </div>
+          <div class="rounded-xl bg-white/5 p-3">
+            <p class="text-[11px] font-medium text-[#8FA6BC]">Restante</p>
+            <p class={`text-[17px] font-bold tabular-nums mt-1 ${c.overdueCount > 0 ? 'text-[#DC4B41]' : 'text-white'}`}>{c.overdueCount}</p>
+          </div>
+        </div>
+
+        <!-- Action -->
+        {c.isActive ? (
+          <a href="/app"
+             class="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors">
+            Deschide firma
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </a>
+        ) : (
+          <button type="button" data-open-company={c.id}
+             class="mt-4 inline-flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-full bg-white/10 text-white text-[14px] font-semibold hover:bg-white/15 transition-colors disabled:opacity-60">
+            Deschide firma
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" /></svg>
+          </button>
+        )}
+      </div>
+    ))}
+
+    {/* Single-company affordance: a subtle "add another firm" tile beside the one card. */}
+    {single && (
+      <a href="/app/setari/companie"
+         class="rounded-2xl border border-dashed border-white/15 p-5 flex flex-col items-center justify-center text-center gap-2 text-[#8FA6BC] hover:border-white/30 hover:text-white transition-colors max-w-xl" data-reveal>
+        <span class="grid place-items-center w-11 h-11 rounded-full bg-white/5">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" /></svg>
+        </span>
+        <span class="text-[14px] font-semibold">Adaugă o firmă</span>
+        <span class="text-[12px]">Gestionează mai multe firme dintr-un singur loc.</span>
+      </a>
+    )}
+  </div>
+
+  <script>
+    // Switch the active company (POST /api/companies/switch), then open /app.
+    document.querySelectorAll<HTMLButtonElement>('[data-open-company]').forEach((btn) => {
+      btn.addEventListener('click', async () => {
+        const companyId = btn.getAttribute('data-open-company');
+        if (!companyId) return;
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/companies/switch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ companyId }),
+          });
+          if (res.ok) {
+            window.location.href = '/app';
+          } else {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || 'Nu am putut deschide firma.');
+            btn.disabled = false;
+          }
+        } catch {
+          alert('Nu am putut deschide firma.');
+          btn.disabled = false;
+        }
+      });
+    });
+  </script>
+</AppLayout>

@@ -108,7 +108,7 @@ export default function EntryForm() {
   };
 
   const inputCls =
-    'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+    'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
 
   if (!open) {
     return (
@@ -233,7 +233,7 @@ export default function EntryForm() {
                   value={l.note}
                   onChange={(e) => setLine(i, { note: e.target.value })}
                   placeholder="Notă rând (opțional)"
-                  className="w-full rounded-xl bg-white/10 px-4 py-2 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40"
+                  className="w-full rounded-xl bg-white/10 px-4 py-2 text-[14px] text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40"
                 />
               </div>
             )}

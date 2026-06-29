@@ -39,7 +39,7 @@ const DOT: Record<string, string> = { high: 'bg-[#DC4B41]', warn: 'bg-[#E8A33C]'
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
     {deadlines.map((d) => (
       <div class={`rounded-2xl p-4 ${d.days <= 5 ? 'bg-[#E8A33C]/10 ring-1 ring-[#E8A33C]/30' : 'bg-white/5'}`}>
-        <p class="text-[13px] text-[#9FB8CC]">{d.label}</p>
+        <p class="text-[13px] text-[#A8BED2]">{d.label}</p>
         <p class="mt-1 text-[18px] font-bold text-white">{d.date} <span class="text-[13px] font-normal text-[#7E97AC]">· peste {d.days} {d.days === 1 ? 'zi' : 'zile'}</span></p>
       </div>
     ))}
@@ -49,7 +49,7 @@ const DOT: Record<string, string> = { high: 'bg-[#DC4B41]', warn: 'bg-[#E8A33C]'
   {anomalies.length === 0 ? (
     <div class="rounded-2xl bg-[#2E9E6A]/10 ring-1 ring-[#2E9E6A]/30 p-8 text-center">
       <p class="text-[18px] font-semibold text-[#2E9E6A]">✓ Nicio problemă găsită</p>
-      <p class="text-[14px] text-[#9FB8CC] mt-1">Facturile, cheltuielile și TVA-ul arată în regulă.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-1">Facturile, cheltuielile și TVA-ul arată în regulă.</p>
     </div>
   ) : (
     <>
@@ -64,7 +64,7 @@ const DOT: Record<string, string> = { high: 'bg-[#DC4B41]', warn: 'bg-[#E8A33C]'
               <span class={`mt-1.5 shrink-0 w-2.5 h-2.5 rounded-full ${DOT[a.severity]}`}></span>
               <div class="min-w-0 flex-1">
                 <p class="text-[15.5px] font-semibold text-white">{a.title}</p>
-                <p class="text-[13.5px] text-[#9FB8CC] mt-0.5">{a.detail}</p>
+                <p class="text-[13.5px] text-[#A8BED2] mt-0.5">{a.detail}</p>
               </div>
               {a.href && <a href={a.href} class={`shrink-0 text-[13px] px-3 py-1.5 rounded-full font-semibold ${TONE[a.severity]}`}>Rezolvă →</a>}
             </div>

@@ -45,7 +45,7 @@ function sparkline(series: { d: string; c: number }[], w = 280, h = 50): string 
   const max = Math.max(...series.map((s) => s.c), 1);
   const stepX = w / Math.max(series.length - 1, 1);
   const points = series.map((s, i) => `${i * stepX},${h - (s.c / max) * (h - 6) - 3}`).join(' ');
-  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="w-full h-12"><polyline fill="none" stroke="#1A759F" stroke-width="1.5" points="${points}"/></svg>`;
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" class="w-full h-12"><polyline fill="none" stroke="#34A0A4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" points="${points}"/></svg>`;
 }
 
 const series = [
@@ -58,39 +58,39 @@ const series = [
 
 <AdminLayout title="Analytics" activeTab="analytics">
   <div class="mb-6">
-    <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Ultimele 30 zile</p>
-    <h2 class="text-[22px] font-bold tracking-[-0.02em] mt-1">Activitate platformă</h2>
+    <p class="text-[12px] uppercase tracking-[0.16em] text-[#34A0A4] font-semibold">Ultimele 30 zile</p>
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white mt-1">Activitate platformă</h1>
   </div>
 
-  <div class="mb-6 p-5 bg-white border border-[#E3EAF1] rounded-xl">
-    <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium mb-3">Funnel waitlist → cont activ</p>
-    <div class="flex items-center gap-3">
-      <div class="text-center">
-        <p class="text-[24px] font-bold tabular-nums">{waitlistTotal?.c ?? 0}</p>
-        <p class="text-[11px] text-[#46627A]">Waitlist</p>
+  <div class="mb-3 p-5 sm:p-6 rounded-2xl bg-white/5">
+    <p class="text-[12px] font-medium text-[#8FA6BC] mb-4">Funnel waitlist → cont activ</p>
+    <div class="flex items-center gap-4 sm:gap-6">
+      <div>
+        <p class="text-[28px] sm:text-[32px] font-bold tabular-nums text-white leading-none">{waitlistTotal?.c ?? 0}</p>
+        <p class="text-[12px] text-[#8FA6BC] mt-1.5">Waitlist</p>
       </div>
-      <span class="text-[#A8BED2]">→</span>
-      <div class="text-center">
-        <p class="text-[24px] font-bold tabular-nums">{registered?.c ?? 0}</p>
-        <p class="text-[11px] text-[#46627A]">Înregistraţi</p>
+      <svg class="w-5 h-5 text-[#5E7385] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+      <div>
+        <p class="text-[28px] sm:text-[32px] font-bold tabular-nums text-white leading-none">{registered?.c ?? 0}</p>
+        <p class="text-[12px] text-[#8FA6BC] mt-1.5">Înregistraţi</p>
       </div>
-      <span class="text-[#A8BED2]">·</span>
-      <div class="text-center">
-        <p class="text-[24px] font-bold tabular-nums text-[#1A759F]">{conversionPct}%</p>
-        <p class="text-[11px] text-[#46627A]">conversie</p>
+      <span class="text-[#5E7385]">·</span>
+      <div>
+        <p class="text-[28px] sm:text-[32px] font-bold tabular-nums text-[#E1FB15] leading-none">{conversionPct}%</p>
+        <p class="text-[12px] text-[#8FA6BC] mt-1.5">conversie</p>
       </div>
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-3">
     {series.map((s) => (
-      <div class="p-5 bg-white border border-[#E3EAF1] rounded-xl">
+      <div class="p-5 sm:p-6 rounded-2xl bg-white/5">
         <div class="flex items-baseline justify-between mb-3">
-          <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">{s.label}</p>
-          <p class="text-[20px] font-bold tabular-nums">{s.total.toLocaleString()}</p>
+          <p class="text-[12px] font-medium text-[#8FA6BC]">{s.label}</p>
+          <p class="text-[22px] font-bold tabular-nums text-white">{s.total.toLocaleString()}</p>
         </div>
         <div set:html={sparkline(s.data)} />
-        <div class="flex justify-between text-[10px] text-[#A8BED2] mt-2">
+        <div class="flex justify-between text-[10px] text-[#5E7385] mt-2 tabular-nums">
           <span>{s.data[0]?.d ?? ''}</span>
           <span>{s.data[s.data.length - 1]?.d ?? ''}</span>
         </div>
@@ -98,21 +98,21 @@ const series = [
     ))}
   </div>
 
-  <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
-    <div class="px-5 py-3 border-b border-[#E3EAF1]">
-      <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Top rute (după volum marfă, 30z)</p>
+  <div class="rounded-2xl bg-white/5 overflow-hidden">
+    <div class="px-5 py-4 border-b border-white/10">
+      <p class="text-[13px] font-semibold text-white">Top rute (după volum marfă, 30z)</p>
     </div>
     {topRoutes.length === 0 ? (
-      <div class="px-5 py-8 text-center text-[12px] text-[#46627A]">Nu există suficiente date încă</div>
+      <div class="px-5 py-10 text-center text-[13px] text-[#8FA6BC]">Nu există suficiente date încă</div>
     ) : (
-      <div class="divide-y divide-[#E3EAF1]">
+      <div class="divide-y divide-white/5">
         {topRoutes.map((r, i) => (
-          <div class="px-5 py-2.5 flex items-center justify-between text-[13px]">
-            <span class="flex items-center gap-3">
-              <span class="text-[#A8BED2] font-mono w-6 text-right">{i + 1}.</span>
-              <span class="font-medium">{r.route}</span>
+          <div class="px-5 py-3 flex items-center justify-between text-[13px]">
+            <span class="flex items-center gap-3 min-w-0">
+              <span class="text-[#5E7385] font-mono w-6 text-right shrink-0">{i + 1}.</span>
+              <span class="font-medium text-white truncate">{r.route}</span>
             </span>
-            <span class="font-semibold tabular-nums">{r.c}</span>
+            <span class="font-semibold tabular-nums text-[#A8BED2] shrink-0 ml-3">{r.c}</span>
           </div>
         ))}
       </div>

@@ -102,7 +102,7 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8FA6BC]" />
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume sau cod…" className="pl-9 rounded-full bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Caută după nume sau cod…" className="pl-9 rounded-full bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
         </div>
         <Button onClick={startCreate} disabled={creating || editing !== null} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100">
           <Plus className="w-4 h-4 mr-1.5" /> Produs nou
@@ -115,19 +115,19 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="md:col-span-2">
               <Label className="text-[13px] font-medium text-[#A8BED2]">Denumire *</Label>
-              <Input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Transport rutier internațional 22t" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Input value={form.name || ''} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Ex: Transport rutier internațional 22t" className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
               <Label className="text-[13px] font-medium text-[#A8BED2]">Cod</Label>
-              <Input value={form.code || ''} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="TR-INT-22" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Input value={form.code || ''} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="TR-INT-22" className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div className="md:col-span-3">
               <Label className="text-[13px] font-medium text-[#A8BED2]">Descriere (opțional)</Label>
-              <Input value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Apare pe factură sub denumire" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Input value={form.description || ''} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Apare pe factură sub denumire" className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
               <Label className="text-[13px] font-medium text-[#A8BED2]">Preț unitar</Label>
-              <Input value={priceInput} onChange={(e) => setPriceInput(e.target.value)} placeholder="1800.00" inputMode="decimal" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Input value={priceInput} onChange={(e) => setPriceInput(e.target.value)} placeholder="1800.00" inputMode="decimal" className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
               <Label className="text-[13px] font-medium text-[#A8BED2]">Monedă</Label>
@@ -137,11 +137,11 @@ export default function ProductsManager({ initial }: { initial: Product[] }) {
             </div>
             <div>
               <Label className="text-[13px] font-medium text-[#A8BED2]">UM</Label>
-              <Input value={form.defaultUm || 'buc'} onChange={(e) => setForm({ ...form, defaultUm: e.target.value })} placeholder="buc, cursă, km, ore" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+              <Input value={form.defaultUm || 'buc'} onChange={(e) => setForm({ ...form, defaultUm: e.target.value })} placeholder="buc, cursă, km, ore" className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
             </div>
             <div>
               <Label className="text-[13px] font-medium text-[#A8BED2]">TVA (%)</Label>
-              <Select value={form.defaultVatRate ?? 21} onChange={(e) => setForm({ ...form, defaultVatRate: Number(e.target.value) })} className="w-full">
+              <Select value={form.defaultVatRate ?? 19} onChange={(e) => setForm({ ...form, defaultVatRate: Number(e.target.value) })} className="w-full">
                 {VAT_RATES.map((r) => <option key={r} value={r}>{r}%</option>)}
               </Select>
             </div>

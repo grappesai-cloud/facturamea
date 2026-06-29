@@ -120,7 +120,7 @@ const journeySteps = [
 
   <!-- ═══════════════ SHOWCASE — text left · phone center · feature list right (pinned, swaps per scroll) ═══════════════ -->
   <section id="functii" class="journey relative scroll-mt-24">
-    <div data-journey class="journey-stage relative overflow-hidden px-4 sm:px-6 py-20">
+    <div data-journey class="journey-stage relative overflow-visible lg:overflow-hidden px-4 sm:px-6 py-20">
       <span class="journey-watermark pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-[8%] text-[20vw] font-extrabold tracking-tighter leading-none text-[#07090f]/[0.04] select-none hidden lg:block" aria-hidden="true">facturamea</span>
 
       <div class="journey-inner mx-auto max-w-[1180px] w-full relative">
@@ -229,19 +229,41 @@ const journeySteps = [
           </nav>
         </div>
 
-        <!-- MOBILE: stacked step cards (sticky card-stack — pin-free, reliable on touch) -->
+        <!-- MOBILE: scroll-pinned phone story (CSS position:sticky — reliable on touch) -->
         <div class="lg:hidden">
-          <h2 data-anim class="text-center text-3xl font-extrabold text-[#07090f] tracking-[-0.03em] leading-tight mb-9">
+          <h2 data-anim class="text-center text-3xl font-extrabold text-[#07090f] tracking-[-0.03em] leading-tight mb-6">
             Cum funcționează, <span class="hero-mark">pas cu pas.</span>
           </h2>
-          <div data-anim-stagger class="space-y-5">
-            {journeySteps.map((s, i) => (
-              <div class="rounded-[24px] bg-white ring-1 ring-black/[0.06] shadow-[0_18px_50px_-26px_rgba(16,42,67,0.5)] p-6">
-                <p class="text-[11px] font-bold uppercase tracking-[0.18em] text-[#1A759F]">Pasul 0{i + 1} · {s.short}</p>
-                <h3 class="mt-4 text-2xl font-extrabold text-[#07090f] tracking-[-0.02em] leading-tight">{s.h}</h3>
-                <p class="mt-2.5 text-[15px] text-[#46627A] leading-relaxed">{s.d}</p>
+
+          <div data-jmobile class="jm-wrap relative">
+            <!-- Pinned stage — clean text + bigger phone, centered (just like desktop).
+                 GSAP ScrollTrigger pins this stage and releases it cleanly (its pin-spacer
+                 collapses straight into the next section — no empty gap, no jank). -->
+            <div data-jm-stage class="flex flex-col items-center justify-center gap-5 px-4 h-[100svh] pointer-events-none">
+              <!-- bigger phone -->
+              <PhoneFrame class="w-[230px] aspect-[286/590]" screenBg="#0E1F30">
+                {journeySteps.map((s, i) => (
+                  <img
+                    data-jmscreen
+                    data-jmscreen-i={i}
+                    class={`jm-screen ${i === 0 ? 'is-active' : ''}`}
+                    src={`/screens/app-${s.key}.jpeg`}
+                    alt={`facturamea · ecranul ${s.label}`}
+                    loading="lazy"
+                  />
+                ))}
+              </PhoneFrame>
+              <!-- step text crossfades below the phone (clean, clear of the navbar) -->
+              <div class="relative w-full max-w-[360px] h-[96px]">
+                {journeySteps.map((s, i) => (
+                  <div data-jmtext data-jmtext-i={i} class={`jm-text absolute inset-x-0 top-0 text-center ${i === 0 ? 'is-active' : ''}`}>
+                    <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-[#1A759F] mb-1.5">Pasul 0{i + 1} · {s.short}</p>
+                    <h3 class="text-[24px] font-extrabold text-[#07090f] tracking-[-0.025em] leading-[1.08]">{s.h}</h3>
+                    <p class="mt-2 text-[14px] text-[#46627A] leading-snug">{s.d}</p>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
@@ -291,32 +313,6 @@ const journeySteps = [
           </span>
         </div>
         <p class="text-center text-xs text-[#8FA6BC] mt-4">Acces complet, imediat după plată.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════ APLICAȚII ═══════════════ -->
-  <section id="aplicatii" class="relative px-4 sm:px-6 py-16 sm:py-20 scroll-mt-24">
-    <div class="mx-auto max-w-[1180px] flex flex-col items-center text-center">
-      <h2 data-split class="text-3xl lg:text-5xl font-extrabold text-[#07090f] tracking-[-0.035em] leading-[1.02] max-w-2xl">
-        Web, iOS și Android, cu același cont.
-      </h2>
-      <p data-anim="scale" class="text-[#46627A] leading-relaxed max-w-xl mt-5 text-base sm:text-lg">
-        Emite o factură de la birou, verifică încasările din mers și ține stocul la zi de oriunde. Datele se sincronizează în timp real.
-      </p>
-      <div data-anim-stagger class="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
-        <a href="/app" data-magnetic class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#07090f] text-white hover:bg-[#14304b] transition-colors">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.5 2.5 16 0 18M12 3c-2.5 2.5-2.5 16 0 18" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="text-left leading-tight"><span class="block text-[10px] text-[#A8BED2]">Deschide în</span><span class="block text-[15px] font-bold">Aplicație web</span></span>
-        </a>
-        <div class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#07090f] text-white opacity-80 cursor-default select-none">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M16.4 12.9c0-2.3 1.9-3.4 2-3.5-1.1-1.6-2.8-1.8-3.4-1.8-1.4-.1-2.8.9-3.5.9s-1.8-.9-3-.8c-1.5 0-2.9.9-3.7 2.3-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7s1.7.7 2.9.7 2-1.1 2.7-2.1c.9-1.2 1.2-2.4 1.2-2.5-.1 0-2.3-.9-2.3-3.4zM14.1 5.9c.6-.8 1-1.8.9-2.9-.9 0-2 .6-2.6 1.3-.6.7-1.1 1.7-1 2.7 1 .1 2-.5 2.7-1.1z"/></svg>
-          <span class="text-left leading-tight"><span class="block text-[10px] text-[#E1FB15]">În curând pe</span><span class="block text-[15px] font-bold">App Store</span></span>
-        </div>
-        <div class="flex items-center gap-3 pl-5 pr-7 py-3 rounded-2xl bg-[#07090f] text-white opacity-80 cursor-default select-none">
-          <svg width="20" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 2.5v19l10.5-9.5L3 2.5z" fill="#34A0A4"/><path d="M3 2.5l10.5 9.5 3-2.7L4.6 1.6A1.7 1.7 0 0 0 3 2.5z" fill="#76C893"/><path d="M3 21.5l10.5-9.5 3 2.7-11.9 7.7a1.7 1.7 0 0 1-1.6-.9z" fill="#168AAD"/><path d="M16.5 9.3l-3 2.7 3 2.7 3.6-2a1.5 1.5 0 0 0 0-1.4l-3.6-2z" fill="#E1FB15"/></svg>
-          <span class="text-left leading-tight"><span class="block text-[10px] text-[#E1FB15]">În curând pe</span><span class="block text-[15px] font-bold">Google Play</span></span>
-        </div>
       </div>
     </div>
   </section>
@@ -401,5 +397,23 @@ const journeySteps = [
     .is-journey .jstep { position: absolute; inset: 0; opacity: 0; margin-top: 0; transform: translateY(22px); will-change: opacity, transform; }
     .is-journey .jstep.is-active { opacity: 1; transform: translateY(0); }
 
+    /* ── MOBILE scroll-pinned phone story (position:sticky — touch-reliable) ── */
+    /* per-step phone screens stacked; only the active one is visible (crossfade) */
+    .jm-screen {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      object-fit: cover; opacity: 0; z-index: 6; pointer-events: none;
+      transition: opacity 0.5s var(--jease); will-change: opacity;
+    }
+    .jm-screen.is-active { opacity: 1; }
+    /* step text crossfades in place above the phone (only the active one shows) */
+    .jm-text { opacity: 0; transform: translateY(8px); transition: opacity 0.45s var(--jease), transform 0.45s var(--jease); will-change: opacity, transform; pointer-events: none; }
+    .jm-text.is-active { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .jm-screen, .jm-text { transition: none; }
+      .jm-text.is-active { transform: none; }
+    }
+
   </style>
+
 </LandingLayout>

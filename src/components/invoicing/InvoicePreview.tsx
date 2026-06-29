@@ -55,6 +55,7 @@ export default function InvoicePreview({ draft }: { draft: Draft }) {
   return (
     <div className="rounded-2xl overflow-hidden ring-1 ring-black/[0.06] shadow-[0_20px_60px_-30px_rgba(16,42,67,0.5)]">
       <div
+        className="fm-invoice-paper"
         style={{
           background: '#fff',
           color: INK,

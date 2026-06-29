@@ -116,10 +116,12 @@ export default function ReceptionForm() {
       if (!res.ok) { setError(data.error || 'Eroare'); return; }
       setDone(true);
       setNirNumber(''); setSupplierInvoiceNumber(''); setLines([newLine()]);
+      // Refresh so the server-rendered "Recepții recente" list shows the new NIR.
+      setTimeout(() => { window.location.reload(); }, 900);
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
-  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:ring-2 focus:ring-[#E1FB15]/40';
   const selectCls = `${inputCls} [color-scheme:dark]`;
   const lineLabel = 'mb-1 block text-[10px] uppercase tracking-wider text-[#8FA6BC]';
   const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
@@ -149,7 +151,7 @@ export default function ReceptionForm() {
             </div>
             <div>
               <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Furnizor</Label>
-              <Select className={selectCls} value={supplierId} onChange={(e) => setSupplierId(e.target.value)}>
+              <Select className={selectCls} value={supplierId} onChange={(e) => setSupplierId(e.target.value)} searchable={suppliers.length > 5} searchPlaceholder="Caută furnizor...">
                 <option value="">Fără furnizor</option>
                 {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </Select>
@@ -173,7 +175,7 @@ export default function ReceptionForm() {
                 <div className="md:col-span-4">
                   <Label className={lineLabel}>Produs</Label>
                   {products.length > 0 ? (
-                    <Select className={selectCls} value={l.productId} onChange={(e) => onPickProduct(i, e.target.value)}>
+                    <Select className={selectCls} value={l.productId} onChange={(e) => onPickProduct(i, e.target.value)} searchable={products.length > 5} searchPlaceholder="Caută produs...">
                       <option value="">Liber (fără stoc)</option>
                       {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </Select>
@@ -218,7 +220,6 @@ export default function ReceptionForm() {
 
           <div className="flex gap-2">
             <Button className={btnPrimary} disabled={busy} onClick={submit}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează recepția'}</Button>
-            <a href="/app/gestiune/nir"><Button className={btnSecondary} variant="outline" type="button">Înapoi la lista NIR</Button></a>
           </div>
         </CardContent>
       </Card>

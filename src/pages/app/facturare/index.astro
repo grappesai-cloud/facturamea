@@ -2,7 +2,7 @@
 import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
 import { transportInvoices } from '../../../db/schema';
-import { eq, sql, and, desc, lt, gte, isNull, ne } from 'drizzle-orm';
+import { eq, sql, and, desc, lt, ne } from 'drizzle-orm';
 import { isOverdue } from '../../../lib/dates';
 import EmptyState from '../../../components/ui/EmptyState.astro';
 
@@ -11,10 +11,22 @@ const companyId = user.companyId;
 
 async function safe<T>(p: Promise<T>, fb: T): Promise<T> { try { return await p; } catch { return fb; } }
 
+// Kind filter — replaces the old per-type list pages (proforme/chitante/avize…).
+// Picked via ?kind=… so old links can 302 here and deep-links keep working.
+const KIND_FILTERS = [
+  { value: 'all', label: 'Toate' },
+  { value: 'factura', label: 'Facturi' },
+  { value: 'proforma', label: 'Proforme' },
+  { value: 'chitanta', label: 'Chitanțe' },
+  { value: 'aviz', label: 'Avize' },
+  { value: 'storno', label: 'Storno' },
+] as const;
+const rawKind = (Astro.url.searchParams.get('kind') || 'all').toLowerCase();
+const activeKind = KIND_FILTERS.some((k) => k.value === rawKind) ? rawKind : 'all';
+const activeKindLabel = KIND_FILTERS.find((k) => k.value === activeKind)?.label ?? 'Toate';
+
 const now = new Date();
 const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-const yearStart = new Date(now.getFullYear(), 0, 1);
 
 // KPI rollups — issued total this month, due-but-unpaid, overdue, paid this month.
 const [issuedRow, openRow, overdueRow, paidRow] = companyId ? await Promise.all([
@@ -68,67 +80,16 @@ const recent = companyId ? await safe(
     dueAt: transportInvoices.dueAt,
   })
     .from(transportInvoices)
-    .where(eq(transportInvoices.companyId, companyId))
+    .where(activeKind === 'all'
+      ? eq(transportInvoices.companyId, companyId)
+      : and(eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, activeKind)))
     .orderBy(desc(transportInvoices.createdAt))
-    .limit(10),
+    .limit(activeKind === 'all' ? 10 : 100),
   [] as any[],
 ) : [];
 
-// Extra KPIs: facturat azi, e-Factura netrimise/erori, aging buckets, chart.
-const [todayRow, efNetrimise, efErori, agingRows, chartInv, chartPay] = companyId ? await Promise.all([
-  safe(db.select({ sum: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}),0)`, cnt: sql<number>`COUNT(*)` })
-    .from(transportInvoices).where(and(
-      eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
-      gte(transportInvoices.issuedAt, todayStart), ne(transportInvoices.status, 'voided'),
-    )), [{ sum: 0, cnt: 0 }]),
-  safe(db.select({ cnt: sql<number>`COUNT(*)` }).from(transportInvoices).where(and(
-    eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
-    ne(transportInvoices.status, 'draft'), ne(transportInvoices.status, 'voided'),
-    isNull(transportInvoices.efacturaStatus),
-  )), [{ cnt: 0 }]),
-  safe(db.select({ cnt: sql<number>`COUNT(*)` }).from(transportInvoices).where(and(
-    eq(transportInvoices.companyId, companyId),
-    sql`(${transportInvoices.efacturaStatus} = 'rejected' OR ${transportInvoices.efacturaError} IS NOT NULL)`,
-  )), [{ cnt: 0 }]),
-  // Aging buckets for overdue receivables (1-15 / 16-30 / 30+ zile).
-  safe(db.select({
-    b1: sql<number>`COALESCE(SUM(CASE WHEN ${transportInvoices.dueAt} >= ${new Date(now.getTime() - 15 * 86400000)} THEN ${transportInvoices.totalCents} - ${transportInvoices.paidCents} ELSE 0 END),0)`,
-    b2: sql<number>`COALESCE(SUM(CASE WHEN ${transportInvoices.dueAt} < ${new Date(now.getTime() - 15 * 86400000)} AND ${transportInvoices.dueAt} >= ${new Date(now.getTime() - 30 * 86400000)} THEN ${transportInvoices.totalCents} - ${transportInvoices.paidCents} ELSE 0 END),0)`,
-    b3: sql<number>`COALESCE(SUM(CASE WHEN ${transportInvoices.dueAt} < ${new Date(now.getTime() - 30 * 86400000)} THEN ${transportInvoices.totalCents} - ${transportInvoices.paidCents} ELSE 0 END),0)`,
-  }).from(transportInvoices).where(and(
-    eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
-    sql`${transportInvoices.status} IN ('issued','sent','partial')`, lt(transportInvoices.dueAt, now),
-  )), [{ b1: 0, b2: 0, b3: 0 }]),
-  // Monthly facturat (current year).
-  safe(db.select({
-    m: sql<number>`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})`,
-    sum: sql<number>`COALESCE(SUM(${transportInvoices.totalCents}),0)`,
-  }).from(transportInvoices).where(and(
-    eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
-    gte(transportInvoices.issuedAt, yearStart), ne(transportInvoices.status, 'voided'),
-  )).groupBy(sql`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})`), [] as any[]),
-  // Monthly încasat (current year) — from invoices.paidCents, the same source the
-  // dashboard uses, so "Încasat" matches everywhere (the payments table can be
-  // empty when an invoice is marked paid directly).
-  safe(db.select({
-    m: sql<number>`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})`,
-    sum: sql<number>`COALESCE(SUM(${transportInvoices.paidCents}),0)`,
-  }).from(transportInvoices).where(and(
-    eq(transportInvoices.companyId, companyId), eq(transportInvoices.kind, 'factura'),
-    gte(transportInvoices.issuedAt, yearStart), ne(transportInvoices.status, 'voided'),
-  )).groupBy(sql`EXTRACT(MONTH FROM ${transportInvoices.issuedAt})`), [] as any[]),
-]) : [[{ sum: 0, cnt: 0 }], [{ cnt: 0 }], [{ cnt: 0 }], [{ b1: 0, b2: 0, b3: 0 }], [], []];
-
-// Build 12-month chart series.
-const MONTHS = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
-const invByMonth = new Map<number, number>(chartInv.map((r: any) => [Number(r.m), Number(r.sum)]));
-const payByMonth = new Map<number, number>(chartPay.map((r: any) => [Number(r.m), Number(r.sum)]));
-const chartData = MONTHS.map((label, i) => ({ label, fact: invByMonth.get(i + 1) || 0, inc: payByMonth.get(i + 1) || 0 }));
-const chartMax = Math.max(1, ...chartData.map((d) => Math.max(d.fact, d.inc)));
-const hasChartData = chartData.some((d) => d.fact > 0 || d.inc > 0);
-const efNetrimiseCnt = efNetrimise[0]?.cnt ?? 0;
-const efEroriCnt = efErori[0]?.cnt ?? 0;
-const aging = agingRows[0] ?? { b1: 0, b2: 0, b3: 0 };
+// KPI rollups (facturat azi, e-Factura netrimise/erori, aging buckets) now live on
+// the Reports page; the e-Factura netrimise/erori alert moved to Notificări.
 
 function fmtMoney(cents: number, currency: string) {
   return `${(cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
@@ -179,21 +140,11 @@ const statusLabel: Record<string, string> = {
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Facturare</h1>
     </div>
-    <div class="flex items-center gap-2 flex-wrap">
-      <a href="/app/facturare/emite?kind=factura" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Factură</a>
-      <a href="/app/facturare/emite?kind=proforma" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Proformă</a>
-      <a href="/app/facturare/emite?kind=chitanta" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Chitanță</a>
-      <a href="/app/facturare/emite?kind=storno" class="px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Storno</a>
-      <a href="/app/facturare/model" title="Designul facturii — șablon, logo, culoare, footer, ștampilă, previzualizare live" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">
-        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z"/><path stroke-linecap="round" stroke-linejoin="round" d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 008 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H2a2 2 0 110-4h.09A1.65 1.65 0 004 8a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H8a1.65 1.65 0 001-1.51V2a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0020 8v.09c.66.16 1.15.74 1.4 1.4"/></svg>
-        Personalizează
+    <div class="flex items-center gap-2 shrink-0">
+      <a href="/app/facturare/emite?kind=factura" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Emite factură</a>
+      <a href="/app/facturare/setari" aria-label="Personalizează factura" title="Designul facturii — șablon, logo, culoare, footer, ștampilă, previzualizare live" class="grid place-items-center w-11 h-11 rounded-full bg-white/10 text-white hover:bg-white/15 transition-colors">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.397-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
       </a>
-      {hasChartData && (
-        <button type="button" id="toggle-chart" aria-expanded="false" class="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">
-          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 15l3-4 3 3 4-6"/></svg>
-          Grafic
-        </button>
-      )}
     </div>
   </div>
 
@@ -203,60 +154,75 @@ const statusLabel: Record<string, string> = {
     </div>
   )}
 
-  <!-- Chart: facturat vs încasat (anul curent) — hidden by default, toggled by the Grafic button -->
-  {hasChartData && (
-    <div id="facturare-chart" class="hidden rounded-2xl p-5 sm:p-6 bg-white/5 mb-6">
-      <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
-        <h2 class="text-[18px] font-bold text-white">Facturi și încasări · {now.getFullYear()}</h2>
-        <div class="flex gap-4 text-[12px] text-[#A8BED2]">
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[#34A0A4] inline-block"></span> Facturat</span>
-          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-[#B5E48C] inline-block"></span> Încasat</span>
-        </div>
-      </div>
-      <div class="flex items-end gap-1.5 h-44">
-        {chartData.map((d) => (
-          <div class="flex-1 flex flex-col items-center justify-end gap-1">
-            <div class="w-full flex items-end justify-center gap-0.5 h-36">
-              <div class="w-1/2 bg-[#34A0A4] rounded-t" style={`height: ${Math.max(1, (d.fact / chartMax) * 100)}%`} title={`Facturat: ${fmtMoney(d.fact, 'RON')}`}></div>
-              <div class="w-1/2 bg-[#B5E48C] rounded-t" style={`height: ${Math.max(1, (d.inc / chartMax) * 100)}%`} title={`Încasat: ${fmtMoney(d.inc, 'RON')}`}></div>
-            </div>
-            <span class="text-[9px] text-[#8FA6BC]">{d.label}</span>
-          </div>
-        ))}
-      </div>
+  <!-- Shortcuts + document-type filter as inline expandable menus (one open at a time). -->
+  <div class="mb-6 sm:mb-8" data-filterbar>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" data-fb-toggle="sectiuni" aria-expanded="false" class="select-none inline-flex items-center gap-2 pl-3.5 pr-3 py-2 rounded-full bg-white/5 text-[13.5px] font-semibold text-[#A8BED2] hover:text-white hover:bg-white/10 transition-colors">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+        Secțiuni
+        <svg data-fb-chev class="w-4 h-4 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+      </button>
+      <button type="button" data-fb-toggle="tip" aria-expanded="false" class="select-none inline-flex items-center gap-2 pl-3.5 pr-3 py-2 rounded-full bg-white/5 text-[13.5px] font-semibold text-[#A8BED2] hover:text-white hover:bg-white/10 transition-colors">
+        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z"/></svg>
+        Filtru: {activeKindLabel}
+        <svg data-fb-chev class="w-4 h-4 shrink-0 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
+      </button>
     </div>
-  )}
 
-  <!-- Quick links (scrollable chips) -->
-  <div class="flex gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 mb-6">
-    {[
-      { label: 'Produse', href: '/app/facturare/produse' },
-      { label: 'Recurente', href: '/app/facturare/recurente' },
-      { label: 'Vechime', href: '/app/facturare/rapoarte/aging' },
-      { label: 'Rapoarte', href: '/app/facturare/rapoarte' },
-      { label: 'Setări', href: '/app/facturare/setari' },
-    ].map((l) => (
-      <a href={l.href} class="shrink-0 px-4 py-2 rounded-full bg-white/5 text-[13px] font-semibold text-[#A8BED2] hover:text-white hover:bg-white/10 transition-colors">{l.label}</a>
-    ))}
+    <nav aria-label="Secțiuni facturare" data-fb-panel="sectiuni" hidden class="fm-reveal mt-2.5 grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {[
+        { label: 'Clienți', href: '/app/facturare/clienti', icon: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z' },
+        { label: 'Produse', href: '/app/facturare/produse', icon: 'M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5l9 5.25M3 7.5v9l9 5.25m0-9v9' },
+        { label: 'Recurente', href: '/app/facturare/recurente', icon: 'M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99' },
+        { label: 'e-Factura', href: '/app/facturare/efactura', icon: 'M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z' },
+        { label: 'Setări facturare', href: '/app/facturare/setari', icon: 'M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.397-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28zM15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+      ].map((l) => (
+        <a href={l.href} class="inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-xl bg-white/5 text-[13px] font-semibold text-[#A8BED2] hover:text-white hover:bg-white/10 transition-colors">
+          <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d={l.icon}/></svg>
+          {l.label}
+        </a>
+      ))}
+    </nav>
+
+    <nav aria-label="Tip document" data-fb-panel="tip" hidden class="fm-reveal mt-2.5 grid grid-cols-2 sm:grid-cols-3 gap-2">
+      {KIND_FILTERS.map((k) => {
+        const isActive = k.value === activeKind;
+        const href = k.value === 'all' ? '/app/facturare' : `/app/facturare?kind=${k.value}`;
+        return (
+          <a
+            href={href}
+            aria-current={isActive ? 'page' : undefined}
+            class={`inline-flex items-center gap-2 pl-3 pr-4 py-2.5 rounded-xl text-[13px] font-semibold transition-colors ${isActive ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-white/5 text-[#A8BED2] hover:text-white hover:bg-white/10'}`}
+          >{k.label}</a>
+        );
+      })}
+    </nav>
   </div>
 
+  {/* Invoicing KPIs (Emis/De încasat/Întârziate/Încasat) now live on the Reports page.
+      e-Factura netrimise/erori alert moved to Notificări. */}
+
   <!-- Recent invoices -->
-  <h2 class="text-[18px] font-bold text-white mb-3">Facturile recente</h2>
+  <div class="flex items-center justify-between gap-3 mb-3">
+    <h2 class="text-[18px] font-bold text-white">{activeKind === 'all' ? 'Facturile recente' : activeKindLabel}</h2>
+    {companyId && activeKind !== 'all' && (
+      <a href={`/app/facturare/emite?kind=${activeKind}`} class="shrink-0 inline-flex items-center gap-1 px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[13px] hover:bg-white/15 transition-colors">+ Emite</a>
+    )}
+  </div>
   {recent.length === 0 ? (
-    <EmptyState title="Încă nicio factură" description="Emite prima factură și apare aici.">
+    <EmptyState title={activeKind === 'all' ? 'Încă nicio factură' : `Niciun document de tip ${activeKindLabel.toLowerCase()}`} description="Emite primul document și apare aici.">
       <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"/></svg>
-      <a slot="action" href="/app/facturare/emite" class="inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Emite factură →</a>
+      <a slot="action" href={activeKind === 'all' ? '/app/facturare/emite' : `/app/facturare/emite?kind=${activeKind}`} class="inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Emite →</a>
     </EmptyState>
   ) : (
     <Fragment>
-    <ul class="space-y-2.5">
-      {recent.slice(0, 3).map((inv) => {
-        const due = inv.dueAt ? new Date(inv.dueAt) : null;
+    <ul class="space-y-2.5" id="fact-list">
+      {recent.map((inv, i) => {
         const overdue = ['issued', 'sent', 'partial'].includes(inv.status) && isOverdue(inv.dueAt);
         const effectiveStatus = overdue ? 'overdue' : inv.status;
         return (
-          <li>
-            <a href={`/app/facturare/${inv.id}`} class="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <li class={i >= 3 ? 'fm-extra' : undefined} hidden={i >= 3}>
+            <a href={`/app/facturare/${inv.id}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
                   <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusTone[effectiveStatus] ?? statusTone.draft}`}>
@@ -267,15 +233,9 @@ const statusLabel: Record<string, string> = {
                 </div>
                 <p class="text-[15px] text-white font-bold truncate mt-1.5">{inv.clientNameSnap}</p>
               </div>
-              <div class="text-right shrink-0">
-                <p class="text-[15px] font-bold text-white tabular-nums whitespace-nowrap">{fmtMoney(inv.totalCents, inv.currency)}</p>
-                <p class="text-[12px] text-[#8FA6BC] mt-1">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
-              </div>
-              <div class="shrink-0 flex flex-col items-end gap-1.5">
-                {inv.kind === 'factura' && !['paid', 'voided', 'draft', 'reversed'].includes(inv.status) && (
-                  <span class="px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold whitespace-nowrap">Încasează</span>
-                )}
-                <span class="inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#A8BED2] group-hover:text-white transition-colors whitespace-nowrap">Detalii<svg class="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></span>
+              <div class="shrink-0 flex flex-col items-end gap-1 text-right">
+                <p class="text-[15px] font-bold text-white tabular-nums whitespace-nowrap leading-none">{fmtMoney(inv.totalCents, inv.currency)}</p>
+                <span class="text-[12px] text-[#8FA6BC] tabular-nums whitespace-nowrap">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</span>
               </div>
             </a>
           </li>
@@ -283,53 +243,65 @@ const statusLabel: Record<string, string> = {
       })}
     </ul>
     {recent.length > 3 && (
-      <details class="mt-2.5">
-        <summary class="cursor-pointer list-none mx-auto w-fit flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">
-          <svg class="w-4 h-4 details-chevron transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-          Vezi toate ({recent.length})
-        </summary>
-        <div class="space-y-2.5 mt-2.5">
-          {recent.slice(3).map((inv) => {
-            const overdue2 = ['issued', 'sent', 'partial'].includes(inv.status) && isOverdue(inv.dueAt);
-            const eff2 = overdue2 ? 'overdue' : inv.status;
-            return (
-              <a href={`/app/facturare/${inv.id}`} class="group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <span class={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold ${statusTone[eff2] ?? statusTone.draft}`}>
-                      <span class="w-1.5 h-1.5 rounded-full bg-current shrink-0"></span>
-                      {statusLabel[eff2] ?? eff2}
-                    </span>
-                    <span class="font-mono text-[12px] text-[#8FA6BC] tabular-nums truncate">{inv.fullNumber}</span>
-                  </div>
-                  <p class="text-[15px] text-white font-bold truncate mt-1.5">{inv.clientNameSnap}</p>
-                </div>
-                <div class="text-right shrink-0">
-                  <p class="text-[15px] font-bold text-white tabular-nums whitespace-nowrap">{fmtMoney(inv.totalCents, inv.currency)}</p>
-                  <p class="text-[12px] text-[#8FA6BC] mt-1">{inv.issuedAt ? new Date(inv.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
-                </div>
-                <span class="shrink-0 inline-flex items-center gap-0.5 text-[12px] font-semibold text-[#A8BED2] group-hover:text-white transition-colors whitespace-nowrap">Detalii<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></span>
-              </a>
-            );
-          })}
-        </div>
-      </details>
+      <button type="button" id="fact-seemore" data-shown="false" data-count={recent.length} class="mt-3 mx-auto w-fit flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+        <span data-seemore-label>Vezi toate ({recent.length})</span>
+      </button>
     )}
     </Fragment>
   )}
 
-  <script is:inline>
-    document.addEventListener('astro:page-load', function () {
-      var btn = document.getElementById('toggle-chart');
-      var chart = document.getElementById('facturare-chart');
-      if (!btn || !chart || btn.dataset.chartBound) return;
-      btn.dataset.chartBound = '1';
-      btn.addEventListener('click', function () {
-        var show = chart.classList.contains('hidden');
-        chart.classList.toggle('hidden');
-        btn.setAttribute('aria-expanded', String(show));
-        btn.classList.toggle('bg-white/15', show);
+</AppLayout>
+
+<script>
+  // Inline filter menus: clicking a toggle expands its panel below the row (pushing
+  // content down), only one open at a time, and clicking outside closes everything.
+  // Registered once globally (guard) so it survives view-transition swaps.
+  if (!(window as any).__fmFilterbar) {
+    (window as any).__fmFilterbar = true;
+    const closeBar = (bar: Element) => {
+      bar.querySelectorAll('[data-fb-panel]').forEach((p) => ((p as HTMLElement).hidden = true));
+      bar.querySelectorAll('[data-fb-toggle]').forEach((t) => {
+        t.setAttribute('aria-expanded', 'false');
+        t.querySelector('[data-fb-chev]')?.classList.remove('rotate-180');
+      });
+    };
+    document.addEventListener('click', (e) => {
+      const toggle = (e.target as HTMLElement).closest('[data-fb-toggle]');
+      if (toggle) {
+        const bar = toggle.closest('[data-filterbar]');
+        if (!bar) return;
+        const key = toggle.getAttribute('data-fb-toggle');
+        const panel = bar.querySelector(`[data-fb-panel="${key}"]`) as HTMLElement | null;
+        const willOpen = !!panel?.hidden;
+        closeBar(bar);
+        if (panel && willOpen) {
+          panel.hidden = false;
+          toggle.setAttribute('aria-expanded', 'true');
+          toggle.querySelector('[data-fb-chev]')?.classList.add('rotate-180');
+        }
+        return;
+      }
+      // Click outside any open filterbar → close it.
+      document.querySelectorAll('[data-filterbar]').forEach((bar) => {
+        if (!bar.contains(e.target as Node)) closeBar(bar);
       });
     });
-  </script>
-</AppLayout>
+  }
+</script>
+
+<script>
+  // "Vezi toate" — expands the recent-invoice list in place (button stays at the
+  // bottom), same behaviour as the Cheltuieli list. Delegated + guarded.
+  if (!(window as any).__fmSeemore) {
+    (window as any).__fmSeemore = true;
+    document.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('#fact-seemore') as HTMLElement | null;
+      if (!btn) return;
+      const willShow = btn.dataset.shown !== 'true';
+      document.querySelectorAll('#fact-list .fm-extra').forEach((el) => { (el as HTMLElement).hidden = !willShow; });
+      btn.dataset.shown = String(willShow);
+      const label = btn.querySelector('[data-seemore-label]');
+      if (label) label.textContent = willShow ? 'Arată mai puțin' : `Vezi toate (${btn.dataset.count})`;
+    });
+  }
+</script>

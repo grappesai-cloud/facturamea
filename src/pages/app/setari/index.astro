@@ -1,5 +1,8 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
+const sectionCls = 'rounded-2xl bg-white/5 p-5 sm:p-6 space-y-4';
+const sectionHeadingCls = 'text-[16px] font-bold text-white';
+const navRowCls = 'flex items-center gap-3.5 p-3.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] transition-colors';
 
 const user = Astro.locals.user!;
 
@@ -23,113 +26,118 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
       <p class="text-[13px] text-[#A8BED2] mt-2 max-w-2xl">Profil, companie, notificări, abonament.</p>
     </div>
 
-    <!-- Profile -->
-    <section class="mb-10">
-      <h2 class="text-[18px] font-bold text-white mb-3">Profilul tău</h2>
+    <div class="space-y-6">
 
-      <form id="profile-form" class="rounded-2xl p-5 bg-white/5 space-y-4">
-        <div id="profile-success" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl bg-[#2E9E6A]/15">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#2E9E6A] mt-1.5 shrink-0"></span>
-          <p class="text-[13px] text-[#2E9E6A]">Profil actualizat.</p>
-        </div>
-        <div id="profile-error" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl bg-[#DC4B41]/15">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#DC4B41] mt-1.5 shrink-0"></span>
-          <p id="profile-error-text" class="text-[13px] text-[#DC4B41]"></p>
-        </div>
+      <!-- Profile -->
+      <section class={sectionCls}>
+        <h2 class={sectionHeadingCls}>Profilul tău</h2>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class={labelCls}>Nume</label>
-            <input type="text" name="name" value={user.name} required class={inputCls} />
+        <form id="profile-form" class="space-y-4">
+          <div id="profile-success" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl bg-[#2E9E6A]/15">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#2E9E6A] mt-1.5 shrink-0"></span>
+            <p class="text-[13px] text-[#2E9E6A]">Profil actualizat.</p>
           </div>
+          <div id="profile-error" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl bg-[#DC4B41]/15">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#DC4B41] mt-1.5 shrink-0"></span>
+            <p id="profile-error-text" class="text-[13px] text-[#DC4B41]"></p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelCls}>Nume</label>
+              <input type="text" name="name" value={user.name} required class={inputCls} />
+            </div>
+            <div>
+              <label class={labelCls}>Email</label>
+              <input type="email" value={user.email} disabled class={inputDisabledCls} />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class={labelCls}>Telefon</label>
+              <input type="tel" name="phone" value={user.phone || ''} placeholder="+40 700 000 000" class={inputCls} />
+            </div>
+            <div>
+              <label class={labelCls}>Tip cont</label>
+              <input type="text" value={userTypeLabels[user.userType]} disabled class={inputDisabledCls} />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 pt-1 border-t border-white/[0.06]">
+            <p class="text-[11px] text-[#8FA6BC] pt-3">
+              ID platformă <span class="font-mono text-white font-semibold ml-1">{user.platformId}</span>
+            </p>
+          </div>
+
           <div>
-            <label class={labelCls}>Email</label>
-            <input type="email" value={user.email} disabled class={inputDisabledCls} />
+            <button
+              type="submit"
+              class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors"
+            >
+              Salvează modificările
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Afișare: font scale -->
+      <section class={sectionCls}>
+        <h2 class={sectionHeadingCls}>Afișare</h2>
+        <div>
+          <div class="mb-3">
+            <p class="text-[14px] font-semibold text-white">Mărimea fontului</p>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5">Aplicat pe toate paginile — se salvează local pe dispozitivul tău.</p>
+          </div>
+          <div class="inline-flex items-stretch rounded-xl overflow-hidden border border-white/[0.12] bg-white/[0.03]" role="group" aria-label="Mărimea fontului">
+            <button type="button" data-font-scale="75"  class="th-fs-btn px-4 py-2.5 text-[11px] font-semibold text-white hover:bg-white/10">A · 75%</button>
+            <button type="button" data-font-scale="100" class="th-fs-btn px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-white/10">A · 100%</button>
+            <button type="button" data-font-scale="125" class="th-fs-btn px-4 py-2.5 text-[15px] font-semibold text-white hover:bg-white/10">A · 125%</button>
           </div>
         </div>
+      </section>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label class={labelCls}>Telefon</label>
-            <input type="tel" name="phone" value={user.phone || ''} placeholder="+40 700 000 000" class={inputCls} />
-          </div>
-          <div>
-            <label class={labelCls}>Tip cont</label>
-            <input type="text" value={userTypeLabels[user.userType]} disabled class={inputDisabledCls} />
-          </div>
+      <!-- Account & company settings — links to the existing sub-pages so the
+           sections promised in the page subtitle are actually reachable here. -->
+      <section class={sectionCls}>
+        <h2 class={sectionHeadingCls}>Cont & companie</h2>
+        <div class="space-y-2">
+          <a href="/app/setari/companie" class={navRowCls}>
+            <svg class="w-5 h-5 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>
+            <span class="flex-1 text-[15px] text-white">Companie</span>
+            <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/app/setari/notifications" class={navRowCls}>
+            <svg class="w-5 h-5 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+            <span class="flex-1 text-[15px] text-white">Notificări</span>
+            <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/app/setari/securitate" class={navRowCls}>
+            <svg class="w-5 h-5 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 4v5c0 4.4-3 8.3-7 9-4-0.7-7-4.6-7-9V7l7-4z"/></svg>
+            <span class="flex-1 text-[15px] text-white">Securitate</span>
+            <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
         </div>
+      </section>
 
-        <p class="text-[11px] text-[#8FA6BC]">
-          ID platformă <span class="font-mono text-white font-semibold ml-1">{user.platformId}</span>
-        </p>
-
-        <div class="pt-2">
-          <button
-            type="submit"
-            class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors"
-          >
-            Salvează modificările
-          </button>
+      <!-- Integrations & developer API -->
+      <section class={sectionCls}>
+        <h2 class={sectionHeadingCls}>Integrări & API</h2>
+        <div class="space-y-2">
+          <a href="/app/setari/integrari" class={navRowCls}>
+            <svg class="w-5 h-5 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0H5a2 2 0 01-2-2v-4m6 6h10a2 2 0 002-2v-4"/></svg>
+            <span class="flex-1 text-[15px] text-white">Integrări magazin & plăți</span>
+            <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
+          <a href="/app/setari/api" class={navRowCls}>
+            <svg class="w-5 h-5 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+            <span class="flex-1 text-[15px] text-white">API & chei dezvoltatori</span>
+            <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+          </a>
         </div>
-      </form>
-    </section>
+      </section>
 
-    <!-- Afișare: font scale -->
-    <section class="mb-10">
-      <h2 class="text-[18px] font-bold text-white mb-3">Afișare</h2>
-      <div class="rounded-2xl p-5 bg-white/5">
-        <div class="mb-3">
-          <p class="text-[13px] font-medium text-white">Mărimea fontului</p>
-          <p class="text-[12px] text-[#8FA6BC] mt-0.5">Aplicat pe toate paginile — se salvează local pe dispozitivul tău.</p>
-        </div>
-        <div class="inline-flex items-stretch rounded-xl overflow-hidden bg-white/5" role="group" aria-label="Mărimea fontului">
-          <button type="button" data-font-scale="75"  class="th-fs-btn px-4 py-2 text-[11px] font-semibold text-white hover:bg-white/10">A · 75%</button>
-          <button type="button" data-font-scale="100" class="th-fs-btn px-4 py-2 text-[13px] font-semibold text-white hover:bg-white/10">A · 100%</button>
-          <button type="button" data-font-scale="125" class="th-fs-btn px-4 py-2 text-[15px] font-semibold text-white hover:bg-white/10">A · 125%</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- Account & company settings — links to the existing sub-pages so the
-         sections promised in the page subtitle are actually reachable here. -->
-    <section class="mb-10">
-      <h2 class="text-[18px] font-bold text-white mb-3">Cont & companie</h2>
-      <div class="space-y-2">
-        <a href="/app/setari/companie" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 21V7l7-4 7 4v14M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg>
-          <span class="flex-1 text-[16px] text-white">Companie</span>
-          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-        <a href="/app/setari/notifications" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.4-1.4A2 2 0 0118 14.2V11a6 6 0 10-12 0v3.2a2 2 0 01-.6 1.4L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
-          <span class="flex-1 text-[16px] text-white">Notificări</span>
-          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-        <a href="/app/setari/securitate" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 4v5c0 4.4-3 8.3-7 9-4-0.7-7-4.6-7-9V7l7-4z"/></svg>
-          <span class="flex-1 text-[16px] text-white">Securitate</span>
-          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-      </div>
-    </section>
-
-    <!-- Integrations & developer API -->
-    <section class="mb-10">
-      <h2 class="text-[18px] font-bold text-white mb-3">Integrări & API</h2>
-      <div class="space-y-2">
-        <a href="/app/setari/integrari" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0H5a2 2 0 01-2-2v-4m6 6h10a2 2 0 002-2v-4"/></svg>
-          <span class="flex-1 text-[16px] text-white">Integrări magazin & plăți</span>
-          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-        <a href="/app/setari/api" class="flex items-center gap-3.5 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-          <svg class="w-6 h-6 text-[#8AA0B4] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
-          <span class="flex-1 text-[16px] text-white">API & chei dezvoltatori</span>
-          <svg class="w-5 h-5 text-[#8FA6BC] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-        </a>
-      </div>
-    </section>
-
+    </div>
   </div>
 
   <style is:global>

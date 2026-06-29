@@ -91,7 +91,7 @@ export default function StockCountForm() {
 
   const diffFor = (l: CountLine) => (Number(counted[l.id] ?? l.systemQty) || 0) - (Number(l.systemQty) || 0);
 
-  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:ring-2 focus:ring-[#E1FB15]/40';
   const selectCls = `${inputCls} [color-scheme:dark]`;
   const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
   const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15';

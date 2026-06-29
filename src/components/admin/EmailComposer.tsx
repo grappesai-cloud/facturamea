@@ -44,7 +44,7 @@ const STARTER_BODY = `<p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-
 <p style="margin:0 0 16px;font-family:'Outfit',Arial,sans-serif;font-size:15px;line-height:1.65;color:${INK};">Scrie mesajul aici.</p>`;
 
 const inputCls =
-  'w-full px-4 py-2.5 bg-white border border-[#E3EAF1] rounded-xl text-[13px] focus:border-[#07090f] focus:outline-none transition-colors';
+  'w-full px-4 py-2.5 rounded-xl bg-white/5 text-[13px] text-white placeholder:text-[#8FA6BC] ring-1 ring-white/10 focus:ring-[#34A0A4]/50 focus:outline-none transition-all [color-scheme:dark]';
 
 // Client-side mirror of wrapEmailHtml (src/lib/email-campaign.ts) for instant preview.
 function wrapPreview(preheader: string, bodyHtml: string): string {
@@ -235,16 +235,16 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
   const onBodyChange = (e: ChangeEvent<HTMLTextAreaElement>) => setBody(e.target.value);
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
       {/* Composer column */}
-      <div className="space-y-4 p-6 bg-white border border-[#E3EAF1] rounded-xl">
+      <div className="space-y-4 p-5 sm:p-6 rounded-2xl bg-white/5">
         {banner && (
           <div
             className={
-              'px-4 py-3 rounded-xl text-[13px] border ' +
+              'px-4 py-3 rounded-xl text-[13px] ' +
               (banner.kind === 'ok'
-                ? 'border-[#15803D]/30 text-[#15803D] bg-[#15803D]/5'
-                : 'border-[#B91C1C]/30 text-[#B91C1C] bg-[#B91C1C]/5')
+                ? 'text-[#2E9E6A] bg-[#2E9E6A]/15'
+                : 'text-[#DC4B41] bg-[#DC4B41]/15')
             }
           >
             {banner.text}
@@ -252,7 +252,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
         )}
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5">Subiect</label>
+          <label className="block text-[12px] font-medium text-[#A8BED2] mb-1.5">Subiect</label>
           <input
             className={inputCls}
             value={subject}
@@ -263,8 +263,8 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5">
-            Preheader <span className="text-[#A8BED2] font-normal">(text de previzualizare în inbox)</span>
+          <label className="block text-[12px] font-medium text-[#A8BED2] mb-1.5">
+            Preheader <span className="text-[#5E7385] font-normal">(text de previzualizare în inbox)</span>
           </label>
           <input
             className={inputCls}
@@ -276,15 +276,15 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
         </div>
 
         <div>
-          <label className="block text-[12px] font-medium mb-1.5">Audiență</label>
+          <label className="block text-[12px] font-medium text-[#A8BED2] mb-1.5">Audiență</label>
           <select className={inputCls} value={audience} onChange={(e) => setAudience(e.target.value as Audience)}>
             {AUDIENCES.map((a) => (
               <option key={a.value} value={a.value}>{a.label}</option>
             ))}
           </select>
-          <p className="text-[11px] text-[#46627A] mt-1.5">
+          <p className="text-[11px] text-[#8FA6BC] mt-1.5">
             Destinatari estimați:{' '}
-            <span className="font-semibold text-[#07090f]">
+            <span className="font-semibold text-white">
               {audienceCount != null ? audienceCount.toLocaleString('ro-RO') : '-'}
             </span>
           </p>
@@ -292,7 +292,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
 
         {audience === 'custom' && (
           <div>
-            <label className="block text-[12px] font-medium mb-1.5">Email-uri (separate prin virgulă, spațiu sau linie)</label>
+            <label className="block text-[12px] font-medium text-[#A8BED2] mb-1.5">Email-uri (separate prin virgulă, spațiu sau linie)</label>
             <textarea
               className={inputCls + ' resize-y font-mono text-[12px]'}
               rows={4}
@@ -305,14 +305,14 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="text-[12px] font-medium">Conținut HTML</label>
+            <label className="text-[12px] font-medium text-[#A8BED2]">Conținut HTML</label>
             <div className="flex gap-1.5">
               {SNIPPETS.map((s) => (
                 <button
                   key={s.id}
                   type="button"
                   onClick={() => insertSnippet(s.html)}
-                  className="px-2.5 py-1 text-[11px] font-medium border border-[#E3EAF1] rounded-lg hover:bg-[#F4F4F0] transition-colors"
+                  className="px-2.5 py-1 text-[11px] font-semibold rounded-full bg-white/10 text-[#D7E5F0] hover:bg-white/15 transition-colors"
                 >
                   {s.label}
                 </button>
@@ -327,17 +327,17 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             onChange={onBodyChange}
             spellCheck={false}
           />
-          <p className="text-[11px] text-[#A8BED2] mt-1.5">
+          <p className="text-[11px] text-[#8FA6BC] mt-1.5">
             HTML cu stiluri inline. Antetul, footerul și shell-ul branded se adaugă automat la trimitere.
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-2 border-t border-[#E3EAF1]">
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-white/10">
           <button
             type="button"
             onClick={onSaveDraft}
             disabled={busy != null}
-            className="px-4 py-2.5 border border-[#E3EAF1] text-[#07090f] font-semibold rounded-xl text-[13px] hover:bg-[#F4F4F0] disabled:opacity-50 transition-colors"
+            className="px-4 py-2.5 rounded-full bg-white/10 text-[#D7E5F0] font-semibold text-[13px] hover:bg-white/15 disabled:opacity-50 transition-colors"
           >
             {busy === 'save' ? 'Se salvează...' : 'Salvează schița'}
           </button>
@@ -345,7 +345,7 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             type="button"
             onClick={onTest}
             disabled={busy != null}
-            className="px-4 py-2.5 border border-[#1A759F] text-[#1A759F] font-semibold rounded-xl text-[13px] hover:bg-[#1A759F]/5 disabled:opacity-50 transition-colors"
+            className="px-4 py-2.5 rounded-full text-[#34A0A4] bg-[#34A0A4]/10 font-semibold text-[13px] hover:bg-[#34A0A4]/20 disabled:opacity-50 transition-colors"
           >
             {busy === 'test' ? 'Se trimite...' : 'Trimite test către mine'}
           </button>
@@ -353,21 +353,21 @@ export default function EmailComposer({ adminEmail }: { adminEmail: string }) {
             type="button"
             onClick={onSend}
             disabled={busy != null}
-            className="px-5 py-2.5 bg-[#07090f] hover:bg-[#1A1A1A] disabled:bg-[#A8BED2] text-white font-semibold rounded-xl text-[13px] transition-colors"
+            className="px-5 py-2.5 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] disabled:opacity-50 text-[#07090f] font-bold text-[13px] transition-colors"
           >
             {busy === 'send' ? 'Se trimite...' : 'Trimite campanie'}
           </button>
         </div>
-        <p className="text-[11px] text-[#46627A]">
-          Testul ajunge la <span className="font-medium">{adminEmail}</span>. Trimiterea campaniei este ireversibilă.
+        <p className="text-[11px] text-[#8FA6BC]">
+          Testul ajunge la <span className="font-semibold text-[#D7E5F0]">{adminEmail}</span>. Trimiterea campaniei este ireversibilă.
         </p>
       </div>
 
       {/* Preview column */}
-      <div className="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden flex flex-col">
-        <div className="px-5 py-3 border-b border-[#E3EAF1] flex items-center justify-between">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Previzualizare</p>
-          <span className="text-[11px] text-[#A8BED2]">{dirty || !campaignId ? 'Nesalvat' : 'Salvat'}</span>
+      <div className="rounded-2xl bg-white/5 overflow-hidden flex flex-col">
+        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+          <p className="text-[13px] font-semibold text-white">Previzualizare</p>
+          <span className="text-[11px] text-[#8FA6BC]">{dirty || !campaignId ? 'Nesalvat' : 'Salvat'}</span>
         </div>
         <iframe
           title="Previzualizare email"

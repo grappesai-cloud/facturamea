@@ -48,9 +48,15 @@ const kindBadge: Record<string, { label: string; cls: string }> = {
 ---
 
 <AppLayout title="Mișcări stoc" activeTab="stocuri">
-  <div class="mb-8">
+  <div class="mb-6">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Mișcări stoc</h1>
-    <p class="text-[14px] text-[#A8BED2] mt-2">Jurnalul tuturor intrărilor, ieșirilor, transferurilor și ajustărilor de stoc.</p>
+    <p class="text-[14px] text-[#A8BED2] mt-2">Jurnalul tuturor intrărilor, ieșirilor, transferurilor și ajustărilor de stoc. Fiecare recepție, livrare sau transfer adaugă automat o linie aici — cu produsul, gestiunea, cantitatea și costul.</p>
+  </div>
+
+  <div class="mb-6 flex flex-wrap items-center gap-2">
+    {Object.values(kindBadge).map((k) => (
+      <span class={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold ${k.cls}`}>{k.label}</span>
+    ))}
   </div>
 
   {rows.length === 0 ? (

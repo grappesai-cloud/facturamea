@@ -133,7 +133,7 @@ export default function ApiKeysManager() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
                 <Label className="mb-1 block text-xs text-[#A8BED2]">Nume *</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="ex. Integrare ERP, Zapier..." className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
+                <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="ex. Integrare ERP, Zapier..." className="bg-white/5 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition" />
               </div>
               <div>
                 <Label className="mb-1 block text-xs text-[#A8BED2]">Mod</Label>

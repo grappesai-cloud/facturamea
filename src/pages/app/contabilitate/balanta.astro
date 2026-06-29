@@ -1,5 +1,6 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
+import PeriodFilter from '../../../components/contabilitate/PeriodFilter';
 import EmptyState from '../../../components/ui/EmptyState.astro';
 import { trialBalance } from '../../../lib/accounting';
 
@@ -34,23 +35,12 @@ const totals = rows.reduce(
 ---
 
 <AppLayout title="Balanță de verificare" activeTab="contabilitate">
-  <a href="/app/contabilitate" class="inline-flex items-center gap-1.5 mb-4 text-[14px] font-medium text-[#A8BED2] hover:text-white transition-colors">← Contabilitate</a>
   <div class="mb-8 sm:mb-10">
     <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Balanță de verificare</h1>
     <p class="text-[15px] text-[#A8BED2] mt-2">Solduri și rulaje pe conturi, pentru perioada aleasă.</p>
   </div>
 
-  <form method="GET" class="flex flex-wrap items-end gap-3 mb-6 rounded-2xl p-5 bg-white/5">
-    <div>
-      <label class="block text-[13px] text-[#A8BED2] mb-1.5">De la</label>
-      <input type="date" name="from" value={from} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none" />
-    </div>
-    <div>
-      <label class="block text-[13px] text-[#A8BED2] mb-1.5">Până la</label>
-      <input type="date" name="to" value={to} class="rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none" />
-    </div>
-    <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Calculează</button>
-  </form>
+  <PeriodFilter client:load from={from} to={to} submitLabel="Calculează" />
 
   <div class="rounded-2xl bg-white/5 p-4 sm:p-5">
     {rows.length === 0 ? (
@@ -58,7 +48,7 @@ const totals = rows.reduce(
         <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25"/></svg>
       </EmptyState>
     ) : (
-      <div class="overflow-x-auto">
+      <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-[14px]">
           <thead>
             <tr class="text-[11px] uppercase tracking-wide text-[#8FA6BC]">
@@ -69,11 +59,11 @@ const totals = rows.reduce(
               <th class="px-3 py-2 font-medium text-center" colspan="2">Sold final</th>
             </tr>
             <tr class="text-[11px] uppercase tracking-wide text-[#8FA6BC]">
-              <th class="px-3 py-2 font-medium text-right">Debit</th>
+              <th class="px-3 py-2 font-medium text-right border-l border-white/[0.06]">Debit</th>
               <th class="px-3 py-2 font-medium text-right">Credit</th>
-              <th class="px-3 py-2 font-medium text-right">Debit</th>
+              <th class="px-3 py-2 font-medium text-right border-l border-white/[0.06]">Debit</th>
               <th class="px-3 py-2 font-medium text-right">Credit</th>
-              <th class="px-3 py-2 font-medium text-right">Debit</th>
+              <th class="px-3 py-2 font-medium text-right border-l border-white/[0.06]">Debit</th>
               <th class="px-3 py-2 font-medium text-right">Credit</th>
             </tr>
             <tr><th colspan="8" class="p-0"><div class="h-px bg-white/10"></div></th></tr>
@@ -85,11 +75,11 @@ const totals = rows.reduce(
                   <a href={`/app/contabilitate/fisa?cont=${r.code}`} class="hover:text-[#E1FB15]">{r.code}</a>
                 </td>
                 <td class="px-3 py-2.5 text-[#A8BED2] max-w-[240px] truncate">{r.name}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.openingDebit ? ron(r.openingDebit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white border-l border-white/[0.06]">{r.openingDebit ? ron(r.openingDebit) : ''}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.openingCredit ? ron(r.openingCredit) : ''}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.periodDebit ? ron(r.periodDebit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white border-l border-white/[0.06]">{r.periodDebit ? ron(r.periodDebit) : ''}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums text-white">{r.periodCredit ? ron(r.periodCredit) : ''}</td>
-                <td class="px-3 py-2.5 text-right tabular-nums text-white font-semibold">{r.closingDebit ? ron(r.closingDebit) : ''}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-white font-semibold border-l border-white/[0.06]">{r.closingDebit ? ron(r.closingDebit) : ''}</td>
                 <td class="px-3 py-2.5 text-right tabular-nums text-white font-semibold">{r.closingCredit ? ron(r.closingCredit) : ''}</td>
               </tr>
             ))}
@@ -98,15 +88,47 @@ const totals = rows.reduce(
             <tr><td colspan="8" class="p-0"><div class="h-px bg-white/10"></div></td></tr>
             <tr class="font-bold text-[15px]">
               <td class="px-3 py-3.5 text-white" colspan="2">Total</td>
-              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.openingDebit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white border-l border-white/[0.06]">{ron(totals.openingDebit)}</td>
               <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.openingCredit)}</td>
-              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.periodDebit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white border-l border-white/[0.06]">{ron(totals.periodDebit)}</td>
               <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.periodCredit)}</td>
-              <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.closingDebit)}</td>
+              <td class="px-3 py-3.5 text-right tabular-nums text-white border-l border-white/[0.06]">{ron(totals.closingDebit)}</td>
               <td class="px-3 py-3.5 text-right tabular-nums text-white">{ron(totals.closingCredit)}</td>
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <!-- Mobile cards -->
+      <div class="sm:hidden">
+        <div class="divide-y divide-white/10">
+          {rows.map((r) => (
+            <div class="py-3">
+              <div class="flex items-start gap-3">
+                <a href={`/app/contabilitate/fisa?cont=${r.code}`} class="font-mono font-semibold text-white shrink-0 hover:text-[#E1FB15]">{r.code}</a>
+                <span class="flex-1 min-w-0 text-[14px] text-[#A8BED2] break-words">{r.name}</span>
+              </div>
+              <div class="flex items-center justify-between gap-3 mt-2 text-[13px]">
+                <span class="text-[#8FA6BC]">Sold final</span>
+                <span class="tabular-nums font-semibold text-white whitespace-nowrap">
+                  {r.closingDebit ? `${ron(r.closingDebit)} D` : r.closingCredit ? `${ron(r.closingCredit)} C` : '—'}
+                </span>
+              </div>
+              {(r.periodDebit || r.periodCredit) ? (
+                <div class="flex items-center justify-between gap-3 mt-1 text-[12.5px]">
+                  <span class="text-[#8FA6BC]">Rulaj perioadă</span>
+                  <span class="tabular-nums text-[#A8BED2] whitespace-nowrap">D {ron(r.periodDebit)} · C {ron(r.periodCredit)}</span>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        <div class="border-t border-white/10 pt-3.5 mt-1">
+          <div class="flex items-center justify-between gap-3 font-bold">
+            <span class="text-white">Total rulaj</span>
+            <span class="tabular-nums text-white text-[14px] whitespace-nowrap text-right">D {ron(totals.periodDebit)} · C {ron(totals.periodCredit)}</span>
+          </div>
+        </div>
       </div>
     )}
   </div>

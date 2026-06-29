@@ -1,6 +1,7 @@
 ---
 // Venituri-Cheltuieli (cont de profit simplificat). Deterministic, zero cost:
 // venituri = vânzări nete (facturi live), cheltuieli = net pe categorii, în RON.
+// All monetary calc stays on the server — the client only renders pre-formatted strings.
 import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
 import { transportInvoices, expenses } from '../../../db/schema';
@@ -13,6 +14,9 @@ const companyId = user.companyId;
 
 const ron = (cents: number) =>
   new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 2 }).format((cents || 0) / 100);
+// Split a RON-cents amount so the big number can carry a separate "RON" suffix,
+// matching the dashboard / facturare report KPI look.
+const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 // ── Period ────────────────────────────────────────────────────────────────
 const now = new Date();
@@ -73,6 +77,7 @@ try {
 
 const cats = [...byCat.entries()].map(([k, v]) => ({
   key: k, label: CAT_LABELS[k] || (k === 'neclasificate' ? 'Neclasificate' : k), cents: v,
+  display: ron(v),
   pct: expensesTotal > 0 ? Math.round((v / expensesTotal) * 100) : 0,
 })).sort((a, b) => b.cents - a.cents);
 
@@ -87,47 +92,86 @@ const presets = [
 ---
 
 <AppLayout title="Venituri și cheltuieli" activeTab="rapoarte">
-  <div class="mb-5 flex flex-wrap items-end justify-between gap-4">
+  <!-- Header -->
+  <div class="mb-6 flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h1 class="text-[30px] sm:text-[38px] font-semibold tracking-[-0.03em] text-white">Venituri și cheltuieli</h1>
-      <p class="mt-1.5 text-[15px] text-[#7E97AC]">Profitul tău pe perioadă, dintr-o privire. <span class="capitalize">{label}</span>.</p>
-    </div>
-    <div class="flex items-center gap-2">
-      {presets.map((p) => (
-        <a href={`/app/rapoarte/profit?period=${p.key}`} class={`px-4 py-2 rounded-full text-[13.5px] font-semibold transition-colors ${period === p.key ? 'bg-[#E1FB15] text-[#0A2238]' : 'bg-white/10 text-white hover:bg-white/15'}`}>{p.label}</a>
-      ))}
+      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Venituri și cheltuieli</h1>
+      <p class="text-[14px] text-[#A8BED2] mt-1">Profitul tău pe perioadă, dintr-o privire. <span class="capitalize">{label}</span>.</p>
     </div>
   </div>
 
-  <!-- Headline -->
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-    <div class="rounded-2xl bg-white/5 p-5">
-      <p class="text-[13px] uppercase tracking-wider text-[#7E97AC]">Venituri (net)</p>
-      <p class="mt-1.5 text-[26px] font-bold tabular-nums text-white">{ron(revenue)}</p>
+  <!-- Period presets -->
+  <div class="flex flex-wrap gap-2 mb-5">
+    {presets.map((p) => (
+      <a href={`/app/rapoarte/profit?period=${p.key}`}
+         class:list={['px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors',
+           period === p.key ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-white/5 text-[#A8BED2] hover:bg-white/10']}>
+        {p.label}
+      </a>
+    ))}
+  </div>
+
+  <!-- Headline KPI tiles -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+    <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <p class="text-[12px] sm:text-[13px] font-medium text-[#8FA6BC]">Venituri (net)</p>
+      <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-white mt-1.5 whitespace-nowrap">{fmt(revenue)} <span class="text-[13px] sm:text-[15px] text-[#8FA6BC] font-semibold">RON</span></p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1">Vânzări nete din facturi emise</p>
     </div>
-    <div class="rounded-2xl bg-white/5 p-5">
-      <p class="text-[13px] uppercase tracking-wider text-[#7E97AC]">Cheltuieli (net)</p>
-      <p class="mt-1.5 text-[26px] font-bold tabular-nums text-white">{ron(expensesTotal)}</p>
+    <div class="rounded-2xl p-4 sm:p-5 bg-white/5">
+      <p class="text-[12px] sm:text-[13px] font-medium text-[#8FA6BC]">Cheltuieli (net)</p>
+      <p class="text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums text-[#E8A33C] mt-1.5 whitespace-nowrap">{fmt(expensesTotal)} <span class="text-[13px] sm:text-[15px] text-[#E8A33C]/70 font-semibold">RON</span></p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1">{cats.length} {cats.length === 1 ? 'categorie' : 'categorii'}</p>
     </div>
-    <div class={`rounded-2xl p-5 ${profit >= 0 ? 'bg-[#2E9E6A]/12 ring-1 ring-[#2E9E6A]/25' : 'bg-[#DC4B41]/12 ring-1 ring-[#DC4B41]/25'}`}>
-      <p class="text-[13px] uppercase tracking-wider text-[#7E97AC]">Profit{profit >= 0 ? '' : ' (pierdere)'}</p>
-      <p class={`mt-1.5 text-[26px] font-bold tabular-nums ${profit >= 0 ? 'text-[#2E9E6A]' : 'text-[#DC4B41]'}`}>{ron(profit)}</p>
-      {revenue > 0 && <p class="text-[12px] text-[#9FB8CC] mt-0.5">marjă {marginPct}% din venituri</p>}
+    <div class:list={['rounded-2xl p-4 sm:p-5', profit >= 0 ? 'bg-[#2E9E6A]/12 ring-1 ring-[#2E9E6A]/25' : 'bg-[#DC4B41]/12 ring-1 ring-[#DC4B41]/25']}>
+      <p class="text-[12px] sm:text-[13px] font-medium text-[#8FA6BC]">{profit >= 0 ? 'Profit' : 'Pierdere'}</p>
+      <p class:list={['text-[19px] sm:text-[26px] font-bold tracking-[-0.03em] tabular-nums mt-1.5 whitespace-nowrap', profit >= 0 ? 'text-[#2E9E6A]' : 'text-[#DC4B41]']}>{fmt(profit)} <span class:list={['text-[13px] sm:text-[15px] font-semibold', profit >= 0 ? 'text-[#2E9E6A]/70' : 'text-[#DC4B41]/70']}>RON</span></p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1">{revenue > 0 ? `Marjă ${marginPct}% din venituri` : 'Niciun venit în perioadă'}</p>
     </div>
   </div>
+
+  <!-- Profit composition bar -->
+  {(revenue > 0 || expensesTotal > 0) && (
+    <div class="rounded-2xl bg-white/5 p-5 mb-3">
+      <h2 class="text-[13px] font-semibold text-[#8FA6BC] uppercase tracking-wider mb-4">Compoziție</h2>
+      <div class="space-y-3">
+        <div>
+          <div class="flex items-center justify-between gap-3 mb-1.5">
+            <span class="text-[14px] text-white">Venituri</span>
+            <span class="text-[13px] tabular-nums text-[#A8BED2]">{ron(revenue)}</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-white/10 overflow-hidden">
+            <div class="h-full rounded-full bg-[#2E9E6A]" style={`width:${revenue > 0 ? 100 : 0}%`}></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center justify-between gap-3 mb-1.5">
+            <span class="text-[14px] text-white">Cheltuieli</span>
+            <span class="text-[13px] tabular-nums text-[#A8BED2]">{ron(expensesTotal)}</span>
+          </div>
+          <div class="h-2.5 rounded-full bg-white/10 overflow-hidden">
+            <div class="h-full rounded-full bg-[#E8A33C]" style={`width:${revenue > 0 ? Math.min(100, Math.round((expensesTotal / revenue) * 100)) : (expensesTotal > 0 ? 100 : 0)}%`}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
 
   <!-- Expense breakdown -->
   <div class="rounded-2xl bg-white/5 p-5">
     <h2 class="text-[16px] font-bold text-white mb-4">Cheltuieli pe categorii</h2>
     {cats.length === 0 ? (
-      <p class="text-[14px] text-[#7E97AC]">Nicio cheltuială în această perioadă.</p>
+      <div class="py-8 text-center">
+        <p class="text-[14px] font-semibold text-white">Nicio cheltuială în această perioadă</p>
+        <p class="text-[12px] text-[#8FA6BC] mt-0.5">Încearcă un alt interval de timp.</p>
+      </div>
     ) : (
-      <ul class="space-y-3">
+      <ul class="space-y-3.5">
         {cats.map((c) => (
           <li>
             <div class="flex items-center justify-between gap-3 mb-1.5">
-              <span class="text-[14.5px] text-white">{c.label}</span>
-              <span class="text-[14px] tabular-nums text-[#9FB8CC]">{ron(c.cents)} · {c.pct}%</span>
+              <span class="text-[14.5px] text-white truncate">{c.label}</span>
+              <span class="text-[13.5px] tabular-nums text-[#A8BED2] shrink-0">{c.display} · {c.pct}%</span>
             </div>
             <div class="h-2 rounded-full bg-white/10 overflow-hidden">
               <div class="h-full rounded-full bg-[#E1FB15]" style={`width:${c.pct}%`}></div>

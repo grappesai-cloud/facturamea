@@ -1,9 +1,37 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
 import PosTerminal from '../../../components/pos/PosTerminal';
+import { db } from '../../../db';
+import { posSales } from '../../../db/schema';
+import { eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user!;
 if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) =>
+  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
+const fmtDate = (d: any) => d ? new Date(d).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+
+// "Toate vânzările" — afișate sub terminalul de vânzare. Aceeași sursă ca în istoric.
+let rows: any[] = [];
+try {
+  rows = await db
+    .select()
+    .from(posSales)
+    .where(eq(posSales.companyId, companyId))
+    .orderBy(desc(posSales.createdAt))
+    .limit(8);
+} catch (e) {
+  // DB neprovizionat — listă goală.
+}
+
+const payLabel: Record<string, string> = { cash: 'Numerar', card: 'Card', mixed: 'Mixt' };
+const fiscal = (s: any): { text: string; cls: string } | null => {
+  if (s.fiscalStatus === 'printed') return { text: s.fiscalReceiptNumber ? `Fiscal · ${s.fiscalReceiptNumber}` : 'Fiscal', cls: 'bg-[#2E9E6A]/15 text-[#46C28A]' };
+  if (s.fiscalStatus === 'error') return { text: 'Fiscal eșuat', cls: 'bg-[#DC4B41]/15 text-[#E8736A]' };
+  return null;
+};
 ---
 
 <AppLayout title="POS / Casă de marcat" activeTab="pos">
@@ -22,5 +50,40 @@ if (!user.companyId) return Astro.redirect('/app/setari');
     </div>
   </div>
 
+  {/* SALE — terminalul de vânzare conduce. */}
   <PosTerminal client:load />
+
+  {/* TOATE VÂNZĂRILE — sub terminal. */}
+  {rows.length > 0 && (
+    <section class="mt-8 sm:mt-10">
+      <div class="mb-3 flex items-end justify-between gap-3">
+        <div>
+          <h2 class="text-[18px] sm:text-[22px] font-semibold tracking-[-0.02em] text-white">Toate vânzările</h2>
+          <p class="text-[13px] text-[#A8BED2] mt-1">Ultimele bonuri emise la casă.</p>
+        </div>
+        <a href="/app/pos/istoric" class="shrink-0 inline-flex items-center px-4 py-2 rounded-full bg-white/10 text-white text-[13px] font-semibold hover:bg-white/15 transition-colors">
+          Vezi istoricul
+        </a>
+      </div>
+      <ul class="space-y-2.5">
+        {rows.map((s) => (
+          <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+            <div class="min-w-0">
+              <p class="font-mono font-bold text-white truncate">
+                {s.receiptNumber}
+                {fiscal(s) && <span class={`ml-2 align-middle inline-block px-2 py-0.5 rounded-full text-[11px] font-semibold ${fiscal(s)!.cls}`}>{fiscal(s)!.text}</span>}
+              </p>
+              <p class="text-[13px] text-[#8FA6BC] tabular-nums mt-0.5">
+                {fmtDate(s.createdAt)} · {payLabel[s.paymentMethod] || s.paymentMethod}
+              </p>
+            </div>
+            <div class="ml-auto text-right">
+              <p class="font-bold text-white tabular-nums">{ron(s.totalCents)}</p>
+              <p class="text-[13px] text-[#8FA6BC] tabular-nums mt-0.5">TVA {ron(s.vatCents)}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
 </AppLayout>

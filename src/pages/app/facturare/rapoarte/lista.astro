@@ -1,0 +1,186 @@
+---
+// Per-type document lists (Facturi / Proforme / Încasări / SPV) — the tabbed
+// list view that used to live on the Rapoarte page itself. Rapoarte is now an
+// analytics dashboard; these filtered lists are reachable here as a drill-down.
+import AppLayout from '../../../../layouts/AppLayout.astro';
+import { db } from '../../../../db';
+import { transportInvoices, transportInvoicePayments } from '../../../../db/schema';
+import { and, eq, sql, desc, gte, lte, lt, ilike } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/facturare');
+const cid = user.companyId;
+
+type TabId = 'facturi' | 'proforma' | 'incasari' | 'spv';
+const tab = (Astro.url.searchParams.get('tab') as TabId) || 'facturi';
+const q = Astro.url.searchParams.get('q')?.trim() || '';
+const clientFilter = Astro.url.searchParams.get('client')?.trim() || '';
+const statusFilter = Astro.url.searchParams.get('status') || 'toate';
+
+const rawFrom = Astro.url.searchParams.get('from') || '';
+const rawTo = Astro.url.searchParams.get('to') || '';
+const range = Astro.url.searchParams.get('range') || ((rawFrom || rawTo) ? 'custom' : 'year');
+const isoDate = (d: Date) => d.toISOString().slice(0, 10);
+let fromIso = rawFrom;
+let toIso = rawTo;
+if (range !== 'custom') {
+  const now = new Date();
+  toIso = isoDate(now);
+  if (range === 'month') fromIso = isoDate(new Date(now.getFullYear(), now.getMonth(), 1));
+  else if (range === 'year') fromIso = isoDate(new Date(now.getFullYear(), 0, 1));
+  else if (range === 'all') { fromIso = ''; toIso = ''; }
+  else { const d = new Date(now); d.setDate(d.getDate() - 30); fromIso = isoDate(d); }
+}
+const PRESETS = [
+  { id: '30d', label: 'Ultimele 30 zile' },
+  { id: 'month', label: 'Luna aceasta' },
+  { id: 'year', label: 'Anul acesta' },
+  { id: 'all', label: 'Tot' },
+];
+const presetHref = (r: string) => `/app/facturare/rapoarte/lista?tab=${tab}&range=${r}`;
+
+async function safe<T>(p: Promise<T>, fb: T): Promise<T> { try { return await p; } catch { return fb; } }
+const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const statusTone: Record<string, string> = {
+  draft: 'bg-white/10 text-[#A8BED2]', issued: 'bg-[#E8A33C]/15 text-[#E8A33C]', sent: 'bg-[#34A0A4]/15 text-[#34A0A4]',
+  paid: 'bg-[#2E9E6A]/15 text-[#2E9E6A]', partial: 'bg-[#E8A33C]/15 text-[#E8A33C]',
+  voided: 'bg-white/10 text-[#8FA6BC]', reversed: 'bg-white/10 text-[#8FA6BC]',
+};
+const statusLabel: Record<string, string> = {
+  draft: 'Ciornă', issued: 'Emisă', sent: 'Trimisă', paid: 'Plătită', partial: 'Plătită parțial',
+  overdue: 'Întârziată', disputed: 'Dispută', voided: 'Anulată', reversed: 'Stornată',
+};
+
+async function queryTab(t: TabId): Promise<any[]> {
+  if (t === 'facturi' || t === 'proforma') {
+    const conds: any[] = [eq(transportInvoices.companyId, cid)];
+    const kindForTab = (t === 'facturi' && statusFilter === 'storno') ? 'storno' : (t === 'proforma' ? 'proforma' : 'factura');
+    conds.push(eq(transportInvoices.kind, kindForTab));
+    if (q) conds.push(ilike(transportInvoices.fullNumber, `%${q}%`));
+    if (clientFilter) conds.push(ilike(transportInvoices.clientNameSnap, `%${clientFilter}%`));
+    if (fromIso) conds.push(gte(transportInvoices.issuedAt, new Date(fromIso)));
+    if (toIso) conds.push(lte(transportInvoices.issuedAt, new Date(toIso + 'T23:59:59')));
+    const nowDate = new Date();
+    switch (statusFilter) {
+      case 'nefinalizata': conds.push(eq(transportInvoices.status, 'draft')); break;
+      case 'anulata': conds.push(eq(transportInvoices.status, 'voided')); break;
+      case 'termen_depasit':
+        conds.push(sql`${transportInvoices.status} IN ('issued','sent','partial')`);
+        conds.push(lt(transportInvoices.dueAt, nowDate)); break;
+      case 'incasata': conds.push(eq(transportInvoices.status, 'paid')); break;
+      case 'neincasata': conds.push(sql`${transportInvoices.status} IN ('issued','sent')`); break;
+    }
+    return safe(db.select().from(transportInvoices).where(and(...conds)).orderBy(desc(transportInvoices.issuedAt)).limit(500), [] as any[]);
+  }
+  if (t === 'incasari') {
+    const conds: any[] = [];
+    if (fromIso) conds.push(gte(transportInvoicePayments.receivedAt, new Date(fromIso)));
+    if (toIso) conds.push(lte(transportInvoicePayments.receivedAt, new Date(toIso + 'T23:59:59')));
+    const payments = await safe(db.select({
+      id: transportInvoicePayments.id, invoiceId: transportInvoicePayments.invoiceId,
+      amountCents: transportInvoicePayments.amountCents, currency: transportInvoicePayments.currency,
+      method: transportInvoicePayments.method, receivedAt: transportInvoicePayments.receivedAt,
+      fullNumber: transportInvoices.fullNumber, clientName: transportInvoices.clientNameSnap,
+    }).from(transportInvoicePayments)
+      .innerJoin(transportInvoices, eq(transportInvoices.id, transportInvoicePayments.invoiceId))
+      .where(and(eq(transportInvoices.companyId, cid), ...conds))
+      .orderBy(desc(transportInvoicePayments.receivedAt)).limit(500), [] as any[]);
+    return payments;
+  }
+  return safe(db.select().from(transportInvoices).where(and(
+    eq(transportInvoices.companyId, cid),
+    sql`${transportInvoices.efacturaStatus} IS NOT NULL`,
+  )).orderBy(desc(transportInvoices.efacturaSubmittedAt)).limit(500), [] as any[]);
+}
+
+const rows = await queryTab(tab);
+const totalSum = (tab === 'facturi' || tab === 'proforma')
+  ? rows.filter((r) => !['draft', 'voided', 'reversed'].includes(r.status)).reduce((a, r) => a + (r.totalCents || 0), 0)
+  : tab === 'incasari' ? rows.reduce((a, r) => a + (r.amountCents || 0), 0) : 0;
+
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'facturi', label: 'Facturi' },
+  { id: 'proforma', label: 'Proforme' },
+  { id: 'incasari', label: 'Încasări' },
+  { id: 'spv', label: 'SPV' },
+];
+const tabHref = (id: TabId) => `/app/facturare/rapoarte/lista?tab=${id}&range=${range}`;
+---
+
+<AppLayout title="Liste documente" activeTab="facturare">
+  <div class="mb-6">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Liste documente</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Facturi, proforme, încasări și status SPV pe perioada selectată.</p>
+  </div>
+
+  <!-- Tabs -->
+  <div class="flex gap-2 mb-5 border-b border-white/10 overflow-x-auto no-scrollbar">
+    {TABS.map((t) => (
+      <a href={tabHref(t.id)}
+        class:list={['shrink-0 px-4 py-2.5 text-[14px] font-medium transition-colors border-b-2 -mb-px',
+          tab === t.id ? 'text-white border-[#E1FB15]' : 'text-[#A8BED2] hover:text-white border-transparent']}>
+        {t.label}
+      </a>
+    ))}
+  </div>
+
+  <!-- Period presets -->
+  <div class="flex flex-wrap gap-2 mb-5">
+    {PRESETS.map((p) => (
+      <a href={presetHref(p.id)}
+         class:list={['px-4 py-1.5 rounded-full text-[13px] font-semibold transition-colors',
+           range === p.id ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-white/5 text-[#A8BED2] hover:bg-white/10']}>
+        {p.label}
+      </a>
+    ))}
+    {(tab === 'facturi' || tab === 'proforma' || tab === 'incasari') && rows.length > 0 && (
+      <span class="ml-auto px-4 py-1.5 text-[13px] text-[#A8BED2]">Total: <span class="text-white font-semibold tabular-nums">{fmt(totalSum)} RON</span></span>
+    )}
+  </div>
+
+  {rows.length === 0 ? (
+    <div class="rounded-2xl bg-white/5 text-center py-12">
+      <p class="text-[14px] font-semibold text-white">Niciun rezultat</p>
+      <p class="text-[12px] text-[#8FA6BC] mt-1">Încearcă alt interval sau alt tip de document.</p>
+    </div>
+  ) : (
+    <div class="space-y-2.5">
+      {(tab === 'facturi' || tab === 'proforma') && rows.map((r) => (
+        <a href={`/app/facturare/${r.id}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${statusTone[r.status] ?? 'bg-white/10 text-[#A8BED2]'}`}>{statusLabel[r.status] ?? r.status}</span>
+              <span class="font-mono text-[12px] text-[#8FA6BC] truncate">{r.fullNumber}</span>
+            </div>
+            <p class="text-[15px] text-white font-semibold truncate mt-1.5">{r.clientNameSnap}</p>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5 tabular-nums">Emis {r.issuedAt ? new Date(r.issuedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'} · Scadent {r.dueAt ? new Date(r.dueAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '—'}</p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-[15px] font-bold tabular-nums text-white">{fmt(r.totalCents)} {r.currency}</p>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5 tabular-nums">Plătit {fmt(r.paidCents)}</p>
+          </div>
+        </a>
+      ))}
+      {tab === 'incasari' && rows.map((r) => (
+        <a href={`/app/facturare/${r.invoiceId}`} class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <div class="min-w-0 flex-1">
+            <p class="text-[15px] text-white font-semibold truncate">{r.clientName}</p>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5"><span class="font-mono">{r.fullNumber}</span> · {new Date(r.receivedAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}{r.method ? ` · ${r.method}` : ''}</p>
+          </div>
+          <p class="text-[15px] font-bold tabular-nums text-white shrink-0">{fmt(r.amountCents)} {r.currency}</p>
+        </a>
+      ))}
+      {tab === 'spv' && rows.map((r) => (
+        <a href={`/app/facturare/${r.id}`} class="block p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+          <div class="flex items-center justify-between gap-2">
+            <span class="font-mono text-[13px] text-white truncate">{r.fullNumber}</span>
+            <span class="text-[12px] text-[#A8BED2] shrink-0">{r.efacturaStatus}</span>
+          </div>
+          <p class="text-[12px] text-[#8FA6BC] mt-1 truncate">SPV {r.efacturaAnafId ?? '—'} · {r.efacturaSubmittedAt ? new Date(r.efacturaSubmittedAt).toLocaleString('ro-RO') : '—'}</p>
+          {r.efacturaError && <p class="text-[12px] text-[#DC4B41] mt-1">{r.efacturaError}</p>}
+        </a>
+      ))}
+    </div>
+  )}
+</AppLayout>
+</content>

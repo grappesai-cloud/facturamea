@@ -21,124 +21,204 @@ if (!user.isAdmin && !import.meta.env.DEV) return Astro.redirect('/app');
 
 const [u] = await db.select({ totpEnabled: users.totpEnabled, adminRole: users.adminRole })
   .from(users).where(eq(users.id, user.id));
-const requireTotpSetup = !u?.totpEnabled;
-// Read-only partner account: only the Încasări page exists for them.
-const isViewer = (u?.adminRole || 'full') === 'viewer';
+// Dev-only bypass (import.meta.env.DEV is false in production builds): skip the
+// 2FA wall so the admin UI can be styled/previewed locally with the demo user.
+const requireTotpSetup = !u?.totpEnabled && !import.meta.env.DEV;
 // Only the dedicated /app/setari/securitate page is reachable when 2FA is missing.
 const isOnSecurityPage = Astro.url.pathname === '/app/setari/securitate';
+// Read-only partner account: only the Încasări page exists for them. Enforced
+// in middleware too; here we just shrink the nav to a single entry.
+const isViewer = (u?.adminRole || 'full') === 'viewer';
 
-const fullNav = [
-  { href: '/admin',           label: 'Tablou',          id: 'dashboard' },
-  { href: '/admin/companies', label: 'Companii',        id: 'companies' },
-  { href: '/admin/incasari',  label: 'Încasări',        id: 'incasari' },
-  { href: '/admin/users',     label: 'Utilizatori',     id: 'users' },
-  { href: '/admin/licente',   label: 'Licențe',         id: 'licente' },
-  { href: '/admin/revshare',  label: 'Revenue share',   id: 'revshare' },
+// Inline SVG path icons for the sidebar (heroicons-style, stroke 1.8).
+const I = {
+  dashboard: 'M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75',
+  companies: 'M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21',
+  incasari: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z',
+  users: 'M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z',
+  licente: 'M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z',
+  revshare: 'M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z',
+  finance: 'M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941',
+  analytics: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z',
+  emailuri: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75',
+  broadcast: 'M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46',
+  banner: 'M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z',
+  flags: 'M3 3v1.5M3 21v-6m0 0l2.77-.693a9 9 0 016.208.682l.108.054a9 9 0 006.086.71l3.114-.732a48.524 48.524 0 01-.005-10.499l-3.11.732a9 9 0 01-6.085-.711l-.108-.054a9 9 0 00-6.208-.682L3 4.5M3 15V4.5',
+  health: 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z',
+  audit: 'M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z',
+};
+
+const navItems = [
+  { href: '/admin',           label: 'Tablou',          id: 'dashboard', icon: I.dashboard },
+  { href: '/admin/companies', label: 'Companii',        id: 'companies', icon: I.companies },
+  { href: '/admin/incasari',  label: 'Încasări',        id: 'incasari',  icon: I.incasari },
+  { href: '/admin/users',     label: 'Utilizatori',     id: 'users',     icon: I.users },
+  { href: '/admin/licente',   label: 'Licențe',         id: 'licente',   icon: I.licente },
+  { href: '/admin/revshare',  label: 'Revenue share',   id: 'revshare',  icon: I.revshare },
+  { href: '/admin/finance',   label: 'Finance',         id: 'finance',   icon: I.finance },
 ];
 
-// Viewers see only the read-only Încasări entry.
-const navItems = isViewer
-  ? [{ href: '/admin/incasari', label: 'Încasări', id: 'incasari' }]
-  : fullNav;
-
-const opsNav = isViewer ? [] : [
-  { href: '/admin/analytics', label: 'Analiză',         id: 'analytics' },
-  { href: '/admin/emailuri',  label: 'Emailuri',        id: 'emailuri' },
-  { href: '/admin/audit',     label: 'Jurnal audit',    id: 'audit' },
+const opsNav = [
+  { href: '/admin/analytics', label: 'Analiză',         id: 'analytics', icon: I.analytics },
+  { href: '/admin/emailuri',  label: 'Emailuri',        id: 'emailuri',  icon: I.emailuri },
+  { href: '/admin/broadcast', label: 'Broadcast',       id: 'broadcast', icon: I.broadcast },
+  { href: '/admin/banner',    label: 'Banner global',   id: 'banner',    icon: I.banner },
+  { href: '/admin/flags',     label: 'Feature flags',   id: 'flags',     icon: I.flags },
+  { href: '/admin/health',    label: 'System health',   id: 'health',    icon: I.health },
+  { href: '/admin/audit',     label: 'Jurnal audit',    id: 'audit',     icon: I.audit },
 ];
+
+// Viewer (partner) accounts see only the read-only Încasări entry, no ops.
+const visNav = isViewer ? navItems.filter((n) => n.id === 'incasari') : navItems;
+const visOps = isViewer ? [] : opsNav;
+
+const allNav = [...navItems, ...opsNav];
+const activeLabel = allNav.find((n) => n.id === activeTab)?.label ?? title;
 ---
 
-<BaseLayout title={`Admin — ${title}`} themeColor="#07090f">
-  {requireTotpSetup && !isOnSecurityPage && (
-    <div class="min-h-screen flex items-center justify-center bg-[#EDF1F5] text-[#07090f] px-6" style="font-family:'Outfit',sans-serif">
-      <div class="max-w-md w-full p-8 bg-white border border-[#E3EAF1] rounded-xl text-center">
-        <div class="inline-block w-12 h-12 bg-[#1A759F]/10 rounded-full flex items-center justify-center mb-4">
-          <span class="text-[#1A759F] text-[20px] font-bold">!</span>
+<BaseLayout title={`Admin — ${title}`} themeColor="#06090F">
+  <style is:global>
+    html, body { background-color: #06090F; }
+    /* Admin shell scopes its own dark surface tokens so utility classes used on
+       the pages (bg-white/5, text-[#A8BED2], etc.) read correctly without the
+       app's light/dark theming machinery. */
+    [data-admin-shell] { color-scheme: dark; }
+    [data-admin-shell] select {
+      -webkit-appearance: none; appearance: none; color-scheme: dark;
+      background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%238FA6BC%22%20stroke-width%3D%222%22%3E%3Cpath%20d%3D%22m6%209%206%206%206-6%22%2F%3E%3C%2Fsvg%3E");
+      background-repeat: no-repeat; background-position: right 12px center; background-size: 16px; padding-right: 2.25rem;
+    }
+    [data-admin-shell] input[type="date"], [data-admin-shell] input[type="datetime-local"] { color-scheme: dark; }
+    [data-admin-shell] ::-webkit-scrollbar { width: 0; height: 0; }
+    @keyframes admFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    [data-admin-main] > * { animation: admFade .4s cubic-bezier(.22,1,.36,1) both; }
+    @media (prefers-reduced-motion: reduce) { [data-admin-main] > * { animation: none; } }
+    /* Mobile sidebar drawer */
+    #adm-sidebar { transition: transform .3s cubic-bezier(.22,1,.36,1); }
+    @media (max-width: 1023px) {
+      #adm-sidebar { transform: translateX(-100%); }
+      #adm-sidebar.open { transform: translateX(0); }
+    }
+    #adm-overlay { transition: opacity .25s ease; }
+    .fm-close-btn {
+      display: grid; place-items: center; width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+      background-color: rgba(255,255,255,0.10); color: #A8BED2;
+      transition: background-color .15s ease, color .15s ease, transform .12s ease;
+    }
+    .fm-close-btn::before { content: ''; width: 1rem; height: 1rem;
+      background-color: currentColor; -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center/contain no-repeat;
+      mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Cpath d='M6 6l12 12M18 6L6 18'/%3E%3C/svg%3E") center/contain no-repeat; }
+    .fm-close-btn:hover { background-color: rgba(220,75,65,0.18); color: #FF6B5C; }
+    .fm-close-btn:active { transform: scale(.92); }
+  </style>
+
+  {requireTotpSetup && !isOnSecurityPage ? (
+    <div data-admin-shell class="min-h-screen flex items-center justify-center bg-[#06090F] text-white px-6" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+      <div class="max-w-md w-full p-8 rounded-2xl bg-white/5 ring-1 ring-white/10 text-center">
+        <div class="inline-flex w-12 h-12 bg-[#E8A33C]/15 rounded-full items-center justify-center mb-4 mx-auto">
+          <svg class="w-6 h-6 text-[#E8A33C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
         </div>
-        <h1 class="text-[20px] font-bold tracking-[-0.02em]">2FA obligatoriu pentru admini</h1>
-        <p class="text-[13px] text-[#46627A] mt-2 leading-relaxed">
+        <h1 class="text-[20px] font-bold tracking-[-0.02em] text-white">2FA obligatoriu pentru admini</h1>
+        <p class="text-[13px] text-[#A8BED2] mt-2 leading-relaxed">
           Nu poţi accesa panoul admin fără autentificare în 2 paşi. Risc de compromis prea mare. Activează 2FA acum — durează 60 secunde.
         </p>
-        <a href="/app/setari/securitate" class="inline-block mt-5 px-6 py-3 bg-[#1A759F] hover:bg-[#168AAD] text-white font-semibold rounded-xl text-[13px] transition-colors">
+        <a href="/app/setari/securitate" class="inline-block mt-5 px-6 py-3 bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] font-bold rounded-full text-[13px] transition-colors">
           Activează 2FA →
         </a>
-        <p class="text-[11px] text-[#46627A] mt-4">Vei reveni automat aici după activare.</p>
+        <p class="text-[12px] text-[#8FA6BC] mt-4">Vei reveni automat aici după activare.</p>
       </div>
     </div>
-  )}
-  {!requireTotpSetup && (
-  <div class="min-h-screen flex bg-[#EDF1F5] text-[#07090f]" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+  ) : (
+  <div data-admin-shell class="min-h-screen flex bg-[#06090F] text-white" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
+    <!-- Mobile overlay -->
+    <div id="adm-overlay" class="lg:hidden fixed inset-0 z-40 bg-black/60 opacity-0 pointer-events-none"></div>
+
     <!-- Sidebar -->
-    <aside class="w-[240px] bg-white border-r border-[#E3EAF1] flex flex-col shrink-0 sticky top-0 h-screen">
-      <div class="px-5 py-5 border-b border-[#E3EAF1]">
+    <aside id="adm-sidebar" class="fixed lg:sticky top-0 z-50 w-[252px] h-screen bg-[#0A0D14] lg:bg-transparent border-r border-white/10 flex flex-col shrink-0">
+      <div class="px-5 py-5 flex items-center justify-between">
         <a href="/admin" class="flex items-center gap-2.5">
-          <div class="w-7 h-7 bg-[#1A759F] rounded-xl flex items-center justify-center">
-            <span class="text-white font-bold text-[11px]">fm</span>
+          <div class="w-8 h-8 bg-[#34A0A4] rounded-xl flex items-center justify-center">
+            <span class="text-[#07090f] font-bold text-[12px]">fm</span>
           </div>
           <div class="leading-tight">
-            <span class="text-[14px] font-bold block">facturamea</span>
-            <span class="text-[10px] uppercase tracking-[0.16em] text-[#1A759F] font-semibold">Admin</span>
+            <span class="text-[15px] font-bold block text-white">factura<span class="text-[#34A0A4]">mea</span></span>
+            <span class="text-[10px] uppercase tracking-[0.18em] text-[#E1FB15] font-semibold">{isViewer ? 'Partener' : 'Admin'}</span>
           </div>
         </a>
+        <button id="adm-close" aria-label="Închide meniul" class="lg:hidden fm-close-btn shrink-0"></button>
       </div>
 
-      <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5">
-        <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8BED2] font-medium px-3 mb-2">Conţinut</p>
-        {navItems.map((item) => {
+      <nav class="flex-1 overflow-y-auto py-2 px-3 space-y-0.5">
+        <p class="text-[10px] uppercase tracking-[0.2em] text-[#5E7385] font-semibold px-3 mb-2 mt-2">Conţinut</p>
+        {visNav.map((item) => {
           const active = activeTab === item.id;
           return (
-            <a
-              href={item.href}
-              class:list={[
-                'flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl text-[13px] transition-colors relative',
-                active ? 'text-[#07090f] font-semibold bg-[#E3EAF1]'
-                       : 'text-[#46627A] hover:text-[#07090f] hover:bg-[#F4F4F0] font-medium',
-              ]}
-            >
-              {active && <span class="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#1A759F] rounded-r-sm"></span>}
-              {item.label}
+            <a href={item.href} aria-current={active ? 'page' : undefined}
+              class:list={['group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-colors',
+                active ? 'bg-[#34A0A4]/15 text-white' : 'text-[#A8BED2] hover:text-white hover:bg-white/5']}>
+              <svg class:list={['w-[18px] h-[18px] shrink-0 transition-colors', active ? 'text-[#34A0A4]' : 'text-[#5E7385] group-hover:text-[#A8BED2]']} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={item.icon}/></svg>
+              <span>{item.label}</span>
             </a>
           );
         })}
 
-        {opsNav.length > 0 && <p class="text-[10px] uppercase tracking-[0.18em] text-[#A8BED2] font-medium px-3 mt-6 mb-2">Operaţiuni</p>}
-        {opsNav.map((item) => {
+        {visOps.length > 0 && <p class="text-[10px] uppercase tracking-[0.2em] text-[#5E7385] font-semibold px-3 mt-6 mb-2">Operaţiuni</p>}
+        {visOps.map((item) => {
           const active = activeTab === item.id;
           return (
-            <a
-              href={item.href}
-              class:list={[
-                'flex items-center gap-3 pl-4 pr-3 py-2 rounded-xl text-[13px] transition-colors relative',
-                active ? 'text-[#07090f] font-semibold bg-[#E3EAF1]'
-                       : 'text-[#46627A] hover:text-[#07090f] hover:bg-[#F4F4F0] font-medium',
-              ]}
-            >
-              {active && <span class="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] h-5 bg-[#1A759F] rounded-r-sm"></span>}
-              {item.label}
+            <a href={item.href} aria-current={active ? 'page' : undefined}
+              class:list={['group flex items-center gap-3 px-3 py-2.5 rounded-xl text-[13.5px] font-medium transition-colors',
+                active ? 'bg-[#34A0A4]/15 text-white' : 'text-[#A8BED2] hover:text-white hover:bg-white/5']}>
+              <svg class:list={['w-[18px] h-[18px] shrink-0 transition-colors', active ? 'text-[#34A0A4]' : 'text-[#5E7385] group-hover:text-[#A8BED2]']} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d={item.icon}/></svg>
+              <span>{item.label}</span>
             </a>
           );
         })}
       </nav>
 
-      <div class="p-3 border-t border-[#E3EAF1]">
-        <a href="/app" class="block px-4 py-2 text-[12px] text-[#46627A] hover:text-[#07090f] transition-colors">← Înapoi la platformă</a>
+      <div class="p-3 border-t border-white/10">
+        <a href="/app" class="flex items-center gap-2 px-3 py-2.5 rounded-xl text-[13px] text-[#8FA6BC] hover:text-white hover:bg-white/5 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
+          Înapoi la platformă
+        </a>
       </div>
     </aside>
 
     <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0">
-      <header class="h-14 border-b border-[#E3EAF1] flex items-center justify-between px-6 bg-white sticky top-0 z-10">
-        <h1 class="text-[15px] font-semibold">{title}</h1>
-        <div class="flex items-center gap-3">
-          <span class="text-[12px] text-[#46627A]">{user?.name}</span>
-          <span class="px-2 py-0.5 bg-[#07090f] text-white text-[10px] font-bold uppercase tracking-wider rounded">{isViewer ? 'Vizualizare' : 'Admin'}</span>
+      <header class="h-16 border-b border-white/10 flex items-center justify-between px-4 sm:px-6 bg-[#06090F]/80 backdrop-blur-xl sticky top-0 z-30">
+        <div class="flex items-center gap-3 min-w-0">
+          <button id="adm-open" aria-label="Deschide meniul" class="lg:hidden w-9 h-9 grid place-items-center rounded-full bg-white/10 text-white hover:bg-white/15 transition-colors shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"/></svg>
+          </button>
+          <h1 class="text-[16px] font-semibold text-white truncate">{activeLabel}</h1>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <span class="hidden sm:inline text-[12.5px] text-[#A8BED2] truncate max-w-[160px]">{user?.name}</span>
+          <span class="px-2.5 py-1 bg-[#E1FB15] text-[#07090f] text-[10px] font-bold uppercase tracking-wider rounded-full">{isViewer ? 'Vizualizare' : 'Admin'}</span>
         </div>
       </header>
 
-      <main class="flex-1 p-6 lg:p-8 overflow-auto">
+      <main data-admin-main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-auto max-w-[1400px] w-full">
         <slot />
       </main>
     </div>
   </div>
   )}
+
+  <script>
+    const sidebar = document.getElementById('adm-sidebar');
+    const overlay = document.getElementById('adm-overlay');
+    const open = () => {
+      sidebar?.classList.add('open');
+      overlay?.classList.remove('opacity-0', 'pointer-events-none');
+    };
+    const close = () => {
+      sidebar?.classList.remove('open');
+      overlay?.classList.add('opacity-0', 'pointer-events-none');
+    };
+    document.getElementById('adm-open')?.addEventListener('click', open);
+    document.getElementById('adm-close')?.addEventListener('click', close);
+    overlay?.addEventListener('click', close);
+  </script>
 </BaseLayout>

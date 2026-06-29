@@ -1,5 +1,6 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
+import EmptyState from '../../../components/ui/EmptyState.astro';
 import { db } from '../../../db';
 import { salesOrders, purchaseOrders, suppliers, warehouses } from '../../../db/schema';
 import { eq, desc } from 'drizzle-orm';
@@ -91,31 +92,35 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
 
   <!-- Clienti panel -->
   <div data-panel="clienti" class={tabParam === 'clienti' ? '' : 'hidden'}>
-    <div class="rounded-2xl bg-white/5 overflow-hidden">
-      {salesRows.length === 0 ? (
-        <div class="px-5 py-12 text-center text-[14px] text-[#A8BED2]">Nicio comandă de la clienți încă. <a href="/app/comenzi/noua-client" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
-      ) : (
-        <div class="overflow-x-auto">
+    {salesRows.length === 0 ? (
+      <EmptyState title="Nicio comandă de la clienți" description="Înregistrează o vânzare și transform-o în factură oricând.">
+        <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/></svg>
+        <a slot="action" href="/app/comenzi/noua-client" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Comandă client</a>
+      </EmptyState>
+    ) : (
+      <div class="rounded-2xl bg-white/5 overflow-hidden">
+        <!-- Desktop table -->
+        <div class="hidden sm:block">
           <table class="w-full text-[14px]">
             <thead>
               <tr class="text-left text-[12px] font-medium text-[#8FA6BC]">
-                <th class="px-5 py-3 font-medium">Număr</th>
+                <th class="px-5 py-3 font-medium whitespace-nowrap">Număr</th>
                 <th class="px-5 py-3 font-medium">Client</th>
-                <th class="px-5 py-3 font-medium">Data</th>
-                <th class="px-5 py-3 font-medium text-right">Total</th>
+                <th class="px-5 py-3 font-medium whitespace-nowrap">Data</th>
+                <th class="px-5 py-3 font-medium text-right whitespace-nowrap">Total</th>
                 <th class="px-5 py-3 font-medium">Status</th>
                 <th class="px-5 py-3 font-medium text-right">Acțiune</th>
               </tr>
             </thead>
             <tbody>
-              {salesRows.slice(0, 3).map((o) => {
+              {salesRows.map((o, i) => {
                 const st = salesBadge[o.status] || salesBadge.draft;
                 const canInvoice = o.status !== 'invoiced' && o.status !== 'canceled';
                 return (
-                  <tr class="border-t border-white/5 hover:bg-white/10 transition-colors" data-so-row data-id={o.id}>
-                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
+                  <tr class={`border-t border-white/5 hover:bg-white/10 transition-colors ${i >= 3 ? 'so-extra hidden' : ''}`} data-so-row data-id={o.id}>
+                    <td class="px-5 py-3.5 font-mono font-semibold text-white whitespace-nowrap">{o.number}</td>
                     <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[220px]">{o.clientNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
                     <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
                     <td class="px-5 py-3.5"><span class={`so-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
                     <td class="px-5 py-3.5 text-right">
@@ -126,32 +131,9 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                           {canInvoice && (
                             <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
                           )}
-                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-              {salesRows.length > 3 && salesRows.slice(3).map((o) => {
-                const st = salesBadge[o.status] || salesBadge.draft;
-                const canInvoice = o.status !== 'invoiced' && o.status !== 'canceled';
-                return (
-                  <tr class="so-extra hidden border-t border-white/5 hover:bg-white/10 transition-colors" data-so-row data-id={o.id}>
-                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
-                    <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[220px]">{o.clientNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
-                    <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
-                    <td class="px-5 py-3.5"><span class={`so-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
-                    <td class="px-5 py-3.5 text-right">
-                      {o.status === 'invoiced' && o.invoiceId ? (
-                        <a href={`/app/facturare/${o.invoiceId}`} class="px-4 py-2 inline-flex items-center rounded-full bg-white/10 text-white text-[14px] font-semibold hover:bg-white/15 transition-colors">Vezi factura</a>
-                      ) : (
-                        <div class="inline-flex gap-1.5">
-                          {canInvoice && (
-                            <button class="so-invoice px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
-                          )}
-                          <button class="so-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                          <button class="so-cancel w-9 h-9 inline-flex items-center justify-center rounded-full bg-white/10 text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda" aria-label="Anulează comanda">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                          </button>
                         </div>
                       )}
                     </td>
@@ -161,46 +143,92 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
               {salesRows.length > 3 && (
                 <tr>
                   <td colspan="6" class="px-5 py-3.5 text-center">
-                    <button type="button" data-expand="so" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({salesRows.length})</button>
+                    <button type="button" data-expand="so" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-white/10 text-white text-[13.5px] font-semibold hover:bg-white/15 transition-colors">Vezi toate ({salesRows.length})</button>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      )}
-    </div>
+
+        <!-- Mobile cards -->
+        <div class="sm:hidden divide-y divide-white/5">
+          {salesRows.map((o, i) => {
+            const st = salesBadge[o.status] || salesBadge.draft;
+            const canInvoice = o.status !== 'invoiced' && o.status !== 'canceled';
+            return (
+              <div class={`p-4 ${i >= 3 ? 'so-extra-m hidden' : ''}`} data-so-row data-id={o.id}>
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-mono font-semibold text-[15px] text-white">{o.number}</p>
+                    <p class="text-[14px] text-[#C8DAE8] truncate mt-0.5">{o.clientNameSnap}</p>
+                    <p class="text-[13px] text-[#A8BED2] tabular-nums mt-0.5">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-semibold text-white tabular-nums">{ron(o.totalCents)}</p>
+                    <span class={`so-badge inline-flex items-center mt-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span>
+                  </div>
+                </div>
+                <div class="mt-3 flex items-center gap-1.5">
+                  {o.status === 'invoiced' && o.invoiceId ? (
+                    <a href={`/app/facturare/${o.invoiceId}`} class="px-4 py-2 inline-flex items-center rounded-full bg-white/10 text-white text-[14px] font-semibold hover:bg-white/15 transition-colors">Vezi factura</a>
+                  ) : (
+                    <>
+                      {canInvoice && (
+                        <button class="so-invoice flex-1 px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Facturează</button>
+                      )}
+                      <button class="so-cancel w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-full bg-white/10 text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda" aria-label="Anulează comanda">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+          {salesRows.length > 3 && (
+            <div class="p-4">
+              <button type="button" data-expand-m="so" class="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-white/10 text-white text-[13.5px] font-semibold hover:bg-white/15 transition-colors">Vezi toate ({salesRows.length})</button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
   </div>
 
   <!-- Furnizori panel -->
   <div data-panel="furnizori" class={tabParam === 'furnizori' ? '' : 'hidden'}>
-    <div class="rounded-2xl bg-white/5 overflow-hidden">
-      {purchaseRows.length === 0 ? (
-        <div class="px-5 py-12 text-center text-[14px] text-[#A8BED2]">Nicio comandă către furnizori încă. <a href="/app/comenzi/noua-furnizor" class="text-[#E1FB15] font-semibold hover:underline">Creează prima comandă</a>.</div>
-      ) : (
-        <div class="overflow-x-auto">
+    {purchaseRows.length === 0 ? (
+      <EmptyState title="Nicio comandă către furnizori" description="La recepție, produsele intră automat pe stoc cu cost mediu ponderat.">
+        <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z"/></svg>
+        <a slot="action" href="/app/comenzi/noua-furnizor" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Comandă furnizor</a>
+      </EmptyState>
+    ) : (
+      <div class="rounded-2xl bg-white/5 overflow-hidden">
+        <!-- Desktop table -->
+        <div class="hidden sm:block">
           <table class="w-full text-[14px]">
             <thead>
               <tr class="text-left text-[12px] font-medium text-[#8FA6BC]">
-                <th class="px-5 py-3 font-medium">Număr</th>
+                <th class="px-5 py-3 font-medium whitespace-nowrap">Număr</th>
                 <th class="px-5 py-3 font-medium">Furnizor</th>
-                <th class="px-5 py-3 font-medium">Data</th>
-                <th class="px-5 py-3 font-medium">Livrare est.</th>
-                <th class="px-5 py-3 font-medium text-right">Total</th>
+                <th class="px-5 py-3 font-medium whitespace-nowrap">Data</th>
+                <th class="px-5 py-3 font-medium whitespace-nowrap">Livrare est.</th>
+                <th class="px-5 py-3 font-medium text-right whitespace-nowrap">Total</th>
                 <th class="px-5 py-3 font-medium">Status</th>
                 <th class="px-5 py-3 font-medium text-right">Acțiune</th>
               </tr>
             </thead>
             <tbody>
-              {purchaseRows.slice(0, 3).map((o) => {
+              {purchaseRows.map((o, i) => {
                 const st = purchaseBadge[o.status] || purchaseBadge.draft;
                 const canReceive = o.status !== 'received' && o.status !== 'canceled';
                 return (
-                  <tr class="border-t border-white/5 hover:bg-white/10 transition-colors" data-po-row data-id={o.id}>
-                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
+                  <tr class={`border-t border-white/5 hover:bg-white/10 transition-colors ${i >= 3 ? 'po-extra hidden' : ''}`} data-po-row data-id={o.id}>
+                    <td class="px-5 py-3.5 font-mono font-semibold text-white whitespace-nowrap">{o.number}</td>
                     <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[200px]">{o.supplierName || o.supplierNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
-                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.expectedDate ? new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
+                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">{o.expectedDate ? new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
                     <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
                     <td class="px-5 py-3.5"><span class={`po-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
                     <td class="px-5 py-3.5 text-right">
@@ -209,31 +237,9 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
                           <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
                         )}
                         {o.status !== 'received' && (
-                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {purchaseRows.length > 3 && purchaseRows.slice(3).map((o) => {
-                const st = purchaseBadge[o.status] || purchaseBadge.draft;
-                const canReceive = o.status !== 'received' && o.status !== 'canceled';
-                return (
-                  <tr class="po-extra hidden border-t border-white/5 hover:bg-white/10 transition-colors" data-po-row data-id={o.id}>
-                    <td class="px-5 py-3.5 font-mono font-semibold text-white">{o.number}</td>
-                    <td class="px-5 py-3.5 text-[#C8DAE8] truncate max-w-[200px]">{o.supplierName || o.supplierNameSnap}</td>
-                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
-                    <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums">{o.expectedDate ? new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}</td>
-                    <td class="px-5 py-3.5 text-right font-semibold text-white tabular-nums">{ron(o.totalCents)}</td>
-                    <td class="px-5 py-3.5"><span class={`po-badge inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span></td>
-                    <td class="px-5 py-3.5 text-right">
-                      <div class="inline-flex gap-1.5">
-                        {canReceive && (
-                          <button class="po-receive px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
-                        )}
-                        {o.status !== 'received' && (
-                          <button class="po-cancel px-3 py-2 rounded-full bg-white/10 text-[#A8BED2] text-[14px] font-semibold hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda">×</button>
+                          <button class="po-cancel w-9 h-9 inline-flex items-center justify-center rounded-full bg-white/10 text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda" aria-label="Anulează comanda">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                          </button>
                         )}
                       </div>
                     </td>
@@ -243,15 +249,58 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
               {purchaseRows.length > 3 && (
                 <tr>
                   <td colspan="7" class="px-5 py-3.5 text-center">
-                    <button type="button" data-expand="po" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({purchaseRows.length})</button>
+                    <button type="button" data-expand="po" class="mx-auto w-fit inline-flex items-center px-5 py-2.5 rounded-full bg-white/10 text-white text-[13.5px] font-semibold hover:bg-white/15 transition-colors">Vezi toate ({purchaseRows.length})</button>
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
-      )}
-    </div>
+
+        <!-- Mobile cards -->
+        <div class="sm:hidden divide-y divide-white/5">
+          {purchaseRows.map((o, i) => {
+            const st = purchaseBadge[o.status] || purchaseBadge.draft;
+            const canReceive = o.status !== 'received' && o.status !== 'canceled';
+            return (
+              <div class={`p-4 ${i >= 3 ? 'po-extra-m hidden' : ''}`} data-po-row data-id={o.id}>
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="font-mono font-semibold text-[15px] text-white">{o.number}</p>
+                    <p class="text-[14px] text-[#C8DAE8] truncate mt-0.5">{o.supplierName || o.supplierNameSnap}</p>
+                    <p class="text-[13px] text-[#A8BED2] tabular-nums mt-0.5">
+                      {o.orderDate ? new Date(o.orderDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : '·'}
+                      {o.expectedDate ? ` · livrare ${new Date(o.expectedDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}` : ''}
+                    </p>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <p class="font-semibold text-white tabular-nums">{ron(o.totalCents)}</p>
+                    <span class={`po-badge inline-flex items-center mt-1.5 px-2.5 py-1 rounded-full text-[12px] font-semibold ${st.cls}`}>{st.label}</span>
+                  </div>
+                </div>
+                {(canReceive || o.status !== 'received') && (
+                  <div class="mt-3 flex items-center gap-1.5">
+                    {canReceive && (
+                      <button class="po-receive flex-1 px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] transition-colors" data-id={o.id}>Recepționează</button>
+                    )}
+                    {o.status !== 'received' && (
+                      <button class="po-cancel w-10 h-10 shrink-0 inline-flex items-center justify-center rounded-full bg-white/10 text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" data-id={o.id} title="Anulează comanda" aria-label="Anulează comanda">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"/></svg>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {purchaseRows.length > 3 && (
+            <div class="p-4">
+              <button type="button" data-expand-m="po" class="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-white/10 text-white text-[13.5px] font-semibold hover:bg-white/15 transition-colors">Vezi toate ({purchaseRows.length})</button>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
   </div>
 
   <!-- Warehouse picker for receiving -->
@@ -275,12 +324,21 @@ const purchaseBadge: Record<string, { label: string; cls: string }> = {
     }
     buttons.forEach((b) => b.addEventListener('click', () => activate(b.dataset.tab || 'clienti')));
 
-    // "Vezi toate" — reveal rows beyond the first 3.
+    // "Vezi toate" — reveal rows beyond the first 3 (desktop table).
     document.querySelectorAll<HTMLButtonElement>('[data-expand]').forEach((btn) => {
       btn.addEventListener('click', () => {
         const kind = btn.dataset.expand; // 'so' | 'po'
         document.querySelectorAll<HTMLElement>(`.${kind}-extra`).forEach((r) => r.classList.remove('hidden'));
         btn.closest('tr')?.remove();
+      });
+    });
+
+    // "Vezi toate" — reveal cards beyond the first 3 (mobile).
+    document.querySelectorAll<HTMLButtonElement>('[data-expand-m]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const kind = btn.dataset.expandM; // 'so' | 'po'
+        document.querySelectorAll<HTMLElement>(`.${kind}-extra-m`).forEach((r) => r.classList.remove('hidden'));
+        btn.closest('div')?.remove();
       });
     });
 

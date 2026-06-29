@@ -20,6 +20,8 @@ const empty = {
 
 const TYPE_LABELS: Record<string, string> = {
   depozit: 'Depozit', magazin: 'Magazin', custodie: 'Custodie',
+  // English type values that may already exist on records.
+  warehouse: 'Depozit', store: 'Magazin', office: 'Birou', custody: 'Custodie',
 };
 const MGMT_LABELS: Record<string, string> = {
   cantitativ_valoric: 'Cantitativ-valoric', global_valoric: 'Global-valoric',
@@ -32,12 +34,19 @@ export default function WarehousesManager() {
   const [error, setError] = useState('');
   const [showAll, setShowAll] = useState(false);
 
+  const [loaded, setLoaded] = useState(false);
+
   const refresh = async () => {
     try {
       const r = await fetch('/api/gestiune/warehouses');
       const d = await r.json();
-      setItems(d.results || []);
-    } catch { /* leave empty */ }
+      const results = d.results || [];
+      setItems(results);
+      // Form-first: when there is no gestiune yet, open the add form immediately
+      // so the primary action sits above the empty-state (matches nir/inventariere).
+      if (!loaded && results.length === 0) setForm((f) => f ?? { ...empty });
+      setLoaded(true);
+    } catch { setLoaded(true); }
   };
   useEffect(() => { refresh(); }, []);
 
@@ -66,60 +75,67 @@ export default function WarehousesManager() {
     } catch { setError('Eroare conexiune'); }
   };
 
-  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/10 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:ring-2 focus:ring-[#E1FB15]/40';
   const selectCls = `${inputCls} [color-scheme:dark]`;
   const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
   const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15 border-0';
+
+  const isEmpty = items.length === 0;
+
+  const listCard = (
+    <Card className="bg-white/5 border-0 rounded-2xl shadow-none hover:shadow-none hover:translate-y-0">
+      <CardContent className="p-2">
+        {isEmpty ? (
+          <EmptyState
+            icon={<WarehouseIcon />}
+            title="Nicio gestiune"
+            description="Adaugă primul depozit sau magazin pentru a urmări stocul."
+          />
+        ) : (
+          <>
+          <ul className="space-y-2">
+            {(showAll ? items : items.slice(0, 3)).map((w) => (
+              <li key={w.id} className="flex items-center gap-3 bg-white/[0.06] rounded-xl p-3 hover:bg-white/[0.1] transition-colors">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-white truncate">
+                    {w.name}
+                    {w.code && <span className="font-mono text-xs text-[#A8BED2] ml-2">{w.code}</span>}
+                  </p>
+                  <p className="text-xs text-[#A8BED2] truncate">
+                    {TYPE_LABELS[w.type] || w.type}
+                    {w.managementType && <span> · {MGMT_LABELS[w.managementType] || w.managementType}</span>}
+                    {w.address && <span> · {w.address}</span>}
+                  </p>
+                </div>
+                {w.isDefault && <span className="text-[10px] px-2 py-0.5 bg-[#E1FB15]/15 text-[#E1FB15] rounded-full font-semibold">implicită</span>}
+                {!w.isActive && <span className="text-[10px] px-2 py-0.5 bg-white/10 text-[#A8BED2] rounded-full font-semibold">inactivă</span>}
+                <button type="button" onClick={() => del(w.id)} aria-label="Șterge gestiunea" title="Șterge (doar dacă e goală)" className="shrink-0 p-1.5 rounded-lg text-[#8FA6BC] hover:text-[#DC4B41] hover:bg-[#DC4B41]/10 transition-colors">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          {items.length > 3 && (
+            <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+              {showAll ? 'Arată mai puțin' : `Vezi toate (${items.length})`}
+            </button>
+          )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-4">
       {error && <p className="text-sm text-[#DC4B41]">{error}</p>}
 
-      <div className="flex justify-end">
+      <div className="flex justify-start">
         <Button className={btnPrimary} onClick={() => setForm({ ...empty })}><Plus className="w-4 h-4 mr-1" /> Gestiune nouă</Button>
       </div>
 
-      <Card className="bg-white/5 border-0 rounded-2xl shadow-none hover:shadow-none hover:translate-y-0">
-        <CardContent className="p-2">
-          {items.length === 0 ? (
-            <EmptyState
-              icon={<WarehouseIcon />}
-              title="Nicio gestiune"
-              description="Adaugă primul depozit sau magazin pentru a urmări stocul."
-            />
-          ) : (
-            <>
-            <ul className="space-y-2">
-              {(showAll ? items : items.slice(0, 3)).map((w) => (
-                <li key={w.id} className="flex items-center gap-3 bg-white/5 rounded-xl p-3 hover:bg-white/[0.08] transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-white truncate">
-                      {w.name}
-                      {w.code && <span className="font-mono text-xs text-[#A8BED2] ml-2">{w.code}</span>}
-                    </p>
-                    <p className="text-xs text-[#A8BED2] truncate">
-                      {TYPE_LABELS[w.type] || w.type}
-                      {w.managementType && <span> · {MGMT_LABELS[w.managementType] || w.managementType}</span>}
-                      {w.address && <span> · {w.address}</span>}
-                    </p>
-                  </div>
-                  {w.isDefault && <span className="text-[10px] px-2 py-0.5 bg-[#E1FB15]/15 text-[#E1FB15] rounded-full font-semibold">implicită</span>}
-                  {!w.isActive && <span className="text-[10px] px-2 py-0.5 bg-white/10 text-[#A8BED2] rounded-full font-semibold">inactivă</span>}
-                  <button type="button" onClick={() => del(w.id)} aria-label="Șterge gestiunea" title="Șterge (doar dacă e goală)" className="shrink-0 p-1.5 rounded-lg text-[#8FA6BC] hover:text-[#DC4B41] hover:bg-[#DC4B41]/10 transition-colors">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {items.length > 3 && (
-              <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
-                {showAll ? 'Arată mai puțin' : `Vezi toate (${items.length})`}
-              </button>
-            )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* Form-first: when the list is empty, the add form renders above the empty-state. */}
+      {!isEmpty && listCard}
 
       {form && (
         <Card className="bg-white/5 border-0 rounded-2xl shadow-none hover:shadow-none hover:translate-y-0">
@@ -150,11 +166,14 @@ export default function WarehousesManager() {
             </label>
             <div className="flex gap-2">
               <Button className={btnPrimary} size="sm" disabled={busy || !form.name} onClick={save}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
-              <Button className={btnSecondary} size="sm" variant="outline" onClick={() => setForm(null)}>Renunță</Button>
+              {!isEmpty && <Button className={btnSecondary} size="sm" variant="outline" onClick={() => setForm(null)}>Renunță</Button>}
             </div>
           </CardContent>
         </Card>
       )}
+
+      {/* Empty: show the empty-state card below the form. */}
+      {isEmpty && listCard}
     </div>
   );
 }

@@ -13,7 +13,7 @@ const [u] = await db.select({
 const totpEnabled = !!u?.totpEnabled;
 const totpEnrolledAt = u?.totpEnrolledAt ? new Date(u.totpEnrolledAt).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : null;
 
-const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none';
+const inputCls = 'w-full rounded-xl bg-white/5 border border-white/[0.12] px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition';
 const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
 ---
 
@@ -28,7 +28,7 @@ const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
     <section data-native-only class="mb-12">
       <h2 class="text-[18px] font-bold text-white mb-3">Blocare cu Face ID / amprentă</h2>
       <div class="rounded-2xl p-5 bg-white/5 flex items-center justify-between gap-4">
-        <p class="text-[13px] text-[#9FB8CC] flex-1">Cere Face ID sau amprentă la fiecare deschidere a aplicației pe acest dispozitiv.</p>
+        <p class="text-[13px] text-[#A8BED2] flex-1">Cere Face ID sau amprentă la fiecare deschidere a aplicației pe acest dispozitiv.</p>
         <button id="bio-lock-toggle" type="button" role="switch" aria-checked="false" class="relative w-12 h-7 rounded-full bg-white/15 transition-colors shrink-0">
           <span id="bio-lock-knob" class="absolute top-1 left-1 w-5 h-5 rounded-full bg-white transition-transform"></span>
         </button>

@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent } from '../ui/Card';
-import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
-import { Plus, Star, X, Loader2, Percent } from 'lucide-react';
+import { Plus, Star, X, Loader2, Percent, Power, Check } from 'lucide-react';
 import { EmptyState } from '../ui/EmptyState';
 
 interface Rate { id: string; name: string; percent: number; regime: string; description: string | null; isDefault: boolean; isActive: boolean; position: number }
@@ -18,6 +17,8 @@ const REGIMES = [
   { id: 'intra_eu', label: 'Livrare intra-UE' },
 ];
 
+const REGIME_LABEL = (id: string) => REGIMES.find((r) => r.id === id)?.label ?? id;
+
 const empty = { name: '', percent: '0', regime: 'standard', description: '', isDefault: false };
 
 export default function TvaRatesManager() {
@@ -27,6 +28,7 @@ export default function TvaRatesManager() {
   const [showNew, setShowNew] = useState(false);
   const [draft, setDraft] = useState(empty);
   const [showAll, setShowAll] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const refresh = async () => {
     const r = await fetch('/api/invoicing/tva');
@@ -55,81 +57,172 @@ export default function TvaRatesManager() {
   };
 
   const remove = async (id: string) => {
-    if (!confirm('Sigur ștergi cota?')) return;
+    setConfirmDelete(null);
     const r = await fetch(`/api/invoicing/tva?id=${id}`, { method: 'DELETE' });
     if (!r.ok) { const d = await r.json(); setError(d.error || 'Eroare'); return; }
     await refresh();
   };
 
+  const shown = showAll ? rates : rates.slice(0, 3);
+
   return (
-    <Card className="bg-white/5 border-0 shadow-none hover:shadow-none hover:translate-y-0 rounded-2xl">
-      <CardContent className="p-4">
-        {error && <p className="text-sm text-[#DC4B41] mb-2">{error}</p>}
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-white">Cote TVA</h3>
-          <Button size="sm" variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowNew(!showNew)}><Plus className="w-4 h-4 mr-1" /> Adaugă cotă</Button>
+    <Card className="bg-transparent border-0 shadow-none hover:shadow-none hover:translate-y-0 rounded-2xl">
+      <CardContent className="p-0">
+        {error && (
+          <p className="text-[13px] text-[#DC4B41] mb-3 rounded-xl bg-[#DC4B41]/10 ring-1 ring-[#DC4B41]/20 px-3 py-2">{error}</p>
+        )}
+
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <h3 className="text-[15px] font-bold text-white">Cote TVA</h3>
+          <button
+            type="button"
+            onClick={() => setShowNew((s) => !s)}
+            className="inline-flex items-center gap-1.5 shrink-0 rounded-full bg-white/10 hover:bg-white/15 text-white text-[13px] font-semibold px-3.5 py-2 transition-colors"
+          >
+            <Plus className="w-4 h-4" /> Adaugă cotă
+          </button>
         </div>
 
-        {rates.length === 0 && (
+        {rates.length === 0 && !showNew && (
           <EmptyState
             icon={<Percent />}
             title="Nicio cotă TVA definită"
             description="Adaugă o cotă; cele standard se aplică implicit."
           />
         )}
-        <ul className="space-y-2">
-          {(showAll ? rates : rates.slice(0, 3)).map((r) => (
-            <li key={r.id} className={`group flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors ${!r.isActive ? 'opacity-50' : ''}`}>
-              <span className="font-mono text-xs px-2 py-0.5 bg-white/10 rounded-full text-white tabular-nums w-14 text-center">{r.percent}%</span>
-              <span className="text-[15px] text-white font-bold">{r.name}</span>
-              {r.description && <span className="text-xs text-[#A8BED2] hidden md:inline flex-1 truncate">{r.description}</span>}
-              {!r.description && <span className="flex-1" />}
-              <div className="flex items-center gap-2 shrink-0 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                {r.isDefault ? (
-                  <span className="text-xs px-2 py-0.5 bg-[#E8A33C]/15 text-[#E8A33C] rounded-full font-semibold flex items-center gap-1"><Star className="w-3 h-3 fill-[#E8A33C]" /> implicit</span>
-                ) : (
-                  <button onClick={() => patch(r.id, { isDefault: true })} className="text-xs text-[#A8BED2] hover:text-white underline">implicit</button>
-                )}
-                <button onClick={() => patch(r.id, { isActive: !r.isActive })} className="text-xs text-[#A8BED2] hover:text-white underline">{r.isActive ? 'dezactivează' : 'activează'}</button>
-                <button onClick={() => remove(r.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41]" title="Șterge"><X className="w-4 h-4" /></button>
-              </div>
-            </li>
-          ))}
-        </ul>
+
+        {rates.length > 0 && (
+          <ul className="space-y-3">
+            {shown.map((r) => {
+              const confirming = confirmDelete === r.id;
+              return (
+                <li
+                  key={r.id}
+                  className={`rounded-2xl bg-white/5 ring-1 ring-white/10 p-4 transition-colors ${!r.isActive ? 'opacity-55' : ''}`}
+                >
+                  <div className="flex items-start gap-3 min-w-0">
+                    {/* Percent pill */}
+                    <span className="shrink-0 mt-0.5 inline-flex items-center justify-center min-w-[3.25rem] font-mono text-[12px] font-semibold px-2.5 py-1 bg-white/10 rounded-lg text-white tabular-nums">
+                      {r.percent}%
+                    </span>
+
+                    {/* Name + meta */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[15px] text-white font-bold leading-tight break-words">{r.name}</span>
+                        {r.isDefault && (
+                          <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 bg-[#E1FB15]/15 text-[#E1FB15] rounded-full font-bold whitespace-nowrap">
+                            <Star className="w-3 h-3 fill-[#E1FB15]" /> Implicit
+                          </span>
+                        )}
+                        {!r.isActive && (
+                          <span className="text-[11px] px-2 py-0.5 bg-white/10 text-[#8FA6BC] rounded-full font-semibold whitespace-nowrap">Inactivă</span>
+                        )}
+                      </div>
+                      <p className="text-[12px] text-[#8FA6BC] mt-0.5 break-words">
+                        {REGIME_LABEL(r.regime)}{r.description ? ` · ${r.description}` : ''}
+                      </p>
+                    </div>
+
+                    {/* Delete (always visible, explicit target) */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setConfirmDelete(confirming ? null : r.id); }}
+                      className={`shrink-0 w-9 h-9 grid place-items-center rounded-full transition-colors ${confirming ? 'bg-[#DC4B41]/15 text-[#DC4B41]' : 'bg-white/10 text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41]'}`}
+                      title="Șterge cota"
+                      aria-label="Șterge cota"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  {/* Inline confirm OR action row */}
+                  {confirming ? (
+                    <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-[#DC4B41]/10 ring-1 ring-[#DC4B41]/20 px-3 py-2">
+                      <span className="text-[12.5px] text-[#DC4B41] font-medium min-w-0">Ștergi cota „{r.name}”?</span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); setConfirmDelete(null); }} className="text-[12.5px] font-semibold text-[#A8BED2] hover:text-white px-2.5 py-1">Anulează</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); remove(r.id); }} className="text-[12.5px] font-bold text-white bg-[#DC4B41] hover:bg-[#C23E35] rounded-full px-3 py-1.5">Șterge</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-3 flex flex-wrap items-center gap-2 pt-3 border-t border-white/[0.07]">
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); if (!r.isDefault) patch(r.id, { isDefault: true }); }}
+                        disabled={r.isDefault || busy}
+                        className={`inline-flex items-center gap-1.5 text-[12.5px] font-semibold rounded-full px-3 py-1.5 transition-colors ${r.isDefault ? 'bg-[#E1FB15]/10 text-[#E1FB15] cursor-default' : 'bg-white/5 text-[#A8BED2] hover:bg-white/10 hover:text-white'}`}
+                      >
+                        <Star className={`w-3.5 h-3.5 ${r.isDefault ? 'fill-[#E1FB15]' : ''}`} />
+                        {r.isDefault ? 'Implicit' : 'Setează implicit'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); patch(r.id, { isActive: !r.isActive }); }}
+                        disabled={busy}
+                        className={`inline-flex items-center gap-1.5 text-[12.5px] font-semibold rounded-full px-3 py-1.5 transition-colors ${r.isActive ? 'bg-white/5 text-[#A8BED2] hover:bg-white/10 hover:text-white' : 'bg-[#2E9E6A]/15 text-[#2E9E6A] hover:bg-[#2E9E6A]/25'}`}
+                      >
+                        {r.isActive ? <Power className="w-3.5 h-3.5" /> : <Check className="w-3.5 h-3.5" />}
+                        {r.isActive ? 'Dezactivează' : 'Activează'}
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
         {rates.length > 3 && (
-          <button type="button" onClick={() => setShowAll((s) => !s)} className="mt-3 mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
-            {showAll ? 'Arată mai puțin' : `Vezi toate (${rates.length})`}
-          </button>
+          <div className="mt-3 flex justify-center">
+            <button type="button" onClick={() => setShowAll((s) => !s)} className="inline-flex items-center px-5 py-2.5 rounded-full bg-white/10 text-white text-[13px] font-semibold hover:bg-white/15 active:scale-95 transition-all">
+              {showAll ? 'Arată mai puțin' : `Vezi toate (${rates.length})`}
+            </button>
+          </div>
         )}
 
         {showNew && (
-          <div className="mt-3 p-4 bg-white/5 rounded-2xl space-y-2">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-              <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Nume cotă *</Label>
-                <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Normală" />
+          <div className="mt-3 p-4 rounded-2xl bg-white/[0.03] ring-1 ring-white/10 space-y-3">
+            <p className="text-[13px] font-bold text-white">Cotă nouă</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="min-w-0">
+                <Label className="mb-1.5 block text-[12.5px] font-medium text-[#A8BED2]">Nume cotă *</Label>
+                <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="Normală" />
               </div>
-              <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Procent *</Label>
-                <Input className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" type="number" min="0" step="0.5" value={draft.percent} onChange={(e) => setDraft({ ...draft, percent: e.target.value })} />
+              <div className="min-w-0">
+                <Label className="mb-1.5 block text-[12.5px] font-medium text-[#A8BED2]">Procent *</Label>
+                <Input type="number" min="0" step="0.5" value={draft.percent} onChange={(e) => setDraft({ ...draft, percent: e.target.value })} />
               </div>
-              <div>
-                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Regim</Label>
-                <Select className="[color-scheme:dark] bg-white/10 border-0 text-white hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.regime} onChange={(e) => setDraft({ ...draft, regime: e.target.value })}>
+              <div className="min-w-0">
+                <Label className="mb-1.5 block text-[12.5px] font-medium text-[#A8BED2]">Regim</Label>
+                <Select value={draft.regime} onChange={(e) => setDraft({ ...draft, regime: e.target.value })}>
                   {REGIMES.map((rg) => <option key={rg.id} value={rg.id}>{rg.label}</option>)}
                 </Select>
               </div>
             </div>
-            <div>
-              <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Descriere (opțional)</Label>
-              <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Taxare inversă conform Art. 331..." />
+            <div className="min-w-0">
+              <Label className="mb-1.5 block text-[12.5px] font-medium text-[#A8BED2]">Descriere (opțional)</Label>
+              <Input value={draft.description} onChange={(e) => setDraft({ ...draft, description: e.target.value })} placeholder="Taxare inversă conform Art. 331..." />
             </div>
-            <label className="flex items-center gap-2 text-xs text-white">
-              <input type="checkbox" checked={draft.isDefault} onChange={(e) => setDraft({ ...draft, isDefault: e.target.checked })} /> Cotă implicită
+            <label className="flex items-center gap-2 text-[13px] text-white cursor-pointer w-fit">
+              <input type="checkbox" className="accent-[#E1FB15] w-4 h-4" checked={draft.isDefault} onChange={(e) => setDraft({ ...draft, isDefault: e.target.checked })} /> Cotă implicită
             </label>
-            <div className="flex gap-2">
-              <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" disabled={busy || !draft.name} onClick={add}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează'}</Button>
-              <Button size="sm" variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowNew(false)}>Renunță</Button>
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                disabled={busy || !draft.name}
+                onClick={add}
+                className="inline-flex items-center justify-center gap-2 bg-[#E1FB15] text-[#07090f] rounded-full font-bold px-5 py-2.5 text-[13.5px] hover:bg-[#D2EA0E] active:scale-95 disabled:opacity-50 disabled:pointer-events-none transition-all"
+              >
+                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Adaugă'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowNew(false); setDraft(empty); }}
+                className="inline-flex items-center justify-center rounded-full text-[13.5px] font-semibold text-[#A8BED2] hover:text-white hover:bg-white/5 px-4 py-2.5 transition-colors"
+              >
+                Renunță
+              </button>
             </div>
           </div>
         )}

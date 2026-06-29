@@ -55,9 +55,9 @@ const display = rows.map((r) => {
 });
 
 const cards = [
-  { label: 'Produse în stoc', value: String(kpis.products), accent: 'text-white' },
-  { label: 'Valoare totală stoc', value: ron(kpis.totalValueCents), accent: 'text-white' },
-  { label: 'Produse sub minim', value: String(kpis.belowMin), accent: kpis.belowMin > 0 ? 'text-[#DC4B41]' : 'text-[#2E9E6A]' },
+  { label: 'Produse în stoc', value: String(kpis.products), accent: 'text-white', wide: false },
+  { label: 'Produse sub minim', value: String(kpis.belowMin), accent: kpis.belowMin > 0 ? 'text-[#DC4B41]' : 'text-[#2E9E6A]', wide: false },
+  { label: 'Valoare totală stoc', value: ron(kpis.totalValueCents), accent: 'text-white', wide: true },
 ];
 ---
 
@@ -65,6 +65,7 @@ const cards = [
   <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
     <div>
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Stocuri</h1>
+      <p class="text-[15px] text-[#A8BED2] mt-2">Produsele pe stoc, valoarea lor și gestiunile firmei.</p>
     </div>
     <div class="flex items-center gap-2 flex-wrap">
       <a href="/app/gestiune/nir" class="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">+ Recepție (NIR)</a>
@@ -72,11 +73,11 @@ const cards = [
     </div>
   </div>
 
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-8">
     {cards.map((c) => (
-      <div class="rounded-2xl p-5 bg-white/5">
-        <p class="text-[13px] font-medium text-[#8FA6BC]">{c.label}</p>
-        <p class={`text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums mt-2 ${c.accent}`}>{c.value}</p>
+      <div class={`rounded-2xl p-4 sm:p-5 bg-white/5 min-w-0 ${c.wide ? 'col-span-2 sm:col-span-1' : ''}`}>
+        <p class="text-[12.5px] sm:text-[13px] font-medium text-[#8FA6BC] truncate">{c.label}</p>
+        <p class={`text-[24px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums whitespace-nowrap mt-1.5 ${c.accent}`}>{c.value}</p>
       </div>
     ))}
   </div>
@@ -89,9 +90,9 @@ const cards = [
     </div>
   ) : (
     <Fragment>
-      <ul class="space-y-2.5">
-        {display.slice(0, 3).map((r) => (
-          <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+      <ul class="space-y-2.5" id="gest-list">
+        {display.map((r, i) => (
+          <li class:list={['flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors', i >= 3 && 'fm-extra']} hidden={i >= 3}>
             <div class="min-w-0 flex-1">
               <p class="font-bold text-white truncate">
                 {r.productName || '—'}
@@ -108,28 +109,27 @@ const cards = [
         ))}
       </ul>
       {display.length > 3 && (
-        <details class="mt-2.5">
-          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({display.length})</summary>
-          <ul class="space-y-2.5 mt-2.5">
-            {display.slice(3).map((r) => (
-              <li class="flex items-center gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
-                <div class="min-w-0 flex-1">
-                  <p class="font-bold text-white truncate">
-                    {r.productName || '—'}
-                    {r.productCode && <span class="font-mono text-[12px] font-normal text-[#8FA6BC] ml-2">{r.productCode}</span>}
-                    {r.low && <span class="ml-2 text-[11px] px-2 py-0.5 bg-[#DC4B41]/15 text-[#DC4B41] rounded-full font-semibold">sub minim</span>}
-                  </p>
-                  <p class="text-[13px] text-[#8FA6BC] mt-0.5">{r.warehouseName || '—'} · {ron(r.avgCostCents)} / {r.um || 'um'}</p>
-                </div>
-                <div class="text-right shrink-0">
-                  <p class="font-bold text-white tabular-nums">{ron(r.valueCents)}</p>
-                  <p class="text-[13px] text-[#A8BED2] tabular-nums mt-0.5">{qty(Number(r.quantity))} {r.um || ''}</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </details>
+        <button type="button" id="gest-seemore" data-shown="false" data-count={display.length} class="mt-3 mx-auto w-fit flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+          <span data-seemore-label>Vezi toate ({display.length})</span>
+        </button>
       )}
     </Fragment>
   )}
 </AppLayout>
+
+<script>
+  // "Vezi toate" — expands the stock list in place (extra rows appear above the
+  // button, which stays at the bottom), same behaviour as Facturare & Cheltuieli.
+  if (!(window as any).__fmGestSeemore) {
+    (window as any).__fmGestSeemore = true;
+    document.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest('#gest-seemore') as HTMLElement | null;
+      if (!btn) return;
+      const willShow = btn.dataset.shown !== 'true';
+      document.querySelectorAll('#gest-list .fm-extra').forEach((el) => { (el as HTMLElement).hidden = !willShow; });
+      btn.dataset.shown = String(willShow);
+      const label = btn.querySelector('[data-seemore-label]');
+      if (label) label.textContent = willShow ? 'Arată mai puțin' : `Vezi toate (${btn.dataset.count})`;
+    });
+  }
+</script>

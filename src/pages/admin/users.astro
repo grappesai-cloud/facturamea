@@ -59,72 +59,116 @@ const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-di
 
 <AdminLayout title="Utilizatori" activeTab="users">
   <div class="mb-6">
-    <form method="GET" class="flex gap-3 max-w-xl">
-      <input type="text" name="q" value={q} placeholder="Caută după nume, email sau ID platformă..." class="flex-1 h-11 px-4 bg-white border border-[#E3EAF1] rounded-full text-[14px] text-[#07090f] placeholder:text-[#A8BED2] focus:border-[#07090f] focus:outline-none transition-colors" />
-      <button type="submit" class="h-11 px-6 bg-[#1A759F] hover:bg-[#168AAD] text-white font-semibold rounded-xl text-[13px] transition-colors">Caută</button>
-    </form>
-    <p class="text-[13px] text-[#46627A] mt-2">{total.count} utilizatori</p>
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Utilizatori</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Toți utilizatorii platformei — caută, activează, impersonează.</p>
   </div>
 
-  <div class="bg-white border border-[#E3EAF1] rounded-2xl overflow-hidden">
+  <div class="mb-5">
+    <form method="GET" class="flex gap-2 max-w-xl">
+      <input type="text" name="q" value={q} placeholder="Caută după nume, email sau ID platformă..." class="flex-1 h-11 px-4 rounded-full bg-white/5 text-[14px] text-white placeholder:text-[#8FA6BC] ring-1 ring-white/10 focus:ring-[#34A0A4]/50 focus:outline-none transition-all" />
+      <button type="submit" class="h-11 px-6 bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] font-bold rounded-full text-[13.5px] transition-colors shrink-0">Caută</button>
+    </form>
+    <p class="text-[13px] text-[#8FA6BC] mt-2.5">{total.count} utilizatori</p>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="hidden lg:block rounded-2xl bg-white/5 overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-[13px]">
         <thead>
-          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-[#E3EAF1]">
-            <th class="px-5 py-2.5 font-medium">Utilizator</th>
-            <th class="px-5 py-2.5 font-medium">ID</th>
-            <th class="px-5 py-2.5 font-medium">Tip</th>
-            <th class="px-5 py-2.5 font-medium">Companie</th>
-            <th class="px-5 py-2.5 font-medium">Status</th>
-            <th class="px-5 py-2.5 font-medium">Creat</th>
-            <th class="px-5 py-2.5 font-medium text-right">Acțiuni</th>
+          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
+            <th class="px-5 py-3 font-semibold">Utilizator</th>
+            <th class="px-5 py-3 font-semibold">ID</th>
+            <th class="px-5 py-3 font-semibold">Tip</th>
+            <th class="px-5 py-3 font-semibold">Companie</th>
+            <th class="px-5 py-3 font-semibold">Status</th>
+            <th class="px-5 py-3 font-semibold">Creat</th>
+            <th class="px-5 py-3 font-semibold text-right">Acțiuni</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-white/5">
           {userList.map((u) => (
-            <tr class="border-b border-[#F6F6F2] hover:bg-[#EDF1F5] transition-colors">
-              <td class="px-5 py-3">
-                <p class="font-medium text-[#07090f]">{u.name}</p>
-                <p class="text-[11px] text-[#46627A]">{u.email}</p>
+            <tr class="hover:bg-white/[0.03] transition-colors">
+              <td class="px-5 py-3.5">
+                <p class="font-semibold text-white">{u.name}</p>
+                <p class="text-[12px] text-[#8FA6BC] mt-0.5">{u.email}</p>
               </td>
-              <td class="px-5 py-3 font-mono text-[12px] text-[#46627A]">
+              <td class="px-5 py-3.5 font-mono text-[12px] text-[#A8BED2] whitespace-nowrap">
                 {u.platformId}
-                {u.isAdmin && <span class="ml-1 inline-block px-1.5 py-0.5 rounded-md bg-[#07090f] text-white text-[9px] font-bold uppercase tracking-wider">Admin</span>}
+                {u.isAdmin && <span class="ml-1.5 inline-block px-1.5 py-0.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[9px] font-bold uppercase tracking-wider">Admin</span>}
               </td>
-              <td class="px-5 py-3 text-[#46627A]">{typeLabel[u.userType] || u.userType}</td>
-              <td class="px-5 py-3 text-[#46627A]">{u.companyName || '-'}</td>
-              <td class="px-5 py-3">
-                <span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${u.isActive ? 'bg-[#E7F7EC] text-[#15803D]' : 'bg-[#FDECEC] text-[#B91C1C]'}`}>{u.isActive ? 'Activ' : 'Inactiv'}</span>
+              <td class="px-5 py-3.5 text-[#A8BED2] whitespace-nowrap">{typeLabel[u.userType] || u.userType}</td>
+              <td class="px-5 py-3.5 text-[#A8BED2]">{u.companyName || '-'}</td>
+              <td class="px-5 py-3.5">
+                <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${u.isActive ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-[#DC4B41]/15 text-[#DC4B41]'}`}>{u.isActive ? 'Activ' : 'Inactiv'}</span>
               </td>
-              <td class="px-5 py-3 text-[#46627A]">{fmt(u.createdAt)}</td>
-              <td class="px-5 py-3 text-right">
-                <div class="flex items-center justify-end gap-2">
-                  <button data-user-id={u.id} data-action={u.isActive ? 'deactivate' : 'activate'} class="admin-action-btn px-2.5 py-1 text-[12px] font-medium rounded-lg border border-[#E3EAF1] text-[#46627A] hover:text-[#07090f] hover:border-[#07090f] transition-colors">
+              <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">{fmt(u.createdAt)}</td>
+              <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                <div class="flex items-center justify-end gap-1.5">
+                  <button data-user-id={u.id} data-action={u.isActive ? 'deactivate' : 'activate'} class="admin-action-btn px-2.5 py-1 text-[12px] font-semibold rounded-full bg-white/10 text-[#D7E5F0] hover:bg-white/15 transition-colors">
                     {u.isActive ? 'Dezactivează' : 'Activează'}
                   </button>
                   {!u.isAdmin && (
-                    <button data-user-id={u.id} data-action="make-admin" class="admin-action-btn px-2.5 py-1 text-[12px] font-medium rounded-lg border border-[#B91C1C]/30 text-[#B91C1C] hover:bg-[#FDECEC] transition-colors">Fă admin</button>
+                    <button data-user-id={u.id} data-action="make-admin" class="admin-action-btn px-2.5 py-1 text-[12px] font-semibold rounded-full text-[#DC4B41] bg-[#DC4B41]/10 hover:bg-[#DC4B41]/20 transition-colors">Fă admin</button>
                   )}
-                  <button data-imp-user-id={u.id} class="impersonate-btn px-2.5 py-1 text-[12px] font-medium rounded-lg border border-[#1A759F]/30 text-[#1A759F] hover:bg-[#1A759F]/10 transition-colors">Impersonează</button>
+                  <button data-imp-user-id={u.id} class="impersonate-btn px-2.5 py-1 text-[12px] font-semibold rounded-full text-[#34A0A4] bg-[#34A0A4]/10 hover:bg-[#34A0A4]/20 transition-colors">Impersonează</button>
                 </div>
               </td>
             </tr>
           ))}
           {userList.length === 0 && (
-            <tr><td colspan="7" class="px-5 py-12 text-center text-[14px] text-[#46627A]">Niciun utilizator găsit.</td></tr>
+            <tr><td colspan="7" class="px-5 py-12 text-center text-[14px] text-[#8FA6BC]">Niciun utilizator găsit.</td></tr>
           )}
         </tbody>
       </table>
     </div>
 
     {total.count > limit && (
-      <div class="px-6 py-4 border-t border-[#E3EAF1] flex items-center justify-center gap-3">
-        {page > 1 && <a href={`/admin/users?q=${q}&page=${page - 1}`} class="px-3 py-1 text-[13px] border border-[#E3EAF1] rounded-lg text-[#46627A] hover:text-[#07090f]">Anterior</a>}
-        <span class="text-[13px] text-[#46627A]">Pagina {page}</span>
-        {userList.length >= limit && <a href={`/admin/users?q=${q}&page=${page + 1}`} class="px-3 py-1 text-[13px] border border-[#E3EAF1] rounded-lg text-[#46627A] hover:text-[#07090f]">Următor</a>}
+      <div class="px-6 py-4 border-t border-white/10 flex items-center justify-center gap-3">
+        {page > 1 && <a href={`/admin/users?q=${q}&page=${page - 1}`} class="px-4 py-1.5 text-[13px] font-semibold rounded-full bg-white/10 text-[#D7E5F0] hover:bg-white/15 transition-colors">Anterior</a>}
+        <span class="text-[13px] text-[#8FA6BC]">Pagina {page}</span>
+        {userList.length >= limit && <a href={`/admin/users?q=${q}&page=${page + 1}`} class="px-4 py-1.5 text-[13px] font-semibold rounded-full bg-white/10 text-[#D7E5F0] hover:bg-white/15 transition-colors">Următor</a>}
       </div>
     )}
   </div>
+
+  <!-- Mobile / tablet cards -->
+  <div class="lg:hidden space-y-2.5">
+    {userList.length === 0 ? (
+      <div class="rounded-2xl bg-white/5 py-10 text-center text-[14px] text-[#8FA6BC]">Niciun utilizator găsit.</div>
+    ) : userList.map((u) => (
+      <div class="rounded-2xl bg-white/5 p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-[14px] font-semibold text-white truncate flex items-center gap-1.5">
+              {u.name}
+              {u.isAdmin && <span class="inline-block px-1.5 py-0.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[9px] font-bold uppercase tracking-wider">Admin</span>}
+            </p>
+            <p class="text-[12px] text-[#8FA6BC] mt-0.5 truncate">{u.email}</p>
+            <p class="text-[11px] text-[#5E7385] mt-1 font-mono">{u.platformId} · {typeLabel[u.userType] || u.userType}{u.companyName ? ` · ${u.companyName}` : ''}</p>
+          </div>
+          <span class={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${u.isActive ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-[#DC4B41]/15 text-[#DC4B41]'}`}>{u.isActive ? 'Activ' : 'Inactiv'}</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5 mt-3 pt-3 border-t border-white/10">
+          <button data-user-id={u.id} data-action={u.isActive ? 'deactivate' : 'activate'} class="admin-action-btn px-3 py-1.5 text-[12px] font-semibold rounded-full bg-white/10 text-[#D7E5F0] hover:bg-white/15 transition-colors">
+            {u.isActive ? 'Dezactivează' : 'Activează'}
+          </button>
+          {!u.isAdmin && (
+            <button data-user-id={u.id} data-action="make-admin" class="admin-action-btn px-3 py-1.5 text-[12px] font-semibold rounded-full text-[#DC4B41] bg-[#DC4B41]/10 transition-colors">Fă admin</button>
+          )}
+          <button data-imp-user-id={u.id} class="impersonate-btn px-3 py-1.5 text-[12px] font-semibold rounded-full text-[#34A0A4] bg-[#34A0A4]/10 transition-colors">Impersonează</button>
+        </div>
+      </div>
+    ))}
+  </div>
+
+  {total.count > limit && (
+    <div class="lg:hidden mt-4 flex items-center justify-center gap-3">
+      {page > 1 && <a href={`/admin/users?q=${q}&page=${page - 1}`} class="px-4 py-1.5 text-[13px] font-semibold rounded-full bg-white/10 text-[#D7E5F0] transition-colors">Anterior</a>}
+      <span class="text-[13px] text-[#8FA6BC]">Pagina {page}</span>
+      {userList.length >= limit && <a href={`/admin/users?q=${q}&page=${page + 1}`} class="px-4 py-1.5 text-[13px] font-semibold rounded-full bg-white/10 text-[#D7E5F0] transition-colors">Următor</a>}
+    </div>
+  )}
 
   <script>
     document.querySelectorAll('.admin-action-btn').forEach((btn) => {

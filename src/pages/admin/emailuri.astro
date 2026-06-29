@@ -40,10 +40,10 @@ const audienceLabels: Record<string, string> = {
 };
 
 const statusMeta: Record<string, { label: string; cls: string }> = {
-  draft: { label: 'Schiță', cls: 'bg-[#E3EAF1] text-[#46627A]' },
-  sending: { label: 'Se trimite', cls: 'bg-[#1A759F]/10 text-[#1A759F]' },
-  sent: { label: 'Trimis', cls: 'bg-[#15803D]/10 text-[#15803D]' },
-  failed: { label: 'Eșuat', cls: 'bg-[#B91C1C]/10 text-[#B91C1C]' },
+  draft: { label: 'Schiță', cls: 'bg-white/10 text-[#A8BED2]' },
+  sending: { label: 'Se trimite', cls: 'bg-[#34A0A4]/15 text-[#34A0A4]' },
+  sent: { label: 'Trimis', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  failed: { label: 'Eșuat', cls: 'bg-[#DC4B41]/15 text-[#DC4B41]' },
 };
 
 const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
@@ -51,59 +51,82 @@ const fmt = (d: any) => (d ? new Date(d).toLocaleString('ro-RO') : '-');
 
 <AdminLayout title="Emailuri" activeTab="emailuri">
   <div class="mb-6">
-    <h2 class="text-[22px] font-bold tracking-[-0.02em]">Campanii email</h2>
-    <p class="text-[13px] text-[#46627A] mt-1">
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Campanii email</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">
       Compune un email HTML branded, alege audiența, previzualizează, trimite un test și apoi campania prin Resend.
     </p>
   </div>
 
   <EmailComposer client:load adminEmail={user.email} />
 
-  <div class="mt-8 bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
-    <div class="px-5 py-3 border-b border-[#E3EAF1]">
-      <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Istoric campanii</p>
+  <div class="mt-8 rounded-2xl bg-white/5 overflow-hidden">
+    <div class="px-5 py-4 border-b border-white/10">
+      <p class="text-[13px] font-semibold text-white">Istoric campanii</p>
     </div>
     {campaigns.length === 0 ? (
-      <div class="px-5 py-10 text-center text-[12px] text-[#46627A]">Nicio campanie încă.</div>
+      <div class="px-5 py-10 text-center text-[13px] text-[#8FA6BC]">Nicio campanie încă.</div>
     ) : (
-      <div class="overflow-x-auto">
+      <Fragment>
+      <!-- Desktop table -->
+      <div class="hidden sm:block overflow-x-auto">
         <table class="w-full text-[13px]">
           <thead>
-            <tr class="text-left text-[11px] uppercase tracking-[0.12em] text-[#A8BED2] border-b border-[#E3EAF1]">
-              <th class="px-5 py-3 font-medium">Subiect</th>
-              <th class="px-5 py-3 font-medium">Audiență</th>
-              <th class="px-5 py-3 font-medium">Status</th>
-              <th class="px-5 py-3 font-medium">Trimise / Eșuate</th>
-              <th class="px-5 py-3 font-medium">Creat</th>
-              <th class="px-5 py-3 font-medium">Trimis</th>
+            <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
+              <th class="px-5 py-3 font-semibold">Subiect</th>
+              <th class="px-5 py-3 font-semibold">Audiență</th>
+              <th class="px-5 py-3 font-semibold">Status</th>
+              <th class="px-5 py-3 font-semibold">Trimise / Eșuate</th>
+              <th class="px-5 py-3 font-semibold">Creat</th>
+              <th class="px-5 py-3 font-semibold">Trimis</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-[#E3EAF1]">
+          <tbody class="divide-y divide-white/5">
             {campaigns.map((c: any) => {
-              const sm = statusMeta[c.status] ?? { label: c.status, cls: 'bg-[#E3EAF1] text-[#46627A]' };
+              const sm = statusMeta[c.status] ?? { label: c.status, cls: 'bg-white/10 text-[#A8BED2]' };
               return (
-                <tr>
-                  <td class="px-5 py-3 max-w-[280px]">
-                    <span class="font-medium truncate block">{c.subject}</span>
-                    <span class="text-[11px] text-[#A8BED2]">{c.createdByName ?? 'admin'}</span>
+                <tr class="hover:bg-white/[0.03] transition-colors">
+                  <td class="px-5 py-3.5 max-w-[280px]">
+                    <span class="font-semibold text-white truncate block">{c.subject}</span>
+                    <span class="text-[11px] text-[#8FA6BC]">{c.createdByName ?? 'admin'}</span>
                   </td>
-                  <td class="px-5 py-3 text-[#46627A]">{audienceLabels[c.audience] ?? c.audience}</td>
-                  <td class="px-5 py-3">
-                    <span class={`inline-block px-2 py-0.5 rounded text-[11px] font-semibold ${sm.cls}`}>{sm.label}</span>
+                  <td class="px-5 py-3.5 text-[#A8BED2] whitespace-nowrap">{audienceLabels[c.audience] ?? c.audience}</td>
+                  <td class="px-5 py-3.5">
+                    <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${sm.cls}`}>{sm.label}</span>
                   </td>
-                  <td class="px-5 py-3 text-[#46627A]">
+                  <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">
                     {c.status === 'sent' || c.status === 'failed'
                       ? `${c.sentCount ?? 0} / ${c.failedCount ?? 0}${c.totalRecipients ? ` (din ${c.totalRecipients})` : ''}`
                       : '-'}
                   </td>
-                  <td class="px-5 py-3 text-[11px] text-[#A8BED2]">{fmt(c.createdAt)}</td>
-                  <td class="px-5 py-3 text-[11px] text-[#A8BED2]">{fmt(c.sentAt)}</td>
+                  <td class="px-5 py-3.5 text-[11px] text-[#8FA6BC] whitespace-nowrap">{fmt(c.createdAt)}</td>
+                  <td class="px-5 py-3.5 text-[11px] text-[#8FA6BC] whitespace-nowrap">{fmt(c.sentAt)}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
+      <!-- Mobile cards -->
+      <div class="sm:hidden divide-y divide-white/5">
+        {campaigns.map((c: any) => {
+          const sm = statusMeta[c.status] ?? { label: c.status, cls: 'bg-white/10 text-[#A8BED2]' };
+          return (
+            <div class="px-4 py-3.5">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-[13.5px] font-semibold text-white truncate">{c.subject}</p>
+                  <p class="text-[11px] text-[#8FA6BC] mt-0.5">{audienceLabels[c.audience] ?? c.audience} · {c.createdByName ?? 'admin'}</p>
+                </div>
+                <span class={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${sm.cls}`}>{sm.label}</span>
+              </div>
+              <p class="text-[11px] text-[#5E7385] mt-1.5 tabular-nums">
+                {(c.status === 'sent' || c.status === 'failed') ? `${c.sentCount ?? 0} trimise / ${c.failedCount ?? 0} eșuate · ` : ''}{fmt(c.sentAt !== '-' && c.sentAt ? c.sentAt : c.createdAt)}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+      </Fragment>
     )}
   </div>
 </AdminLayout>

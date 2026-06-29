@@ -1,7 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Button } from '../ui/Button';
 import { Select } from '../ui/Select';
-import { UploadCloud, FileSpreadsheet, CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Dropzone } from '../ui/Dropzone';
+import { CheckCircle2, AlertTriangle, ArrowLeft, ArrowRight } from 'lucide-react';
 
 type Source = 'oblio' | 'smartbill' | 'fgo' | 'csv';
 type Entity = 'clients' | 'products' | 'invoices';
@@ -51,7 +52,6 @@ export default function ImportWizard() {
   const [source, setSource] = useState<Source>('csv');
   const [entity, setEntity] = useState<Entity>('clients');
   const [file, setFile] = useState<File | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<PreviewResponse | null>(null);
   const [mapping, setMapping] = useState<Record<string, string>>({});
@@ -157,17 +157,16 @@ export default function ImportWizard() {
     setMapping({});
     setResult(null);
     setError(null);
-    if (fileRef.current) fileRef.current.value = '';
   };
 
   return (
     <div className="bg-white/5 rounded-2xl overflow-hidden">
       {/* Stepper header */}
-      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-white/10 text-[12px]">
+      <div className="flex items-center gap-2 sm:gap-2.5 px-4 sm:px-5 py-3.5 border-b border-white/10 text-[12px]">
         <StepBadge n={1} active={step === 'setup'} done={step !== 'setup'} label="Sursă & fișier" />
-        <span className="text-[#8FA6BC]">→</span>
+        <ArrowRight className="w-3.5 h-3.5 shrink-0 text-[#8FA6BC]" aria-hidden />
         <StepBadge n={2} active={step === 'mapping'} done={step === 'done'} label="Mapare coloane" />
-        <span className="text-[#8FA6BC]">→</span>
+        <ArrowRight className="w-3.5 h-3.5 shrink-0 text-[#8FA6BC]" aria-hidden />
         <StepBadge n={3} active={step === 'done'} done={false} label="Finalizare" />
       </div>
 
@@ -231,29 +230,13 @@ export default function ImportWizard() {
               <p className="text-[12px] font-semibold uppercase tracking-[0.1em] text-[#8FA6BC] mb-2.5">
                 3. Încarcă fișierul
               </p>
-              <label className="flex flex-col items-center justify-center gap-2 px-4 py-8 border-2 border-dashed border-white/15 rounded-xl cursor-pointer hover:border-[#E1FB15]/50 hover:bg-white/5 transition-colors">
-                <UploadCloud className="w-7 h-7 text-[#8FA6BC]" />
-                {file ? (
-                  <span className="flex items-center gap-2 text-[13px] font-medium text-white">
-                    <FileSpreadsheet className="w-4 h-4 text-[#76C893]" />
-                    {file.name}
-                  </span>
-                ) : (
-                  <>
-                    <span className="text-[13px] font-medium text-white">
-                      Trage fișierul aici sau click pentru a selecta
-                    </span>
-                    <span className="text-[11px] text-[#8FA6BC]">Acceptăm .csv și .xlsx (max. 15 MB)</span>
-                  </>
-                )}
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                  className="hidden"
-                  onChange={(e) => onPickFile(e.target.files?.[0] ?? null)}
-                />
-              </label>
+              <Dropzone
+                accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                fileName={file?.name}
+                onFiles={(files) => onPickFile(files[0] ?? null)}
+                title="Trage fișierul aici sau apasă pentru a alege"
+                hint="Acceptăm .csv și .xlsx (max. 15 MB)"
+              />
             </div>
 
             <div className="flex justify-end">
@@ -296,7 +279,7 @@ export default function ImportWizard() {
                         <Select
                           value={mapping[h] || ''}
                           onChange={(e) => setColMap(h, e.target.value)}
-                          className="h-9 text-[13px] bg-white/10 text-white placeholder:text-[#8FA6BC] border-0 [color-scheme:dark]"
+                          className="h-9 text-[13px] bg-white/5 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:border-[#E1FB15]/50 [color-scheme:dark]"
                         >
                           <option value="">— Ignoră coloana —</option>
                           {preview.targetFields.map((f) => (
@@ -425,9 +408,9 @@ function StepBadge({
   label: string;
 }) {
   return (
-    <span className="flex items-center gap-1.5">
+    <span className="flex min-w-0 items-center gap-1.5">
       <span
-        className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold ${
+        className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
           done
             ? 'bg-[#2E9E6A] text-white'
             : active
@@ -437,7 +420,13 @@ function StepBadge({
       >
         {done ? '✓' : n}
       </span>
-      <span className={`${active ? 'text-white font-semibold' : 'text-[#8FA6BC]'}`}>{label}</span>
+      {/* On phones only the active step keeps its label (one line, no wrap);
+          from sm: up every label shows. */}
+      <span
+        className={`whitespace-nowrap ${active ? 'inline text-white font-semibold' : 'hidden sm:inline text-[#8FA6BC]'}`}
+      >
+        {label}
+      </span>
     </span>
   );
 }

@@ -1,4 +1,16 @@
 ---
-// Furnizori is now a popup on the Cheltuieli page — redirect old links to it.
-return Astro.redirect('/app/cheltuieli?furnizori=1');
+import AppLayout from '../../../layouts/AppLayout.astro';
+import SuppliersManager from '../../../components/cheltuieli/SuppliersManager';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
 ---
+
+<AppLayout title="Furnizori" activeTab="cheltuieli">
+  <div class="mb-6 sm:mb-8">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Furnizori</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-2">Gestionează furnizorii pentru a înregistra cheltuieli mai rapid.</p>
+  </div>
+
+  <SuppliersManager client:load />
+</AppLayout>

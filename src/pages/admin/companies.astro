@@ -33,61 +33,95 @@ try {
 }
 
 const planLabel: Record<string, { label: string; cls: string }> = {
-  lifetime: { label: 'Lifetime', cls: 'bg-[#E7F7EC] text-[#15803D]' },
-  trial: { label: 'Trial', cls: 'bg-[#FFF7E6] text-[#B45309]' },
+  lifetime: { label: 'Lifetime', cls: 'bg-[#2E9E6A]/15 text-[#2E9E6A]' },
+  trial: { label: 'Trial', cls: 'bg-[#E8A33C]/15 text-[#E8A33C]' },
 };
 const fmt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Europe/Bucharest' }) : '-';
 ---
 
 <AdminLayout title="Companii" activeTab="companies">
   <div class="mb-6">
-    <form method="GET" class="flex gap-3 max-w-xl">
-      <input type="text" name="q" value={q} placeholder="Caută după nume sau CUI..." class="flex-1 h-11 px-4 bg-white border border-[#E3EAF1] rounded-full text-[14px] text-[#07090f] placeholder:text-[#A8BED2] focus:border-[#07090f] focus:outline-none transition-colors" />
-      <button type="submit" class="h-11 px-6 bg-[#1A759F] hover:bg-[#168AAD] text-white font-semibold rounded-xl text-[13px] transition-colors">Caută</button>
-    </form>
-    <p class="text-[13px] text-[#46627A] mt-2">{companyList.length} companii</p>
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Companii</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Toate companiile înregistrate pe platformă.</p>
   </div>
 
-  <div class="bg-white border border-[#E3EAF1] rounded-2xl overflow-hidden">
+  <div class="mb-5">
+    <form method="GET" class="flex gap-2 max-w-xl">
+      <input type="text" name="q" value={q} placeholder="Caută după nume sau CUI..." class="flex-1 h-11 px-4 rounded-full bg-white/5 text-[14px] text-white placeholder:text-[#8FA6BC] ring-1 ring-white/10 focus:ring-[#34A0A4]/50 focus:outline-none transition-all" />
+      <button type="submit" class="h-11 px-6 bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] font-bold rounded-full text-[13.5px] transition-colors shrink-0">Caută</button>
+    </form>
+    <p class="text-[13px] text-[#8FA6BC] mt-2.5">{companyList.length} companii</p>
+  </div>
+
+  <!-- Desktop table -->
+  <div class="hidden sm:block rounded-2xl bg-white/5 overflow-hidden">
     <div class="overflow-x-auto">
       <table class="w-full text-[13px]">
         <thead>
-          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-[#E3EAF1]">
-            <th class="px-5 py-2.5 font-medium">Companie</th>
-            <th class="px-5 py-2.5 font-medium">CUI</th>
-            <th class="px-5 py-2.5 font-medium">Locație</th>
-            <th class="px-5 py-2.5 font-medium">Licență</th>
-            <th class="px-5 py-2.5 font-medium">Creată</th>
-            <th class="px-5 py-2.5 font-medium text-right">Acțiuni</th>
+          <tr class="text-left text-[11px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
+            <th class="px-5 py-3 font-semibold">Companie</th>
+            <th class="px-5 py-3 font-semibold">CUI</th>
+            <th class="px-5 py-3 font-semibold">Locație</th>
+            <th class="px-5 py-3 font-semibold">Licență</th>
+            <th class="px-5 py-3 font-semibold">Creată</th>
+            <th class="px-5 py-3 font-semibold text-right">Acțiuni</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody class="divide-y divide-white/5">
           {companyList.map((c) => {
-            const pl = c.plan ? (planLabel[c.plan] || { label: c.plan, cls: 'bg-[#E3EAF1] text-[#46627A]' }) : null;
+            const pl = c.plan ? (planLabel[c.plan] || { label: c.plan, cls: 'bg-white/10 text-[#A8BED2]' }) : null;
             return (
-              <tr class="border-b border-[#F6F6F2] hover:bg-[#EDF1F5] transition-colors">
-                <td class="px-5 py-3 font-medium text-[#07090f]">{c.name}</td>
-                <td class="px-5 py-3 font-mono text-[12px] text-[#46627A]">{c.cui || '-'}</td>
-                <td class="px-5 py-3 text-[#46627A]">{c.city ? `${c.city}, ` : ''}{c.country}</td>
-                <td class="px-5 py-3">
+              <tr class="hover:bg-white/[0.03] transition-colors">
+                <td class="px-5 py-3.5 font-semibold text-white whitespace-nowrap">{c.name}</td>
+                <td class="px-5 py-3.5 font-mono text-[12px] text-[#A8BED2]">{c.cui || '-'}</td>
+                <td class="px-5 py-3.5 text-[#A8BED2]">{c.city ? `${c.city}, ` : ''}{c.country}</td>
+                <td class="px-5 py-3.5">
                   {pl ? (
-                    <span class={`inline-block px-2 py-0.5 rounded-md text-[11px] font-medium ${pl.cls}`}>{pl.label}{c.status && c.status !== 'active' ? ` · ${c.status}` : ''}</span>
+                    <span class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pl.cls}`}>{pl.label}{c.status && c.status !== 'active' ? ` · ${c.status}` : ''}</span>
                   ) : (
-                    <span class="text-[12px] text-[#A8BED2]">fără licență</span>
+                    <span class="text-[12px] text-[#5E7385]">fără licență</span>
                   )}
                 </td>
-                <td class="px-5 py-3 text-[#46627A]">{fmt(c.createdAt)}</td>
-                <td class="px-5 py-3 text-right">
-                  <a href={`/admin/licente?company=${c.id}`} class="inline-block px-3 py-1.5 text-[12px] font-medium text-[#1A759F] hover:bg-[#FFF3EC] rounded-lg transition-colors">Acordă licență</a>
+                <td class="px-5 py-3.5 text-[#A8BED2] tabular-nums whitespace-nowrap">{fmt(c.createdAt)}</td>
+                <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                  <a href={`/admin/licente?company=${c.id}`} class="inline-block px-3 py-1.5 text-[12px] font-semibold text-[#34A0A4] hover:bg-[#34A0A4]/10 rounded-full transition-colors">Acordă licență</a>
                 </td>
               </tr>
             );
           })}
           {companyList.length === 0 && (
-            <tr><td colspan="6" class="px-5 py-12 text-center text-[14px] text-[#46627A]">Nicio companie găsită.</td></tr>
+            <tr><td colspan="6" class="px-5 py-12 text-center text-[14px] text-[#8FA6BC]">Nicio companie găsită.</td></tr>
           )}
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="sm:hidden space-y-2.5">
+    {companyList.length === 0 ? (
+      <div class="rounded-2xl bg-white/5 py-10 text-center text-[14px] text-[#8FA6BC]">Nicio companie găsită.</div>
+    ) : companyList.map((c) => {
+      const pl = c.plan ? (planLabel[c.plan] || { label: c.plan, cls: 'bg-white/10 text-[#A8BED2]' }) : null;
+      return (
+        <div class="rounded-2xl bg-white/5 p-4">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="text-[14px] font-semibold text-white truncate">{c.name}</p>
+              <p class="text-[12px] text-[#8FA6BC] mt-0.5 font-mono">{c.cui || 'fără CUI'}</p>
+            </div>
+            {pl ? (
+              <span class={`shrink-0 inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${pl.cls}`}>{pl.label}</span>
+            ) : (
+              <span class="shrink-0 text-[11px] text-[#5E7385]">fără licență</span>
+            )}
+          </div>
+          <div class="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-white/10">
+            <p class="text-[12px] text-[#8FA6BC] truncate">{c.city ? `${c.city}, ` : ''}{c.country} · {fmt(c.createdAt)}</p>
+            <a href={`/admin/licente?company=${c.id}`} class="shrink-0 px-3 py-1.5 text-[12px] font-semibold text-[#34A0A4] bg-[#34A0A4]/10 rounded-full transition-colors">Acordă</a>
+          </div>
+        </div>
+      );
+    })}
   </div>
 </AdminLayout>

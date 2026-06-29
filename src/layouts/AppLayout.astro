@@ -30,11 +30,16 @@ const isHome = currentPath === '/app';
 const showTrialBanner = false;
 const isImpersonating = !!(Astro.locals as any).impersonating;
 
+// Pages already reachable from the bottom-nav tabs (Facturare /app/facturare,
+// Cheltuieli /app/cheltuieli, Rapoarte /app/facturare/rapoarte) or the contextual
+// "Secțiuni" dropdown on the Facturare page (Clienți/Produse/Recurente/e-Factura) are
+// NOT repeated in the full Meniu — avoids the same choice appearing twice.
+const MENU_HIDE = new Set(['facturi', 'cheltuieli', 'rapoarte', 'clienti', 'produse', 'recurente', 'efactura']);
 const groups: { label: string; items: typeof NAV_MODULES }[] = [
-  { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare') },
-  { label: 'Vânzări', items: NAV_MODULES.filter((m) => m.group === 'Vanzari') },
-  { label: 'Gestiune', items: NAV_MODULES.filter((m) => m.group === 'Gestiune') },
-  { label: 'Cont', items: NAV_MODULES.filter((m) => m.group === 'Cont') },
+  { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare' && !MENU_HIDE.has(m.key)) },
+  { label: 'Vânzări', items: NAV_MODULES.filter((m) => m.group === 'Vanzari' && !MENU_HIDE.has(m.key)) },
+  { label: 'Gestiune', items: NAV_MODULES.filter((m) => m.group === 'Gestiune' && !MENU_HIDE.has(m.key)) },
+  { label: 'Cont', items: NAV_MODULES.filter((m) => m.group === 'Cont' && !MENU_HIDE.has(m.key)) },
 ];
 
 // Flat solid card colours from the Meadow ramp. fg = heading text, sub = description.
@@ -83,7 +88,7 @@ const navSections = [
   { label: 'Cheltuieli', href: '/app/cheltuieli', mobile: true,
     active: p.startsWith('/app/cheltuieli'),
     icon: 'M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z' },
-  { label: 'Gestiune', href: '/app/gestiune', mobile: false,
+  { label: 'Gestiune', href: '/app/gestiune', mobile: true,
     active: p.startsWith('/app/gestiune'),
     icon: 'M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z' },
   { label: 'Rapoarte', href: '/app/facturare/rapoarte', mobile: true,
@@ -94,6 +99,7 @@ const navMobile = navSections.filter((s) => s.mobile);
 // A "hub" page is a top-level nav/dock destination — there's nothing to go back
 // to from it, so the back button is hidden there (shown only on deeper pages).
 const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, ''));
+const showAdminMark = !!user?.isAdmin && !isImpersonating && (currentPath === '/app' || currentPath.startsWith('/app/setari'));
 ---
 
 <BaseLayout title={title} themeColor="#07090f" clientRouter>
@@ -108,9 +114,12 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
     /* No rubber-band / "pull past the content" overscroll. */
     html { overscroll-behavior-y: none; }
     /* Set BOTH html and body so the notch / status-bar / overscroll area is the
-       app's dark background — never white or a stray color on iPhone/Android. */
-    html { background-color: #07090f; }
-    body { background-color: #07090f; overscroll-behavior-y: none; }
+       app's background — never white or a stray color on iPhone/Android. The bg
+       follows the theme so the rubber-band/overscroll area (and the white bar at
+       max scroll in the standalone/native build) matches light or dark. */
+    html { background-color: #07090f; overscroll-behavior: none; }
+    body { background-color: #07090f; overscroll-behavior: none; }
+    html.th-light, html.th-light body { background-color: #EEF2F6; }
 
     /* Form fields always get a visible border — fixes inputs that were styled
        bg-white/5 with no ring (invisible on the dark shell). :where() = zero
@@ -214,6 +223,24 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
       .fm-press:active:not(:disabled) { transform: none; }
     }
 
+    /* ── "Ce vrei să faci?" menu: layer the shared subtle reveal on the panel's
+       inner content so it matches every other popup surface (Select, calendar,
+       filterbar). The card itself still slides/scale-fades via setupSheet's
+       Web Animations entrance; this adds the consistent fm-reveal feel on top.
+       Scoped to the menu so settings/help sheets are untouched. The backdrop
+       already soft-fades via .app-sheet opacity. */
+    #menu-overlay.is-open #menu-card .sheet-content {
+      animation: fmMenuReveal 165ms cubic-bezier(.16, 1, .3, 1) both;
+      transform-origin: top center;
+    }
+    @keyframes fmMenuReveal {
+      from { opacity: 0; transform: translateY(-6px) scale(.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #menu-overlay.is-open #menu-card .sheet-content { animation: none; }
+    }
+
     /* Sliding active-page indicator (desktop nav + mobile bottom nav). The pill
        glides between items: it follows hover on desktop and animates from the
        previous page's position to the new one on navigation (sessionStorage). */
@@ -314,6 +341,16 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
       transition: background-color .35s ease, color .35s ease, border-color .35s ease;
     }
 
+    /* On a light/dark TOGGLE, force ONE uniform transition on everything so all
+       text/icons/surfaces change together (otherwise some use .35s, some the
+       Tailwind .15s hover transition, some snap instantly → staggered look). The
+       class is added only for the duration of the switch, so normal fast hovers
+       are untouched the rest of the time. */
+    html.theme-transitioning * , html.theme-transitioning *::before, html.theme-transitioning *::after {
+      transition: background-color .3s ease, color .3s ease, border-color .3s ease, fill .3s ease, stroke .3s ease, box-shadow .3s ease !important;
+    }
+    @media (prefers-reduced-motion: reduce) { html.theme-transitioning * { transition: none !important; } }
+
     /* ── Darker dark mode (near-black) ── */
     html.th-app-dark [data-app-shell] { background-color: #06090F !important; }
     /* Neutral, minimal cards: a warm charcoal (NOT washed-out blue), borderless.
@@ -338,9 +375,11 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
     [data-app-shell] .bg-\[\#E1FB15\]:hover { transform: translateY(-1px); }
     [data-app-shell] .bg-\[\#E1FB15\]:active { transform: scale(.97); }
     @media (prefers-reduced-motion: reduce) { [data-app-shell] .bg-\[\#E1FB15\] { transition: background-color .16s ease; } [data-app-shell] .bg-\[\#E1FB15\]:hover, [data-app-shell] .bg-\[\#E1FB15\]:active { transform: none; } }
-    html.th-app-dark #settings-card { background-color: #0C1118 !important; }
-    html.th-app-dark #menu-card     { background-color: #0A0D14 !important; }
-    html.th-app-dark #help-card     { background-color: #0E1620 !important; }
+    /* All sheets share the app's neutral dark (no blue tint) — matches the app
+       background and the BottomSheet popups. */
+    html.th-app-dark #settings-card { background-color: #07090f !important; }
+    html.th-app-dark #menu-card     { background-color: #07090f !important; }
+    html.th-app-dark #help-card     { background-color: #07090f !important; }
 
     /* ── Soft light mode ── */
     /* App shell + content */
@@ -577,7 +616,7 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
 
   <!-- ───────── Floating navbar (glass) — body-level so nothing can break `fixed` ───────── -->
   <div data-app-nav transition:persist="app-navbar" class="fixed inset-x-0 top-0 z-50 px-4 sm:px-6 pt-3 pointer-events-none" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
-    <div class="max-w-[1180px] mx-auto flex items-center justify-between gap-2">
+    <div class="relative max-w-[1180px] mx-auto flex items-center justify-between gap-2">
 
       <!-- Primary nav (desktop) + actions -->
       <div id="nav-desktop" class="pointer-events-auto relative lg:flex-1 h-14 flex items-center gap-1 px-1.5 rounded-full bg-white/10 backdrop-blur-xl shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)]">
@@ -607,9 +646,12 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
       <!-- Quick "new invoice" + settings hamburger -->
       {user && (
         <div class="pointer-events-auto relative shrink-0 flex items-center gap-2">
-          <a href="/app/facturare/emite" aria-label="Factură nouă" title="Factură nouă" class="w-14 h-14 rounded-full bg-[#E1FB15] text-[#07090f] flex items-center justify-center shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] hover:bg-[#D2EA0E] transition-colors">
+          <a href="/app/facturare/emite" aria-label="Factură nouă" title="Factură nouă" class="flex w-14 h-14 rounded-full bg-[#E1FB15] text-[#07090f] items-center justify-center shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] hover:bg-[#D2EA0E] transition-colors">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
           </a>
+          <button id="menu-open-top" aria-haspopup="dialog" aria-expanded="false" aria-label="Meniu" title="Meniu" class="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl hover:bg-white/15 flex items-center justify-center text-white shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] transition-colors">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+          </button>
           <button id="settings-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Setări" class="w-14 h-14 rounded-full bg-white/10 backdrop-blur-xl hover:bg-white/15 flex items-center justify-center text-white shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] transition-colors">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.02-.397-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.28z"/>
@@ -720,10 +762,6 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
             <span class="text-[10px] font-semibold tracking-tight">{s.label}</span>
           </a>
         ))}
-        <button id="menu-open-bottom" data-nav-pill data-active="false" type="button" class="relative z-10 flex-1 flex flex-col items-center justify-center gap-1 rounded-xl text-[#A8BED2] active:text-white transition-colors">
-          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z"/></svg>
-          <span class="text-[10px] font-semibold tracking-tight">Meniu</span>
-        </button>
       </div>
     </nav>
   )}
@@ -732,13 +770,6 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
   <div data-app-shell class="min-h-screen bg-[#07090f] text-[#EAF2F8] flex flex-col" style="font-family:'Outfit',ui-sans-serif,system-ui,sans-serif">
     <main class="flex-1 w-full">
       <div class="fm-page max-w-[1180px] mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28 lg:pb-10">
-        {user?.isAdmin && !isImpersonating && (
-          <a href="/admin" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#1A759F] rounded-2xl text-[15px] text-white hover:bg-[#1E6091] transition-colors">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#E1FB15]"></span>
-            <span><strong>Cont de administrator</strong></span>
-            <span class="ml-auto font-semibold text-[#E1FB15]">Deschide panoul admin →</span>
-          </a>
-        )}
         {isImpersonating && (
           <a href="/api/admin/stop-impersonate" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#E8A33C] rounded-2xl text-[15px] text-[#07090f] hover:bg-[#D9912C] transition-colors">
             <span class="w-2.5 h-2.5 rounded-full bg-[#07090f]"></span>
@@ -753,13 +784,24 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
             <span class="ml-auto font-semibold text-[#E1FB15]">Activează licența pe viață (700 RON) →</span>
           </a>
         )}
-        {!isHub && (
-          <button id="app-back" type="button" aria-label="Înapoi" class="group inline-flex items-center gap-2.5 mb-5 h-10 pl-1.5 pr-4 rounded-full text-[14px] font-semibold text-[#C8DAE8] hover:text-white transition-colors">
-            <span class="grid place-items-center w-8 h-8 rounded-full bg-white/10 group-hover:-translate-x-0.5 transition-transform">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg>
-            </span>
-            Înapoi
-          </button>
+        {(!isHub || showAdminMark) && (
+          <div class="flex items-center gap-3 mb-5">
+            {!isHub && (
+              <button id="app-back" type="button" aria-label="Înapoi" class="group inline-flex items-center gap-2.5 h-10 pl-1.5 pr-4 rounded-full text-[14px] font-semibold text-[#C8DAE8] hover:text-white transition-colors">
+                <span class="grid place-items-center w-8 h-8 rounded-full bg-white/10 group-hover:-translate-x-0.5 transition-transform">
+                  <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5"/></svg>
+                </span>
+                Înapoi
+              </button>
+            )}
+            {showAdminMark && (
+              <a href="/admin" class="inline-flex items-center gap-2 pl-2.5 pr-3.5 py-1.5 bg-white/5 hover:bg-white/10 rounded-full text-[12.5px] font-medium text-[#A8BED2] hover:text-white transition-colors">
+                <span class="w-1.5 h-1.5 rounded-full bg-[#34A0A4]"></span>
+                Cont de administrator
+                <span class="text-[#34A0A4]">→</span>
+              </a>
+            )}
+          </div>
         )}
         <slot />
       </div>
@@ -984,6 +1026,11 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
     // ── View-Transitions glue: the navbar/dock/sheets are persisted, so on each
     // SPA navigation re-sync the active dock pill to the new page. Old content
     // stays visible until the new page is ready, then crossfades — no blank frame.
+    // Sync on after-swap (fires right after the DOM swap) AND page-load (after assets)
+    // so the persisted dock never shows the previous page's active tab, even briefly.
+    document.addEventListener('astro:after-swap', () => {
+      navSliderD?.syncActive?.(); navSliderM?.syncActive?.();
+    });
     document.addEventListener('astro:page-load', () => {
       navSliderD?.syncActive?.(); navSliderM?.syncActive?.();
     });
@@ -1020,13 +1067,22 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
       else location.href = '/app';
     });
 
-    bind('menu-open', menu.open); bind('menu-open-bottom', menu.open);
+    bind('menu-open', menu.open); bind('menu-open-bottom', menu.open); bind('menu-open-top', menu.open);
     bind('help-open', help.open); bind('help-open-2', help.open);
     bind('help-open-settings', () => { settings.close(); setTimeout(() => help.open(), 120); });
     // Desktop X close buttons (mobile closes by swipe/backdrop instead).
     document.getElementById('menu-close-btn')?.addEventListener('click', menu.close);
     document.getElementById('settings-close-btn')?.addEventListener('click', settings.close);
     document.getElementById('help-close-btn')?.addEventListener('click', help.close);
+    // Auto-close the quick-actions menu + settings sheet when a link inside them is
+    // tapped — otherwise (the sheets are persisted across View-Transition navigation)
+    // they'd stay open on top of the page you just navigated to.
+    document.getElementById('menu-overlay')?.addEventListener('click', (e) => {
+      if ((e.target as Element)?.closest?.('a[href]')) menu.close();
+    });
+    document.getElementById('settings-menu')?.addEventListener('click', (e) => {
+      if ((e.target as Element)?.closest?.('a[href]')) settings.close();
+    });
     settingsBtn?.addEventListener('click', (e) => {
       e.stopPropagation();
       settings.toggle();
@@ -1053,9 +1109,14 @@ const isHub = navSections.some((s) => s.href === currentPath.replace(/\/+$/, '')
       document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#EEF2F6' : '#07090f');
     }
     applyTheme(localStorage.getItem(LIGHT_KEY) === '1');
+    let themeTrTimer = 0;
     themeBtn?.addEventListener('click', () => {
       const next = !document.documentElement.classList.contains('th-light');
       localStorage.setItem(LIGHT_KEY, next ? '1' : '0');
+      // Uniform transition: everything changes together for the duration of the swap.
+      document.documentElement.classList.add('theme-transitioning');
+      window.clearTimeout(themeTrTimer);
+      themeTrTimer = window.setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 340);
       applyTheme(next);
     });
 

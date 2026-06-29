@@ -65,7 +65,7 @@ const nextM = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };
   {isClosed ? (
     <div class="rounded-2xl bg-[#2E9E6A]/10 ring-1 ring-[#2E9E6A]/30 p-5 mb-5">
       <p class="text-[16px] font-semibold text-[#2E9E6A]">🔒 {periodLabel} este închisă</p>
-      <p class="text-[14px] text-[#9FB8CC] mt-1">Nicio notă contabilă sau document nu mai poate fi datat în această perioadă (blocat până la {lockedUntil}).</p>
+      <p class="text-[14px] text-[#A8BED2] mt-1">Nicio notă contabilă sau document nu mai poate fi datat în această perioadă (blocat până la {lockedUntil}).</p>
       {isOwner && (
         <button id="fm-unlock" data-y={y} data-m={m} class="mt-4 px-5 py-2.5 rounded-full bg-[#DC4B41]/15 text-[#DC4B41] text-[14px] font-semibold hover:bg-[#DC4B41]/25">Redeschide luna</button>
       )}
@@ -91,7 +91,7 @@ const nextM = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };
 
       <div class="flex flex-wrap items-center gap-3">
         <a href={`/app/contabilitate/balanta?from=${monthStart}&to=${monthEnd}`} class="px-5 py-2.5 rounded-full bg-white/10 text-white text-[14px] font-semibold hover:bg-white/15">Vezi balanța lunii</a>
-        <button id="fm-lock" data-y={y} data-m={m} class="px-6 py-2.5 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E]">Postează tot și închide {periodLabel}</button>
+        <button id="fm-lock" data-y={y} data-m={m} class="px-6 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E]">Postează tot și închide {periodLabel}</button>
       </div>
       <p id="fm-close-msg" class="mt-3 text-[14px]"></p>
     </>

@@ -1,9 +1,11 @@
 ---
 import AppLayout from '../../../layouts/AppLayout.astro';
+import SpvInboxGroup from '../../../components/notificari/SpvInboxGroup';
 import EmptyState from '../../../components/ui/EmptyState.astro';
 import { db } from '../../../db';
-import { notifications } from '../../../db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { notifications, transportInvoices, efacturaInbox } from '../../../db/schema';
+import { eq, desc, and, or, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
+import { getAnafStatus } from '../../../lib/anaf/tokens';
 
 const user = Astro.locals.user!;
 let items: any[] = [];
@@ -16,11 +18,104 @@ try {
     .limit(50);
 } catch { /* DB not ready */ }
 
+// e-Factura (ANAF) errors — invoices rejected by SPV — surfaced here as notifications
+// (moved out of a separate page).
+let efErrors: any[] = [];
+if (user.companyId) {
+  try {
+    efErrors = await db
+      .select({ id: transportInvoices.id, fullNumber: transportInvoices.fullNumber, client: transportInvoices.clientNameSnap, error: transportInvoices.efacturaError, status: transportInvoices.efacturaStatus })
+      .from(transportInvoices)
+      .where(and(
+        eq(transportInvoices.companyId, user.companyId),
+        or(inArray(transportInvoices.efacturaStatus, ['rejected', 'error']), isNotNull(transportInvoices.efacturaError)),
+      ))
+      .orderBy(desc(transportInvoices.issuedAt))
+      .limit(30);
+  } catch { /* DB not ready */ }
+}
+
+// e-Factura netrimise — issued invoices not yet sent to SPV (efacturaStatus IS NULL).
+// Same predicate facturare/index.astro used before this alert moved here.
+let efUnsentCnt = 0;
+if (user.companyId) {
+  try {
+    const r = await db
+      .select({ cnt: sql<number>`COUNT(*)` })
+      .from(transportInvoices)
+      .where(and(
+        eq(transportInvoices.companyId, user.companyId),
+        eq(transportInvoices.kind, 'factura'),
+        ne(transportInvoices.status, 'draft'),
+        ne(transportInvoices.status, 'voided'),
+        isNull(transportInvoices.efacturaStatus),
+      ));
+    efUnsentCnt = Number(r[0]?.cnt ?? 0);
+  } catch { /* DB not ready */ }
+}
+
+// SPV received invoices (e-Factura inbox, status 'nou') — surfaced here with a
+// one-tap Confirmă (import → Cheltuieli) + Ignoră. Same source as Cheltuieli.
+let inboxNew: any[] = [];
+if (user.companyId) {
+  try {
+    await getAnafStatus(user.companyId).catch(() => null); // warm/validate; result unused here
+    const inboxRows = await db.select().from(efacturaInbox)
+      .where(eq(efacturaInbox.companyId, user.companyId))
+      .orderBy(desc(efacturaInbox.receivedAt), desc(efacturaInbox.createdAt))
+      .limit(300);
+    inboxNew = inboxRows
+      .filter((r) => r.status === 'nou')
+      .map((r) => ({
+        id: r.id,
+        supplierName: r.supplierName,
+        fromCif: r.fromCif,
+        totalCents: r.totalCents,
+        currency: r.currency,
+        issueDate: r.issueDate,
+      }));
+  } catch { /* DB not ready */ }
+}
+
 const fmt = (d: any) => {
   if (!d) return '';
   try { return new Intl.DateTimeFormat('ro-RO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(d)); }
   catch { return ''; }
 };
+
+// Classify each notification into one of the filter groups. The stored `type`
+// column is inconsistent across the app (severity-style 'warning'/'success'/'info'
+// in seeds, domain types like 'invoice'/'vat_threshold'/'system' elsewhere), so we
+// derive the group from type + entityType + linkUrl + title keywords.
+type Group = 'facturi' | 'incasari' | 'efactura' | 'sistem';
+const classify = (n: any): Group => {
+  const t = String(n.type || '').toLowerCase();
+  const ent = String(n.entityType || '').toLowerCase();
+  const link = String(n.linkUrl || '').toLowerCase();
+  const hay = `${n.title || ''} ${n.body || ''}`.toLowerCase();
+
+  // e-Factura / ANAF / SPV
+  if (/anaf|e-?factur|spv/.test(t) || /anaf|e-?factur|spv/.test(hay) || /anaf|efactur|spv/.test(link)) return 'efactura';
+  // Încasări (payments received)
+  if (/payment|incasare|incas|plata|plată/.test(t) || /(plat[ăa]|încas|incas)/.test(hay)) return 'incasari';
+  // Facturi (invoices / due dates)
+  if (/invoice|factur/.test(t) || /invoice|factur/.test(ent) || /factur/.test(link) || /factur[ăa]|scaden/.test(hay)) return 'facturi';
+  // Everything else → Sistem
+  return 'sistem';
+};
+
+const itemsWithGroup = items.map((n) => ({ n, group: classify(n) }));
+
+const FILTERS: { key: 'toate' | Group; label: string }[] = [
+  { key: 'toate', label: 'Toate' },
+  { key: 'facturi', label: 'Facturi' },
+  { key: 'incasari', label: 'Încasări' },
+  { key: 'efactura', label: 'e-Factura' },
+  { key: 'sistem', label: 'Sistem' },
+];
+
+const unreadCount = items.filter((n) => !n.readAt).length;
+const hasAnything = items.length > 0 || efErrors.length > 0 || inboxNew.length > 0 || efUnsentCnt > 0;
 ---
 
 <AppLayout title="Notificări" activeTab="notificari">
@@ -29,47 +124,231 @@ const fmt = (d: any) => {
       <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Notificări</h1>
       <p class="text-[14px] text-[#A8BED2] mt-2">Activitatea contului tău: facturi, încasări, e-Factura, sistem.</p>
     </div>
+    {unreadCount > 0 && (
+      <button id="mark-all-read" type="button" class="shrink-0 self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white text-[13.5px] font-semibold transition-colors disabled:opacity-50">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/></svg>
+        Marchează toate citite ({unreadCount})
+      </button>
+    )}
   </div>
 
-  {items.length === 0 ? (
+  {hasAnything && (
+    <div id="notif-filters" class="mb-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="Filtrează notificările">
+      {FILTERS.map((f, i) => (
+        <button
+          type="button"
+          data-filter={f.key}
+          aria-pressed={i === 0 ? 'true' : 'false'}
+          class={`px-4 py-2 rounded-full text-[13.5px] font-semibold transition-colors ${i === 0 ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-white/5 text-[#A8BED2] hover:bg-white/10 hover:text-white'}`}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  )}
+
+  {/* SPV received invoices — React island (carries data-type="efactura") */}
+  {inboxNew.length > 0 && <SpvInboxGroup initialRows={inboxNew} client:load />}
+
+  {efUnsentCnt > 0 && (
+    <a href="/app/facturare/efactura" data-type="efactura" class="mb-6 flex items-center gap-3 rounded-2xl ring-1 ring-[#E8A33C]/30 bg-[#E8A33C]/10 hover:bg-[#E8A33C]/15 transition-colors p-4 sm:p-5">
+      <span class="grid place-items-center w-9 h-9 rounded-full bg-[#E8A33C]/15 shrink-0">
+        <svg class="w-5 h-5 text-[#E8A33C]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/></svg>
+      </span>
+      <div class="min-w-0 flex-1">
+        <h2 class="text-[16px] font-bold text-white leading-tight">{efUnsentCnt} {efUnsentCnt === 1 ? 'factură netrimisă' : 'facturi netrimise'} la e-Factura</h2>
+        <p class="text-[12.5px] text-[#A8BED2] mt-0.5">Trimite-le din e-Factura ca să eviți întârzieri la ANAF.</p>
+      </div>
+      <span class="shrink-0 text-[13px] font-semibold text-[#E8A33C] whitespace-nowrap">Trimite →</span>
+    </a>
+  )}
+
+  {efErrors.length > 0 && (
+    <div data-type="efactura" class="mb-6 rounded-2xl ring-1 ring-[#DC4B41]/30 bg-[#DC4B41]/10 p-4 sm:p-5">
+      <div class="flex items-center gap-2.5 mb-3.5">
+        <span class="grid place-items-center w-9 h-9 rounded-full bg-[#DC4B41]/15 shrink-0">
+          <svg class="w-5 h-5 text-[#DC4B41]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+        </span>
+        <div class="min-w-0">
+          <h2 class="text-[16px] font-bold text-white leading-tight">Erori e-Factura (ANAF)</h2>
+          <p class="text-[12.5px] text-[#A8BED2]">{efErrors.length} {efErrors.length === 1 ? 'factură respinsă' : 'facturi respinse'} de SPV — rezolvă și retrimite.</p>
+        </div>
+      </div>
+      <div class="space-y-2.5">
+        {efErrors.slice(0, 3).map((e) => (
+          <a href={`/app/facturare/${e.id}`} class="flex items-start gap-3 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+            <div class="min-w-0 flex-1">
+              <p class="text-[14.5px] font-semibold text-white truncate">{e.fullNumber}{e.client ? ` · ${e.client}` : ''}</p>
+              {e.error && <p class="text-[13px] text-[#FCA5A5] mt-0.5 line-clamp-2">{e.error}</p>}
+            </div>
+            <span class="shrink-0 text-[13px] font-semibold text-[#DC4B41] whitespace-nowrap">Rezolvă →</span>
+          </a>
+        ))}
+      </div>
+      {efErrors.length > 3 && (
+        <details class="mt-2.5 group">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 text-white text-[13.5px] font-semibold transition-colors">
+            <span class="group-open:hidden">Vezi toate ({efErrors.length})</span>
+            <span class="hidden group-open:inline">Ascunde</span>
+          </summary>
+          <div class="space-y-2.5 mt-2.5">
+            {efErrors.slice(3).map((e) => (
+              <a href={`/app/facturare/${e.id}`} class="flex items-start gap-3 p-3.5 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+                <div class="min-w-0 flex-1">
+                  <p class="text-[14.5px] font-semibold text-white truncate">{e.fullNumber}{e.client ? ` · ${e.client}` : ''}</p>
+                  {e.error && <p class="text-[13px] text-[#FCA5A5] mt-0.5 line-clamp-2">{e.error}</p>}
+                </div>
+                <span class="shrink-0 text-[13px] font-semibold text-[#DC4B41] whitespace-nowrap">Rezolvă →</span>
+              </a>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  )}
+
+  {!hasAnything ? (
     <EmptyState title="Nicio notificare" description="Te anunțăm aici despre facturi, scadențe și ANAF.">
       <svg slot="icon" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"/></svg>
     </EmptyState>
-  ) : (
+  ) : items.length > 0 && (
     <Fragment>
-      <ul class="space-y-2.5">
-        {items.slice(0, 3).map((n) => (
-          <li>
-            <a href={n.linkUrl || '#'} class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+      <ul id="notif-list" class="space-y-2.5">
+        {itemsWithGroup.slice(0, 3).map(({ n, group }) => (
+          n.linkUrl ? (
+            <li data-type={group}>
+              <a href={n.linkUrl} class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                <span class={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.readAt ? 'bg-white/20' : 'bg-[#E1FB15]'}`}></span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[14px] font-semibold text-white">{n.title}</p>
+                  {n.body && <p class="text-[13px] text-[#A8BED2] mt-0.5">{n.body}</p>}
+                </div>
+                <span class="text-[12px] text-[#8FA6BC] shrink-0 tabular-nums">{fmt(n.createdAt)}</span>
+              </a>
+            </li>
+          ) : (
+            <li data-type={group} class="flex items-start gap-3 p-4 rounded-2xl bg-white/5">
               <span class={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.readAt ? 'bg-white/20' : 'bg-[#E1FB15]'}`}></span>
               <div class="min-w-0 flex-1">
                 <p class="text-[14px] font-semibold text-white">{n.title}</p>
                 {n.body && <p class="text-[13px] text-[#A8BED2] mt-0.5">{n.body}</p>}
               </div>
               <span class="text-[12px] text-[#8FA6BC] shrink-0 tabular-nums">{fmt(n.createdAt)}</span>
-            </a>
-          </li>
+            </li>
+          )
         ))}
       </ul>
       {items.length > 3 && (
-        <details class="mt-2.5">
-          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">Vezi toate ({items.length})</summary>
-          <ul class="space-y-2.5 mt-2.5">
-            {items.slice(3).map((n) => (
-              <li>
-                <a href={n.linkUrl || '#'} class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+        <details id="notif-more" class="mt-2.5 group">
+          <summary class="cursor-pointer list-none mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] transition-colors">
+            <span class="group-open:hidden">Vezi toate ({items.length})</span>
+            <span class="hidden group-open:inline">Ascunde</span>
+          </summary>
+          <ul id="notif-list-more" class="space-y-2.5 mt-2.5">
+            {itemsWithGroup.slice(3).map(({ n, group }) => (
+              n.linkUrl ? (
+                <li data-type={group}>
+                  <a href={n.linkUrl} class="flex items-start gap-3 p-4 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
+                    <span class={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.readAt ? 'bg-white/20' : 'bg-[#E1FB15]'}`}></span>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-[14px] font-semibold text-white">{n.title}</p>
+                      {n.body && <p class="text-[13px] text-[#A8BED2] mt-0.5">{n.body}</p>}
+                    </div>
+                    <span class="text-[12px] text-[#8FA6BC] shrink-0 tabular-nums">{fmt(n.createdAt)}</span>
+                  </a>
+                </li>
+              ) : (
+                <li data-type={group} class="flex items-start gap-3 p-4 rounded-2xl bg-white/5">
                   <span class={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${n.readAt ? 'bg-white/20' : 'bg-[#E1FB15]'}`}></span>
                   <div class="min-w-0 flex-1">
                     <p class="text-[14px] font-semibold text-white">{n.title}</p>
                     {n.body && <p class="text-[13px] text-[#A8BED2] mt-0.5">{n.body}</p>}
                   </div>
                   <span class="text-[12px] text-[#8FA6BC] shrink-0 tabular-nums">{fmt(n.createdAt)}</span>
-                </a>
-              </li>
+                </li>
+              )
             ))}
           </ul>
         </details>
       )}
+      {/* Shown by the filter script when the active pill matches nothing on-screen. */}
+      <p id="notif-empty-filter" class="hidden text-center text-[13.5px] text-[#8FA6BC] py-8">Nicio notificare în această categorie.</p>
     </Fragment>
   )}
+
+  <script>
+    // ── Pill filtering ──────────────────────────────────────────────────────
+    // Server-rendered list: toggle `hidden` on every element carrying a
+    // data-type attribute (notification <li> items, the SPV island section, the
+    // ANAF errors block) according to the active pill. "Toate" shows everything.
+    const filterBar = document.getElementById('notif-filters');
+    if (filterBar) {
+      const pills = Array.from(filterBar.querySelectorAll<HTMLButtonElement>('button[data-filter]'));
+      const emptyMsg = document.getElementById('notif-empty-filter');
+      const moreDetails = document.getElementById('notif-more') as HTMLDetailsElement | null;
+
+      const setActive = (active: HTMLButtonElement) => {
+        pills.forEach((p) => {
+          const on = p === active;
+          p.setAttribute('aria-pressed', on ? 'true' : 'false');
+          p.classList.toggle('bg-[#E1FB15]', on);
+          p.classList.toggle('text-[#07090f]', on);
+          p.classList.toggle('bg-white/5', !on);
+          p.classList.toggle('text-[#A8BED2]', !on);
+          p.classList.toggle('hover:bg-white/10', !on);
+          p.classList.toggle('hover:text-white', !on);
+        });
+      };
+
+      const apply = (key: string) => {
+        // The SPV island may have removed itself (data-spv-empty="true"); never
+        // un-hide an empty one.
+        document.querySelectorAll<HTMLElement>('[data-type]').forEach((el) => {
+          const spvEmpty = el.getAttribute('data-spv-empty') === 'true';
+          const match = key === 'toate' || el.getAttribute('data-type') === key;
+          el.classList.toggle('hidden', !match || spvEmpty);
+        });
+        // When filtering, expand the "Vezi toate" disclosure so matches inside it
+        // are visible; restore it collapsed on "Toate".
+        if (moreDetails) moreDetails.open = key !== 'toate';
+
+        // Show the empty-category hint if no notification li is visible.
+        if (emptyMsg) {
+          const anyVisible = Array.from(document.querySelectorAll<HTMLElement>('li[data-type]'))
+            .some((el) => !el.classList.contains('hidden'));
+          emptyMsg.classList.toggle('hidden', anyVisible);
+        }
+      };
+
+      pills.forEach((p) => p.addEventListener('click', () => {
+        setActive(p);
+        apply(p.getAttribute('data-filter') || 'toate');
+      }));
+    }
+
+    // ── Mark all read ───────────────────────────────────────────────────────
+    const btn = document.getElementById('mark-all-read') as HTMLButtonElement | null;
+    btn?.addEventListener('click', async () => {
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = 'Se marchează…';
+      try {
+        const res = await fetch('/api/notifications', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ markAllRead: true }),
+        });
+        if (!res.ok) throw new Error('failed');
+        document.querySelectorAll<HTMLElement>('span.bg-\\[\\#E1FB15\\]').forEach((dot) => {
+          dot.classList.remove('bg-[#E1FB15]');
+          dot.classList.add('bg-white/20');
+        });
+        btn.remove();
+      } catch {
+        btn.disabled = false;
+        btn.textContent = original;
+        alert('Nu am putut marca notificările. Încearcă din nou.');
+      }
+    });
+  </script>
 </AppLayout>

@@ -59,8 +59,8 @@ export default function RequestsManager() {
       {error && <p className="text-sm text-[#DC4B41]">{error}</p>}
 
       <div className="flex justify-between items-center gap-3">
-        <p className="text-[15px] text-[#9FB8CC]">{open.length} {open.length === 1 ? 'cerere deschisă' : 'cereri deschise'}</p>
-        <button onClick={() => setShowNew((v) => !v)} className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E]">
+        <p className="text-[15px] text-[#A8BED2]">{open.length} {open.length === 1 ? 'cerere deschisă' : 'cereri deschise'}</p>
+        <button onClick={() => setShowNew((v) => !v)} className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E]">
           {showNew ? 'Renunță' : '+ Cerere nouă'}
         </button>
       </div>
@@ -68,23 +68,23 @@ export default function RequestsManager() {
       {showNew && (
         <div className="rounded-2xl bg-white/5 p-4 space-y-3">
           <div>
-            <label className="block text-xs text-[#9FB8CC] mb-1">Ce ai nevoie?</label>
+            <label className="block text-xs text-[#A8BED2] mb-1">Ce ai nevoie?</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="ex: Trimite bonul de combustibil de la OMV din 12.06"
-              className="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 placeholder:text-[#7C9AB4]" />
+              className="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white border border-white/[0.12] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition placeholder:text-[#8FA6BC]" />
           </div>
           <div>
-            <label className="block text-xs text-[#9FB8CC] mb-1">Detalii (opțional)</label>
+            <label className="block text-xs text-[#A8BED2] mb-1">Detalii (opțional)</label>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2}
-              className="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 placeholder:text-[#7C9AB4]" />
+              className="w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white border border-white/[0.12] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition placeholder:text-[#8FA6BC]" />
           </div>
-          <button onClick={create} disabled={busy} className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#0A2238] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50">
+          <button onClick={create} disabled={busy} className="px-5 h-11 rounded-full bg-[#E1FB15] text-[#07090f] text-[14px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50">
             {busy ? 'Se trimite...' : 'Trimite cererea'}
           </button>
         </div>
       )}
 
       {open.length === 0 && resolved.length === 0 ? (
-        <div className="rounded-2xl bg-white/5 p-8 text-center text-sm text-[#7C9AB4]">Nicio cerere încă. Cere clientului un document cu „Cerere nouă".</div>
+        <div className="rounded-2xl bg-white/5 p-8 text-center text-sm text-[#8FA6BC]">Nicio cerere încă. Cere clientului un document cu „Cerere nouă".</div>
       ) : (
         <ul className="space-y-2.5">
           {[...open, ...resolved].map((r) => <RequestRow key={r.id} r={r} onChanged={refresh} />)}
@@ -139,9 +139,9 @@ function RequestRow({ r, onChanged }: { r: Req; onChanged: () => void }) {
       <div className="flex items-start gap-3">
         <span className={`mt-1.5 shrink-0 w-2.5 h-2.5 rounded-full ${resolved ? 'bg-[#2E9E6A]' : 'bg-[#E8A33C]'}`}></span>
         <div className="min-w-0 flex-1">
-          <p className={`text-[15.5px] font-semibold ${resolved ? 'text-[#9FB8CC] line-through' : 'text-white'}`}>{r.title}</p>
-          {r.note && <p className="text-[13.5px] text-[#9FB8CC] mt-0.5">{r.note}</p>}
-          <p className="text-[12px] text-[#7C9AB4] mt-1">{r.createdByName || 'Contabil'}{r.createdAt ? ` · ${fmt(r.createdAt)}` : ''}</p>
+          <p className={`text-[15.5px] font-semibold ${resolved ? 'text-[#A8BED2] line-through' : 'text-white'}`}>{r.title}</p>
+          {r.note && <p className="text-[13.5px] text-[#A8BED2] mt-0.5">{r.note}</p>}
+          <p className="text-[12px] text-[#8FA6BC] mt-1">{r.createdByName || 'Contabil'}{r.createdAt ? ` · ${fmt(r.createdAt)}` : ''}</p>
 
           {(r.responseNote || r.responseAttachmentUrl) && (
             <div className="mt-2.5 rounded-xl bg-[#34A0A4]/10 p-3">
@@ -170,9 +170,9 @@ function RequestRow({ r, onChanged }: { r: Req; onChanged: () => void }) {
             <div className="mt-2.5 space-y-2">
               {err && <p className="text-[13px] text-[#DC4B41]">{err}</p>}
               <textarea value={msg} onChange={(e) => setMsg(e.target.value)} rows={2} placeholder="Scrie un mesaj..."
-                className="w-full rounded-xl bg-white/5 px-3 py-2 text-[14px] text-white border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 placeholder:text-[#7C9AB4]" />
-              <input ref={fileRef} type="file" className="block w-full text-[13px] text-[#9FB8CC] file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-white file:text-[13px]" />
-              <button onClick={submitResponse} disabled={busy} className="px-4 h-10 rounded-full bg-[#E1FB15] text-[#0A2238] text-[13.5px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50">
+                className="w-full rounded-xl bg-white/5 px-3 py-2 text-[14px] text-white border border-white/[0.12] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition placeholder:text-[#8FA6BC]" />
+              <input ref={fileRef} type="file" className="block w-full text-[13px] text-[#A8BED2] file:mr-3 file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:py-2 file:text-white file:text-[13px]" />
+              <button onClick={submitResponse} disabled={busy} className="px-4 h-10 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50">
                 {busy ? 'Se trimite...' : 'Trimite răspunsul'}
               </button>
             </div>

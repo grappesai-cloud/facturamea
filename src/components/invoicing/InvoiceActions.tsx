@@ -4,9 +4,9 @@ import { Input } from '../ui/Input';
 import { Label } from '../ui/Label';
 import { Select } from '../ui/Select';
 import { BottomSheet } from '../ui/BottomSheet';
-import { Printer, Receipt, Loader2, FileText, Undo2, AlertTriangle, Share2, Repeat, CreditCard } from 'lucide-react';
+import { Mail, Printer, Receipt, Loader2, FileText, Send, Undo2, AlertTriangle, Copy, Share2, Repeat, CreditCard } from 'lucide-react';
 
-export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId, payEnabled }: {
+export default function InvoiceActions({ invoiceId, kind, status, totalCents, paidCents, currency, clientCompanyId, efacturaStatus, payEnabled }: {
   invoiceId: string;
   kind: string;
   status: string;
@@ -14,9 +14,11 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   paidCents: number;
   currency: string;
   clientCompanyId?: string | null;
+  efacturaStatus?: string | null;
   payEnabled?: boolean;
 }) {
   const [showPayModal, setShowPayModal] = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [payLinkUrl, setPayLinkUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,8 +34,12 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
   // actions — you can't collect on, pay-link, re-storno, dispute or recur it.
   const settled = status === 'voided' || status === 'reversed';
   const canRecordPayment = kind === 'factura' && status !== 'paid' && !settled && status !== 'draft';
-  // Pay-link only when Stripe is configured (payEnabled), else the button is hidden.
   const canPayLink = !!payEnabled && kind === 'factura' && remaining > 0 && !settled && status !== 'draft';
+  const canSend = status !== 'draft';
+  // Already sent (submitted/validated) → no re-send, to avoid duplicate uploads.
+  // Re-send is allowed only when never sent, or when it failed (rejected/error).
+  const alreadyAtAnaf = efacturaStatus === 'submitted' || efacturaStatus === 'validated';
+  const canSubmitSpv = (kind === 'factura' || kind === 'storno') && status !== 'draft' && !settled && !alreadyAtAnaf;
   const canStorno = kind === 'factura' && status !== 'draft' && !settled;
   const canDispute = kind === 'factura' && !['draft', 'paid', 'voided', 'reversed', 'disputed'].includes(status);
   const canRecur = (kind === 'factura' || kind === 'proforma') && status !== 'draft' && !settled;
@@ -61,6 +67,8 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       setShareUrl(data.url);
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
+
+  const doCopy = () => { window.location.href = `/app/facturare/emite?kind=${kind}&from=${invoiceId}`; };
 
   const doPayLink = async () => {
     setBusy(true); setError('');
@@ -100,6 +108,16 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
+  const submitSpv = async () => {
+    setBusy(true); setError('');
+    try {
+      const res = await fetch(`/api/invoicing/invoices/${invoiceId}/efactura`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Eroare SPV'); return; }
+      window.location.reload();
+    } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
+  };
+
   const submitPayment = async (amountCents: number, method: string, reference: string, emitReceipt: boolean) => {
     setBusy(true); setError('');
     try {
@@ -126,6 +144,18 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
+  const submitSend = async (email: string) => {
+    setBusy(true); setError('');
+    try {
+      const res = await fetch(`/api/invoicing/invoices/${invoiceId}/send`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email || null }),
+      });
+      if (!res.ok) { const d = await res.json(); setError(d.error || 'Eroare'); return; }
+      window.location.reload();
+    } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
+  };
+
   return (
     <div className="flex items-center gap-2 flex-wrap">
       {/* Visible error banner — without this, ANAF/SPV/storno/share failures
@@ -143,6 +173,11 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => window.open(`/app/facturare/${invoiceId}/print`, '_blank')}>
         <FileText className="w-4 h-4 mr-1.5" /> Vezi tipărit
       </Button>
+      {canSend && (
+        <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowSendModal(true)}>
+          <Mail className="w-4 h-4 mr-1.5" /> Trimite pe email
+        </Button>
+      )}
       {canRecordPayment && (
         <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" onClick={() => setShowPayModal(true)}>
           <Receipt className="w-4 h-4 mr-1.5" /> Înregistrează încasare
@@ -152,6 +187,12 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
         <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={doPayLink}>
           {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <CreditCard className="w-4 h-4 mr-1.5" />}
           Link de plată
+        </Button>
+      )}
+      {canSubmitSpv && (
+        <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={submitSpv}>
+          {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Send className="w-4 h-4 mr-1.5" />}
+          Trimite la ANAF
         </Button>
       )}
       {canStorno && (
@@ -164,6 +205,9 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
           <AlertTriangle className="w-4 h-4 mr-1.5" /> Sesizează neîncasare
         </Button>
       )}
+      <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={doCopy}>
+        <Copy className="w-4 h-4 mr-1.5" /> Copiază
+      </Button>
       {canRecur && (
         <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={doRecur}>
           <Repeat className="w-4 h-4 mr-1.5" /> Transformă în recurentă
@@ -192,6 +236,13 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
         error={error}
         onClose={() => setShowPayModal(false)}
         onSubmit={submitPayment}
+      />
+      <SendModal
+        open={showSendModal}
+        busy={busy}
+        error={error}
+        onClose={() => setShowSendModal(false)}
+        onSubmit={submitSend}
       />
       {confirmState && (
         <ConfirmModal
@@ -244,7 +295,7 @@ function PaymentModal({ open, remainingCents, currency, busy, error, onClose, on
         <div className="space-y-3">
           <div>
             <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Sumă încasată ({currency})</Label>
-            <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="[color-scheme:dark] bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+            <Input type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="[color-scheme:dark] bg-white/5 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
             <p className="text-[11px] text-[#A8BED2] mt-1">Rest de plată: {(remainingCents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</p>
           </div>
           <div>
@@ -258,7 +309,7 @@ function PaymentModal({ open, remainingCents, currency, busy, error, onClose, on
           </div>
           <div>
             <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Referință (OP, terminal, etc) — opțional</Label>
-            <Input value={reference} onChange={(e) => setReference(e.target.value)} className="bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+            <Input value={reference} onChange={(e) => setReference(e.target.value)} className="bg-white/5 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
           </div>
           <label className="flex items-start gap-2 text-sm pt-1 text-white">
             <input type="checkbox" checked={emitReceipt} onChange={(e) => setEmitReceipt(e.target.checked)} className="mt-0.5" />
@@ -295,7 +346,7 @@ function ShareModal({ url, invoiceId, onClose, onRevoke }: { url: string; invoic
         <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 pr-12"><Share2 className="w-5 h-5" /> Link public</h3>
         <p className="text-xs text-[#A8BED2] mb-4">Oricine are acest link poate vedea documentul (doar citire). Poți revoca oricând.</p>
         <div className="flex gap-2">
-          <Input value={url} readOnly className="flex-1 font-mono text-xs bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+          <Input value={url} readOnly className="flex-1 font-mono text-xs bg-white/5 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
           <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" onClick={copy}>{copied ? 'Copiat!' : 'Copiază'}</Button>
         </div>
         <div className="flex justify-between gap-2 mt-5">
@@ -320,12 +371,36 @@ function PayLinkModal({ url, onClose }: { url: string; onClose: () => void }) {
         <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2 pr-12"><CreditCard className="w-5 h-5" /> Link de plată online</h3>
         <p className="text-xs text-[#A8BED2] mb-4">Trimite acest link clientului ca să plătească factura cu cardul. Încasarea se înregistrează automat când plata reușește.</p>
         <div className="flex gap-2">
-          <Input value={url} readOnly className="flex-1 font-mono text-xs bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
+          <Input value={url} readOnly className="flex-1 font-mono text-xs bg-white/5 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
           <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" onClick={copy}>{copied ? 'Copiat!' : 'Copiază link'}</Button>
         </div>
         <div className="flex justify-end gap-2 mt-5">
           <Button variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => window.open(url, '_blank')}>Deschide pagina de plată</Button>
           <Button variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={onClose}>Închide</Button>
+        </div>
+      </div>
+    </BottomSheet>
+  );
+}
+
+function SendModal({ open, busy, error, onClose, onSubmit }: { open: boolean; busy: boolean; error: string; onClose: () => void; onSubmit: (email: string) => void }) {
+  const [email, setEmail] = useState('');
+  return (
+    <BottomSheet open={open} onClose={onClose} cardClassName="sm:max-w-md">
+      <div className="px-5 sm:px-6 pt-4 pb-6">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2 pr-12">
+          <Mail className="w-5 h-5" /> Trimite documentul pe email
+        </h3>
+        {error && <p className="text-sm text-[#DC4B41] mb-3">{error}</p>}
+        <div>
+          <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Email destinatar (lasă gol pentru emailul clientului)</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="optional@client.ro" className="bg-white/5 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" />
+        </div>
+        <div className="flex justify-end gap-2 mt-5">
+          <Button variant="outline" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={onClose}>Renunță</Button>
+          <Button disabled={busy} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" onClick={() => onSubmit(email)}>
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Trimite'}
+          </Button>
         </div>
       </div>
     </BottomSheet>

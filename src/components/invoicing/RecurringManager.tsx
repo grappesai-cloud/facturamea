@@ -142,13 +142,13 @@ export default function RecurringManager({ initial, internalClients, externalCli
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-end">
-        {!creating && (
+      {!creating && (
+        <div className="flex">
           <Button onClick={() => setCreating(true)} className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100">
             <Plus className="w-4 h-4 mr-1.5" /> Abonament nou
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       {creating && (
         <div className="bg-white/5 rounded-2xl p-5 space-y-4">
@@ -219,31 +219,39 @@ export default function RecurringManager({ initial, internalClients, externalCli
 
           <div className="border-t border-white/10 pt-4">
             <Label className="block mb-2 text-[13px] font-medium text-[#A8BED2]">Linii factură</Label>
-            <div className="space-y-2">
+            <div className="space-y-3 sm:space-y-2">
               {lines.map((l, idx) => (
-                <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                  <div className="col-span-5">
+                <div key={idx} className="rounded-xl bg-white/[0.03] sm:bg-transparent p-3 sm:p-0 grid grid-cols-2 sm:grid-cols-12 gap-2 sm:items-end">
+                  <div className="col-span-2 sm:col-span-5">
+                    <Label className="sm:hidden block mb-1 text-[11px] font-medium text-[#8FA6BC]">Descriere</Label>
                     <Input value={l.description} onChange={(e) => updateLine(idx, { description: e.target.value })} placeholder="Descriere serviciu" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
                   <div className="col-span-1">
+                    <Label className="sm:hidden block mb-1 text-[11px] font-medium text-[#8FA6BC]">Cant.</Label>
                     <Input type="number" step="0.01" value={l.quantity} onChange={(e) => updateLine(idx, { quantity: Number(e.target.value) })} placeholder="Cant." className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
                   <div className="col-span-1">
+                    <Label className="sm:hidden block mb-1 text-[11px] font-medium text-[#8FA6BC]">UM</Label>
                     <Input value={l.unit || ''} onChange={(e) => updateLine(idx, { unit: e.target.value })} placeholder="UM" className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
-                  <div className="col-span-2">
+                  <div className="col-span-1 sm:col-span-2">
+                    <Label className="sm:hidden block mb-1 text-[11px] font-medium text-[#8FA6BC]">Preț unit.</Label>
                     <Input type="number" step="0.01" value={(l.unitPriceCents / 100).toString()} onChange={(e) => updateLine(idx, { unitPriceCents: Math.round(Number(e.target.value) * 100) })} placeholder="Preț unit." className="[color-scheme:dark] bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40" />
                   </div>
                   <div className="col-span-1">
+                    <Label className="sm:hidden block mb-1 text-[11px] font-medium text-[#8FA6BC]">TVA</Label>
                     <Select value={l.vatRate} onChange={(e) => updateLine(idx, { vatRate: Number(e.target.value) })} className="w-full">
                       <option value={21}>21%</option><option value={11}>11%</option><option value={9}>9%</option><option value={5}>5%</option><option value={0}>0%</option>
                     </Select>
                   </div>
-                  <div className="col-span-2 text-right tabular-nums text-sm pr-2 text-white">
-                    {((l.quantity * l.unitPriceCents) / 100 * (1 + l.vatRate / 100)).toLocaleString('ro-RO', { minimumFractionDigits: 2 })}
+                  <div className="col-span-2 flex items-center justify-between sm:justify-end gap-2 sm:gap-0 sm:pr-2 mt-1 sm:mt-0 pt-2 sm:pt-0 border-t border-white/10 sm:border-0">
+                    <span className="sm:hidden text-[11px] font-medium text-[#8FA6BC]">Total</span>
+                    <span className="text-right tabular-nums text-sm text-white">
+                      {((l.quantity * l.unitPriceCents) / 100 * (1 + l.vatRate / 100)).toLocaleString('ro-RO', { minimumFractionDigits: 2 })}
+                    </span>
                   </div>
                   {lines.length > 1 && (
-                    <button onClick={() => removeLine(idx)} className="w-7 h-7 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge rândul">
+                    <button onClick={() => removeLine(idx)} className="col-span-2 sm:col-span-1 justify-self-end sm:justify-self-auto w-7 h-7 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Șterge rândul">
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
                     </button>
                   )}
@@ -265,63 +273,108 @@ export default function RecurringManager({ initial, internalClients, externalCli
         </div>
       )}
 
-      <div className="bg-white/5 rounded-2xl overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="text-left text-[11px] uppercase tracking-wide text-[#8FA6BC]">
-              <th className="py-3 px-4">Nume</th>
-              <th className="py-3 px-4">Client</th>
-              <th className="py-3 px-4">Frecvență</th>
-              <th className="py-3 px-4">Următoarea</th>
-              <th className="py-3 px-4 text-right">Rulări</th>
-              <th className="py-3 px-4">Status</th>
-              <th className="py-3 px-4 w-28"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 && (
-              <tr><td colSpan={7}>
-                <EmptyState
-                  icon={<Repeat />}
-                  title="Nicio facturare recurentă"
-                  description="Configurează un abonament și emitem automat facturile."
-                />
-              </td></tr>
-            )}
+      {items.length === 0 ? (
+        <div className="bg-white/5 rounded-2xl">
+          <EmptyState
+            icon={<Repeat />}
+            title="Nicio facturare recurentă"
+            description="Configurează un abonament și emitem automat facturile."
+          />
+        </div>
+      ) : (
+        <>
+          {/* Desktop / tablet: table (scrolls horizontally on narrow widths, never clips) */}
+          <div className="hidden sm:block bg-white/5 rounded-2xl overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-[11px] uppercase tracking-wide text-[#8FA6BC]">
+                  <th className="py-3 px-4">Nume</th>
+                  <th className="py-3 px-4">Client</th>
+                  <th className="py-3 px-4">Frecvență</th>
+                  <th className="py-3 px-4">Următoarea</th>
+                  <th className="py-3 px-4 text-right">Rulări</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 w-28"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {(showAll ? items : items.slice(0, 3)).map((i) => (
+                  <tr key={i.id} className="group hover:bg-white/5">
+                    <td className="py-3 px-4 font-medium text-white">{i.name}</td>
+                    <td className="py-3 px-4 text-[#A8BED2]">{i.clientName}</td>
+                    <td className="py-3 px-4 text-white whitespace-nowrap">{FREQ_LABEL[i.frequency] || i.frequency}</td>
+                    <td className="py-3 px-4 tabular-nums text-white whitespace-nowrap">{i.nextRunAt}</td>
+                    <td className="py-3 px-4 text-right tabular-nums text-white">{i.totalRuns || 0}{i.maxRuns ? ` / ${i.maxRuns}` : ''}</td>
+                    <td className="py-3 px-4">
+                      {i.isActive
+                        ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#2E9E6A]/15 text-[#2E9E6A]">activ</span>
+                        : <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">pauzat</span>}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => toggle(i.id, !!i.isActive)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/15 transition-colors" title={i.isActive ? 'Pune pe pauză' : 'Repornește'}>
+                          {i.isActive ? <Pause className="w-3.5 h-3.5 text-[#A8BED2]" /> : <Play className="w-3.5 h-3.5 text-[#2E9E6A]" />}
+                        </button>
+                        <button onClick={() => remove(i.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează permanent"><X className="w-4 h-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {items.length > 3 && (
+                  <tr>
+                    <td colSpan={7} className="py-3 px-4">
+                      <button type="button" onClick={() => setShowAll((s) => !s)} className="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
+                        {showAll ? 'Arată mai puțin' : `Vezi toate (${items.length})`}
+                      </button>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile: stacked cards */}
+          <div className="sm:hidden space-y-2.5">
             {(showAll ? items : items.slice(0, 3)).map((i) => (
-              <tr key={i.id} className="group hover:bg-white/5">
-                <td className="py-3 px-4 font-medium text-white">{i.name}</td>
-                <td className="py-3 px-4 text-[#A8BED2]">{i.clientName}</td>
-                <td className="py-3 px-4 text-white">{FREQ_LABEL[i.frequency] || i.frequency}</td>
-                <td className="py-3 px-4 tabular-nums text-white">{i.nextRunAt}</td>
-                <td className="py-3 px-4 text-right tabular-nums text-white">{i.totalRuns || 0}{i.maxRuns ? ` / ${i.maxRuns}` : ''}</td>
-                <td className="py-3 px-4">
-                  {i.isActive
-                    ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#2E9E6A]/15 text-[#2E9E6A]">activ</span>
-                    : <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">pauzat</span>}
-                </td>
-                <td className="py-3 px-4 text-right">
-                  <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => toggle(i.id, !!i.isActive)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white hover:bg-white/15 transition-colors" title={i.isActive ? 'Pune pe pauză' : 'Repornește'}>
+              <div key={i.id} className="bg-white/5 rounded-2xl p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      {i.isActive
+                        ? <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#2E9E6A]/15 text-[#2E9E6A]">activ</span>
+                        : <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">pauzat</span>}
+                      <span className="text-[12px] text-[#8FA6BC] whitespace-nowrap">{FREQ_LABEL[i.frequency] || i.frequency}</span>
+                    </div>
+                    <p className="text-[15px] font-bold text-white truncate mt-1.5">{i.name}</p>
+                    <p className="text-[13px] text-[#A8BED2] truncate">{i.clientName}</p>
+                  </div>
+                  <div className="shrink-0 flex gap-1">
+                    <button onClick={() => toggle(i.id, !!i.isActive)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-white active:bg-white/15 transition-colors" title={i.isActive ? 'Pune pe pauză' : 'Repornește'}>
                       {i.isActive ? <Pause className="w-3.5 h-3.5 text-[#A8BED2]" /> : <Play className="w-3.5 h-3.5 text-[#2E9E6A]" />}
                     </button>
-                    <button onClick={() => remove(i.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors" title="Dezactivează permanent"><X className="w-4 h-4" /></button>
+                    <button onClick={() => remove(i.id)} className="w-9 h-9 rounded-full bg-white/10 grid place-items-center text-[#A8BED2] active:bg-[#DC4B41]/15 active:text-[#DC4B41] transition-colors" title="Dezactivează permanent"><X className="w-4 h-4" /></button>
                   </div>
-                </td>
-              </tr>
+                </div>
+                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-[13px]">
+                  <div>
+                    <span className="text-[#8FA6BC]">Următoarea: </span>
+                    <span className="text-white tabular-nums">{i.nextRunAt}</span>
+                  </div>
+                  <div>
+                    <span className="text-[#8FA6BC]">Rulări: </span>
+                    <span className="text-white tabular-nums">{i.totalRuns || 0}{i.maxRuns ? ` / ${i.maxRuns}` : ''}</span>
+                  </div>
+                </div>
+              </div>
             ))}
             {items.length > 3 && (
-              <tr>
-                <td colSpan={7} className="py-3 px-4">
-                  <button type="button" onClick={() => setShowAll((s) => !s)} className="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold hover:bg-[#D2EA0E] active:scale-95 transition-all">
-                    {showAll ? 'Arată mai puțin' : `Vezi toate (${items.length})`}
-                  </button>
-                </td>
-              </tr>
+              <button type="button" onClick={() => setShowAll((s) => !s)} className="mx-auto w-fit flex items-center px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-semibold active:scale-95 transition-all">
+                {showAll ? 'Arată mai puțin' : `Vezi toate (${items.length})`}
+              </button>
             )}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

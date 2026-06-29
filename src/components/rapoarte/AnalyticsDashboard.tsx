@@ -3,7 +3,7 @@ import { Card, CardContent } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Label } from '../ui/Label';
 import { DatePicker } from '../ui/DatePicker';
-import { Loader2, SlidersHorizontal, ChevronDown } from 'lucide-react';
+import { Loader2, SlidersHorizontal, ChevronDown, Pencil, Check } from 'lucide-react';
 
 interface MonthCents { month: string; cents: number; }
 interface NamedCents { name: string; cents: number; }
@@ -87,12 +87,12 @@ function MonthlyChart({ invoiced, collected }: { invoiced: MonthCents[]; collect
 function HBar({ label, value, max, color = '#76C893' }: { label: string; value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.max((value / max) * 100, 2) : 0;
   return (
-    <div className="flex items-center gap-3 text-[14px]">
-      <div className="w-36 shrink-0 truncate text-white" title={label}>{label}</div>
-      <div className="flex-1 h-6 bg-white/5 rounded-lg overflow-hidden">
+    <div className="flex items-center gap-2.5 sm:gap-3 text-[13px] sm:text-[14px]">
+      <div className="w-24 sm:w-36 shrink-0 min-w-0 truncate text-white" title={label}>{label}</div>
+      <div className="flex-1 min-w-0 h-6 bg-white/5 rounded-lg overflow-hidden">
         <div className="h-full rounded-lg" style={{ width: `${pct}%`, background: color }} />
       </div>
-      <div className="w-28 text-right text-white font-semibold tabular-nums">{ron(value)}</div>
+      <div className="w-24 sm:w-28 shrink-0 text-right text-white font-semibold tabular-nums whitespace-nowrap">{ron(value)}</div>
     </div>
   );
 }
@@ -123,6 +123,7 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [hidden, setHidden] = useState<Set<string>>(() => {
     try { return new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]')); } catch { return new Set(); }
   });
@@ -172,23 +173,41 @@ export default function AnalyticsDashboard() {
 
       {/* KPI row */}
       {visibleKpis.length > 0 && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
-          {visibleKpis.map((k) => (
-            <div key={k.id} className="group relative h-full">
-              <Card className="bg-white/5 border-0 shadow-none rounded-2xl h-full">
-                <CardContent className="p-4 flex flex-col h-full">
-                  <p className="text-[12px] font-medium text-[#8FA6BC] uppercase tracking-wider">{k.label}</p>
-                  <p className={`text-[24px] sm:text-[28px] font-bold tracking-[-0.02em] mt-2 tabular-nums ${k.color}`}>{k.value}</p>
-                  {k.sub ? <p className="text-[12px] text-[#8FA6BC] mt-1">{k.sub}</p> : <div className="mt-1 h-[18px]" />}
-                </CardContent>
-              </Card>
-              <XBtn onClick={() => hide(k.id)} />
-            </div>
-          ))}
+        <div>
+          <div className="flex items-center justify-end gap-2 mb-3">
+            {hidden.size > 0 && (
+              <button type="button" onClick={resetHidden} className="text-[13px] font-medium text-[#A8BED2] hover:text-white transition-colors">
+                Restabilește ascunse ({hidden.size})
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setEditing((v) => !v)}
+              aria-pressed={editing}
+              className={`inline-flex items-center gap-1.5 px-3.5 h-9 rounded-full text-[13px] font-semibold transition-colors ${editing ? 'bg-[#E1FB15] text-[#07090f]' : 'bg-white/10 text-[#A8BED2] hover:bg-white/15 hover:text-white'}`}
+            >
+              {editing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+              {editing ? 'Gata' : 'Editează'}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 items-stretch">
+            {visibleKpis.map((k) => (
+              <div key={k.id} className="group relative h-full min-w-0">
+                <Card className="bg-white/5 border-0 shadow-none rounded-2xl h-full">
+                  <CardContent className="p-4 flex flex-col h-full min-w-0">
+                    <p className="text-[12px] font-medium text-[#8FA6BC] uppercase tracking-wider truncate pr-6">{k.label}</p>
+                    <p className={`text-[20px] sm:text-[26px] lg:text-[28px] font-bold tracking-[-0.02em] mt-2 tabular-nums whitespace-nowrap truncate ${k.color}`}>{k.value}</p>
+                    {k.sub ? <p className="text-[12px] text-[#8FA6BC] mt-1 tabular-nums truncate">{k.sub}</p> : <div className="mt-1 h-[18px]" />}
+                  </CardContent>
+                </Card>
+                {editing && <XBtn onClick={() => hide(k.id)} />}
+              </div>
+            ))}
+          </div>
         </div>
       )}
-      {hidden.size > 0 && (
-        <button type="button" onClick={resetHidden} className="text-[13px] text-[#A8BED2] hover:text-white transition-colors">
+      {visibleKpis.length === 0 && hidden.size > 0 && (
+        <button type="button" onClick={resetHidden} className="inline-flex items-center gap-1.5 px-3.5 h-9 rounded-full bg-white/10 text-[13px] font-semibold text-[#A8BED2] hover:bg-white/15 hover:text-white transition-colors">
           Restabilește cardurile ascunse ({hidden.size})
         </button>
       )}
@@ -269,16 +288,16 @@ export default function AnalyticsDashboard() {
             {(data?.byStatus.length || 0) === 0 ? (
               <p className="text-[14px] text-[#A8BED2]">Date insuficiente.</p>
             ) : data!.byStatus.map((s) => (
-              <div key={s.status} className="flex items-center gap-3 text-[14px]">
-                <div className="w-36 shrink-0 flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ background: STATUS_COLORS[s.status] || '#8FA6BC' }} />
-                  <span className="text-white">{STATUS_LABELS[s.status] || s.status}</span>
+              <div key={s.status} className="flex items-center gap-2.5 sm:gap-3 text-[13px] sm:text-[14px]">
+                <div className="w-24 sm:w-36 shrink-0 min-w-0 flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0" style={{ background: STATUS_COLORS[s.status] || '#8FA6BC' }} />
+                  <span className="text-white truncate">{STATUS_LABELS[s.status] || s.status}</span>
                 </div>
-                <div className="flex-1 h-6 bg-white/5 rounded-lg overflow-hidden">
+                <div className="flex-1 min-w-0 h-6 bg-white/5 rounded-lg overflow-hidden">
                   <div className="h-full rounded-lg" style={{ width: `${Math.max((s.cents / maxStatus) * 100, 2)}%`, background: STATUS_COLORS[s.status] || '#8FA6BC' }} />
                 </div>
-                <div className="w-12 text-right text-[#A8BED2] tabular-nums">{s.count}</div>
-                <div className="w-28 text-right text-white font-semibold tabular-nums">{ron(s.cents)}</div>
+                <div className="w-8 sm:w-12 shrink-0 text-right text-[#A8BED2] tabular-nums">{s.count}</div>
+                <div className="w-24 sm:w-28 shrink-0 text-right text-white font-semibold tabular-nums whitespace-nowrap">{ron(s.cents)}</div>
               </div>
             ))}
           </div>

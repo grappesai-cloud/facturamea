@@ -1,18 +1,4 @@
 ---
-import AppLayout from '../../../layouts/AppLayout.astro';
-import TvaRatesManager from '../../../components/invoicing/TvaRatesManager';
-
-const user = Astro.locals.user!;
-if (!user.companyId) return Astro.redirect('/app/setari');
+// Consolidated into Setări facturare — kept as a redirect so old links work.
+return Astro.redirect('/app/facturare/setari#tva', 302);
 ---
-
-<AppLayout title="Cote TVA" activeTab="facturare">
-  <div class="mb-8">
-    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Cote TVA</h1>
-    <p class="text-[14px] text-[#A8BED2] mt-1">Cotele selectabile la emitere. Cota implicită se aplică automat liniilor noi.</p>
-  </div>
-
-  <div class="max-w-4xl">
-    <TvaRatesManager client:load />
-  </div>
-</AppLayout>

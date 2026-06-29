@@ -36,7 +36,7 @@ const btnPrimary =
 const btnGhost =
   'inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 disabled:opacity-50 text-white text-[14px] font-semibold transition-colors';
 const inputCls =
-  'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 [color-scheme:dark] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+  'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border border-white/[0.12] [color-scheme:dark] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition';
 
 export default function OpenBankingConnect({ configured, localAccounts = [] }: Props) {
   const [institutions, setInstitutions] = useState<Institution[]>([]);

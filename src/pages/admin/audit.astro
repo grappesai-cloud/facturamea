@@ -56,52 +56,71 @@ const inputCls = 'h-9 px-3 bg-white border border-[#E3EAF1] rounded-xl text-[13p
 
 <AdminLayout title="Jurnal audit" activeTab="audit">
   <div class="mb-6">
-    <h2 class="text-[22px] font-bold tracking-[-0.02em]">Jurnal audit</h2>
-    <p class="text-[13px] text-[#46627A] mt-1">Toate acţiunile importante (login, post, bid, status change, admin).</p>
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Jurnal audit</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Toate acţiunile importante (login, post, bid, status change, admin).</p>
   </div>
 
-  <form method="GET" class="flex flex-wrap gap-2 mb-4 p-3 bg-white border border-[#E3EAF1] rounded-xl">
+  <form method="GET" class="flex flex-wrap gap-2 mb-4">
     <select name="action" class={inputCls + ' min-w-[180px]'}>
       <option value="">Toate acţiunile</option>
       {actions.map((a) => <option value={a} selected={action === a}>{a}</option>)}
     </select>
-    <input type="text" name="user" value={userQ} placeholder="Utilizator (nume sau email)" class={inputCls + ' flex-1 min-w-[200px]'} />
+    <input type="text" name="user" value={userQ} placeholder="Utilizator (nume sau email)" class={inputCls + ' flex-1 min-w-[200px] placeholder:text-[#8FA6BC]'} />
     <select name="days" class={inputCls}>
       {[1, 7, 30, 90].map((d) => <option value={d} selected={days === d}>Ultimele {d} {d === 1 ? 'zi' : 'zile'}</option>)}
     </select>
-    <button type="submit" class="h-9 px-4 bg-[#07090f] hover:bg-[#1A1A1A] text-white text-[13px] font-semibold rounded-xl transition-colors">Filtrează</button>
-    <a href={`/api/admin/audit?days=${days}&action=${action}&format=csv`} class="h-9 px-4 bg-white border border-[#E3EAF1] hover:border-[#07090f] text-[#07090f] text-[13px] font-medium rounded-xl transition-colors flex items-center">CSV</a>
+    <button type="submit" class="h-10 px-5 bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] text-[13px] font-bold rounded-full transition-colors">Filtrează</button>
+    <a href={`/api/admin/audit?days=${days}&action=${action}&format=csv`} class="h-10 px-5 bg-white/10 hover:bg-white/15 text-[#D7E5F0] text-[13px] font-semibold rounded-full transition-colors flex items-center">CSV</a>
   </form>
 
-  <p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium mb-3">{rows.length} {rows.length === 1 ? 'eveniment' : 'evenimente'}</p>
+  <p class="text-[12px] text-[#8FA6BC] font-medium mb-3">{rows.length} {rows.length === 1 ? 'eveniment' : 'evenimente'}</p>
 
-  <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden">
-    <table class="w-full text-[12px]">
-      <thead class="bg-[#EDF1F5] text-[10px] uppercase tracking-wider text-[#46627A]">
-        <tr>
-          <th class="px-4 py-2 text-left">Când</th>
-          <th class="px-4 py-2 text-left">Acţiune</th>
-          <th class="px-4 py-2 text-left">Utilizator</th>
-          <th class="px-4 py-2 text-left">Entitate</th>
-          <th class="px-4 py-2 text-left">IP</th>
-          <th class="px-4 py-2 text-left">Metadata</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-[#E3EAF1]">
-        {rows.map((r) => (
-          <tr class="hover:bg-[#FCFCFA]">
-            <td class="px-4 py-2 font-mono text-[#46627A] whitespace-nowrap">{fmt(r.createdAt)}</td>
-            <td class="px-4 py-2 font-mono text-[#07090f]">{r.action}</td>
-            <td class="px-4 py-2">{r.userName ?? <span class="text-[#A8BED2]">—</span>}</td>
-            <td class="px-4 py-2 text-[#46627A]">{r.entityType ? `${r.entityType}/${(r.entityId || '').slice(0, 12)}…` : '—'}</td>
-            <td class="px-4 py-2 font-mono text-[#A8BED2]">{r.ipAddress ?? '—'}</td>
-            <td class="px-4 py-2 text-[#46627A] truncate max-w-[260px]">{r.metadata ?? ''}</td>
+  <!-- Desktop table -->
+  <div class="hidden md:block rounded-2xl bg-white/5 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-[12px]">
+        <thead class="text-[10px] uppercase tracking-wider text-[#8FA6BC] border-b border-white/10">
+          <tr>
+            <th class="px-4 py-3 text-left font-semibold">Când</th>
+            <th class="px-4 py-3 text-left font-semibold">Acţiune</th>
+            <th class="px-4 py-3 text-left font-semibold">Utilizator</th>
+            <th class="px-4 py-3 text-left font-semibold">Entitate</th>
+            <th class="px-4 py-3 text-left font-semibold">IP</th>
+            <th class="px-4 py-3 text-left font-semibold">Metadata</th>
           </tr>
-        ))}
-        {rows.length === 0 && (
-          <tr><td colspan="6" class="px-4 py-12 text-center text-[#46627A]">Niciun eveniment găsit pentru filtrele selectate.</td></tr>
-        )}
-      </tbody>
-    </table>
+        </thead>
+        <tbody class="divide-y divide-white/5">
+          {rows.map((r) => (
+            <tr class="hover:bg-white/[0.03] transition-colors">
+              <td class="px-4 py-2.5 font-mono text-[#A8BED2] whitespace-nowrap">{fmt(r.createdAt)}</td>
+              <td class="px-4 py-2.5 font-mono text-[#34A0A4] whitespace-nowrap">{r.action}</td>
+              <td class="px-4 py-2.5 text-white whitespace-nowrap">{r.userName ?? <span class="text-[#5E7385]">—</span>}</td>
+              <td class="px-4 py-2.5 text-[#A8BED2] whitespace-nowrap">{r.entityType ? `${r.entityType}/${(r.entityId || '').slice(0, 12)}…` : '—'}</td>
+              <td class="px-4 py-2.5 font-mono text-[#5E7385] whitespace-nowrap">{r.ipAddress ?? '—'}</td>
+              <td class="px-4 py-2.5 text-[#8FA6BC] truncate max-w-[260px]">{r.metadata ?? ''}</td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr><td colspan="6" class="px-4 py-12 text-center text-[#8FA6BC]">Niciun eveniment găsit pentru filtrele selectate.</td></tr>
+          )}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="md:hidden space-y-2">
+    {rows.length === 0 ? (
+      <div class="rounded-2xl bg-white/5 py-10 text-center text-[13px] text-[#8FA6BC]">Niciun eveniment găsit pentru filtrele selectate.</div>
+    ) : rows.map((r) => (
+      <div class="rounded-2xl bg-white/5 p-4">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-mono text-[12px] text-[#34A0A4] truncate">{r.action}</span>
+          <span class="font-mono text-[11px] text-[#8FA6BC] shrink-0 whitespace-nowrap">{fmt(r.createdAt)}</span>
+        </div>
+        <p class="text-[12px] text-white mt-1.5">{r.userName ?? '—'}{r.entityType ? ` · ${r.entityType}/${(r.entityId || '').slice(0, 10)}…` : ''}</p>
+        <p class="text-[11px] text-[#5E7385] mt-0.5 font-mono">{r.ipAddress ?? '—'}{r.metadata ? ` · ${String(r.metadata).slice(0, 60)}` : ''}</p>
+      </div>
+    ))}
   </div>
 </AdminLayout>

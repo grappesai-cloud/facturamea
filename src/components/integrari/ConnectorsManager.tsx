@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Select } from '../ui/Select';
+import { EmptyState } from '../ui/EmptyState';
 
 interface Conn {
   id: string;
@@ -193,7 +194,7 @@ export default function ConnectorsManager() {
   const card = 'bg-white/5 rounded-2xl';
   const btnPrimary = 'inline-flex items-center gap-1.5 justify-center px-5 py-2.5 rounded-full bg-[#E1FB15] hover:bg-[#D2EA0E] text-[#07090f] text-[14px] font-bold transition-colors';
   const btnGhost = 'inline-flex items-center justify-center px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/15 text-white text-[14px] font-semibold transition-colors';
-  const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+  const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition';
 
   return (
     <div className="space-y-5">
@@ -345,9 +346,15 @@ export default function ConnectorsManager() {
       {loading ? (
         <div className={`${card} px-5 py-12 text-center text-[15px] text-[#A8BED2]`}>Se încarcă…</div>
       ) : conns.length === 0 ? (
-        <div className={`${card} px-5 py-12 text-center text-[15px] text-[#A8BED2]`}>
-          Nicio conexiune încă. Apasă „Adaugă conexiune" ca să conectezi un magazin.
-        </div>
+        <EmptyState
+          icon={
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z" />
+            </svg>
+          }
+          title="Nicio conexiune încă"
+          description={'Apasă „Adaugă conexiune” ca să conectezi un magazin online și să emiți facturi automat la fiecare comandă.'}
+        />
       ) : (
         <div className="space-y-4">
           {conns.map((c) => {

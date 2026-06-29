@@ -33,54 +33,54 @@ const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO') : '—';
 
 <AdminLayout title="Broadcast" activeTab="broadcast">
   <div class="mb-6">
-    <h2 class="text-[22px] font-bold tracking-[-0.02em]">Broadcast notificări</h2>
-    <p class="text-[13px] text-[#46627A] mt-1">Trimite o notificare în-app (şi opţional email) către un segment de utilizatori.</p>
+    <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Broadcast notificări</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Trimite o notificare în-app (şi opţional email) către un segment de utilizatori.</p>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <form id="broadcast-form" class="lg:col-span-2 space-y-4 p-6 bg-white border border-[#E3EAF1] rounded-xl">
-      <div id="broadcast-banner" class="hidden flex items-start gap-2 px-4 py-3 rounded-xl text-[13px]"></div>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+    <form id="broadcast-form" class="lg:col-span-2 space-y-4 p-5 sm:p-6 rounded-2xl bg-white/5">
+      <div id="broadcast-banner" class="hidden items-start gap-2 px-4 py-3 rounded-xl text-[13px]"></div>
       <div>
-        <label class="block text-[12px] font-medium mb-1.5">Segment</label>
+        <label class="block text-[12px] font-medium text-[#A8BED2] mb-1.5">Segment</label>
         <select name="segment" required class={inputCls}>
           {segments.map((s) => <option value={s.value}>{s.label}</option>)}
         </select>
-        <p id="recipient-preview" class="text-[11px] text-[#46627A] mt-1.5">Estimare destinatari: —</p>
+        <p id="recipient-preview" class="text-[11px] text-[#8FA6BC] mt-1.5">Estimare destinatari: —</p>
       </div>
       <div>
-        <label class="block text-[12px] font-medium mb-1.5">Titlu (max 200)</label>
+        <label class="block text-[12px] font-medium text-[#A8BED2] mb-1.5">Titlu (max 200)</label>
         <input name="title" required maxlength="200" placeholder="ex. Mentenanţă programată sâmbătă" class={inputCls} />
       </div>
       <div>
-        <label class="block text-[12px] font-medium mb-1.5">Mesaj</label>
+        <label class="block text-[12px] font-medium text-[#A8BED2] mb-1.5">Mesaj</label>
         <textarea name="body" required rows="6" placeholder="Conţinut mesaj — markdown simplu OK" class={inputCls + ' resize-y'}></textarea>
       </div>
       <div>
-        <label class="flex items-center gap-2 text-[13px]">
-          <input type="checkbox" name="sendEmail" class="w-4 h-4 accent-[#1A759F]" />
+        <label class="flex items-center gap-2 text-[13px] text-[#D7E5F0]">
+          <input type="checkbox" name="sendEmail" class="w-4 h-4 accent-[#34A0A4]" />
           <span>Trimite şi email (Resend)</span>
         </label>
       </div>
       <div class="pt-2">
-        <button type="submit" id="send-btn" class="px-6 py-3 bg-[#07090f] hover:bg-[#1A1A1A] disabled:bg-[#A8BED2] text-white font-semibold rounded-xl text-[13px] transition-colors">
+        <button type="submit" id="send-btn" class="px-6 py-3 bg-[#E1FB15] hover:bg-[#D2EA0E] disabled:opacity-50 text-[#07090f] font-bold rounded-full text-[13.5px] transition-colors">
           Trimite broadcast
         </button>
-        <p class="text-[11px] text-[#46627A] mt-2">⚠️ Acţiunea e ireversibilă şi notifică oameni reali.</p>
+        <p class="text-[11px] text-[#8FA6BC] mt-2">⚠️ Acţiunea e ireversibilă şi notifică oameni reali.</p>
       </div>
     </form>
 
-    <div class="bg-white border border-[#E3EAF1] rounded-xl overflow-hidden h-fit">
-      <div class="px-5 py-3 border-b border-[#E3EAF1]"><p class="text-[11px] uppercase tracking-[0.16em] text-[#46627A] font-medium">Istoric (ultimele 20)</p></div>
-      <div class="divide-y divide-[#E3EAF1] max-h-[600px] overflow-y-auto">
+    <div class="rounded-2xl bg-white/5 overflow-hidden h-fit">
+      <div class="px-5 py-4 border-b border-white/10"><p class="text-[13px] font-semibold text-white">Istoric (ultimele 20)</p></div>
+      <div class="divide-y divide-white/5 max-h-[600px] overflow-y-auto">
         {recent.length === 0 ? (
-          <div class="px-5 py-8 text-center text-[12px] text-[#46627A]">Fără broadcast-uri</div>
+          <div class="px-5 py-10 text-center text-[13px] text-[#8FA6BC]">Fără broadcast-uri</div>
         ) : recent.map((b) => (
-          <div class="px-5 py-3">
-            <p class="text-[13px] font-semibold truncate">{b.title}</p>
-            <p class="text-[11px] text-[#46627A] mt-1">
+          <div class="px-5 py-3.5">
+            <p class="text-[13px] font-semibold text-white truncate">{b.title}</p>
+            <p class="text-[11px] text-[#8FA6BC] mt-1">
               {b.segment} · {b.recipientsCount ?? '?'} destinatari{b.sendEmail ? ' · email' : ''}
             </p>
-            <p class="text-[10px] text-[#A8BED2] mt-1">{fmt(b.sentAt)} · {b.sentByName ?? 'admin'}</p>
+            <p class="text-[10px] text-[#5E7385] mt-1">{fmt(b.sentAt)} · {b.sentByName ?? 'admin'}</p>
           </div>
         ))}
       </div>
@@ -125,16 +125,16 @@ const fmt = (d: any) => d ? new Date(d).toLocaleString('ro-RO') : '—';
         });
         const data = await res.json();
         if (!res.ok) {
-          banner.className = 'flex items-start gap-2 px-4 py-3 rounded-xl text-[13px] bg-white border border-[#B91C1C]/30 text-[#B91C1C]';
+          banner.className = 'flex items-start gap-2 px-4 py-3 rounded-xl text-[13px] bg-[#DC4B41]/15 text-[#DC4B41]';
           banner.textContent = data.error || 'Eroare';
         } else {
-          banner.className = 'flex items-start gap-2 px-4 py-3 rounded-xl text-[13px] bg-white border border-[#15803D]/30 text-[#15803D]';
+          banner.className = 'flex items-start gap-2 px-4 py-3 rounded-xl text-[13px] bg-[#2E9E6A]/15 text-[#2E9E6A]';
           banner.textContent = `Trimis către ${data.recipientsCount} utilizatori.`;
           form.reset();
           setTimeout(() => window.location.reload(), 1500);
         }
       } catch (err) {
-        banner.className = 'flex items-start gap-2 px-4 py-3 rounded-xl text-[13px] bg-white border border-[#B91C1C]/30 text-[#B91C1C]';
+        banner.className = 'flex items-start gap-2 px-4 py-3 rounded-xl text-[13px] bg-[#DC4B41]/15 text-[#DC4B41]';
         banner.textContent = 'Eroare reţea';
       } finally {
         btn.disabled = false; btn.textContent = 'Trimite broadcast';

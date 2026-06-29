@@ -22,7 +22,7 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 const ROLE_ORDER: Role[] = ['owner', 'accountant', 'operator', 'viewer'];
 
-const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border-0 focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+const inputCls = 'w-full rounded-xl bg-white/5 px-4 py-2.5 text-[14px] text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 hover:border-white/25 transition';
 const labelCls = 'block text-[13px] font-medium text-[#A8BED2] mb-1.5';
 
 export default function TeamManager({ canManage }: { canManage: boolean }) {
@@ -197,7 +197,7 @@ export default function TeamManager({ canManage }: { canManage: boolean }) {
                       value={m.role}
                       disabled={busyId === m.userId}
                       onChange={(e) => changeRole(m.userId, e.target.value as Role)}
-                      className="px-3 py-1.5 bg-white/5 border-0 rounded-lg text-[12px] text-white focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40 transition-colors disabled:opacity-60"
+                      className="px-3 py-1.5 bg-white/5 border border-white/[0.12] rounded-lg text-[12px] text-white focus:outline-none focus:border-[#E1FB15]/50 focus:ring-2 focus:ring-[#E1FB15]/30 transition-colors disabled:opacity-60"
                     >
                       {ROLE_ORDER.map((r) => (
                         <option key={r} value={r}>{ROLE_LABELS[r]}</option>

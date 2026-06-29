@@ -129,16 +129,16 @@ export default function SalesOrderForm() {
             <div>
               <Label className="mb-1 block text-xs text-[#A8BED2]">Client *</Label>
               {clients.length > 0 ? (
-                <Select className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={clientExternalId} onChange={(e) => onPickClient(e.target.value)}>
+                <Select className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={clientExternalId} onChange={(e) => onPickClient(e.target.value)}>
                   <option value="">Alege clientul</option>
                   {clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </Select>
               ) : (
-                <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nume client" />
+                <Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Nume client" />
               )}
             </div>
             <div><Label className="mb-1 block text-xs text-[#A8BED2]">Data comenzii</Label><DatePicker value={orderDate} onChange={(v) => setOrderDate(v)} /></div>
-            <div><Label className="mb-1 block text-xs text-[#A8BED2]">Număr (opțional)</Label><Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Auto" /></div>
+            <div><Label className="mb-1 block text-xs text-[#A8BED2]">Număr (opțional)</Label><Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={number} onChange={(e) => setNumber(e.target.value)} placeholder="Auto" /></div>
           </div>
         </CardContent>
       </Card>
@@ -147,7 +147,7 @@ export default function SalesOrderForm() {
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-white text-sm">Linii comandă</h3>
-            <Button className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full" size="sm" variant="outline" onClick={() => setLines((ls) => [...ls, newLine()])}><Plus className="w-4 h-4 mr-1" /> Adaugă linie</Button>
+            <Button className="bg-white/10 border border-white/[0.12] text-white hover:bg-white/15 rounded-full" size="sm" variant="outline" onClick={() => setLines((ls) => [...ls, newLine()])}><Plus className="w-4 h-4 mr-1" /> Adaugă linie</Button>
           </div>
           <div className="space-y-2">
             {lines.map((l, i) => (
@@ -155,31 +155,31 @@ export default function SalesOrderForm() {
                 <div className="md:col-span-4">
                   <Label className="mb-1 block text-[10px] uppercase tracking-wider text-[#8FA6BC]">Produs</Label>
                   {products.length > 0 ? (
-                    <Select className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={l.productId} onChange={(e) => onPickProduct(i, e.target.value)}>
+                    <Select className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={l.productId} onChange={(e) => onPickProduct(i, e.target.value)}>
                       <option value="">Liber</option>
                       {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                     </Select>
                   ) : (
-                    <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={l.name} onChange={(e) => updateLine(i, { name: e.target.value })} placeholder="Denumire produs" />
+                    <Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={l.name} onChange={(e) => updateLine(i, { name: e.target.value })} placeholder="Denumire produs" />
                   )}
                 </div>
                 {products.length > 0 && (
                   <div className="md:col-span-3">
                     <Label className="mb-1 block text-[10px] uppercase tracking-wider text-[#8FA6BC]">Denumire</Label>
-                    <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={l.name} onChange={(e) => updateLine(i, { name: e.target.value })} placeholder="Denumire" />
+                    <Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={l.name} onChange={(e) => updateLine(i, { name: e.target.value })} placeholder="Denumire" />
                   </div>
                 )}
                 <div className="md:col-span-1">
                   <Label className="mb-1 block text-[10px] uppercase tracking-wider text-[#8FA6BC]">Cant.</Label>
-                  <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={l.quantity} onChange={(e) => updateLine(i, { quantity: e.target.value })} />
+                  <Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={l.quantity} onChange={(e) => updateLine(i, { quantity: e.target.value })} />
                 </div>
                 <div className="md:col-span-2">
                   <Label className="mb-1 block text-[10px] uppercase tracking-wider text-[#8FA6BC]">Preț unitar</Label>
-                  <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: e.target.value })} placeholder="0.00" />
+                  <Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={l.unitPrice} onChange={(e) => updateLine(i, { unitPrice: e.target.value })} placeholder="0.00" />
                 </div>
                 <div className="md:col-span-1">
                   <Label className="mb-1 block text-[10px] uppercase tracking-wider text-[#8FA6BC]">TVA %</Label>
-                  <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={l.vatRate} onChange={(e) => updateLine(i, { vatRate: e.target.value })} />
+                  <Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" type="number" step="any" value={l.vatRate} onChange={(e) => updateLine(i, { vatRate: e.target.value })} />
                 </div>
                 <div className="md:col-span-1 flex justify-end">
                   <button onClick={() => setLines((ls) => ls.length > 1 ? ls.filter((_, idx) => idx !== i) : ls)} className="w-9 h-9 rounded-full grid place-items-center text-[#A8BED2] hover:bg-white/10 hover:text-[#DC4B41] transition-colors" title="Șterge linia"><X className="w-4 h-4" /></button>
@@ -190,7 +190,7 @@ export default function SalesOrderForm() {
 
           <div>
             <Label className="mb-1 block text-xs text-[#A8BED2]">Observații</Label>
-            <Input className="bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opțional" />
+            <Input className="bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Opțional" />
           </div>
 
           <div className="flex flex-col items-end gap-0.5 pt-2 text-sm">
@@ -201,7 +201,7 @@ export default function SalesOrderForm() {
 
           <div className="flex flex-wrap gap-2">
             <Button className="bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] rounded-full font-bold shadow-none" disabled={busy} onClick={() => submit('confirmed')}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvează și confirmă'}</Button>
-            <Button className="bg-white/10 border-0 text-white hover:bg-white/15 rounded-full" disabled={busy} variant="outline" onClick={() => submit('draft')}>Salvează ca ciornă</Button>
+            <Button className="bg-white/10 border border-white/[0.12] text-white hover:bg-white/15 rounded-full" disabled={busy} variant="outline" onClick={() => submit('draft')}>Salvează ca ciornă</Button>
             <a href="/app/comenzi"><Button className="text-[#A8BED2] hover:bg-white/10 hover:text-white rounded-full" variant="ghost" type="button">Renunță</Button></a>
           </div>
         </CardContent>

@@ -73,13 +73,14 @@ export default function TransferForm() {
         else next.push({ warehouseId: toWarehouseId, productId, quantity: q });
         return next;
       });
+      // Refresh so the server-rendered "Transferuri recente" list shows the move.
+      setTimeout(() => { window.location.reload(); }, 900);
     } catch { setError('Eroare conexiune'); } finally { setBusy(false); }
   };
 
-  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#8FA6BC] border-0 focus:ring-2 focus:ring-[#E1FB15]/40 hover:border-0';
+  const inputCls = 'rounded-xl bg-white/5 text-white placeholder:text-[#8FA6BC] border border-white/[0.12] focus:ring-2 focus:ring-[#E1FB15]/40';
   const selectCls = `${inputCls} [color-scheme:dark]`;
   const btnPrimary = 'rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] shadow-none';
-  const btnSecondary = 'rounded-full bg-white/10 text-white font-semibold hover:bg-white/15';
 
   return (
     <div className="space-y-4">
@@ -109,7 +110,7 @@ export default function TransferForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
             <div>
               <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Produs *</Label>
-              <Select className={selectCls} value={productId} onChange={(e) => setProductId(e.target.value)}>
+              <Select className={selectCls} value={productId} onChange={(e) => setProductId(e.target.value)} searchable={products.length > 5} searchPlaceholder="Caută produs...">
                 <option value="">Alege produsul</option>
                 {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </Select>
@@ -125,7 +126,6 @@ export default function TransferForm() {
 
           <div className="flex flex-wrap gap-2 pt-1">
             <Button className={btnPrimary} disabled={busy} onClick={submit}>{busy ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Transferă'}</Button>
-            <a href="/app/gestiune"><Button className={btnSecondary} variant="ghost" type="button">Înapoi la stocuri</Button></a>
           </div>
         </CardContent>
       </Card>

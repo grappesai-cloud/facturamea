@@ -132,6 +132,27 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
   const cardRef = useRef<HTMLDivElement>(null);
   const openRef = useRef(false);
   const [open, setOpen] = useState(false);
+
+  // The info button sits inside the swipe-card, whose native touch/mouse listeners
+  // would otherwise swallow the tap. Wire it natively + stop propagation so the card
+  // never tracks it as a swipe and the tap reliably opens the info sheet on mobile.
+  const infoBtnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const el = infoBtnRef.current;
+    if (!el) return;
+    const stop = (e: Event) => e.stopPropagation();
+    const fire = (e: Event) => { e.stopPropagation(); onInfo(); };
+    el.addEventListener('pointerdown', stop);
+    el.addEventListener('mousedown', stop);
+    el.addEventListener('touchstart', stop, { passive: true });
+    el.addEventListener('click', fire);
+    return () => {
+      el.removeEventListener('pointerdown', stop);
+      el.removeEventListener('mousedown', stop);
+      el.removeEventListener('touchstart', stop);
+      el.removeEventListener('click', fire);
+    };
+  }, [onInfo]);
   const [removing, setRemoving] = useState(false);
   const [activeBar, setActiveBar] = useState<number | null>(null);
   const startRemove = () => { setRemoving(true); window.setTimeout(onDelete, 320); };
@@ -256,6 +277,15 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
         <div className="flex items-start justify-between gap-2">
           <p className="text-[13px] font-medium text-[#8FA6BC]">{def.label}</p>
           <div className="flex items-center gap-1 shrink-0">
+            {/* always-visible info button (the swipe-reveal one isn't discoverable on mobile) */}
+            <button
+              ref={infoBtnRef}
+              type="button"
+              aria-label="Detalii"
+              className="w-7 h-7 grid place-items-center rounded-full bg-white/10 text-[#A8BED2] hover:bg-white/15 hover:text-white transition-colors"
+            >
+              <Info className="w-3.5 h-3.5" />
+            </button>
             {/* desktop-only hover X to remove the KPI card */}
             <button
               type="button"
@@ -270,22 +300,28 @@ function KpiCard({ def, onInfo, onDelete }: { def: KpiDef; onInfo: () => void; o
             </span>
           </div>
         </div>
-        {activeBar !== null && def.barValues && def.barLabels ? (
-          <>
-            <p className="text-[12px] font-medium text-[#8FA6BC] mt-2">{def.barLabels[activeBar]}</p>
-            <p className="tabular-nums tracking-[-0.03em] leading-none mt-0.5">
-              <span className="text-[28px] sm:text-[32px] font-bold text-white">{def.barValues[activeBar]}</span>
-            </p>
-          </>
-        ) : (
-          <>
-            <p className="mt-2 tabular-nums tracking-[-0.03em] leading-none">
-              <span className="text-[30px] sm:text-[34px] font-bold text-white">{def.whole}</span>
-              {def.kind === 'money' && <span className="text-[19px] font-bold text-[#8FA6BC]">,{def.dec} RON</span>}
-            </p>
-            {def.note && <p className="text-[12px] text-[#8FA6BC] mt-1.5">{def.note}</p>}
-          </>
-        )}
+        {(() => {
+          const hasFooter = (def.bars && def.bars.length > 0) || (def.extra && def.extra.length > 0);
+          // Plain count/percent cards (no chart, no extra) center their number
+          // vertically so they read balanced instead of top-stuck in the equal-height grid.
+          const headlineCls = hasFooter ? 'mt-2' : 'my-auto py-1';
+          return activeBar !== null && def.barValues && def.barLabels ? (
+            <div className={headlineCls}>
+              <p className="text-[12px] font-medium text-[#8FA6BC]">{def.barLabels[activeBar]}</p>
+              <p className="tabular-nums tracking-[-0.03em] leading-none mt-0.5">
+                <span className="text-[28px] sm:text-[32px] font-bold text-white">{def.barValues[activeBar]}</span>
+              </p>
+            </div>
+          ) : (
+            <div className={headlineCls}>
+              <p className="tabular-nums tracking-[-0.03em] leading-none">
+                <span className="text-[30px] sm:text-[34px] font-bold text-white">{def.whole}</span>
+                {def.kind === 'money' && <span className="text-[19px] font-bold text-[#8FA6BC]">,{def.dec} RON</span>}
+              </p>
+              {def.note && <p className="text-[12px] text-[#8FA6BC] mt-1.5">{def.note}</p>}
+            </div>
+          );
+        })()}
         {def.bars && def.bars.length > 0 ? (
           <div className="mt-auto pt-3.5">
             {(() => {

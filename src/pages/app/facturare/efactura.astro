@@ -40,40 +40,50 @@ const isSendable = (s: string | null) => !(s === 'submitted' || s === 'sent' || 
 ---
 
 <AppLayout title="e-Factura" activeTab="efactura">
-  <div class="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-    <div>
-      <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">e-Factura</h1>
-      <p class="text-[14px] text-[#A8BED2] mt-1 max-w-2xl">Trimite facturile în sistemul național RO e-Factura, automat sau la cerere.</p>
+  <div class="mb-5 sm:mb-6">
+    <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">e-Factura</h1>
+    <p class="text-[14px] text-[#A8BED2] mt-1 max-w-2xl">În România, transmiterea facturilor în sistemul național RO e-Factura (ANAF SPV) este obligatorie. Aici vezi starea fiecărei facturi și controlezi trimiterea automată.</p>
+  </div>
+
+  <!-- Primary setting: auto-send to e-Factura -->
+  <div class="mb-3 rounded-2xl p-5 bg-white/5">
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-3">
+      <div class="flex-1 min-w-[220px]">
+        <div class="flex items-center gap-2">
+          <p class="text-[16px] font-bold text-white">Trimite automat la e-Factura</p>
+          <span id="auto-state" class:list={['inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold', autoSend ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-[#A8BED2]']}>{autoSend ? 'Activat' : 'Dezactivat'}</span>
+        </div>
+        <p class="text-[13px] text-[#A8BED2] mt-1">Recomandat — fiecare factură nouă pleacă singură la ANAF SPV la emitere, fără pași manuali.</p>
+      </div>
+      <button id="auto-toggle" role="switch" aria-checked={autoSend ? 'true' : 'false'} aria-label="Trimite automat la e-Factura"
+        class:list={['relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0', autoSend ? 'bg-[#E1FB15]' : 'bg-white/15']}>
+        <span class:list={['inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow', autoSend ? 'translate-x-7' : 'translate-x-1']}></span>
+      </button>
     </div>
-    <a href="/app/setari/integrari-anaf" title={anaf.connected ? 'ANAF conectat' : 'Conectează ANAF'}
-      class:list={['inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-[14px] font-semibold transition-colors', anaf.connected ? 'bg-[#2E9E6A]/15 text-[#2E9E6A]' : 'bg-white/10 text-white hover:bg-white/15']}>
-      <span class:list={['w-2.5 h-2.5 rounded-full', anaf.connected ? 'bg-[#2E9E6A]' : 'bg-[#8FA6BC]']}></span>
-      ANAF: {anaf.connected ? `conectat${anaf.cif ? ' · CIF ' + anaf.cif : ''}` : 'neconectat'}
+  </div>
+
+  <!-- ANAF connection status -->
+  {anaf.connected ? (
+    <a href="/app/setari/integrari-anaf" title="ANAF conectat"
+      class="mb-4 flex items-center gap-2 rounded-2xl px-4 py-3 bg-[#2E9E6A]/15">
+      <span class="w-2.5 h-2.5 rounded-full bg-[#2E9E6A] shrink-0"></span>
+      <p class="text-[13.5px] font-semibold text-[#2E9E6A]">ANAF conectat{anaf.cif ? ` · CIF ${anaf.cif}` : ''}</p>
+      <span class="text-[13px] font-semibold text-[#2E9E6A]/70 ml-auto">Gestionează →</span>
     </a>
-  </div>
-
-  <!-- Auto-send toggle -->
-  <div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl p-5 bg-white/5">
-    <div class="flex-1 min-w-[220px]">
-      <p class="text-[15px] font-semibold text-white">Trimitere automată la ANAF</p>
-      <p class="text-[13px] text-[#A8BED2] mt-0.5">Când e pornit, fiecare factură nouă pleacă singură la e-Factura la emitere.</p>
-    </div>
-    <button id="auto-toggle" role="switch" aria-checked={autoSend ? 'true' : 'false'}
-      class:list={['relative inline-flex h-8 w-14 items-center rounded-full transition-colors shrink-0', autoSend ? 'bg-[#E1FB15]' : 'bg-white/15']}>
-      <span class:list={['inline-block h-6 w-6 transform rounded-full bg-white transition-transform shadow', autoSend ? 'translate-x-7' : 'translate-x-1']}></span>
-    </button>
-    <span id="auto-state" class="text-[14px] font-semibold w-[60px] text-white">{autoSend ? 'Pornit' : 'Oprit'}</span>
-  </div>
-
-  {!anaf.connected && (
+  ) : (
     <div class="mb-4 flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3 bg-[#E8A33C]/15">
-      <span class="w-2 h-2 rounded-full bg-[#E8A33C]"></span>
-      <p class="text-[14px] text-[#E8A33C]">Pentru a trimite, conectează firma la ANAF din <strong>Setări → Integrare ANAF</strong>.</p>
-      <a href="/app/setari/integrari-anaf" class="text-[14px] font-semibold text-[#E1FB15] hover:underline ml-auto">Conectează →</a>
+      <span class="w-2.5 h-2.5 rounded-full bg-[#E8A33C] shrink-0"></span>
+      <p class="text-[13.5px] text-[#E8A33C]">Pentru a trimite, conectează firma la ANAF din <strong>Setări → Integrare ANAF</strong>.</p>
+      <a href="/app/setari/integrari-anaf" class="text-[13.5px] font-semibold text-[#E1FB15] hover:underline ml-auto whitespace-nowrap">Conectează →</a>
     </div>
   )}
-  <div class="mb-4 flex justify-end">
-    <button id="send-all" class="px-5 py-2.5 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 transition-colors">Trimite toate netrimise</button>
+
+  <!-- Status list header + bulk action -->
+  <div class="flex items-center justify-between gap-3 mb-3">
+    <h2 class="text-[18px] font-bold text-white">Starea facturilor</h2>
+    {rows.length > 0 && (
+      <button id="send-all" class="shrink-0 px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[13px] hover:bg-white/15 transition-colors whitespace-nowrap">Trimite netrimise</button>
+    )}
   </div>
 
   {rows.length === 0 ? (
@@ -154,7 +164,13 @@ const isSendable = (s: string | null) => !(s === 'submitted' || s === 'sent' || 
       const knob = toggle.querySelector('span');
       knob?.classList.toggle('translate-x-7', next);
       knob?.classList.toggle('translate-x-1', !next);
-      if (stateLbl) stateLbl.textContent = next ? 'Pornit' : 'Oprit';
+      if (stateLbl) {
+        stateLbl.textContent = next ? 'Activat' : 'Dezactivat';
+        stateLbl.classList.toggle('bg-[#2E9E6A]/15', next);
+        stateLbl.classList.toggle('text-[#2E9E6A]', next);
+        stateLbl.classList.toggle('bg-white/10', !next);
+        stateLbl.classList.toggle('text-[#A8BED2]', !next);
+      }
       try {
         await fetch('/api/invoicing/efactura-settings', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -174,7 +190,7 @@ const isSendable = (s: string | null) => !(s === 'submitted' || s === 'sent' || 
         if (res.ok && data.ok) {
           const row = btn.closest('[data-row]');
           const badge = row?.querySelector('.ef-badge');
-          if (badge) { badge.textContent = 'Trimisă'; badge.className = 'ef-badge inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#34A0A4]/15 text-[#34A0A4]'; }
+          if (badge) { badge.textContent = 'Trimisă'; badge.className = 'ef-badge inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-[#34A0A4]/15 text-[#34A0A4]'; }
           btn.textContent = 'Retrimite';
         } else {
           btn.textContent = original || 'Trimite acum';

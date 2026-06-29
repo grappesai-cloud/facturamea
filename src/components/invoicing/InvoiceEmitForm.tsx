@@ -96,11 +96,11 @@ interface DossierPrefill {
 
 // ── Shared field styling ──────────────────────────────────────────────────
 // Inputs sit one shade lighter than their card so they always read as a field.
-const FIELD = 'bg-white/10 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
+const FIELD = 'bg-white/10 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40';
 const SELECT = `[color-scheme:dark] ${FIELD}`;
 // Inset variant — for fields that live inside a line sub-card (which is itself
 // bg-white/10), so the field stays one shade darker than its container.
-const FIELD_INSET = 'bg-white/5 border-0 text-white placeholder:text-[#8FA6BC] hover:border-0 focus:border-0 focus:ring-2 focus:ring-[#E1FB15]/40';
+const FIELD_INSET = 'bg-white/5 border border-white/[0.12] text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40';
 const SELECT_INSET = `[color-scheme:dark] ${FIELD_INSET}`;
 const LBL = 'mb-1.5 block text-[12px] font-medium text-[#A8BED2]';
 
@@ -155,11 +155,6 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const [showAddClient, setShowAddClient] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
-  // Clear the "pick a client" validation hint as soon as one is chosen, so it
-  // doesn't linger after the user fixes it.
-  useEffect(() => {
-    if (pickedClient) setError((e) => (e === 'Alege sau adaugă un client' ? '' : e));
-  }, [pickedClient]);
 
   // Close dropdown when clicking outside the picker.
   useEffect(() => {
@@ -193,8 +188,8 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const [seriesId, setSeriesId] = useState('');
   // Mark the invoice paid + emit a chitanță in one go (only for kind=factura).
   const [collectNow, setCollectNow] = useState(false);
-  // e-Factura se trimite automat la ANAF la emitere (setarea firmei efacturaAutoSend,
-  // default ON) — fără toggle manual aici.
+  // e-Factura: trimite la ANAF la emitere. Implicit = setajul firmei (auto-send).
+  const [sendEfactura, setSendEfactura] = useState(efacturaAutoSend);
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [bnr, setBnr] = useState<{ rate: number; date: string } | null>(null);
 
@@ -569,6 +564,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
           attachmentName: attachmentName.trim() || null,
           dueAt: dueDate || null,
           issueImmediately,
+          sendEfactura: kind === 'factura' ? sendEfactura : false,
           notes: notes || null,
           lines: lines.map((l) => ({
             productId: l.productId || null,
@@ -1044,6 +1040,13 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
           <Toggle checked={issueImmediately} onChange={setIssueImmediately} title="Emite imediat (altfel rămâne ciornă)" />
           {kind === 'factura' && (
             <Toggle checked={collectNow} onChange={setCollectNow} title="Încasează acum (emite chitanță)" />
+          )}
+          {kind === 'factura' && issueImmediately && (
+            <Toggle
+              checked={sendEfactura}
+              onChange={setSendEfactura}
+              title={<>Trimite la e-Factura (ANAF){!anafConnected && <span className="text-[#E8A33C]"> · neconectat</span>}</>}
+            />
           )}
 
           {error && (

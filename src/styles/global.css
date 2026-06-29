@@ -495,6 +495,9 @@ html.th-dark .text-\[\#A8A8A4\] { color: #8a877d !important; }
 .fm-cal-action { color: #C8DAE8; }
 .fm-cal-action:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
+/* Highlight a day group when jumped to via the POS history calendar. */
+.fm-day-flash { box-shadow: inset 0 0 0 1.5px rgba(225, 251, 21, 0.55); }
+
 /* Light theme */
 html.th-light .fm-select-pop,
 html.th-light .fm-cal-pop {
@@ -519,6 +522,45 @@ html.th-light .fm-cal-day.is-selected { background: #5FA320; color: #fff; }
 html.th-light .fm-cal-foot { border-top: 1px solid rgba(17, 37, 58, 0.1); }
 html.th-light .fm-cal-action { color: #3A4F63; }
 html.th-light .fm-cal-action:hover { background: rgba(17, 37, 58, 0.06); color: #11253A; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Shared "reveal" entrance for every popup surface (Select dropdown, calendar,
+   filterbar panels, nav menu). One subtle slide + fade, identical in feel.
+   ────────────────────────────────────────────────────────────────────────── */
+@keyframes fm-reveal {
+  from { opacity: 0; transform: translateY(-6px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* The reusable hook. transform-origin near the top so the scale grows downward. */
+.fm-reveal {
+  animation: fm-reveal 165ms cubic-bezier(.16, 1, .3, 1) both;
+  transform-origin: top center;
+}
+
+/* Radix Select content: animate only while open, and be direction-aware so it
+   always grows away from the trigger. data-side is set by Radix on the content. */
+.fm-select-content[data-state="open"] {
+  animation: fm-reveal 165ms cubic-bezier(.16, 1, .3, 1) both;
+}
+.fm-select-content[data-side="bottom"] { transform-origin: top center; }
+.fm-select-content[data-side="top"]    { transform-origin: bottom center; }
+.fm-select-content[data-side="top"][data-state="open"] {
+  animation-name: fm-reveal-up;
+}
+@keyframes fm-reveal-up {
+  from { opacity: 0; transform: translateY(6px) scale(.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Respect users who ask for less motion: no entrance animation at all. */
+@media (prefers-reduced-motion: reduce) {
+  .fm-reveal,
+  .fm-select-content[data-state="open"],
+  .fm-select-content[data-side="top"][data-state="open"] {
+    animation: none;
+  }
+}
 
 /* Small content popover (e.g. "save to nomenclator") — reuses .fm-select-pop
    surface; these just theme its text. */

@@ -217,17 +217,17 @@ export default function BankManager() {
     <div className="space-y-6">
       {/* KPI strip */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className="bg-white/5 rounded-2xl p-4 sm:p-5">
-          <p className="text-[14px] text-[#A8BED2] font-medium">Conturi bancare</p>
-          <p className="text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 text-white tabular-nums">{accounts.length}</p>
+        <div className="min-w-0 bg-white/5 rounded-2xl p-4 sm:p-5">
+          <p className="text-[14px] text-[#A8BED2] font-medium truncate">Conturi bancare</p>
+          <p className="text-[22px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 text-white tabular-nums whitespace-nowrap truncate">{accounts.length}</p>
         </div>
-        <div className="bg-white/5 rounded-2xl p-4 sm:p-5">
-          <p className="text-[14px] text-[#A8BED2] font-medium">Sold total</p>
-          <p className="text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 text-white tabular-nums">{ron(totalBalance)}</p>
+        <div className="min-w-0 bg-white/5 rounded-2xl p-4 sm:p-5">
+          <p className="text-[14px] text-[#A8BED2] font-medium truncate">Sold total</p>
+          <p className="text-[20px] sm:text-[28px] lg:text-[30px] font-bold tracking-[-0.02em] mt-1.5 text-white tabular-nums whitespace-nowrap truncate">{ron(totalBalance)}</p>
         </div>
-        <div className="bg-white/5 rounded-2xl p-4 sm:p-5 col-span-2 lg:col-span-1">
-          <p className="text-[14px] text-[#A8BED2] font-medium">Tranzacții nereconciliate</p>
-          <p className={`text-[24px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 tabular-nums ${totalUnreconciled > 0 ? 'text-[#E8A33C]' : 'text-[#2E9E6A]'}`}>{totalUnreconciled}</p>
+        <div className="min-w-0 bg-white/5 rounded-2xl p-4 sm:p-5 col-span-2 lg:col-span-1">
+          <p className="text-[14px] text-[#A8BED2] font-medium truncate">Tranzacții nereconciliate</p>
+          <p className={`text-[22px] sm:text-[30px] font-bold tracking-[-0.02em] mt-1.5 tabular-nums whitespace-nowrap truncate ${totalUnreconciled > 0 ? 'text-[#E8A33C]' : 'text-[#2E9E6A]'}`}>{totalUnreconciled}</p>
         </div>
       </div>
 
@@ -253,17 +253,17 @@ export default function BankManager() {
               <div>
                 <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">Nume cont *</label>
                 <input value={naName} onChange={(e) => setNaName(e.target.value)} placeholder="BCR cont curent"
-                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border border-white/[0.12] text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
               </div>
               <div>
                 <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">IBAN</label>
                 <input value={naIban} onChange={(e) => setNaIban(e.target.value)} placeholder="RO49AAAA1B31..."
-                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border border-white/[0.12] text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
               </div>
               <div>
                 <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">Bancă</label>
                 <input value={naBank} onChange={(e) => setNaBank(e.target.value)} placeholder="BCR"
-                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border-0 text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  className="w-full h-11 px-3.5 rounded-xl bg-white/10 border border-white/[0.12] text-white text-[15px] placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
               </div>
               <div>
                 <label className="block text-[13px] font-semibold text-[#A8BED2] mb-1.5">Monedă</label>
@@ -291,20 +291,25 @@ export default function BankManager() {
             {accounts.map((a) => (
               <div key={a.id}
                 onClick={() => setActiveId(a.id)}
-                className={`group flex items-center gap-4 px-5 sm:px-6 py-4 cursor-pointer transition-colors ${activeId === a.id ? 'bg-white/10' : 'hover:bg-white/5'}`}>
+                className={`group flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4 cursor-pointer transition-colors ${activeId === a.id ? 'bg-white/10' : 'hover:bg-white/5'}`}>
                 <span className={`shrink-0 w-3 h-3 rounded-full ${activeId === a.id ? 'bg-[#E1FB15]' : 'bg-white/20'}`} />
                 <span className="flex-1 min-w-0">
                   <span className="block text-[16px] font-semibold truncate text-white">{a.name}</span>
                   <span className="block text-[13px] text-[#A8BED2] truncate">
                     {[a.bank, a.iban].filter(Boolean).join(' · ') || 'Fără IBAN'}
                   </span>
+                  {(a.unreconciledCount ?? 0) > 0 && (
+                    <span className="sm:hidden inline-block mt-1.5 px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-[#E8A33C]/15 text-[#E8A33C]">
+                      {a.unreconciledCount} nereconciliate
+                    </span>
+                  )}
                 </span>
                 {(a.unreconciledCount ?? 0) > 0 && (
-                  <span className="shrink-0 px-2.5 py-1 rounded-full text-[13px] font-semibold bg-[#E8A33C]/15 text-[#E8A33C]">
+                  <span className="hidden sm:inline-block shrink-0 px-2.5 py-1 rounded-full text-[13px] font-semibold bg-[#E8A33C]/15 text-[#E8A33C]">
                     {a.unreconciledCount} nereconciliate
                   </span>
                 )}
-                <span className="shrink-0 text-[16px] font-bold tabular-nums text-white">{ron(a.balanceCents || 0, a.currency)}</span>
+                <span className="shrink-0 text-[14px] sm:text-[16px] font-bold tabular-nums text-white whitespace-nowrap">{ron(a.balanceCents || 0, a.currency)}</span>
                 <button onClick={(e) => { e.stopPropagation(); deleteAccount(a); }}
                   className="shrink-0 w-9 h-9 rounded-full border-0 bg-white/10 grid place-items-center text-[#A8BED2] hover:bg-[#DC4B41]/15 hover:text-[#DC4B41] transition-colors opacity-100 lg:opacity-0 lg:group-hover:opacity-100" title="Șterge contul">
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -360,32 +365,35 @@ export default function BankManager() {
                 return (
                   <div key={tx.id}>
                     <div className="flex items-center gap-3 sm:gap-4 px-5 sm:px-6 py-4">
-                      <span className="shrink-0 w-[88px] text-[14px] text-[#A8BED2] tabular-nums">{dateLabel(tx.bookingDate)}</span>
+                      <span className="hidden sm:block shrink-0 w-[88px] text-[14px] text-[#A8BED2] tabular-nums">{dateLabel(tx.bookingDate)}</span>
                       <span className="flex-1 min-w-0">
                         <span className="block text-[15px] font-semibold truncate text-white">{tx.counterparty || tx.description || '(fără detalii)'}</span>
                         <span className="block text-[13px] text-[#A8BED2] truncate">
+                          <span className="sm:hidden">{dateLabel(tx.bookingDate)}{([tx.reference, tx.counterparty ? tx.description : null].filter(Boolean).join(' · ') || tx.counterpartyIban) ? ' · ' : ''}</span>
                           {[tx.reference, tx.counterparty ? tx.description : null].filter(Boolean).join(' · ') || tx.counterpartyIban || ''}
                         </span>
                       </span>
-                      <span className={`shrink-0 text-[16px] font-bold tabular-nums ${incoming ? 'text-[#2E9E6A]' : 'text-white'}`}>
-                        {incoming ? '+' : ''}{ron(tx.amountCents, tx.currency)}
+                      <span className="flex flex-col items-end gap-2 shrink-0 sm:flex-row sm:items-center sm:gap-4">
+                        <span className={`text-[14px] sm:text-[16px] font-bold tabular-nums whitespace-nowrap ${incoming ? 'text-[#2E9E6A]' : 'text-white'}`}>
+                          {incoming ? '+' : ''}{ron(tx.amountCents, tx.currency)}
+                        </span>
+                        {tx.reconciled ? (
+                          <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#2E9E6A]/15 text-[#2E9E6A]">Reconciliat</span>
+                        ) : (
+                          <span className="hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#E8A33C]/15 text-[#E8A33C]">Nereconciliat</span>
+                        )}
+                        {tx.reconciled ? (
+                          <button onClick={() => undoReconcile(tx)}
+                            className="px-3.5 h-10 rounded-full bg-white/10 border-0 text-white hover:bg-white/15 text-[14px] font-semibold whitespace-nowrap">
+                            Anulează
+                          </button>
+                        ) : (
+                          <button onClick={() => toggleSuggestions(tx)}
+                            className="px-3.5 h-10 rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] text-[14px] whitespace-nowrap">
+                            {open ? 'Închide' : 'Reconciliază'}
+                          </button>
+                        )}
                       </span>
-                      {tx.reconciled ? (
-                        <span className="shrink-0 hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#2E9E6A]/15 text-[#2E9E6A]">Reconciliat</span>
-                      ) : (
-                        <span className="shrink-0 hidden sm:inline-block px-2.5 py-1 rounded-full text-[13px] font-medium bg-[#E8A33C]/15 text-[#E8A33C]">Nereconciliat</span>
-                      )}
-                      {tx.reconciled ? (
-                        <button onClick={() => undoReconcile(tx)}
-                          className="shrink-0 px-3.5 h-10 rounded-full bg-white/10 border-0 text-white hover:bg-white/15 text-[14px] font-semibold">
-                          Anulează
-                        </button>
-                      ) : (
-                        <button onClick={() => toggleSuggestions(tx)}
-                          className="shrink-0 px-3.5 h-10 rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] text-[14px]">
-                          {open ? 'Închide' : 'Reconciliază'}
-                        </button>
-                      )}
                     </div>
 
                     {open && !tx.reconciled && (

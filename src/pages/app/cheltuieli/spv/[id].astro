@@ -1,0 +1,75 @@
+---
+import AppLayout from '../../../../layouts/AppLayout.astro';
+import EfacturaInvoiceView from '../../../../components/anaf/EfacturaInvoiceView.tsx';
+import { db } from '../../../../db';
+import { efacturaInbox } from '../../../../db/schema';
+import { eq, and } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+const { id } = Astro.params;
+
+let row: any = null;
+try {
+  const rows = await db.select().from(efacturaInbox)
+    .where(and(eq(efacturaInbox.id, id!), eq(efacturaInbox.companyId, companyId)))
+    .limit(1);
+  row = rows[0] ?? null;
+} catch (e) { /* DB not ready */ }
+
+if (!row) return Astro.redirect('/app/cheltuieli');
+
+// Already imported → jump straight to the recorded expense.
+if (row.status === 'importat' && row.importedExpenseId) {
+  return Astro.redirect(`/app/cheltuieli/${row.importedExpenseId}`);
+}
+
+const ron = (c: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((c || 0) / 100) + ' ' + (row.currency || 'RON');
+const dt = (d: any) => d ? new Date(d).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest', day: '2-digit', month: 'long', year: 'numeric' }) : '';
+const supName = row.supplierName || row.fromCif || 'Furnizor';
+---
+
+<AppLayout title={`Factură primită · ${supName}`} activeTab="cheltuieli">
+  <div class="max-w-2xl">
+    <div class="flex items-center gap-2 mb-2.5">
+      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-semibold bg-[#34A0A4]/15 text-[#34A0A4] whitespace-nowrap">e-Factura · din SPV</span>
+    </div>
+    <div class="flex items-end justify-between gap-4 mb-1">
+      <h1 class="text-[26px] sm:text-[34px] font-semibold tracking-[-0.02em] text-white leading-tight">{supName}</h1>
+      <p class="text-[24px] sm:text-[30px] font-bold tabular-nums text-white shrink-0 whitespace-nowrap">{row.totalCents != null ? ron(row.totalCents) : '—'}</p>
+    </div>
+    <p class="text-[13px] text-[#8FA6BC] mb-6">{row.fromCif ? `CUI ${row.fromCif}` : ''}{row.issueDate ? `${row.fromCif ? ' · ' : ''}${dt(row.issueDate)}` : ''}</p>
+
+    <p class="text-[13.5px] text-[#A8BED2] mb-5">Citește factura primită de la furnizor, apoi confirmă pentru a o adăuga în Cheltuieli.</p>
+
+    <EfacturaInvoiceView inboxId={row.id} client:load />
+
+    <div class="mt-7 flex flex-wrap gap-3">
+      <button id="spv-confirm" type="button" data-id={row.id} class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#E1FB15] text-[#07090f] text-[15px] font-bold hover:bg-[#D2EA0E] active:scale-95 transition-all disabled:opacity-60">
+        Confirmă și adaugă în Cheltuieli
+      </button>
+      <a href="/app/cheltuieli" class="inline-flex items-center px-6 py-3 rounded-full bg-white/10 text-white text-[15px] font-semibold hover:bg-white/15 transition-colors">Mai târziu</a>
+    </div>
+  </div>
+</AppLayout>
+
+<script>
+  const btn = document.getElementById('spv-confirm') as HTMLButtonElement | null;
+  btn?.addEventListener('click', async () => {
+    const id = btn.dataset.id;
+    btn.disabled = true;
+    const original = btn.textContent;
+    btn.textContent = 'Se adaugă…';
+    try {
+      const res = await fetch(`/api/anaf/inbox/${id}/import`, { method: 'POST' });
+      const d = await res.json();
+      if (d.ok && d.expenseId) { window.location.href = `/app/cheltuieli/${d.expenseId}`; return; }
+      window.location.href = '/app/cheltuieli';
+    } catch {
+      btn.disabled = false;
+      btn.textContent = original;
+      alert('Nu am putut adăuga factura. Încearcă din nou.');
+    }
+  });
+</script>

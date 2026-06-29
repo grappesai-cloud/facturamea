@@ -63,7 +63,7 @@ export default function FiscalSettings() {
 
   const save = () => { saveFiscalConfig(cfg); setSaved(true); setMsg({ kind: 'ok', text: 'Setări salvate pe acest dispozitiv.' }); };
 
-  const inputCls = 'bg-white/10 text-white border-0 [color-scheme:dark] placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40';
+  const inputCls = 'bg-white/10 text-white border border-white/[0.12] [color-scheme:dark] placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40';
 
   return (
     <div className="max-w-2xl space-y-4">
