@@ -381,6 +381,19 @@ const showAdminMark = !!user?.isAdmin && !isImpersonating && (currentPath === '/
     html.th-app-dark #menu-card     { background-color: #07090f !important; }
     html.th-app-dark #help-card     { background-color: #07090f !important; }
 
+    /* Light mode: BottomSheet popups (Acțiuni picker, settings, menu, help) render
+       as portals OUTSIDE [data-app-shell], so the th-light remap below never reaches
+       them and they'd stay dark. Re-map the sheet card chrome here. Action tiles use
+       inline colours (m.bg / m.fg), so only the card + heading text flip. */
+    html.th-light .app-sheet-card { background-color: #FFFFFF !important; color: #11253A; }
+    html.th-light .app-sheet-card .text-white { color: #11253A !important; }
+    html.th-light .app-sheet-card .text-\[\#C8DAE8\] { color: #3A4F63 !important; }
+    html.th-light .app-sheet-card .text-\[\#A8BED2\] { color: #4F6478 !important; }
+    html.th-light .app-sheet-card .text-\[\#8FA6BC\] { color: #5E7385 !important; }
+    html.th-light .app-sheet-card .bg-white\/5  { background-color: #FFFFFF !important; box-shadow: 0 1px 2px rgba(16,32,56,0.05), 0 12px 32px -18px rgba(16,32,56,0.20) !important; }
+    html.th-light .app-sheet-card .bg-white\/10 { background-color: #E7ECF3 !important; }
+    html.th-light .app-sheet-card .border-white\/10 { border-color: rgba(17,37,58,0.10) !important; }
+
     /* ── Soft light mode ── */
     /* App shell + content */
     html.th-light [data-app-shell] { background-color: #EEF2F6 !important; color: #11253A; }
