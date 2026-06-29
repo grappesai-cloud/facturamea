@@ -37,6 +37,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
   const [company] = await db.select().from(companies).where(eq(companies.id, cid)).limit(1);
 
+  const nameParts = (locals.user.name || company?.name || '').trim();
   const xml = generateF1010Xml({
     year,
     company: {
@@ -46,8 +47,12 @@ export const GET: APIRoute = async ({ url, locals }) => {
       city: company?.city ?? null,
       phone: company?.phone ?? null,
       email: company?.email ?? null,
+      regCom: (company as any)?.regCom ?? null,
+      caen: (company as any)?.caen ?? null,
+      countyCode: (company as any)?.countyCode ?? null,
     },
     bilant,
+    declarant: { admin: nameParts || (company?.name ?? '-'), intocmit: nameParts || (company?.name ?? '-'), calitate: '13' },
   });
 
   return new Response(xml, {

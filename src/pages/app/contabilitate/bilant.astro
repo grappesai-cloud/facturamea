@@ -139,7 +139,7 @@ const rezultat = b?.pnl.rezultat ?? 0;
       </div>
 
       <p class="text-[13px] text-[#8FA6BC]">
-        Bilanț calculat din balanța de verificare. „F1010 XML (draft)” e o structură PROVIZORIE, NU corespunde încă schemei oficiale ANAF — nu o depune încă. Calculul (Activ/Pasiv/rezultat) e corect; XML-ul oficial îl finalizăm.
+        Bilanț calculat din balanța de verificare (calculul Activ/Pasiv/rezultat e corect). „F1010 XML (draft)” folosește acum structura reală ANAF pentru microîntreprinderi (S1005 / Bilant1005, formularele F10 + F20), DAR e încă DRAFT: lipsesc câmpuri obligatorii (nr. reg. com., CAEN, județ) și blocul F30 (date informative: nr. salariați + impozite) — deci nu trece încă de validatorul ANAF. Nu o depune încă; o finalizăm. Pentru depunere folosește deocamdată aplicația oficială ANAF.
       </p>
     </>
   )}
