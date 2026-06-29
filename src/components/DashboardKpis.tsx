@@ -1,5 +1,6 @@
 // Organizes the customizable KPI widgets — swipe to reveal, add/remove, read charts.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { Info, X, Plus, ArrowRight } from 'lucide-react';
 
 export interface KpiDef {
@@ -114,8 +115,8 @@ function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () =
     };
   }, [mounted]);
 
-  if (!mounted) return null;
-  return (
+  if (!mounted || typeof document === 'undefined') return null;
+  return createPortal(
     <div className={`app-sheet ${shown ? 'is-open' : ''} fixed inset-0 z-[70] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/70`} onClick={onClose} style={{ fontFamily: "'Outfit',ui-sans-serif,system-ui,sans-serif" }}>
       <div ref={cardRef} className="app-sheet-card relative w-full sm:max-w-[520px] max-h-[80vh] sm:max-h-[86vh] overflow-y-auto bg-[#07090f] rounded-t-[28px] sm:rounded-[28px] shadow-[0_-12px_60px_-12px_rgba(0,0,0,0.7)] sm:shadow-[0_30px_80px_-20px_rgba(0,0,0,0.85)]" onClick={(e) => e.stopPropagation()}>
         <button type="button" onClick={onClose} aria-label="Închide" className="absolute top-4 right-4 z-10 fm-close-btn">
@@ -123,7 +124,8 @@ function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () =
         </button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
