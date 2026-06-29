@@ -389,8 +389,11 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
         // ANAF's free API is rate-limited (1 req/s) and flaky — a 429 / 5xx /
         // rate-limit message is TRANSIENT, not "CUI inexistent". Retry up to 2x
         // before giving up, and never say "negăsit" for a transient failure.
+        // A genuine not-found is "CUI inexistent în registrul ANAF" (ANAF 200 +
+        // empty). A 4xx/5xx from ANAF ("ANAF a răspuns 404/5xx") is an API hiccup
+        // on their flaky service — retry those, not just 429/network.
         const transient = res.status === 429 || res.status >= 500
-          || /rate|ocupat|reîncearcă|temporar|indisponibil|server|timeout|prea multe/i.test(data.error || '');
+          || /rate|ocupat|reîncearcă|temporar|indisponibil|server|timeout|prea multe|anaf a răspuns/i.test(data.error || '');
         if (transient && attempt < 2) { setTimeout(() => lookupCui(attempt + 1), 1600); return; }
         setCuiLookupState('notfound');
         setCuiLookupHint(transient ? 'ANAF indisponibil acum — reîncearcă sau completează manual.' : 'CUI negăsit. Continuă manual.');
