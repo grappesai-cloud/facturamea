@@ -363,7 +363,7 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
                 </span>
                 <input
                   type="file"
-                  accept=".xml,.zip,application/pdf,image/*"
+                  accept=".xml,.zip,application/pdf,image/*,.heic,.heif"
                   className="sr-only"
                   disabled={extracting}
                   onChange={(e) => { const file = e.target.files?.[0]; e.target.value = ''; if (file) extractFromFile(file); }}

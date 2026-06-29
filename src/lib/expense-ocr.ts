@@ -95,16 +95,33 @@ export async function ocrExpense(bytes: Uint8Array, mediaType: string): Promise<
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return { ok: false, error: 'OCR indisponibil: cheia ANTHROPIC_API_KEY nu este configurată.' };
 
-  const mt = (mediaType || '').toLowerCase();
+  let mt = (mediaType || '').toLowerCase();
+  let imgBytes = bytes;
+
+  // iPhone photos are HEIC/HEIF, which Claude vision can't read — convert to JPEG.
+  const brand = bytes.length > 12 ? String.fromCharCode(...bytes.slice(4, 12)) : '';
+  const isHeic = mt === 'image/heic' || mt === 'image/heif'
+    || (brand.startsWith('ftyp') && /heic|heix|mif1|heim|hevc|msf1/.test(brand));
+  if (isHeic) {
+    try {
+      const { default: heicConvert } = await import('heic-convert');
+      const out = await heicConvert({ buffer: Buffer.from(bytes) as any, format: 'JPEG', quality: 0.9 });
+      imgBytes = new Uint8Array(out);
+      mt = 'image/jpeg';
+    } catch {
+      return { ok: false, error: 'Nu am putut converti poza HEIC. Salveaz-o ca JPG sau fă o captură de ecran.' };
+    }
+  }
+
   const isPdf = mt === 'application/pdf';
   const isImage = IMAGE_MEDIA.has(mt);
   if (!isPdf && !isImage) {
-    return { ok: false, error: 'Tip de fișier neacceptat. Încarcă o imagine (JPG/PNG/WebP) sau un PDF.' };
+    return { ok: false, error: 'Tip de fișier neacceptat. Încarcă o imagine (JPG/PNG/WebP/HEIC) sau un PDF.' };
   }
 
   let base64: string;
   try {
-    base64 = Buffer.from(bytes).toString('base64');
+    base64 = Buffer.from(imgBytes).toString('base64');
   } catch {
     return { ok: false, error: 'Nu am putut citi fișierul.' };
   }
