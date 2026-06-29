@@ -310,6 +310,12 @@ export const onRequest = defineMiddleware(async (context, next) => {
         founderNumber: (user as any).founderNumber ?? null,
       };
 
+      // Impersonation: an admin viewing a user's account. Detect it HERE (before the
+      // license/onboarding gate) so impersonating an account that isn't complete or
+      // licensed doesn't bounce the admin to /app/onboarding — they're inspecting it.
+      const impersonating = /(?:^|;\s*)th_imp=/.test(context.request.headers.get('cookie') || '');
+      (context.locals as any).impersonating = impersonating;
+
       // Load company data
       context.locals.license = null;
       context.locals.anafConnected = null;
@@ -338,7 +344,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
             // Activation: a company needs a complete fiscal profile (CIF + address)
             // AND a paid lifetime license. No trial.
             const companyComplete = !!(company && company.cui && company.address);
-            if ((!companyComplete || !st.active) && !isAdmin) {
+            if ((!companyComplete || !st.active) && !isAdmin && !impersonating) {
               if (needsApiLicense) {
                 return new Response(JSON.stringify({ error: 'Licență inactivă. Activează abonamentul pentru a folosi această funcție.', code: 'license_inactive' }), {
                   status: 402, headers: { 'Content-Type': 'application/json', ...(cors || {}) },
@@ -358,9 +364,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         context.locals.company = null;
       }
 
-      // Impersonation flag (th_imp cookie set by /api/admin/impersonate) — powers
-      // the "you're viewing as a user" banner + exit link.
-      (context.locals as any).impersonating = /(?:^|;\s*)th_imp=/.test(context.request.headers.get('cookie') || '');
+      // (impersonation flag already set above, before the license gate)
 
       // Admin guard (+ MANDATORY 2FA for admins). Covers both /admin pages and
       // /api/admin endpoints (the latter don't start with /admin). stop-impersonate
