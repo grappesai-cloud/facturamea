@@ -6,6 +6,7 @@ import { db } from '../../../db';
 import { notifications, transportInvoices, efacturaInbox } from '../../../db/schema';
 import { eq, desc, and, or, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm';
 import { getAnafStatus } from '../../../lib/anaf/tokens';
+import { detectAnomalies } from '../../../lib/anomalies';
 
 const user = Astro.locals.user!;
 let items: any[] = [];
@@ -116,6 +117,27 @@ const FILTERS: { key: 'toate' | Group; label: string }[] = [
 
 const unreadCount = items.filter((n) => !n.readAt).length;
 const hasAnything = items.length > 0 || efErrors.length > 0 || inboxNew.length > 0 || efUnsentCnt > 0;
+
+// ── Verificări: pre-ANAF anomaly checks + fiscal deadlines.
+// Moved here from the standalone /app/verificari page so all alerts live in one place.
+let anomalies: any[] = [];
+if (user.companyId) {
+  try { anomalies = await detectAnomalies(user.companyId); } catch { /* DB not ready */ }
+}
+const highCount = anomalies.filter((a) => a.severity === 'high').length;
+const vNow = new Date();
+const vMk = (day: number, label: string) => {
+  let d = new Date(vNow.getFullYear(), vNow.getMonth(), day);
+  if (vNow.getDate() > day) d = new Date(vNow.getFullYear(), vNow.getMonth() + 1, day);
+  const days = Math.ceil((d.getTime() - vNow.getTime()) / 86400000);
+  return { label, date: d.toLocaleDateString('ro-RO', { day: 'numeric', month: 'long', timeZone: 'Europe/Bucharest' }), days };
+};
+const deadlines = [
+  vMk(25, 'TVA (D300) · SAF-T (D406) · VIES (D390) · D394'),
+  vMk(25, 'Impozit pe venit / microîntreprindere'),
+].sort((a, b) => a.days - b.days);
+const V_TONE: Record<string, string> = { high: 'bg-[#DC4B41]/15 text-[#DC4B41]', warn: 'bg-[#E8A33C]/15 text-[#E8A33C]', info: 'bg-[#34A0A4]/15 text-[#34A0A4]' };
+const V_DOT: Record<string, string> = { high: 'bg-[#DC4B41]', warn: 'bg-[#E8A33C]', info: 'bg-[#34A0A4]' };
 ---
 
 <AppLayout title="Notificări" activeTab="notificari">
@@ -131,6 +153,49 @@ const hasAnything = items.length > 0 || efErrors.length > 0 || inboxNew.length >
       </button>
     )}
   </div>
+
+  {/* Verificări — pre-ANAF checks (anomalies + fiscal deadlines), moved here from /app/verificari */}
+  <section class="mb-8">
+    <div class="flex items-baseline gap-2 mb-3">
+      <h2 class="text-[16px] font-bold text-white">Verificări</h2>
+      <span class="text-[12.5px] text-[#7E97AC]">· prinde greșelile înainte de ANAF</span>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+      {deadlines.map((d) => (
+        <div class={`rounded-2xl p-4 ${d.days <= 5 ? 'bg-[#E8A33C]/10 ring-1 ring-[#E8A33C]/30' : 'bg-white/5'}`}>
+          <p class="text-[13px] text-[#A8BED2]">{d.label}</p>
+          <p class="mt-1 text-[18px] font-bold text-white">{d.date} <span class="text-[13px] font-normal text-[#7E97AC]">· peste {d.days} {d.days === 1 ? 'zi' : 'zile'}</span></p>
+        </div>
+      ))}
+    </div>
+    {anomalies.length === 0 ? (
+      <div class="rounded-2xl bg-[#2E9E6A]/10 ring-1 ring-[#2E9E6A]/30 p-5 text-center">
+        <p class="text-[15px] font-semibold text-[#2E9E6A]">✓ Nicio problemă găsită</p>
+        <p class="text-[13px] text-[#A8BED2] mt-0.5">Facturile, cheltuielile și TVA-ul arată în regulă.</p>
+      </div>
+    ) : (
+      <>
+        <div class="mb-2.5 flex items-center gap-2">
+          <h3 class="text-[15px] font-bold text-white">{anomalies.length} {anomalies.length === 1 ? 'verificare' : 'verificări'} de atenționat</h3>
+          {highCount > 0 && <span class="text-[12px] px-2.5 py-1 rounded-full bg-[#DC4B41]/15 text-[#DC4B41] font-semibold">{highCount} urgente</span>}
+        </div>
+        <ul class="space-y-2.5">
+          {anomalies.map((a) => (
+            <li class="rounded-2xl bg-white/5 hover:bg-white/[0.08] transition-colors p-4">
+              <div class="flex items-start gap-3">
+                <span class={`mt-1.5 shrink-0 w-2.5 h-2.5 rounded-full ${V_DOT[a.severity]}`}></span>
+                <div class="min-w-0 flex-1">
+                  <p class="text-[15.5px] font-semibold text-white">{a.title}</p>
+                  <p class="text-[13.5px] text-[#A8BED2] mt-0.5">{a.detail}</p>
+                </div>
+                {a.href && <a href={a.href} class={`shrink-0 text-[13px] px-3 py-1.5 rounded-full font-semibold ${V_TONE[a.severity]}`}>Rezolvă →</a>}
+              </div>
+            </li>
+          ))}
+        </ul>
+      </>
+    )}
+  </section>
 
   {hasAnything && (
     <div id="notif-filters" class="mb-6 flex flex-wrap items-center gap-2" role="tablist" aria-label="Filtrează notificările">
