@@ -74,15 +74,6 @@ interface Line {
 
 interface TvaRate { id: string; name: string; percent: number; regime: string; isDefault: boolean; isActive: boolean }
 
-const VAT_REGIMES: { value: string; label: string }[] = [
-  { value: 'standard', label: 'TVA standard' },
-  { value: 'reverse_charge', label: 'Taxare inversă' },
-  { value: 'exempt', label: 'Scutit de TVA' },
-  { value: 'tva_la_incasare', label: 'TVA la încasare' },
-  { value: 'export_extra_eu', label: 'Export extra-UE (0%)' },
-  { value: 'intra_eu', label: 'Livrare intra-UE (0%)' },
-];
-
 function emptyLine(vatRate = '21'): Line {
   return { code: '', description: '', quantity: '1', unit: 'buc', unitPrice: '', vatRate };
 }
@@ -974,9 +965,10 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                 </Select>
               </div>
               <div>
-                <Label className={LBL}>Regim TVA</Label>
-                <Select className={SELECT} value={vatRegime} onChange={(e) => setVatRegime(e.target.value)}>
-                  {VAT_REGIMES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                <Label className={LBL}>Limbă</Label>
+                <Select className={SELECT} value={language} onChange={(e) => setLanguage(e.target.value as 'ro' | 'en')}>
+                  <option value="ro">Română (RO)</option>
+                  <option value="en">English (EN)</option>
                 </Select>
               </div>
               {(kind === 'factura' || kind === 'proforma') && (
@@ -1003,13 +995,6 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                   </div>
                 </div>
               )}
-              <div>
-                <Label className={LBL}>Limbă</Label>
-                <Select className={SELECT} value={language} onChange={(e) => setLanguage(e.target.value as 'ro' | 'en')}>
-                  <option value="ro">Română (RO)</option>
-                  <option value="en">English (EN)</option>
-                </Select>
-              </div>
               <div>
                 <Label className={LBL}>Precizie</Label>
                 <Select className={SELECT} value={precision} onChange={(e) => setPrecision(e.target.value)}>
