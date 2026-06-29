@@ -34,18 +34,21 @@ export const GET: APIRoute = async ({ request }) => {
   }
 
   const ids = targets.map((u) => u.id);
-  let deleted = 0;
+  let affected = 0;
   if (ids.length) {
     try {
-      // Memberships first (FK), then the users.
+      // Hard delete is blocked by ~15 RESTRICT FKs (auth + activity tables). The
+      // safe, reversible equivalent (what the admin panel does) is deactivation:
+      // the test users vanish from the active list and can no longer sign in.
+      // Their Demo-Studio-SRL membership rows are also removed.
       await db.delete(userCompanyMemberships).where(inArray(userCompanyMemberships.userId, ids));
-      const res: any = await db.delete(users).where(inArray(users.id, ids));
-      deleted = res?.rowCount ?? ids.length;
+      const res: any = await db.update(users).set({ isActive: false }).where(inArray(users.id, ids));
+      affected = res?.rowCount ?? ids.length;
     } catch (e: any) {
       return new Response(JSON.stringify({ ok: false, error: e?.message || String(e), attempted: ids.length }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   }
-  return new Response(JSON.stringify({ ok: true, company: co.name, deleted, kept: KEEP_EMAILS }, null, 2), {
+  return new Response(JSON.stringify({ ok: true, mode: 'deactivated', company: co.name, deactivated: affected, kept: KEEP_EMAILS }, null, 2), {
     status: 200, headers: { 'Content-Type': 'application/json' },
   });
 };
