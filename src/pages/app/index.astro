@@ -181,13 +181,15 @@ try {
   const r = await db.select({ c: sql<number>`count(*)::int` }).from(userCompanyMemberships).where(eq(userCompanyMemberships.userId, user.id));
   companyCount = Number(r[0]?.c ?? 1);
 } catch { /* DB not ready */ }
-const hideCockpit = companyCount <= 1;
+const isSingleFirm = companyCount <= 1;
+// Accountant-suite modules — only relevant for accountants managing multiple firms.
+const accountantOnly = new Set(['cockpit', 'contabilitate', 'cereri']);
 // e-Transport (UIT) needs ANAF connected — keep it out of the shortcut catalog until then.
 const anafConnected = Astro.locals.anafConnected;
 
 const primary = NAV_MODULES.find((m) => m.primary)!;
 const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import'
-  && !(hideCockpit && m.key === 'cockpit')
+  && !(isSingleFirm && accountantOnly.has(m.key))
   && !(!anafConnected && m.key === 'etransport'));
 
 // Full catalog (with flat tile colours) the user can pin to the launcher.

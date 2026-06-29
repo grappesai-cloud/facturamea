@@ -330,6 +330,29 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
     }, 600);
     return () => window.clearTimeout(id);
   }, [lines, notes, dueDate, currency, isPrefilled, DRAFT_KEY]);
+  // Flush the draft SYNCHRONOUSLY when leaving mid-edit — unmount, SPA navigation
+  // (astro:before-swap) or tab close/refresh (pagehide). The debounced save above
+  // gets its timer cleared on a quick exit, so without this the draft is lost.
+  const draftRef = useRef({ lines, notes, dueDate, currency });
+  draftRef.current = { lines, notes, dueDate, currency };
+  useEffect(() => {
+    if (isPrefilled) return;
+    const flush = () => {
+      try {
+        const d = draftRef.current;
+        if (d.lines?.some((l: Line) => l.description || l.unitPrice)) {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
+        }
+      } catch { /* ignore */ }
+    };
+    window.addEventListener('pagehide', flush);
+    document.addEventListener('astro:before-swap', flush);
+    return () => {
+      flush();
+      window.removeEventListener('pagehide', flush);
+      document.removeEventListener('astro:before-swap', flush);
+    };
+  }, [isPrefilled, DRAFT_KEY]);
   const restoreDraft = () => {
     try {
       const d = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');

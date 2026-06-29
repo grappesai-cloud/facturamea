@@ -45,7 +45,10 @@ if (user) {
   } catch { /* DB not ready */ }
 }
 const menuHide = new Set(MENU_HIDE);
-if (companyCount <= 1) menuHide.add('cockpit');
+// Accountant-suite modules (multi-firmă overview, double-entry books, client
+// document requests) only make sense for accountants who manage more than one
+// company. Hide them from single-company users.
+if (companyCount <= 1) { menuHide.add('cockpit'); menuHide.add('contabilitate'); menuHide.add('cereri'); }
 // e-Transport (UIT) needs ANAF connected — hide it until then, the way the user
 // connects it is via Setări → Integrare ANAF.
 if (!anafConnected) menuHide.add('etransport');
