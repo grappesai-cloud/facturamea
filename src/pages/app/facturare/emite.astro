@@ -18,7 +18,7 @@ try {
 } catch {}
 
 const kindParam = Astro.url.searchParams.get('kind') || 'factura';
-const validKinds = ['factura', 'proforma', 'storno', 'chitanta'] as const;
+const validKinds = ['factura', 'proforma', 'storno', 'chitanta', 'aviz'] as const;
 type Kind = (typeof validKinds)[number];
 const kind: Kind = (validKinds as readonly string[]).includes(kindParam) ? (kindParam as Kind) : 'factura';
 
