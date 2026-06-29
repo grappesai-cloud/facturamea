@@ -389,11 +389,10 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
         // ANAF's free API is rate-limited (1 req/s) and flaky — a 429 / 5xx /
         // rate-limit message is TRANSIENT, not "CUI inexistent". Retry up to 2x
         // before giving up, and never say "negăsit" for a transient failure.
-        // A genuine not-found is "CUI inexistent în registrul ANAF" (ANAF 200 +
-        // empty). A 4xx/5xx from ANAF ("ANAF a răspuns 404/5xx") is an API hiccup
-        // on their flaky service — retry those, not just 429/network.
+        // ANAF 404 = the CUI genuinely doesn't exist (deterministic) — don't retry.
+        // Retry only truly-transient failures: our 429, ANAF 5xx, rate-limit/timeout.
         const transient = res.status === 429 || res.status >= 500
-          || /rate|ocupat|reîncearcă|temporar|indisponibil|server|timeout|prea multe|anaf a răspuns/i.test(data.error || '');
+          || /rate|ocupat|reîncearcă|temporar|indisponibil|timeout|prea multe|anaf a răspuns 5/i.test(data.error || '');
         if (transient && attempt < 2) { setTimeout(() => lookupCui(attempt + 1), 1600); return; }
         setCuiLookupState('notfound');
         setCuiLookupHint(transient ? 'ANAF indisponibil acum — reîncearcă sau completează manual.' : 'CUI negăsit. Continuă manual.');
@@ -416,6 +415,16 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
       setCuiLookupHint('Eroare de conexiune — reîncearcă.');
     }
   };
+
+  // When the user types a CUI in the client search and opens "Adaugă client nou",
+  // the CUI is pre-filled — auto-fetch the company from ANAF so it's recognized
+  // without a manual blur.
+  useEffect(() => {
+    if (showAddClient && /^(RO)?\s*\d{2,}$/i.test(newClient.taxId.trim()) && !newClient.name.trim()) {
+      lookupCui();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAddClient]);
 
   const saveNewClient = async () => {
     if (savingClient) return; // guard against double-submit (duplicate client)
