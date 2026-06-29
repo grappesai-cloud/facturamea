@@ -377,17 +377,23 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
     return () => clearTimeout(t);
   }, [clientSearch]);
 
-  const lookupCui = async () => {
+  const lookupCui = async (attempt = 0) => {
     const cleaned = newClient.taxId.replace(/^RO/i, '').replace(/\D/g, '');
     if (cleaned.length < 2) return;
     setCuiLookupState('loading');
-    setCuiLookupHint('Caut în ANAF...');
+    setCuiLookupHint(attempt > 0 ? `ANAF ocupat, reîncerc... (${attempt}/2)` : 'Caut în ANAF...');
     try {
       const res = await fetch(`/api/anaf/lookup?cui=${encodeURIComponent(cleaned)}`);
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok || !data.ok) {
+        // ANAF's free API is rate-limited (1 req/s) and flaky — a 429 / 5xx /
+        // rate-limit message is TRANSIENT, not "CUI inexistent". Retry up to 2x
+        // before giving up, and never say "negăsit" for a transient failure.
+        const transient = res.status === 429 || res.status >= 500
+          || /rate|ocupat|reîncearcă|temporar|indisponibil|server|timeout|prea multe/i.test(data.error || '');
+        if (transient && attempt < 2) { setTimeout(() => lookupCui(attempt + 1), 1600); return; }
         setCuiLookupState('notfound');
-        setCuiLookupHint('CUI negăsit. Continuă manual.');
+        setCuiLookupHint(transient ? 'ANAF indisponibil acum — reîncearcă sau completează manual.' : 'CUI negăsit. Continuă manual.');
         return;
       }
       // ANAF returns only `address`; derive the city/locality from it.
@@ -402,8 +408,9 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
       setCuiLookupState('found');
       setCuiLookupHint(`✓ ${data.name}${data.isVatPayer ? ' (plătitor TVA)' : ''}`);
     } catch {
+      if (attempt < 2) { setTimeout(() => lookupCui(attempt + 1), 1600); return; }
       setCuiLookupState('notfound');
-      setCuiLookupHint('Eroare lookup.');
+      setCuiLookupHint('Eroare de conexiune — reîncearcă.');
     }
   };
 
@@ -641,8 +648,13 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <Label className={LBL}>CUI / Cod fiscal</Label>
-                    <Input autoComplete="off" value={newClient.taxId} onChange={(e) => setNewClient((c) => ({ ...c, taxId: e.target.value }))} onBlur={lookupCui} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupCui(); } }} placeholder="ex: 14186770 sau RO14186770" className={FIELD} />
-                    {cuiLookupHint && <p className={`text-[11px] mt-1.5 ${cuiLookupState === 'found' ? 'text-[#2E9E6A]' : 'text-[#E8A33C]'}`}>{cuiLookupHint}</p>}
+                    <Input autoComplete="off" value={newClient.taxId} onChange={(e) => setNewClient((c) => ({ ...c, taxId: e.target.value }))} onBlur={() => lookupCui()} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); lookupCui(); } }} placeholder="ex: 14186770 sau RO14186770" className={FIELD} />
+                    {cuiLookupHint && (
+                      <p className={`text-[11px] mt-1.5 ${cuiLookupState === 'found' ? 'text-[#2E9E6A]' : 'text-[#E8A33C]'}`}>
+                        {cuiLookupHint}
+                        {cuiLookupState === 'notfound' && <button type="button" onClick={() => lookupCui()} className="ml-1.5 underline font-semibold">Reîncearcă</button>}
+                      </p>
+                    )}
                     {!cuiLookupHint && newClient.taxId.trim() && /^(ro)?\s*\d{2,10}$/i.test(newClient.taxId.trim()) && !isValidCui(newClient.taxId) && (
                       <p className="text-[11px] mt-1.5 text-[#E8A33C]">CUI-ul pare invalid (cifra de control nu corespunde). Verifică-l.</p>
                     )}

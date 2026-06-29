@@ -20,7 +20,7 @@ export function hashToken(raw: string): string {
 }
 
 const SESSION_COOKIE = 'th_session';
-const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
+const SESSION_MAX_AGE = 60 * 60 * 24 * 365; // 1 year — "stay logged in" (cookie + DB)
 // OWASP 2025 recommends ≥12 for bcrypt. Older hashes at cost 10 stay
 // valid for verification; we upgrade them lazily on successful login
 // via verifyAndMaybeRehash().
