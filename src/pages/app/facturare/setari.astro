@@ -20,17 +20,11 @@ const [c] = await db.select({
   tvaAtCollection: companies.tvaAtCollection,
 }).from(companies).where(eq(companies.id, user.companyId));
 
-// Languages available for the issued PDF document (from the old limbi.astro page).
-const LANGS = [
-  { code: 'ro', name: 'Română', note: 'Limbă implicită', sample: 'Factură · Cumpărător · Total de plată' },
-  { code: 'en', name: 'English', note: 'Pentru clienți externi', sample: 'Invoice · Buyer · Amount due' },
-];
-
 // Hub cards. Each maps to a panel id + the old #anchor so legacy links keep working.
+// (Language is chosen per document at emit time, so there's no language setting here.)
 const SECTIONS = [
   { id: 'serii', anchor: 'serii', title: 'Serii documente', desc: 'Factură, proformă, storno, chitanță — numerotarea ta.', icon: 'hash' },
   { id: 'tva', anchor: 'tva', title: 'Cote TVA', desc: 'Cotele selectabile la emitere și cota implicită.', icon: 'percent' },
-  { id: 'limbi', anchor: 'limbi', title: 'Limbi', desc: 'Limba documentului PDF: română și engleză.', icon: 'globe' },
   { id: 'model', anchor: 'model', title: 'Design factură', desc: 'Șablon, culoare, logo, ștampilă și semnătură.', icon: 'palette' },
 ];
 ---
@@ -40,7 +34,7 @@ const SECTIONS = [
     <!-- ============ HEADER ============ -->
     <div class="mb-8 sm:mb-10">
       <h1 class="text-[26px] sm:text-[38px] font-semibold tracking-[-0.03em] text-white">Setări facturare</h1>
-      <p class="text-[14px] text-[#A8BED2] mt-2 max-w-2xl">Serii de documente, cote TVA, limbi și designul facturii — alege ce vrei să configurezi.</p>
+      <p class="text-[14px] text-[#A8BED2] mt-2 max-w-2xl">Serii de documente, cote TVA și designul facturii — alege ce vrei să configurezi.</p>
     </div>
 
     <!-- ============ OVERVIEW / HUB ============ -->
@@ -101,24 +95,6 @@ const SECTIONS = [
           </div>
         )}
 
-        {s.id === 'limbi' && (
-          <div class="rounded-2xl bg-white/5 ring-1 ring-white/10 p-6 sm:p-8">
-            <h2 class="text-[18px] font-bold text-white mb-1.5">Limbi</h2>
-            <p class="text-[13px] text-[#A8BED2] mb-7 max-w-2xl leading-relaxed">Limba documentului PDF se alege la emitere, în câmpul „Limbă”. Etichetele se traduc automat.</p>
-            <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {LANGS.map((l) => (
-                <li class="flex items-center gap-3 p-5 rounded-2xl bg-white/5 ring-1 ring-white/10">
-                  <span class="font-mono text-[11px] px-2 py-1 bg-white/10 text-[#A8BED2] rounded-lg uppercase shrink-0">{l.code}</span>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-[14px] font-bold text-white">{l.name}</p>
-                    <p class="text-[12px] text-[#A8BED2] truncate">{l.sample}</p>
-                  </div>
-                  <span class="text-[12px] text-[#8FA6BC] shrink-0 hidden sm:block">{l.note}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
 
         {s.id === 'model' && (
           <div class="space-y-6">

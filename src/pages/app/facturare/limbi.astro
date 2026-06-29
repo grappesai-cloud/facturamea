@@ -1,4 +1,5 @@
 ---
-// Consolidated into Setări facturare — kept as a redirect so old links work.
-return Astro.redirect('/app/facturare/setari#limbi', 302);
+// Language is chosen per document at emit time — there's no language setting.
+// Old links land on the invoicing settings hub.
+return Astro.redirect('/app/facturare/setari', 302);
 ---
