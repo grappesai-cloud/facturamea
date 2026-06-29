@@ -152,6 +152,9 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const [clients, setClients] = useState<ExternalClient[]>([]);
   const [pickedClient, setPickedClient] = useState<ExternalClient | null>(null);
   const [showAddClient, setShowAddClient] = useState(false);
+  // ANAF recognition straight from the search box (no "Adaugă client nou" step).
+  const [anafHit, setAnafHit] = useState<any>(null);
+  const [anafBusy, setAnafBusy] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const pickerRef = useRef<HTMLDivElement | null>(null);
 
@@ -440,6 +443,45 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
       setClients((cs) => [{ id: data.id, ...newClient } as any, ...cs]);
       setPickedClient({ id: data.id, ...newClient } as any);
       setShowAddClient(false);
+    } catch { setError('Eroare conexiune'); } finally { setSavingClient(false); }
+  };
+
+  // Recognize a CUI typed directly in the search box (when no saved client
+  // matches) — look it up in ANAF and offer the company as a pick.
+  useEffect(() => {
+    const q = clientSearch.trim().replace(/^RO/i, '').replace(/\D/g, '');
+    if (q.length < 4 || clients.length > 0 || !dropdownOpen || showAddClient) {
+      setAnafHit(null); setAnafBusy(false); return;
+    }
+    let cancel = false;
+    setAnafBusy(true); setAnafHit(null);
+    const t = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/anaf/lookup?cui=${encodeURIComponent(q)}`);
+        const d = await r.json().catch(() => ({}));
+        if (!cancel) setAnafHit(r.ok && d.ok ? d : null);
+      } catch { if (!cancel) setAnafHit(null); }
+      finally { if (!cancel) setAnafBusy(false); }
+    }, 500);
+    return () => { cancel = true; clearTimeout(t); };
+  }, [clientSearch, clients, dropdownOpen, showAddClient]);
+
+  // Use an ANAF company straight from the search: create + select the client.
+  const useAnafCompany = async (hit: any) => {
+    if (savingClient) return;
+    const parsedCity = ((hit.address || '').match(/(?:MUNICIPIUL|MUN\.?|ORAŞUL|ORASUL|ORAŞ|ORAS|COMUNA|COM\.?|SAT)\s+([A-Za-zĂÂÎȘȚăâîșţş][A-Za-zĂÂÎȘȚăâîșţş.\- ]+?)(?:\s*,|\s+SECTOR|\s+STR\.|\s+NR\.|$)/i)?.[1] || '').trim().replace(/\s+/g, ' ');
+    const client: any = {
+      taxId: String(hit.cui || clientSearch.trim()), name: hit.name || '', city: parsedCity,
+      address: hit.address || '', country: 'Romania', isVatPayer: !!hit.isVatPayer, email: '', phone: '',
+    };
+    setSavingClient(true);
+    try {
+      const res = await fetch('/api/invoicing/clients', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(client) });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || 'Eroare client'); return; }
+      setClients((cs) => [{ id: data.id, ...client }, ...cs]);
+      setPickedClient({ id: data.id, ...client });
+      setDropdownOpen(false); setClientSearch(''); setAnafHit(null);
     } catch { setError('Eroare conexiune'); } finally { setSavingClient(false); }
   };
 
@@ -738,6 +780,18 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
                           ))}
                         </ul>
                       </>
+                    ) : anafBusy ? (
+                      <p className="px-3.5 py-3 text-[13px] text-[#A8BED2]">Caut firma în ANAF…</p>
+                    ) : anafHit ? (
+                      <button
+                        type="button"
+                        onMouseDown={(e) => { e.preventDefault(); useAnafCompany(anafHit); }}
+                        className="w-full text-left px-3.5 py-2.5 hover:bg-white/5 transition-colors"
+                      >
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#2E9E6A] mb-0.5">Găsit în ANAF · adaugă</p>
+                        <p className="text-[14px] font-medium text-white truncate">{anafHit.name}</p>
+                        <p className="text-[12px] text-[#A8BED2] truncate">{[clientSearch.trim(), anafHit.isVatPayer ? 'plătitor TVA' : 'neplătitor TVA'].filter(Boolean).join(' · ')}</p>
+                      </button>
                     ) : (
                       <p className="px-3.5 py-3 text-[13px] text-[#A8BED2]">
                         {clientSearch ? `Niciun client cu „${clientSearch}".` : 'Niciun client salvat încă.'}
