@@ -1,6 +1,9 @@
-// Official D112 XML export. Built from the payroll run + per-employee items (with
-// CNP from the employees table) + the company declarant data. Must be validated
-// with ANAF DUK Integrator before filing (see lib/d112.ts).
+// D112 XML export (declaratieUnica v6). Built from the payroll run + per-employee
+// items joined with the employee record (CNP, base salary, dependents, hire date)
+// + company + declarant (from the signed-in user). Structure follows the official
+// ANAF schema; the file MUST still be validated with DUK Integrator before filing
+// (the published standalone XSD is incomplete — DUK has the full schema). See
+// lib/d112.ts.
 import type { APIRoute } from 'astro';
 import { db } from '../../../../../db';
 import { payrollRuns, payrollItems, employees, companies } from '../../../../../db/schema';
@@ -17,7 +20,6 @@ export const GET: APIRoute = async ({ params, locals }) => {
     .where(and(eq(payrollRuns.id, id), eq(payrollRuns.companyId, cid))).limit(1);
   if (!run) return new Response(JSON.stringify({ error: 'Stat de plată inexistent' }), { status: 404 });
 
-  // Items joined with the employee for the CNP (not snapshotted on the item).
   const rows = await db.select({
     cnp: employees.cnp,
     fullName: payrollItems.employeeNameSnap,
@@ -25,6 +27,13 @@ export const GET: APIRoute = async ({ params, locals }) => {
     casCents: payrollItems.casCents,
     cassCents: payrollItems.cassCents,
     taxCents: payrollItems.taxCents,
+    netCents: payrollItems.netCents,
+    camCents: payrollItems.camCents,
+    deductionCents: payrollItems.deductionCents,
+    baseSalaryCents: employees.baseSalaryCents,
+    nrDependents: employees.nrDependents,
+    hiredAt: employees.hiredAt,
+    employmentType: employees.employmentType,
   })
     .from(payrollItems)
     .leftJoin(employees, eq(employees.id, payrollItems.employeeId))
@@ -32,16 +41,38 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
   const [company] = await db.select().from(companies).where(eq(companies.id, cid)).limit(1);
 
-  const asigurati: D112Asigurat[] = rows.map((r) => ({
-    cnp: r.cnp,
-    fullName: r.fullName || '',
-    grossCents: r.grossCents || 0,
-    casCents: r.casCents || 0,
-    cassCents: r.cassCents || 0,
-    taxCents: r.taxCents || 0,
-  }));
+  const asigurati: D112Asigurat[] = rows.map((r) => {
+    const cas = r.casCents || 0;
+    const tax = r.taxCents || 0;
+    // Worked (contribution) gross = CAS / 25%; taxable base = impozit / 10%.
+    const workedGross = cas > 0 ? cas * 4 : (r.grossCents || 0);
+    return {
+      cnp: r.cnp,
+      fullName: r.fullName || '',
+      baseSalaryCents: r.baseSalaryCents ?? (r.grossCents || 0),
+      workedGrossCents: workedGross,
+      casCents: cas,
+      cassCents: r.cassCents || 0,
+      taxCents: tax,
+      taxableCents: tax * 10,
+      netCents: r.netCents || 0,
+      camCents: r.camCents || 0,
+      deductionCents: r.deductionCents || 0,
+      nrDependents: r.nrDependents || 0,
+      hiredAt: r.hiredAt ? new Date(r.hiredAt as any).toISOString() : null,
+      employmentType: r.employmentType || 'full_time',
+    };
+  });
 
-  const xml = generateD112Xml({
+  // Declarant from the signed-in user's name.
+  const nameParts = (locals.user.name || '').trim().split(/\s+/);
+  const declarant = {
+    nume: nameParts[0] || company?.name || '-',
+    prenume: nameParts.slice(1).join(' ') || '-',
+    functie: 'Administrator',
+  };
+
+  const { xml } = generateD112Xml({
     year: run.year,
     month: run.month,
     rectificativa: false,
@@ -53,12 +84,10 @@ export const GET: APIRoute = async ({ params, locals }) => {
       phone: company?.phone ?? null,
       email: company?.email ?? null,
       caen: (company as any)?.caen ?? null,
+      casaAng: (company as any)?.county ?? null,
     },
+    declarant,
     asigurati,
-    totalCasCents: run.totalCasCents || 0,
-    totalCassCents: run.totalCassCents || 0,
-    totalTaxCents: run.totalTaxCents || 0,
-    totalCamCents: run.totalCamCents || 0,
   });
 
   const fname = `D112_${run.year}_${String(run.month).padStart(2, '0')}.xml`;
