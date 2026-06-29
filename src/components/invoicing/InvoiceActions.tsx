@@ -184,20 +184,9 @@ export default function InvoiceActions({ invoiceId, kind, status, totalCents, pa
       <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => window.open(`/app/facturare/${invoiceId}/print`, '_blank')}>
         <FileText className="w-4 h-4 mr-1.5" /> Vezi tipărit
       </Button>
-      {canSend && (
-        <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" onClick={() => setShowSendModal(true)}>
-          <Mail className="w-4 h-4 mr-1.5" /> Trimite pe email
-        </Button>
-      )}
       {canRecordPayment && (
         <Button size="sm" className="rounded-full bg-[#E1FB15] text-[#07090f] hover:bg-[#D2EA0E] active:scale-100" onClick={() => setShowPayModal(true)}>
           <Receipt className="w-4 h-4 mr-1.5" /> Înregistrează încasare
-        </Button>
-      )}
-      {canPayLink && (
-        <Button variant="outline" size="sm" className="rounded-full bg-white/10 text-white border-0 hover:bg-white/15 hover:border-0" disabled={busy} onClick={doPayLink}>
-          {busy ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <CreditCard className="w-4 h-4 mr-1.5" />}
-          Link de plată
         </Button>
       )}
       {canSubmitSpv && (
