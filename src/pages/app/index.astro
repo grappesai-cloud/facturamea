@@ -189,6 +189,9 @@ const anafConnected = Astro.locals.anafConnected;
 
 const primary = NAV_MODULES.find((m) => m.primary)!;
 const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import'
+  // e-Factura is auto-sent on emit and its status/errors surface in Notificări,
+  // so a manual "trimite la ANAF" shortcut is redundant.
+  && m.key !== 'efactura'
   && !(isSingleFirm && accountantOnly.has(m.key))
   && !(!anafConnected && m.key === 'etransport'));
 
