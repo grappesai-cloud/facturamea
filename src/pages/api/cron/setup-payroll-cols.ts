@@ -22,6 +22,11 @@ export const GET: APIRoute = async ({ request }) => {
   await run('payroll_items.cm_indemnization_cents', `ALTER TABLE "payroll_items" ADD COLUMN IF NOT EXISTS "cm_indemnization_cents" integer DEFAULT 0 NOT NULL`);
   await run('payroll_items.cm_fnuass_cents', `ALTER TABLE "payroll_items" ADD COLUMN IF NOT EXISTS "cm_fnuass_cents" integer DEFAULT 0 NOT NULL`);
 
+  // Clean up the verification test data left on the demo company.
+  await run('cleanup items', `DELETE FROM "payroll_items" WHERE "employee_id" IN (SELECT "id" FROM "employees" WHERE "full_name" = 'Test CM Demo')`);
+  await run('cleanup runs', `DELETE FROM "payroll_runs" WHERE "id" = 'PBLJKoYVWS-VAWK7BOKnm'`);
+  await run('cleanup employee', `DELETE FROM "employees" WHERE "full_name" = 'Test CM Demo'`);
+
   return new Response(JSON.stringify({ ok: errs.length === 0, done, errs }), {
     status: 200, headers: { 'Content-Type': 'application/json' },
   });
