@@ -66,14 +66,29 @@ const RO_COUNTIES: Record<string, string> = {
   'satu mare': 'RO-SM', salaj: 'RO-SJ', sibiu: 'RO-SB', suceava: 'RO-SV', teleorman: 'RO-TR',
   timis: 'RO-TM', tulcea: 'RO-TL', vaslui: 'RO-VS', valcea: 'RO-VL', vrancea: 'RO-VN',
 };
-function resolveCountyCode(addr: { street?: string; city?: string }): string | null {
-  const hay = `${addr.street || ''} ${addr.city || ''}`.toLowerCase()
-    .replace(/[ăâ]/g, 'a').replace(/[șş]/g, 's').replace(/[țţ]/g, 't').replace(/î/g, 'i');
-  // Caută cel mai lung nume de județ prezent ca întreg cuvânt.
+const normRo = (s: string) => s.toLowerCase()
+  .replace(/[ăâ]/g, 'a').replace(/[șş]/g, 's').replace(/[țţ]/g, 't').replace(/î/g, 'i').trim();
+
+function resolveCountyCode(addr: { street?: string; city?: string; countrySubentity?: string }): string | null {
+  // 1. An EXPLICIT county field always wins. Otherwise a street like
+  //    "Șos. București Nord" in an Ilfov address gets mis-detected as RO-B and
+  //    ANAF rejects it (BR-RO-100). Accept a raw "RO-XX" code or a county name.
+  const explicit = (addr.countrySubentity || '').trim();
+  if (explicit) {
+    if (/^RO-[A-Z]{1,2}$/i.test(explicit)) return explicit.toUpperCase();
+    const key = normRo(explicit).replace(/^jude[t]ul?\.?\s*/, '').replace(/^jud\.?\s*/, '');
+    if (RO_COUNTIES[key]) return RO_COUNTIES[key];
+  }
+  // 2. Fall back to scanning city + street for the longest county name. "bucuresti"
+  //    is only inferred from the CITY (a Bucharest buyer has city = a sector / the
+  //    capital), never from a street name, to avoid the false RO-B above.
+  const cityHay = normRo(addr.city || '');
+  const hay = normRo(`${addr.city || ''} ${addr.street || ''}`);
   let best: string | null = null, bestLen = 0;
   for (const [name, code] of Object.entries(RO_COUNTIES)) {
     const re = new RegExp(`(^|[^a-z])${name.replace(/[-\s]/g, '[-\\s]')}([^a-z]|$)`);
-    if (re.test(hay) && name.length > bestLen) { best = code; bestLen = name.length; }
+    const haystack = code === 'RO-B' ? cityHay : hay; // Bucharest only from city
+    if (re.test(haystack) && name.length > bestLen) { best = code; bestLen = name.length; }
   }
   return best;
 }
@@ -126,8 +141,10 @@ const money = (cents: number) => (cents / 100).toFixed(2);
 // logic is applied consistently everywhere.
 function addressInner(addr: { street: string; city: string; postalCode?: string; country: string; countrySubentity?: string }): string {
   const countryCode = addr.country.slice(0, 2).toUpperCase();
-  const county = countryCode === 'RO' ? resolveCountyCode(addr) : null;
-  const sector = county === 'RO-B' ? resolveBucharestSector(addr) : null;
+  // A detectable sector (SECTOR1..6) means Bucharest → RO-B, regardless of what the
+  // street text says; otherwise trust the explicit/resolved county.
+  const sector = countryCode === 'RO' ? resolveBucharestSector(addr) : null;
+  const county = countryCode === 'RO' ? (sector ? 'RO-B' : resolveCountyCode(addr)) : null;
   const cityName = sector || addr.city;
   // BT-79: RO → cod județ rezolvat; străin → subdiviziunea furnizată (ex. DE-BE).
   const subentity = county || (addr.countrySubentity ? addr.countrySubentity.trim() : null);
