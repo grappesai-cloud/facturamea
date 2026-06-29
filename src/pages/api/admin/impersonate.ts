@@ -35,7 +35,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   const headers = new Headers({ 'Content-Type': 'application/json' });
   headers.append('Set-Cookie', setSessionCookie(sessionId));
-  headers.append('Set-Cookie', `th_imp=${signImp(adminId)}; Path=/; HttpOnly${secure}; SameSite=Lax; Max-Age=3600`);
+  // th_imp must live as long as the impersonation SESSION (30 days), otherwise it
+  // expires after 1h while th_session is still valid — the banner + exit vanish and
+  // the admin is silently stuck viewing as the user with no way back.
+  const IMP_MAX_AGE = 60 * 60 * 24 * 30;
+  headers.append('Set-Cookie', `th_imp=${signImp(adminId)}; Path=/; HttpOnly${secure}; SameSite=Lax; Max-Age=${IMP_MAX_AGE}`);
   try { await logAction({ userId: adminId, companyId: target.companyId, action: 'admin.impersonate_start', entityType: 'user', entityId: target.id, request }); } catch {}
 
   return new Response(JSON.stringify({ ok: true }), { headers });
