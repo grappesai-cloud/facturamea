@@ -14,6 +14,7 @@ interface Employee {
   position: string | null;
   baseSalaryCents: number;
   deductionCents: number;
+  nrDependents: number;
   employmentType: string;
   iban: string | null;
   hiredAt: string | null;
@@ -28,13 +29,14 @@ interface FormState {
   position: string;
   baseSalaryLei: string;
   deductionLei: string;
+  nrDependents: string;
   employmentType: string;
   iban: string;
   hiredAt: string;
 }
 
 const empty: FormState = {
-  fullName: '', cnp: '', position: '', baseSalaryLei: '', deductionLei: '',
+  fullName: '', cnp: '', position: '', baseSalaryLei: '', deductionLei: '', nrDependents: '0',
   employmentType: 'full_time', iban: '', hiredAt: '',
 };
 
@@ -81,6 +83,7 @@ export default function EmployeesManager() {
       position: e.position || '',
       baseSalaryLei: toLei(e.baseSalaryCents),
       deductionLei: toLei(e.deductionCents),
+      nrDependents: String(e.nrDependents ?? 0),
       employmentType: e.employmentType || 'full_time',
       iban: e.iban || '',
       hiredAt: e.hiredAt || '',
@@ -98,6 +101,7 @@ export default function EmployeesManager() {
       position: form.position.trim(),
       baseSalaryCents: toCents(form.baseSalaryLei),
       deductionCents: toCents(form.deductionLei),
+      nrDependents: Math.max(0, Math.trunc(Number(form.nrDependents) || 0)),
       employmentType: form.employmentType,
       iban: form.iban.trim(),
       hiredAt: form.hiredAt.trim() || null,
@@ -197,7 +201,12 @@ export default function EmployeesManager() {
               <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">CNP</Label><Input className={inputCls} value={form.cnp} onChange={(e) => setForm({ ...form, cnp: e.target.value })} placeholder="1900101..." /></div>
               <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Funcție</Label><Input className={inputCls} value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} placeholder="Programator" /></div>
               <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Salariu brut lunar (lei)</Label><Input className={inputCls} type="number" min="0" step="0.01" value={form.baseSalaryLei} onChange={(e) => setForm({ ...form, baseSalaryLei: e.target.value })} placeholder="4000" /></div>
-              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Deducere personală (lei)</Label><Input className={inputCls} type="number" min="0" step="0.01" value={form.deductionLei} onChange={(e) => setForm({ ...form, deductionLei: e.target.value })} placeholder="0" /></div>
+              <div><Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Persoane în întreținere</Label><Input className={inputCls} type="number" min="0" step="1" value={form.nrDependents} onChange={(e) => setForm({ ...form, nrDependents: e.target.value })} placeholder="0" /></div>
+              <div>
+                <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Deducere manuală (lei) — opțional</Label>
+                <Input className={inputCls} type="number" min="0" step="0.01" value={form.deductionLei} onChange={(e) => setForm({ ...form, deductionLei: e.target.value })} placeholder="0" />
+                <p className="mt-1 text-[12px] text-[#8FA6BC]">Lasă 0 pentru calcul automat din nr. persoane în întreținere.</p>
+              </div>
               <div>
                 <Label className="mb-1.5 block text-[13px] font-medium text-[#A8BED2]">Tip contract</Label>
                 <Select className={selectCls} value={form.employmentType} onChange={(e) => setForm({ ...form, employmentType: e.target.value })}>

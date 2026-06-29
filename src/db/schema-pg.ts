@@ -1913,7 +1913,8 @@ export const employees = pgTable('employees', {
   cnp: varchar('cnp', { length: 13 }),
   position: varchar('position', { length: 120 }),
   baseSalaryCents: integer('base_salary_cents').notNull().default(0), // salariu brut lunar
-  deductionCents: integer('deduction_cents').notNull().default(0),     // deducere personală lunară
+  deductionCents: integer('deduction_cents').notNull().default(0),     // deducere personală manuală (override; 0 = auto)
+  nrDependents: integer('nr_dependents').notNull().default(0),          // persoane în întreținere (deducere auto RO 2026)
   employmentType: varchar('employment_type', { length: 16 }).notNull().default('full_time'), // full_time | part_time
   iban: varchar('iban', { length: 34 }),
   hiredAt: date('hired_at', { mode: 'string' }),
@@ -1957,6 +1958,11 @@ export const payrollItems = pgTable('payroll_items', {
   taxCents: integer('tax_cents').notNull().default(0),        // impozit 10%
   netCents: integer('net_cents').notNull().default(0),
   camCents: integer('cam_cents').notNull().default(0),        // 2.25% angajator
+  // Concediu medical (sick leave) for this month.
+  cmDays: integer('cm_days').notNull().default(0),
+  cmCode: varchar('cm_code', { length: 4 }),                  // cod indemnizație (01/02/06/09…)
+  cmIndemnizationCents: integer('cm_indemnization_cents').notNull().default(0),
+  cmFnuassCents: integer('cm_fnuass_cents').notNull().default(0), // partea recuperabilă de la FNUASS
   createdAt: timestamp('created_at').defaultNow(),
 }, (table) => [
   uniqueIndex('uq_payroll_item').on(table.runId, table.employeeId),

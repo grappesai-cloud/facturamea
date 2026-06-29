@@ -49,8 +49,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
     .where(and(eq(employees.companyId, cid), eq(employees.active, true)))
     .limit(500);
 
+  // Preserve any concediu medical entered on an existing draft so a recompute
+  // (e.g. after adding an employee) doesn't wipe it.
+  const prevCm = new Map<string, { cmDays: number; cmCode: string | null }>();
+  if (existing) {
+    const prev = await db.select().from(payrollItems).where(eq(payrollItems.runId, existing.id));
+    for (const p of prev as any[]) prevCm.set(p.employeeId, { cmDays: p.cmDays || 0, cmCode: p.cmCode || null });
+  }
+
   const items = emps.map((e: any) => {
-    const b = computePayroll(e.baseSalaryCents || 0, e.deductionCents || 0);
+    const cm = prevCm.get(e.id) || { cmDays: 0, cmCode: null };
+    const b = computePayroll(e.baseSalaryCents || 0, {
+      nrDependents: e.nrDependents || 0,
+      deductionCents: e.deductionCents || 0,
+      cmDays: cm.cmDays,
+      cmCode: cm.cmCode,
+    });
     return {
       employeeId: e.id as string,
       employeeNameSnap: e.fullName as string,
@@ -61,6 +75,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       taxCents: b.taxCents,
       netCents: b.netCents,
       camCents: b.camCents,
+      cmDays: b.cm.days,
+      cmCode: b.cm.code,
+      cmIndemnizationCents: b.cm.indemnizationCents,
+      cmFnuassCents: b.cm.fnuassCents,
     };
   });
 

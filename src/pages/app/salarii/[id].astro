@@ -3,7 +3,7 @@ import AppLayout from '../../../layouts/AppLayout.astro';
 import { db } from '../../../db';
 import { payrollRuns, payrollItems } from '../../../db/schema';
 import { and, eq, asc } from 'drizzle-orm';
-import { MONTHS_RO } from '../../../lib/payroll';
+import { MONTHS_RO, CM_CODES } from '../../../lib/payroll';
 
 const user = Astro.locals.user!;
 if (!user.companyId) return Astro.redirect('/app/setari');
@@ -31,6 +31,7 @@ if (!run) return Astro.redirect('/app/salarii');
 const finalized = run.status === 'finalized';
 const period = `${MONTHS_RO[(run.month || 1) - 1]} ${run.year}`;
 const employerCost = (run.totalGrossCents || 0) + (run.totalCamCents || 0);
+const cmCodeEntries = Object.entries(CM_CODES).map(([code, v]) => ({ code, label: `${code} · ${v.label}` }));
 ---
 
 <AppLayout title={`Stat de plată · ${period}`} activeTab="salarii">
@@ -73,6 +74,7 @@ const employerCost = (run.totalGrossCents || 0) + (run.totalCamCents || 0);
             <th class="px-4 py-3 font-medium text-right tabular-nums">Impozit</th>
             <th class="px-4 py-3 font-medium text-right tabular-nums">Net</th>
             <th class="px-4 py-3 font-medium text-right tabular-nums">CAM angajator</th>
+            <th class="px-4 py-3 font-medium">Concediu medical</th>
           </tr>
         </thead>
         <tbody>
@@ -85,6 +87,37 @@ const employerCost = (run.totalGrossCents || 0) + (run.totalCamCents || 0);
               <td class="px-4 py-3 text-right tabular-nums text-[#A8BED2]">{ron(it.taxCents)}</td>
               <td class="px-4 py-3 text-right tabular-nums text-white font-semibold">{ron(it.netCents)}</td>
               <td class="px-4 py-3 text-right tabular-nums text-[#E8A33C]">{ron(it.camCents)}</td>
+              <td class="px-4 py-3 align-top">
+                {it.cmDays > 0 ? (
+                  <div class="text-white whitespace-nowrap">
+                    <span class="font-medium">{it.cmDays} zile</span>
+                    <span class="text-[#A8BED2]"> · {it.cmCode ? `${it.cmCode} · ${(CM_CODES[it.cmCode]?.label) || ''}` : '—'}</span>
+                    <span class="block text-[12px] text-[#A8BED2]">{ron(it.cmIndemnizationCents)}</span>
+                  </div>
+                ) : (
+                  <span class="text-[#8FA6BC]">—</span>
+                )}
+                {!finalized && (
+                  <div class="mt-2">
+                    <button type="button" class="cm-toggle text-[12px] px-2.5 py-1 rounded-full bg-white/10 text-white hover:bg-white/15 transition-colors" data-item-id={it.id}>CM</button>
+                    <div class="cm-edit hidden mt-2 flex flex-wrap items-end gap-2" data-item-id={it.id}>
+                      <label class="flex flex-col gap-1 text-[11px] text-[#8FA6BC]">
+                        Zile
+                        <input type="number" min="0" step="1" value={it.cmDays || 0} class="cm-days w-20 rounded-lg bg-white/10 text-white border border-white/[0.12] px-2 py-1 text-[13px] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]" />
+                      </label>
+                      <label class="flex flex-col gap-1 text-[11px] text-[#8FA6BC]">
+                        Cod
+                        <select class="cm-code rounded-lg bg-white/10 text-white border border-white/[0.12] px-2 py-1 text-[13px] focus:ring-2 focus:ring-[#E1FB15]/40 [color-scheme:dark]">
+                          {cmCodeEntries.map((c) => (
+                            <option value={c.code} selected={it.cmCode === c.code}>{c.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button type="button" class="cm-save text-[12px] px-3 py-1.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold hover:bg-[#D2EA0E] transition-colors" data-item-id={it.id}>Salvează</button>
+                    </div>
+                  </div>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -97,11 +130,16 @@ const employerCost = (run.totalGrossCents || 0) + (run.totalCamCents || 0);
             <td class="px-4 py-3 text-right tabular-nums">{ron(run.totalTaxCents)}</td>
             <td class="px-4 py-3 text-right tabular-nums">{ron(run.totalNetCents)}</td>
             <td class="px-4 py-3 text-right tabular-nums text-[#E8A33C]">{ron(run.totalCamCents)}</td>
+            <td class="px-4 py-3"></td>
           </tr>
         </tfoot>
       </table>
     </div>
   </div>
+
+  <p class="mt-4 text-[12px] text-[#8FA6BC] max-w-2xl leading-relaxed">
+    Concediul medical e un model simplificat (baza = brut/21, primele 5 zile suportate de angajator, restul recuperabil FNUASS). Confirmă baza de calcul (medie 6 luni) cu contabilul.
+  </p>
 
   <p class="mt-6 text-[12px] text-[#8FA6BC] max-w-2xl leading-relaxed">
     Contribuții 2026: CAS 25% și CASS 10% reținute de la angajat, impozit 10% pe baza impozabilă (brut − CAS − CASS − deducere), CAM 2.25% suportat de angajator. „D112 XML (oficial)” generează declarația în format ANAF (angajator + creanțe fiscale + evidența nominală); validează-o cu DUK Integrator înainte de depunere. „D112 (sumar CSV)” e un export de verificare.
@@ -116,6 +154,53 @@ const employerCost = (run.totalGrossCents || 0) + (run.totalCamCents || 0);
         msg.textContent = text;
         msg.className = 'text-[14px] mb-4 ' + (ok ? 'text-[#2E9E6A]' : 'text-[#DC4B41]');
       }
+
+      // Concediu medical — delegated handlers (toggle + save).
+      if (!document.body.dataset.cmBound) {
+        document.body.dataset.cmBound = '1';
+        document.addEventListener('click', async function (ev) {
+          const toggle = ev.target.closest && ev.target.closest('.cm-toggle');
+          if (toggle) {
+            const id = toggle.dataset.itemId;
+            const panel = document.querySelector('.cm-edit[data-item-id="' + id + '"]');
+            if (panel) panel.classList.toggle('hidden');
+            return;
+          }
+          const saveBtn = ev.target.closest && ev.target.closest('.cm-save');
+          if (saveBtn) {
+            const id = saveBtn.dataset.itemId;
+            const panel = document.querySelector('.cm-edit[data-item-id="' + id + '"]');
+            if (!panel) return;
+            const daysEl = panel.querySelector('.cm-days');
+            const codeEl = panel.querySelector('.cm-code');
+            const cmDays = Math.max(0, Math.trunc(Number(daysEl && daysEl.value) || 0));
+            const cmCode = codeEl ? codeEl.value : null;
+            const original = saveBtn.textContent;
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Se salvează...';
+            try {
+              const res = await fetch('/api/salarii/items/' + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cmDays: cmDays, cmCode: cmCode }),
+              });
+              const data = await res.json().catch(function () { return {}; });
+              if (res.ok && data.ok) {
+                window.location.reload();
+              } else {
+                show(data.error || 'Eroare la salvarea concediului medical.', false);
+                saveBtn.disabled = false;
+                saveBtn.textContent = original;
+              }
+            } catch (e) {
+              show('Eroare de conexiune.', false);
+              saveBtn.disabled = false;
+              saveBtn.textContent = original;
+            }
+          }
+        });
+      }
+
       if (!btn || btn.dataset.fmBound) return;
       btn.dataset.fmBound = '1';
       btn.addEventListener('click', async function () {
