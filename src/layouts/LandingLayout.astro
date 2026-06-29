@@ -40,7 +40,7 @@ const homeHref = user ? '/app' : '/';
 
           <!-- Block 2 — actions (its own pill) -->
           <div class="flex items-center gap-1.5 sm:gap-2 h-14 sm:h-16 px-2 sm:px-2.5 rounded-full bg-white/50 backdrop-blur-xl ring-1 ring-white/50 shadow-[0_8px_32px_-14px_rgba(16,42,67,0.22)]">
-            <a href={dbAvailable ? '/api/demo' : '/app'} class="inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 sm:px-4 h-10 sm:h-11 rounded-full ring-1 ring-[#1A759F]/30 text-[#1A759F] text-[13.5px] sm:text-[14px] font-semibold hover:bg-[#1A759F]/[0.07] transition-colors">
+            <a href={dbAvailable ? '/api/demo' : '/app'} data-astro-prefetch="false" class="inline-flex items-center gap-1.5 whitespace-nowrap px-3.5 sm:px-4 h-10 sm:h-11 rounded-full ring-1 ring-[#1A759F]/30 text-[#1A759F] text-[13.5px] sm:text-[14px] font-semibold hover:bg-[#1A759F]/[0.07] transition-colors">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
               Demo
             </a>

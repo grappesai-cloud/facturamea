@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { db } from '../../db';
 import { users, companies } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-import { createSession, setSessionCookie } from '../../lib/auth';
+import { createSession, setSessionCookie, getSession } from '../../lib/auth';
 import { grantLifetime } from '../../lib/license';
 import { rateLimitAsync, getClientIp } from '../../lib/security';
 
@@ -10,6 +10,16 @@ import { rateLimitAsync, getClientIp } from '../../lib/security';
 // (lifetime license, populated invoices/clients/expenses) so they can explore
 // the full platform without signing up. Public, no auth required.
 export const GET: APIRoute = async ({ request }) => {
+  const cookie = request.headers.get('cookie') || '';
+  // NEVER clobber an existing session with the shared demo account. This is a
+  // GET that mutates the session cookie, so a link prefetch (Astro) or any
+  // stray hit would otherwise silently switch a signed-in / impersonating user
+  // into the demo account ("after a couple of actions I'm on the demo account").
+  // Only anonymous visitors get a fresh demo session.
+  if (/(?:^|;\s*)th_imp=/.test(cookie) || (await getSession(cookie).catch(() => null))) {
+    return new Response(null, { status: 302, headers: { Location: '/app' } });
+  }
+
   const ip = getClientIp(request);
   const rl = await rateLimitAsync(`demo:${ip}`, 30, 60 * 60 * 1000);
   if (!rl.allowed) {
