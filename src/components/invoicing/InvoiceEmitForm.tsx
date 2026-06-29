@@ -362,6 +362,8 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
   const [nomenIdx, setNomenIdx] = useState<number | null>(null);
   // Treat entered unit prices as VAT-inclusive (gross) → net/VAT back-calculated.
   const [priceIncludesVat, setPriceIncludesVat] = useState(false);
+  const [discountValue, setDiscountValue] = useState('');
+  const [discountKind, setDiscountKind] = useState<'percent' | 'fixed'>('percent');
   // Full "create a new product/service" form, right inside the billing flow.
   const [showCreateProduct, setShowCreateProduct] = useState(false);
   const [creatingProduct, setCreatingProduct] = useState(false);
@@ -505,7 +507,25 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
     acc.vat += c.vat;
     return acc;
   }, { sub: 0, vat: 0 });
-  const total = totals.sub + totals.vat;
+  // Document discount on the net total — applied proportionally to each line's unit
+  // price so VAT stays correct per rate and the e-Factura (which sums line nets) is
+  // automatically right; no document-level allowance needed in the XML.
+  const discNum = Math.max(0, parseFloat(discountValue) || 0);
+  const discountCents = discNum <= 0 || totals.sub <= 0 ? 0
+    : discountKind === 'percent'
+      ? Math.round(totals.sub * Math.min(100, discNum) / 100)
+      : Math.min(Math.round(discNum * 100), totals.sub);
+  const discountRatio = totals.sub > 0 ? discountCents / totals.sub : 0;
+  const discNetUnit = (l: Line) => Math.round(netUnitCents(l) * (1 - discountRatio));
+  // Totals AFTER discount — same per-line computation the payload sends, so the
+  // preview matches the saved invoice exactly.
+  const dTotals = lines.reduce((acc, l) => {
+    const q = parseFloat(l.quantity) || 0;
+    const net = Math.round(q * discNetUnit(l));
+    const vat = companyVatPayer ? Math.round((net * (parseFloat(l.vatRate) || 0)) / 100) : 0;
+    acc.sub += net; acc.vat += vat; return acc;
+  }, { sub: 0, vat: 0 });
+  const total = dTotals.sub + dTotals.vat;
 
   const fmt = (cents: number) => (cents / 100).toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -642,7 +662,7 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
             description: l.description.trim(),
             quantity: parseFloat(l.quantity) || 0,
             unit: l.unit || 'buc',
-            unitPriceCents: netUnitCents(l),
+            unitPriceCents: discNetUnit(l),
             vatRate: parseFloat(l.vatRate) || 0,
           })),
         }),
@@ -1104,7 +1124,17 @@ export default function InvoiceEmitForm({ kind, orderId, fromId, dossierPrefill,
             <h2 className="text-[16px] font-bold text-white mb-4">Sumar</h2>
             <div className="space-y-2.5">
               <div className="flex justify-between text-[14px]"><span className="text-[#A8BED2]">Subtotal</span><span className="font-mono tabular-nums text-white">{fmt(totals.sub)} {currency}</span></div>
-              <div className="flex justify-between text-[14px]"><span className="text-[#A8BED2]">TVA</span><span className="font-mono tabular-nums text-white">{fmt(totals.vat)} {currency}</span></div>
+              <div className="flex items-center justify-between gap-2 text-[14px]">
+                <span className="text-[#A8BED2]">Reducere</span>
+                <div className="flex items-center gap-1.5">
+                  <input type="number" min="0" step="0.01" value={discountValue} onChange={(e) => setDiscountValue(e.target.value)} placeholder="0" className="w-20 text-right rounded-lg bg-white/10 px-2.5 py-1 text-[13px] text-white outline-none focus:ring-2 focus:ring-[#E1FB15]/40" />
+                  <button type="button" onClick={() => setDiscountKind((k) => (k === 'percent' ? 'fixed' : 'percent'))} className="px-2.5 py-1 rounded-lg bg-white/10 text-[13px] font-semibold text-white hover:bg-white/15 transition-colors" title="Comută între procent și sumă fixă">{discountKind === 'percent' ? '%' : currency}</button>
+                </div>
+              </div>
+              {discountCents > 0 && (
+                <div className="flex justify-between text-[14px]"><span className="text-[#A8BED2]">Reducere aplicată</span><span className="font-mono tabular-nums text-[#E8A33C]">−{fmt(discountCents)} {currency}</span></div>
+              )}
+              <div className="flex justify-between text-[14px]"><span className="text-[#A8BED2]">TVA</span><span className="font-mono tabular-nums text-white">{fmt(dTotals.vat)} {currency}</span></div>
               <div className="flex items-baseline justify-between border-t border-white/10 pt-3 mt-1">
                 <span className="text-[14px] font-semibold text-white">Total</span>
                 <span className="text-[22px] font-bold tabular-nums text-white">{fmt(total)} <span className="text-[14px] text-[#A8BED2]">{currency}</span></span>
