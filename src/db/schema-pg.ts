@@ -99,6 +99,8 @@ export const companies = pgTable('companies', {
   id: text('id').primaryKey(),
   name: varchar('name', { length: 500 }).notNull(),
   cui: varchar('cui', { length: 50 }),
+  regCom: varchar('reg_com', { length: 50 }),  // nr. înregistrare reg. comerțului (J40/1234/2020) — D112/S1005
+  caen: varchar('caen', { length: 10 }),        // cod CAEN principal — cerut de D112 + situații financiare
   country: varchar('country', { length: 100 }).notNull(),
   city: varchar('city', { length: 200 }),
   address: text('address'),

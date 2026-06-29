@@ -52,7 +52,10 @@ const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-whi
             <div class="sm:col-span-2"><label class={labelCls}>IBAN</label><input id="iban" name="iban" type="text" value={billing?.iban ?? ''} placeholder="RO00 BANK 0000 0000 0000 0000" class={inputCls} /></div>
             <div><label class={labelCls}>Bancă</label><input id="bank" name="bank" type="text" value={billing?.bank ?? ''} placeholder="ex: Banca Transilvania" class={inputCls} /></div>
             <div><label class={labelCls}>Telefon</label><input id="phone" name="phone" type="text" value={company.phone ?? ''} placeholder="ex: 07xx xxx xxx" class={inputCls} /></div>
+            <div><label class={labelCls}>Nr. Reg. Comerțului</label><input id="regCom" name="regCom" type="text" value={(company as any).regCom ?? ''} placeholder="ex: J40/1234/2020" class={inputCls} /></div>
+            <div><label class={labelCls}>Cod CAEN</label><input id="caen" name="caen" type="text" inputmode="numeric" value={(company as any).caen ?? ''} placeholder="ex: 6201" class={inputCls} /></div>
           </div>
+          <p class="text-[12px] text-[#8FA6BC]">Nr. Reg. Comerțului și CAEN sunt necesare pentru D112 (salarii) și situațiile financiare.</p>
           <div class="flex items-center gap-3 pt-1">
             <button type="submit" id="bank-save" class="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors">Salvează</button>
             <span id="bank-status" class="text-[13px] text-[#A8BED2]"></span>
@@ -75,12 +78,14 @@ const inputCls = 'w-full rounded-xl bg-white/10 px-4 py-2.5 text-[14px] text-whi
       const iban = (document.getElementById('iban') as HTMLInputElement).value;
       const bank = (document.getElementById('bank') as HTMLInputElement).value;
       const phone = (document.getElementById('phone') as HTMLInputElement).value;
+      const regCom = (document.getElementById('regCom') as HTMLInputElement).value;
+      const caen = (document.getElementById('caen') as HTMLInputElement).value;
       if (statusEl) statusEl.textContent = 'Se salvează...';
       try {
         const res = await fetch('/api/companies/profile', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ iban, bank, phone }),
+          body: JSON.stringify({ iban, bank, phone, regCom, caen }),
         });
         const data = await res.json().catch(() => ({}));
         if (statusEl) statusEl.textContent = res.ok ? 'Salvat.' : (data.error || 'Eroare la salvare.');

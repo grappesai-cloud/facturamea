@@ -19,10 +19,15 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
-  // Phone lives on the company row.
-  if (body.phone !== undefined) {
+  // Phone + fiscal identifiers (reg. com., CAEN) live on the company row. CAEN +
+  // reg. com. are required by D112 and the annual financial statements.
+  const coPatch: Record<string, unknown> = {};
+  if (body.phone !== undefined) coPatch.phone = String(body.phone || '').trim().slice(0, 50) || null;
+  if (body.regCom !== undefined) coPatch.regCom = String(body.regCom || '').trim().slice(0, 50) || null;
+  if (body.caen !== undefined) coPatch.caen = String(body.caen || '').replace(/\D/g, '').slice(0, 10) || null;
+  if (Object.keys(coPatch).length) {
     await db.update(companies)
-      .set({ phone: String(body.phone || '').trim().slice(0, 50) || null, updatedAt: new Date() } as any)
+      .set({ ...coPatch, updatedAt: new Date() } as any)
       .where(eq(companies.id, companyId));
   }
 
