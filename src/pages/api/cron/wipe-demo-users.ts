@@ -2,13 +2,13 @@ import type { APIRoute } from 'astro';
 import { isCronAuthorized } from '../../../lib/cron-auth';
 import { db } from '../../../db';
 import { users, companies, userCompanyMemberships } from '../../../db/schema';
-import { and, eq, ne, inArray, ilike } from 'drizzle-orm';
+import { and, eq, notInArray, inArray, ilike } from 'drizzle-orm';
 
 // TEMP one-shot: remove the seed/test users whose primary company is "Demo Studio
-// SRL", KEEPING the App Store / Play review account (apple.review@facturamea.com).
+// SRL", KEEPING the App Store / Play review account + the generic demo login.
 // GET = dry-run (list who would be deleted). GET ?do=delete = actually delete.
 // Guarded by CRON_SECRET. Remove after.
-const KEEP_EMAIL = 'apple.review@facturamea.com';
+const KEEP_EMAILS = ['apple.review@facturamea.com', 'demo@facturamea.com'];
 
 export const GET: APIRoute = async ({ request }) => {
   if (!isCronAuthorized(request)) {
@@ -23,12 +23,12 @@ export const GET: APIRoute = async ({ request }) => {
 
   const targets = await db.select({ id: users.id, email: users.email, name: users.name })
     .from(users)
-    .where(and(eq(users.companyId, co.id), ne(users.email, KEEP_EMAIL)));
+    .where(and(eq(users.companyId, co.id), notInArray(users.email, KEEP_EMAILS)));
 
   if (!doDelete) {
     return new Response(JSON.stringify({
       dryRun: true, company: co, count: targets.length,
-      kept: KEEP_EMAIL,
+      kept: KEEP_EMAILS,
       users: targets.map((u) => ({ email: u.email, name: u.name })),
     }, null, 2), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
@@ -45,7 +45,7 @@ export const GET: APIRoute = async ({ request }) => {
       return new Response(JSON.stringify({ ok: false, error: e?.message || String(e), attempted: ids.length }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
   }
-  return new Response(JSON.stringify({ ok: true, company: co.name, deleted, kept: KEEP_EMAIL }, null, 2), {
+  return new Response(JSON.stringify({ ok: true, company: co.name, deleted, kept: KEEP_EMAILS }, null, 2), {
     status: 200, headers: { 'Content-Type': 'application/json' },
   });
 };
