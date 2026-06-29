@@ -1,7 +1,7 @@
 ---
 import AppLayout from '../../layouts/AppLayout.astro';
 import { db, dbAvailable } from '../../db';
-import { transportInvoices, expenses, users, invoiceProducts, etransportDeclarations } from '../../db/schema';
+import { transportInvoices, expenses, users, invoiceProducts, etransportDeclarations, userCompanyMemberships } from '../../db/schema';
 import { and, eq, gte, sql } from 'drizzle-orm';
 import { NAV_MODULES } from '../../lib/nav-modules';
 import DashboardShortcuts from '../../components/DashboardShortcuts.tsx';
@@ -174,8 +174,17 @@ const TILE = [
 ];
 const tileFor = (key: string) => TILE[Math.max(0, NAV_MODULES.findIndex((m) => m.key === key)) % TILE.length];
 
+// Cockpit (multi-firmă overview) is only relevant for accountants who manage more
+// than one company — keep it out of the shortcut catalog for single-company users.
+let companyCount = 1;
+try {
+  const r = await db.select({ c: sql<number>`count(*)::int` }).from(userCompanyMemberships).where(eq(userCompanyMemberships.userId, user.id));
+  companyCount = Number(r[0]?.c ?? 1);
+} catch { /* DB not ready */ }
+const hideCockpit = companyCount <= 1;
+
 const primary = NAV_MODULES.find((m) => m.primary)!;
-const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import');
+const rest = NAV_MODULES.filter((m) => !m.primary && m.key !== 'setari' && m.key !== 'import' && !(hideCockpit && m.key === 'cockpit'));
 
 // Full catalog (with flat tile colours) the user can pin to the launcher.
 const shortcutCatalog = rest.map((m) => {

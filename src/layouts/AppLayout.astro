@@ -6,8 +6,8 @@ import CompanySwitcher from '../components/CompanySwitcher';
 import SupportSheet from '../components/SupportSheet';
 import { NAV_MODULES } from '../lib/nav-modules';
 import { db } from '../db';
-import { users } from '../db/schema';
-import { eq } from 'drizzle-orm';
+import { users, userCompanyMemberships } from '../db/schema';
+import { eq, sql } from 'drizzle-orm';
 
 interface Props {
   title: string;
@@ -35,11 +35,22 @@ const isImpersonating = !!(Astro.locals as any).impersonating;
 // "Secțiuni" dropdown on the Facturare page (Clienți/Produse/Recurente/e-Factura) are
 // NOT repeated in the full Meniu — avoids the same choice appearing twice.
 const MENU_HIDE = new Set(['facturi', 'cheltuieli', 'rapoarte', 'clienti', 'produse', 'recurente', 'efactura']);
+// Cockpit (multi-firmă overview) only makes sense for accountants who manage more
+// than one company — hide it from single-company users.
+let companyCount = 1;
+if (user) {
+  try {
+    const r = await db.select({ c: sql<number>`count(*)::int` }).from(userCompanyMemberships).where(eq(userCompanyMemberships.userId, user.id));
+    companyCount = Number(r[0]?.c ?? 1);
+  } catch { /* DB not ready */ }
+}
+const menuHide = new Set(MENU_HIDE);
+if (companyCount <= 1) menuHide.add('cockpit');
 const groups: { label: string; items: typeof NAV_MODULES }[] = [
-  { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare' && !MENU_HIDE.has(m.key)) },
-  { label: 'Vânzări', items: NAV_MODULES.filter((m) => m.group === 'Vanzari' && !MENU_HIDE.has(m.key)) },
-  { label: 'Gestiune', items: NAV_MODULES.filter((m) => m.group === 'Gestiune' && !MENU_HIDE.has(m.key)) },
-  { label: 'Cont', items: NAV_MODULES.filter((m) => m.group === 'Cont' && !MENU_HIDE.has(m.key)) },
+  { label: 'Facturare', items: NAV_MODULES.filter((m) => m.group === 'Facturare' && !menuHide.has(m.key)) },
+  { label: 'Vânzări', items: NAV_MODULES.filter((m) => m.group === 'Vanzari' && !menuHide.has(m.key)) },
+  { label: 'Gestiune', items: NAV_MODULES.filter((m) => m.group === 'Gestiune' && !menuHide.has(m.key)) },
+  { label: 'Cont', items: NAV_MODULES.filter((m) => m.group === 'Cont' && !menuHide.has(m.key)) },
 ];
 
 // Flat solid card colours from the Meadow ramp. fg = heading text, sub = description.
