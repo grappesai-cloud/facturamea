@@ -1,0 +1,75 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { collectVatNeexigibila } from '../../../lib/tva-neexigibila';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100);
+const data = await collectVatNeexigibila(companyId).catch(() => null);
+---
+
+<AppLayout title="TVA neexigibilă" activeTab="contabilitate" breadcrumbTitle="TVA neexigibilă">
+  <div class="max-w-[1180px] mx-auto">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6 no-print">
+      <div>
+        <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">TVA neexigibilă</h1>
+        <p class="text-[13px] text-[#A8BED2] mt-2">Pentru facturile în regim „TVA la încasare": TVA devine exigibilă pe măsură ce încasezi. Soldul 4428 = TVA încă neîncasată.</p>
+      </div>
+      <a href="/api/invoicing/reports/tva-neexigibila?format=csv" class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15 no-print">CSV</a>
+    </div>
+
+    {!data ? (
+      <p class="text-[14px] text-[#A8BED2]">Nu am putut încărca datele.</p>
+    ) : (
+      <div class="space-y-6">
+        <div class="grid grid-cols-3 gap-3">
+          <div class="rounded-2xl bg-white/5 p-4"><div class="text-[12px] text-[#A8BED2]">TVA totală (la încasare)</div><div class="text-[20px] font-bold text-white tabular-nums">{ron(data.totalVatCents)}</div></div>
+          <div class="rounded-2xl bg-white/5 p-4"><div class="text-[12px] text-[#A8BED2]">Exigibilă (4427)</div><div class="text-[20px] font-bold text-[#52B788] tabular-nums">{ron(data.collectedVatCents)}</div></div>
+          <div class="rounded-2xl bg-white/5 p-4"><div class="text-[12px] text-[#A8BED2]">Neexigibilă (4428)</div><div class="text-[20px] font-bold text-[#E8A33C] tabular-nums">{ron(data.neexigibilVatCents)}</div></div>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl bg-white/5">
+          <table class="w-full text-[13px] text-white border-collapse">
+            <thead>
+              <tr class="text-[#A8BED2] text-left">
+                <th class="px-3 py-2.5 font-semibold">Data</th>
+                <th class="px-3 py-2.5 font-semibold">Document</th>
+                <th class="px-3 py-2.5 font-semibold">Client</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Încasat</th>
+                <th class="px-3 py-2.5 font-semibold text-right">TVA totală</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Exigibilă (4427)</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Neexigibilă (4428)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items.length === 0 ? (
+                <tr><td colspan={7} class="px-3 py-6 text-center text-[#A8BED2]">Nicio factură cu TVA la încasare neîncasată. (Emite o factură cu regim „TVA la încasare" pentru a o vedea aici.)</td></tr>
+              ) : data.items.map((it) => (
+                <tr class="border-t border-white/10">
+                  <td class="px-3 py-2 whitespace-nowrap">{it.date}</td>
+                  <td class="px-3 py-2 font-mono whitespace-nowrap">{it.doc}</td>
+                  <td class="px-3 py-2">{it.partner}</td>
+                  <td class="px-3 py-2 text-right tabular-nums text-[#A8BED2]">{it.paidRatioPct}%</td>
+                  <td class="px-3 py-2 text-right tabular-nums">{ron(it.totalVatCents)}</td>
+                  <td class="px-3 py-2 text-right tabular-nums text-[#52B788]">{ron(it.collectedVatCents)}</td>
+                  <td class="px-3 py-2 text-right tabular-nums text-[#E8A33C] font-semibold">{ron(it.neexigibilVatCents)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr class="border-t-2 border-white/20 font-bold">
+                <td class="px-3 py-2.5" colspan={4}>TOTAL</td>
+                <td class="px-3 py-2.5 text-right tabular-nums">{ron(data.totalVatCents)}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-[#52B788]">{ron(data.collectedVatCents)}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-[#E8A33C]">{ron(data.neexigibilVatCents)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <p class="text-[12px] text-[#8FA6BC] max-w-2xl">TVA neexigibilă (4428) intră în decontul de TVA (D300) abia când factura e încasată, devenind colectată (4427). Postările sunt generate automat la emitere și la fiecare încasare.</p>
+      </div>
+    )}
+  </div>
+</AppLayout>
