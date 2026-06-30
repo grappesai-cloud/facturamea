@@ -7,9 +7,14 @@ import { eq } from 'drizzle-orm';
 import { logAction } from '../../../lib/audit';
 
 // End impersonation: restore the admin session from the `th_imp` cookie.
-// No admin check needed — the th_imp cookie is HttpOnly and only set by the
-// admin-initiated impersonate endpoint; we still re-verify the admin flag.
-export const GET: APIRoute = async ({ request }) => {
+//
+// This MUST be POST-only. It swaps the live session cookie, so exposing it on GET
+// let link prefetch (Astro fires GET on hover with ClientRouter, browsers also
+// speculatively prefetch) silently end impersonation after a few page views —
+// the admin would land back on their own empty account "with no data". POST is
+// never prefetched/speculatively fetched, so only a real form submit triggers it.
+// A stray GET just redirects, doing nothing.
+export const POST: APIRoute = async ({ request }) => {
   const cookie = request.headers.get('cookie') || '';
   const m = cookie.match(/(?:^|;\s*)th_imp=([^;]+)/);
   // Verify the HMAC signature — a forged/plaintext cookie yields null and is rejected.
@@ -33,3 +38,8 @@ export const GET: APIRoute = async ({ request }) => {
   try { await logAction({ userId: admin.id, action: 'admin.impersonate_stop', request }); } catch {}
   return new Response(null, { status: 302, headers });
 };
+
+// A GET here (prefetch, speculative fetch, bookmark) must NEVER swap the session —
+// just bounce to the app. Exiting impersonation goes through the POST form banner.
+export const GET: APIRoute = async () =>
+  new Response(null, { status: 302, headers: { Location: '/app' } });

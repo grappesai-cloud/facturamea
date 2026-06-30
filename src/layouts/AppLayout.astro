@@ -798,11 +798,16 @@ const showAdminMark = !!user?.isAdmin && !isImpersonating && (currentPath === '/
     <main class="flex-1 w-full">
       <div class="fm-page max-w-[1180px] mx-auto px-4 sm:px-6 pt-24 sm:pt-28 pb-28 lg:pb-10">
         {isImpersonating && (
-          <a href="/api/admin/stop-impersonate" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#E8A33C] rounded-2xl text-[15px] text-[#07090f] hover:bg-[#D9912C] transition-colors">
-            <span class="w-2.5 h-2.5 rounded-full bg-[#07090f]"></span>
-            <span><strong>Mod impersonare</strong> · vezi contul unui utilizator.</span>
-            <span class="ml-auto font-bold">Ieși din impersonare →</span>
-          </a>
+          /* POST form, not a link: a GET (prefetch on hover / browser speculation)
+             must never be able to end impersonation. data-astro-reload forces a
+             full navigation so the Set-Cookie redirect is followed cleanly. */
+          <form method="POST" action="/api/admin/stop-impersonate" data-astro-reload data-astro-prefetch="false" class="mb-6">
+            <button type="submit" class="w-full flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#E8A33C] rounded-2xl text-[15px] text-left text-[#07090f] hover:bg-[#D9912C] transition-colors">
+              <span class="w-2.5 h-2.5 rounded-full bg-[#07090f]"></span>
+              <span><strong>Mod impersonare</strong> · vezi contul unui utilizator.</span>
+              <span class="ml-auto font-bold">Ieși din impersonare →</span>
+            </button>
+          </form>
         )}
         {showTrialBanner && (
           <a href="/app/setari/abonament" class="mb-6 flex flex-wrap items-center gap-2.5 px-5 py-3.5 bg-[#1A759F] rounded-2xl text-[15px] text-white hover:bg-[#1E6091] transition-colors">
