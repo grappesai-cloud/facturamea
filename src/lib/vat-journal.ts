@@ -88,7 +88,9 @@ export async function collectVatJournal(companyId: string, period: DeclaratiePer
       const lns = linesByInv.get(inv.id) || [];
       for (const ln of lns) {
         const rPct = Number(ln.vatRate) || 0;
-        const b = Math.round((ln.lineTotalCents || 0) * cur);
+        // Base = NET line value (qty × net unit price). unitPriceCents is stored
+        // net; lineTotalCents is gross (incl VAT), so it must NOT be used as base.
+        const b = Math.round((Number(ln.quantity) || 0) * (ln.unitPriceCents || 0) * cur);
         const v = Math.round(b * rPct / 100);
         addRate(byRate, String(rPct), b, v); base += b; vat += v; rateSet.add(String(rPct));
       }
