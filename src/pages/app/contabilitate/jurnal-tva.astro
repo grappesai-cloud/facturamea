@@ -1,0 +1,138 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { resolvePeriod } from '../../../lib/declaratii';
+import { collectVatJournal, type VatJournalSide } from '../../../lib/vat-journal';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100);
+const MONTHS = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+
+const now = new Date();
+const params = new URLSearchParams({
+  month: Astro.url.searchParams.get('month') || String(now.getUTCMonth() + 1),
+  year: Astro.url.searchParams.get('year') || String(now.getUTCFullYear()),
+});
+const period = resolvePeriod(params)!;
+const data = await collectVatJournal(companyId, period).catch(() => null);
+const rates = data?.rates ?? [];
+const years = Array.from({ length: 6 }, (_, i) => now.getUTCFullYear() - i);
+const qs = `month=${period.month}&year=${period.year}`;
+---
+
+<AppLayout title="Jurnal TVA" activeTab="contabilitate" breadcrumbTitle="Jurnal TVA">
+  <div class="max-w-[1180px] mx-auto">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6 no-print">
+      <div>
+        <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Jurnal TVA</h1>
+        <p class="text-[13px] text-[#A8BED2] mt-2">Jurnal de vânzări și de cumpărări, pe document, cu baza și TVA pe cotă.</p>
+      </div>
+      <form method="get" class="flex items-end gap-2">
+        <label class="text-[12px] text-[#A8BED2]">Luna
+          <select name="month" class="block mt-1 rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white">
+            {MONTHS.map((m, i) => <option value={i + 1} selected={i + 1 === period.month}>{m}</option>)}
+          </select>
+        </label>
+        <label class="text-[12px] text-[#A8BED2]">Anul
+          <select name="year" class="block mt-1 rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white">
+            {years.map((y) => <option value={y} selected={y === period.year}>{y}</option>)}
+          </select>
+        </label>
+        <button type="submit" class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">Afișează</button>
+        <a href={`/api/invoicing/reports/jurnal-tva?${qs}&format=csv`} class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">CSV</a>
+        <button type="button" id="print-btn" class="px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]">Printează</button>
+      </form>
+    </div>
+
+    <div class="print-head hidden">
+      <h2>{data?.declarant.name} {data?.declarant.cui ? `(CUI ${data.declarant.cui})` : ''}</h2>
+      <p>Jurnal TVA · {MONTHS[period.month - 1]} {period.year}</p>
+    </div>
+
+    {!data ? (
+      <p class="text-[14px] text-[#A8BED2]">Nu am putut încărca datele.</p>
+    ) : (
+      <div class="space-y-10">
+        {[{ title: 'Jurnal de vânzări', side: data.sales, kind: 'livrări' }, { title: 'Jurnal de cumpărări', side: data.purchases, kind: 'achiziții' }].map(({ title, side }) => (
+          <section class="jt-section">
+            <h2 class="text-[18px] font-bold text-white mb-3">{title}</h2>
+            <div class="overflow-x-auto rounded-2xl bg-white/5">
+              <table class="w-full text-[13px] text-white border-collapse">
+                <thead>
+                  <tr class="text-[#A8BED2] text-left">
+                    <th class="px-3 py-2.5 font-semibold">Nr</th>
+                    <th class="px-3 py-2.5 font-semibold">Data</th>
+                    <th class="px-3 py-2.5 font-semibold">Document</th>
+                    <th class="px-3 py-2.5 font-semibold">Partener</th>
+                    <th class="px-3 py-2.5 font-semibold">CUI</th>
+                    {rates.map((r) => (
+                      <Fragment>
+                        <th class="px-3 py-2.5 font-semibold text-right whitespace-nowrap">Bază {r}%</th>
+                        <th class="px-3 py-2.5 font-semibold text-right whitespace-nowrap">TVA {r}%</th>
+                      </Fragment>
+                    ))}
+                    <th class="px-3 py-2.5 font-semibold text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(side as VatJournalSide).rows.length === 0 ? (
+                    <tr><td colspan={6 + rates.length * 2} class="px-3 py-6 text-center text-[#A8BED2]">Niciun document în perioadă.</td></tr>
+                  ) : (side as VatJournalSide).rows.map((row, i) => (
+                    <tr class="border-t border-white/10">
+                      <td class="px-3 py-2 text-[#A8BED2]">{i + 1}</td>
+                      <td class="px-3 py-2 whitespace-nowrap">{row.date}</td>
+                      <td class="px-3 py-2 font-mono whitespace-nowrap">{row.doc}</td>
+                      <td class="px-3 py-2">{row.partner}{row.note ? <span class="ml-1.5 text-[11px] text-[#E8A33C]">· {row.note}</span> : null}</td>
+                      <td class="px-3 py-2 font-mono text-[#A8BED2] whitespace-nowrap">{row.cui || '—'}</td>
+                      {rates.map((r) => (
+                        <Fragment>
+                          <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">{row.byRate[r] ? ron(row.byRate[r].base) : ''}</td>
+                          <td class="px-3 py-2 text-right tabular-nums whitespace-nowrap text-[#A8BED2]">{row.byRate[r] ? ron(row.byRate[r].vat) : ''}</td>
+                        </Fragment>
+                      ))}
+                      <td class="px-3 py-2 text-right tabular-nums font-semibold whitespace-nowrap">{ron(row.totalCents)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr class="border-t-2 border-white/20 font-bold">
+                    <td class="px-3 py-2.5" colspan={5}>TOTAL {(side as VatJournalSide).rows.length} doc.</td>
+                    {rates.map((r) => (
+                      <Fragment>
+                        <td class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap">{(side as VatJournalSide).totals.byRate[r] ? ron((side as VatJournalSide).totals.byRate[r].base) : ''}</td>
+                        <td class="px-3 py-2.5 text-right tabular-nums whitespace-nowrap">{(side as VatJournalSide).totals.byRate[r] ? ron((side as VatJournalSide).totals.byRate[r].vat) : ''}</td>
+                      </Fragment>
+                    ))}
+                    <td class="px-3 py-2.5 text-right tabular-nums">{ron((side as VatJournalSide).totals.totalCents)}</td>
+                  </tr>
+                  <tr class="text-[#A8BED2]">
+                    <td class="px-3 py-1.5" colspan={5}>Total bază: {ron((side as VatJournalSide).totals.baseCents)} · Total TVA: {ron((side as VatJournalSide).totals.vatCents)}</td>
+                    <td colspan={rates.length * 2 + 1}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
+        ))}
+      </div>
+    )}
+  </div>
+
+  <style is:global>
+    @media print {
+      .no-print, header, nav, footer, .fm-page > .flex.items-center { display: none !important; }
+      .print-head { display: block !important; color: #000; margin-bottom: 12px; }
+      .print-head h2 { font-size: 16px; font-weight: 700; }
+      body, .jt-section, table, td, th { color: #000 !important; background: #fff !important; }
+      .jt-section { page-break-inside: auto; margin-bottom: 24px; }
+      table { font-size: 10px !important; }
+      th, td { border: 0.5px solid #ccc !important; padding: 3px 5px !important; }
+      @page { size: A4 landscape; margin: 12mm; }
+    }
+  </style>
+  <script>
+    document.getElementById('print-btn')?.addEventListener('click', () => window.print());
+  </script>
+</AppLayout>
