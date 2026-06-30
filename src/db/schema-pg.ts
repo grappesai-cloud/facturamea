@@ -2104,3 +2104,24 @@ export const blogPosts = pgTable('blog_posts', {
 }, (table) => [
   index('idx_blog_status_pub').on(table.status, table.publishedAt),
 ]);
+
+// Avansuri de trezorerie (cont 542) — advances given to employees, then settled
+// (justified with expenses + cash returned). Self-provisioned in prod via
+// CREATE TABLE IF NOT EXISTS (see lib/treasury-advances ensureTable).
+export const treasuryAdvances = pgTable('treasury_advances', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  employeeId: text('employee_id').references(() => employees.id, { onDelete: 'set null' }),
+  employeeName: varchar('employee_name', { length: 200 }).notNull(),
+  grantedDate: date('granted_date', { mode: 'string' }).notNull(),
+  grantedCents: integer('granted_cents').notNull(),
+  settledCents: integer('settled_cents').notNull().default(0),   // justificat prin cheltuieli
+  returnedCents: integer('returned_cents').notNull().default(0), // restituit la casă/bancă
+  method: varchar('method', { length: 16 }).default('cash'),     // cash | bank
+  status: varchar('status', { length: 16 }).notNull().default('open'), // open | settled
+  settledDate: date('settled_date', { mode: 'string' }),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_treasury_advances_company').on(table.companyId),
+]);
