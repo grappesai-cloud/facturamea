@@ -1,0 +1,129 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { db } from '../../../db';
+import { stockLevels, invoiceProducts, warehouses } from '../../../db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100);
+const qty = (q: number) => new Intl.NumberFormat('ro-RO', { maximumFractionDigits: 3 }).format(q || 0);
+
+const today = new Date().toISOString().slice(0, 10);
+const asOf = Astro.url.searchParams.get('date') || today;
+
+const rows = await db.select({
+  wh: warehouses.name,
+  code: invoiceProducts.code,
+  name: invoiceProducts.name,
+  um: invoiceProducts.defaultUm,
+  ptype: invoiceProducts.productType,
+  quantity: stockLevels.quantity,
+  avgCostCents: stockLevels.avgCostCents,
+}).from(stockLevels)
+  .leftJoin(invoiceProducts, eq(stockLevels.productId, invoiceProducts.id))
+  .leftJoin(warehouses, eq(stockLevels.warehouseId, warehouses.id))
+  .where(eq(stockLevels.companyId, companyId))
+  .catch(() => [] as any[]);
+
+// Group by warehouse, keep only items actually on stock.
+const byWh = new Map<string, { rows: any[]; valueCents: number }>();
+let grandValue = 0;
+for (const r of rows) {
+  const q = Number(r.quantity) || 0;
+  if (q === 0) continue;
+  const value = Math.round(q * (Number(r.avgCostCents) || 0));
+  const wh = r.wh || 'Depozit principal';
+  const g = byWh.get(wh) || { rows: [], valueCents: 0 };
+  g.rows.push({ ...r, q, value });
+  g.valueCents += value;
+  byWh.set(wh, g);
+  grandValue += value;
+}
+const groups = [...byWh.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+---
+
+<AppLayout title="Registru inventar" activeTab="contabilitate" breadcrumbTitle="Registru inventar">
+  <div class="max-w-[1180px] mx-auto">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6 no-print">
+      <div>
+        <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Registru inventar</h1>
+        <p class="text-[13px] text-[#A8BED2] mt-2">Stocul faptic pe depozite, cu cantități și valori (cost mediu). Snapshot la data afișată.</p>
+      </div>
+      <form method="get" class="flex items-end gap-2">
+        <label class="text-[12px] text-[#A8BED2]">La data<input type="date" name="date" value={asOf} class="block mt-1 rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white" /></label>
+        <a href="/api/invoicing/reports/registru-inventar?format=csv" class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">CSV</a>
+        <button type="button" id="print-btn" class="px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]">Printează</button>
+      </form>
+    </div>
+
+    <div class="print-head hidden"><h2>Registru inventar · la {asOf}</h2></div>
+
+    {groups.length === 0 ? (
+      <div class="rounded-2xl bg-white/5 p-8 text-center text-[#A8BED2]">Niciun produs pe stoc. Înregistrează o recepție (NIR) în Gestiune.</div>
+    ) : (
+      <div class="space-y-8">
+        {groups.map(([wh, g]) => (
+          <section class="ri-section">
+            <h2 class="text-[17px] font-bold text-white mb-3">{wh}</h2>
+            <div class="overflow-x-auto rounded-2xl bg-white/5">
+              <table class="w-full text-[13px] text-white border-collapse">
+                <thead>
+                  <tr class="text-[#A8BED2] text-left">
+                    <th class="px-3 py-2.5 font-semibold">Nr</th>
+                    <th class="px-3 py-2.5 font-semibold">Cod</th>
+                    <th class="px-3 py-2.5 font-semibold">Denumire</th>
+                    <th class="px-3 py-2.5 font-semibold">Tip</th>
+                    <th class="px-3 py-2.5 font-semibold">UM</th>
+                    <th class="px-3 py-2.5 font-semibold text-right">Cantitate</th>
+                    <th class="px-3 py-2.5 font-semibold text-right">Valoare unitară</th>
+                    <th class="px-3 py-2.5 font-semibold text-right">Valoare</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {g.rows.map((r: any, i: number) => (
+                    <tr class="border-t border-white/10">
+                      <td class="px-3 py-2 text-[#A8BED2]">{i + 1}</td>
+                      <td class="px-3 py-2 font-mono whitespace-nowrap">{r.code || '—'}</td>
+                      <td class="px-3 py-2">{r.name}</td>
+                      <td class="px-3 py-2 text-[#A8BED2]">{r.ptype || '—'}</td>
+                      <td class="px-3 py-2">{r.um || 'buc'}</td>
+                      <td class="px-3 py-2 text-right tabular-nums">{qty(r.q)}</td>
+                      <td class="px-3 py-2 text-right tabular-nums text-[#A8BED2]">{ron(r.avgCostCents)}</td>
+                      <td class="px-3 py-2 text-right tabular-nums font-semibold">{ron(r.value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr class="border-t-2 border-white/20 font-bold">
+                    <td class="px-3 py-2.5" colspan={7}>Subtotal {wh}</td>
+                    <td class="px-3 py-2.5 text-right tabular-nums">{ron(g.valueCents)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </section>
+        ))}
+        <div class="rounded-2xl bg-[#E1FB15]/10 border border-[#E1FB15]/30 px-5 py-4 flex items-center justify-between">
+          <span class="text-[15px] font-bold text-white">TOTAL valoare stoc</span>
+          <span class="text-[20px] font-bold tabular-nums text-[#E1FB15]">{ron(grandValue)} RON</span>
+        </div>
+      </div>
+    )}
+  </div>
+
+  <style is:global>
+    @media print {
+      .no-print, header, nav, footer, .fm-page > .flex.items-center { display: none !important; }
+      .print-head { display: block !important; color: #000; margin-bottom: 12px; }
+      .print-head h2 { font-size: 16px; font-weight: 700; }
+      body, .ri-section, table, td, th { color: #000 !important; background: #fff !important; }
+      table { font-size: 10px !important; }
+      th, td { border: 0.5px solid #ccc !important; padding: 3px 5px !important; }
+      @page { size: A4 portrait; margin: 12mm; }
+    }
+  </style>
+  <script>document.getElementById('print-btn')?.addEventListener('click', () => window.print());</script>
+</AppLayout>
