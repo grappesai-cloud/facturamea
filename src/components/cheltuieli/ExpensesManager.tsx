@@ -7,9 +7,6 @@ import { DatePicker } from '../ui/DatePicker';
 import { EmptyState } from '../ui/EmptyState';
 import { Plus, X, Loader2, Check, ArrowLeft, Receipt, Wallet, Upload } from 'lucide-react';
 
-const ron = (cents: number) =>
-  new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON' }).format((cents || 0) / 100);
-
 
 interface Expense {
   id: string; supplierNameSnap: string | null; supplierName: string | null;
@@ -287,7 +284,7 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
                   <p className="text-[15px] text-white font-semibold truncate mt-1.5">{row.supplierName || row.fromCif || 'Furnizor'}</p>
                   <p className="text-[12px] text-[#8FA6BC] mt-0.5 truncate">{row.detail ? `${row.detail} · ` : ''}{row.issueDate ? new Date(row.issueDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' }) : ''}</p>
                 </div>
-                <p className="text-[15px] font-bold tabular-nums text-white shrink-0 whitespace-nowrap leading-none">{row.totalCents != null ? ron(row.totalCents) : '—'}</p>
+                <p className="text-[15px] font-bold tabular-nums text-white shrink-0 whitespace-nowrap leading-none">{row.totalCents != null ? money(row.totalCents, row.currency) : '—'}</p>
               </div>
               <div className="mt-3 flex items-center gap-2">
                 <button onClick={(e) => { e.stopPropagation(); importInbox(row.id); }} disabled={importingId === row.id} className="flex-1 px-4 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] text-[13.5px] font-bold hover:bg-[#D2EA0E] disabled:opacity-50">{importingId === row.id ? 'Se importă…' : 'Confirmă'}</button>
@@ -311,7 +308,7 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
                   <p className="text-[12px] text-[#8FA6BC] mt-0.5 truncate">{e.category ? (CAT_LABELS[e.category] || e.category) : '—'}{e.issueDate ? ` · ${new Date(e.issueDate).toLocaleDateString('ro-RO', { timeZone: 'Europe/Bucharest' })}` : ''}</p>
                 </div>
                 <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-                  <p className="text-[15px] font-bold tabular-nums text-white leading-none">{ron(e.totalCents)}</p>
+                  <p className="text-[15px] font-bold tabular-nums text-white leading-none">{money(e.totalCents, e.currency)}</p>
                   <div className="flex items-center justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                     {e.status !== 'paid' && (
                       <button onClick={(ev) => { ev.stopPropagation(); markPaid(e.id); }} title="Marchează plătit" className="w-8 h-8 grid place-items-center rounded-full bg-white/10 text-[#A8BED2] hover:text-[#2E9E6A] hover:bg-white/15 transition-colors"><Check className="w-4 h-4" /></button>
@@ -346,7 +343,7 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
             </div>
             <div className="shrink-0 text-right">
               <p className="text-[11px] uppercase tracking-wider text-[#8FA6BC] font-semibold">Total</p>
-              <p className="text-[20px] sm:text-[22px] font-bold tabular-nums text-[#E1FB15] leading-tight">{ron(Math.round(total * 100))}</p>
+              <p className="text-[20px] sm:text-[22px] font-bold tabular-nums text-[#E1FB15] leading-tight">{money(Math.round(total * 100), form.currency)}</p>
             </div>
           </div>
 
