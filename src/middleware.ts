@@ -333,7 +333,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
         // License / paywall gate. Enforced on /app page navigations AND on
         // mutating /api/* calls to paid features (so the API + Capacitor Bearer
-        // path can't bypass the 700 RON paywall — a real revenue hole otherwise).
+        // path can't bypass the 800 RON paywall — a real revenue hole otherwise).
         const needsApiLicense = pathname.startsWith('/api/')
           && MUTATING_METHODS.has(method)
           && !API_PAYWALL_EXEMPT.some((p) => pathname.startsWith(p));

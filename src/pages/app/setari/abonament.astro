@@ -75,7 +75,7 @@ const features = [
           <div class="absolute top-4 right-4 px-2.5 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold uppercase tracking-wider">Lifetime</div>
           <p class="text-[13px] font-semibold text-[#A8BED2]">facturamea</p>
           <div class="flex items-end gap-2 mt-2">
-            <span class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white leading-none">700</span>
+            <span class="text-[26px] sm:text-[30px] font-bold tracking-[-0.03em] tabular-nums text-white leading-none">800</span>
             <span class="text-[16px] font-semibold mb-1">RON</span>
             <span class="text-[13px] text-[#A8BED2] mb-1.5">· o singură dată</span>
           </div>
@@ -88,7 +88,7 @@ const features = [
             ))}
           </ul>
           <button id="buy-lifetime" class="mt-6 w-full py-3 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] disabled:opacity-60 transition-colors">
-            Activează licența pe viață — 700 RON
+            Activează licența pe viață — 800 RON
           </button>
           <p id="buy-error" class="hidden mt-2 text-[12px] text-[#DC4B41]"></p>
           <p class="mt-3 text-[11px] text-[#8FA6BC] text-center">Plată securizată prin Stripe. Card bancar.</p>
@@ -113,7 +113,7 @@ const features = [
         if (err) { err.textContent = 'Eroare de rețea.'; err.classList.remove('hidden'); }
       }
       (btn as HTMLButtonElement).disabled = false;
-      btn!.textContent = 'Activează licența pe viață — 700 RON';
+      btn!.textContent = 'Activează licența pe viață — 800 RON';
     });
   </script>
 </AppLayout>

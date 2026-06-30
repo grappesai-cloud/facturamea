@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 
 export const TRIAL_DAYS = 14;
-export const LIFETIME_PRICE_CENTS = 70000; // 700 RON
+export const LIFETIME_PRICE_CENTS = 80000; // 800 RON
 export const LIFETIME_CURRENCY = 'RON';
 
 export type LicenseState = {

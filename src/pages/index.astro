@@ -52,7 +52,7 @@ const homeJsonLd = [
     screenshot: 'https://facturamea.com/screens/app-acasa.jpeg',
     offers: {
       '@type': 'Offer',
-      price: '700',
+      price: '800',
       priceCurrency: 'RON',
       description: 'Licență pe viață, o singură plată',
       availability: 'https://schema.org/InStock',
@@ -63,7 +63,7 @@ const homeJsonLd = [
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: [
-      { '@type': 'Question', name: 'Chiar e o singură plată, fără abonament?', acceptedAnswer: { '@type': 'Answer', text: 'Da. Plătești 700 RON o singură dată și primești licență pe viață, fără costuri lunare sau anuale.' } },
+      { '@type': 'Question', name: 'Chiar e o singură plată, fără abonament?', acceptedAnswer: { '@type': 'Answer', text: 'Da. Plătești 800 RON o singură dată și primești licență pe viață, fără costuri lunare sau anuale.' } },
       { '@type': 'Question', name: 'e-Factura este inclusă?', acceptedAnswer: { '@type': 'Answer', text: 'Da. Trimitem facturile direct în SPV ANAF, conform cerințelor 2026, inclusiv e-Transport și SAF-T D406.' } },
       { '@type': 'Question', name: 'Pot lucra cu echipa și contabilul?', acceptedAnswer: { '@type': 'Answer', text: 'Da. Adaugi mai mulți utilizatori cu roluri și permisiuni, iar contabilul are acces la rapoarte și exporturi.' } },
       { '@type': 'Question', name: 'Funcționează și pe telefon?', acceptedAnswer: { '@type': 'Answer', text: 'Da. Ai aplicație web plus aplicații native iOS și Android, sincronizate cu același cont.' } },
@@ -85,7 +85,7 @@ const journeySteps = [
 
 <LandingLayout
   title="Program de facturare online, plată unică — e-Factura ANAF 2026"
-  description="facturamea: facturi, e-Factura ANAF, e-Transport, SAF-T, gestiune stocuri și rapoarte. O singură plată, 700 RON, licență pe viață. Web, iOS și Android."
+  description="facturamea: facturi, e-Factura ANAF, e-Transport, SAF-T, gestiune stocuri și rapoarte. O singură plată, 800 RON, licență pe viață. Web, iOS și Android."
   structuredData={homeJsonLd}
 >
   <!-- ═══════════════ HERO (white · headline left · phone right) ═══════════════ -->
@@ -101,7 +101,7 @@ const journeySteps = [
         </h1>
         <p class="hero-line mt-6 text-base sm:text-xl text-[#46627A] leading-relaxed max-w-md mx-auto lg:mx-0">
           Fără abonament, fără reînnoiri. O plată de
-          <strong class="bg-[#E1FB15] text-[#07090f] font-bold px-1.5 rounded">700 RON</strong> și e al tău.
+          <strong class="bg-[#E1FB15] text-[#07090f] font-bold px-1.5 rounded">800 RON</strong> și e al tău.
         </p>
         <StoreBadges class="hero-line mt-8 justify-center lg:justify-start" />
       </div>
@@ -290,7 +290,7 @@ const journeySteps = [
       <div data-anim="scale" class="rounded-[26px] bg-[#07090f] text-white p-7 sm:p-10">
         <div class="inline-block px-3 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold uppercase tracking-wide">Licență pe viață</div>
         <div class="flex items-baseline gap-2 mt-4 mb-1">
-          <span class="text-5xl lg:text-6xl font-extrabold tracking-[-0.04em]">700</span>
+          <span class="text-5xl lg:text-6xl font-extrabold tracking-[-0.04em]">800</span>
           <span class="text-2xl font-bold text-[#A8BED2]">RON</span>
         </div>
         <p class="text-sm text-[#A8BED2] mb-7">o singură plată, pentru totdeauna</p>
@@ -340,7 +340,7 @@ const journeySteps = [
       </h2>
       <div data-anim-stagger class="space-y-3">
         {[
-          { q: 'Chiar e o singură plată, fără abonament?', a: 'Da. Plătești 700 RON o singură dată și primești licență pe viață, fără costuri lunare sau anuale.' },
+          { q: 'Chiar e o singură plată, fără abonament?', a: 'Da. Plătești 800 RON o singură dată și primești licență pe viață, fără costuri lunare sau anuale.' },
           { q: 'e-Factura este inclusă?', a: 'Da. Trimitem facturile direct în SPV ANAF, conform cerințelor 2026, inclusiv e-Transport și SAF-T D406.' },
           { q: 'Pot lucra cu echipa și contabilul?', a: 'Da. Adaugi mai mulți utilizatori cu roluri și permisiuni, iar contabilul are acces la rapoarte și exporturi.' },
           { q: 'Funcționează și pe telefon?', a: 'Da. Ai aplicație web plus aplicații native iOS și Android, sincronizate cu același cont.' },

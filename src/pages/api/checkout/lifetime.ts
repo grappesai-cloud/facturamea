@@ -3,7 +3,7 @@ import { getStripe, isStripeConfigured } from '../../../lib/stripe';
 import { LIFETIME_PRICE_CENTS, LIFETIME_CURRENCY, licenseState } from '../../../lib/license';
 import { appOrigin } from '../../../lib/oauth';
 
-// Create a one-time Stripe Checkout session for the 700 RON lifetime plan.
+// Create a one-time Stripe Checkout session for the 800 RON lifetime plan.
 export const POST: APIRoute = async ({ request, locals }) => {
   const user = locals.user;
   if (!user || !user.companyId) {

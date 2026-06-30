@@ -5,7 +5,7 @@ import { appLicenses, companies } from '../../db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 // Read-only revenue view. Shown to full admins AND to viewer (partner) accounts.
-// Strictly: company name + the lifetime payment (700 RON). No actions, no edits.
+// Strictly: company name + the lifetime payment (800 RON). No actions, no edits.
 
 const ron = (cents: number | null) =>
   new Intl.NumberFormat('ro-RO', { style: 'currency', currency: 'RON', maximumFractionDigits: 0 }).format((cents || 0) / 100);
@@ -46,7 +46,7 @@ const statusLabel: Record<string, { label: string; cls: string }> = {
 <AdminLayout title="Încasări" activeTab="incasari">
   <div class="mb-6">
     <h1 class="text-[28px] sm:text-[36px] font-semibold tracking-[-0.03em] text-white">Încasări licențe</h1>
-    <p class="text-[14px] text-[#A8BED2] mt-1">Companiile care au achiziționat licența lifetime (700 RON).</p>
+    <p class="text-[14px] text-[#A8BED2] mt-1">Companiile care au achiziționat licența lifetime (800 RON).</p>
   </div>
 
   <div class="grid grid-cols-2 gap-4 mb-8 max-w-2xl">

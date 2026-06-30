@@ -142,7 +142,7 @@ export default function OnboardingWizard({ initial, companyComplete, isPaid }: P
           <div className="rounded-2xl bg-[#081B2E] ring-1 ring-white/10 p-6">
             <div className="inline-block px-3 py-1 rounded-full bg-[#E1FB15] text-[#07090f] text-[11px] font-bold uppercase tracking-wide">Licență pe viață</div>
             <div className="flex items-baseline gap-2 mt-3 mb-1">
-              <span className="text-4xl font-extrabold text-white tracking-[-0.03em]">700</span>
+              <span className="text-4xl font-extrabold text-white tracking-[-0.03em]">800</span>
               <span className="text-xl font-bold text-[#A8BED2]">RON</span>
             </div>
             <p className="text-[13px] text-[#A8BED2] mb-4">o singură plată, pentru totdeauna · fără abonament</p>
