@@ -500,6 +500,108 @@ export function generateD212Xml(d: D212Data): string {
 </declaratie212>`;
 }
 
+// ── D101 — Impozit pe profit (SRL pe regim de profit, 16%) ──────────────────
+// Rezultat fiscal pe bază de angajamente (accrual): venituri din facturile emise
+// în an minus cheltuielile înregistrate, ajustat cu partea nedeductibilă a
+// cheltuielilor (deductiblePct). NU include amortizări fiscale, provizioane,
+// sponsorizări, pierdere reportată — sunt ajustări pe care le verifică contabilul.
+export interface D101Data {
+  declarant: { cui: string; name: string; rawCui: string | null };
+  year: number;
+  venituriCents: number;
+  cheltuieliCents: number;
+  rezultatBrutCents: number;
+  cheltuieliNedeductibileCents: number;
+  rezultatFiscalCents: number;
+  cotaPct: number;
+  impozitCents: number;
+  nrFacturi: number;
+  nrCheltuieli: number;
+}
+
+export async function collectD101Data(companyId: string, year: number): Promise<D101Data> {
+  let name = '';
+  let rawCui: string | null = null;
+  try {
+    const [issuer] = await db.select().from(companies).where(eq(companies.id, companyId));
+    if (issuer) { name = issuer.name || ''; rawCui = issuer.cui || null; }
+    const [billing] = await db.select().from(billingAddresses).where(eq(billingAddresses.companyId, companyId));
+    if (billing) { name = billing.legalName || name; rawCui = billing.cui || rawCui; }
+  } catch { /* keep defaults */ }
+
+  const from = new Date(`${year}-01-01T00:00:00Z`);
+  const to = new Date(`${year}-12-31T23:59:59Z`);
+
+  // Venituri = net (fără TVA) al facturilor emise în an.
+  let venituriCents = 0;
+  let nrFacturi = 0;
+  try {
+    const invoices = await db.select().from(transportInvoices).where(and(
+      eq(transportInvoices.companyId, companyId),
+      ne(transportInvoices.status, 'voided'),
+      ne(transportInvoices.status, 'draft'),
+      gte(transportInvoices.issuedAt, from),
+      lte(transportInvoices.issuedAt, to),
+    ));
+    for (const inv of invoices) {
+      if (inv.kind !== 'factura' && inv.kind !== 'storno') continue;
+      venituriCents += invoiceRonCents(inv).subtotal;
+      nrFacturi += 1;
+    }
+  } catch { /* empty */ }
+
+  // Cheltuieli = net al cheltuielilor înregistrate; partea nedeductibilă din pct.
+  let cheltuieliCents = 0;
+  let cheltuieliNedeductibileCents = 0;
+  let nrCheltuieli = 0;
+  try {
+    const rows = await db.select().from(expenses).where(and(
+      eq(expenses.companyId, companyId),
+      gte(expenses.issueDate, `${year}-01-01`),
+      lte(expenses.issueDate, `${year}-12-31`),
+    ));
+    for (const exp of rows) {
+      const net = expenseRonCents(exp).net;
+      cheltuieliCents += net;
+      const pct = exp.deductiblePct ?? (exp.deductible === false ? 0 : 100);
+      cheltuieliNedeductibileCents += Math.round(net * (100 - Math.max(0, Math.min(100, pct))) / 100);
+      nrCheltuieli += 1;
+    }
+  } catch { /* empty */ }
+
+  const rezultatBrutCents = venituriCents - cheltuieliCents;
+  const rezultatFiscalCents = rezultatBrutCents + cheltuieliNedeductibileCents;
+  const cotaPct = 16;
+  const impozitCents = Math.round(Math.max(0, rezultatFiscalCents) * cotaPct / 100);
+
+  return {
+    declarant: { cui: normalizeCui(rawCui), name, rawCui },
+    year, venituriCents, cheltuieliCents, rezultatBrutCents,
+    cheltuieliNedeductibileCents, rezultatFiscalCents, cotaPct, impozitCents,
+    nrFacturi, nrCheltuieli,
+  };
+}
+
+export function generateD101Csv(d: D101Data): string {
+  const rows: Array<[string, string]> = [
+    ['Declarant', d.declarant.name],
+    ['CIF', d.declarant.cui],
+    ['An fiscal', String(d.year)],
+    ['Facturi emise (nr)', String(d.nrFacturi)],
+    ['Cheltuieli inregistrate (nr)', String(d.nrCheltuieli)],
+    ['Total venituri, fara TVA (RON)', centsToStr(d.venituriCents)],
+    ['Total cheltuieli, fara TVA (RON)', centsToStr(d.cheltuieliCents)],
+    ['Rezultat brut (RON)', centsToStr(d.rezultatBrutCents)],
+    ['Cheltuieli nedeductibile (RON)', centsToStr(d.cheltuieliNedeductibileCents)],
+    ['Rezultat fiscal (RON)', centsToStr(d.rezultatFiscalCents)],
+    ['Cota impozit pe profit (%)', String(d.cotaPct)],
+    ['Impozit pe profit datorat (RON)', centsToStr(d.impozitCents)],
+    ['Nota', 'Calcul de baza. NU include amortizari fiscale, provizioane, sponsorizari, pierdere reportata. Verifica cu contabilul inainte de depunere.'],
+  ];
+  const escCsv = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
+  return rows.map(([k, v]) => `${escCsv(k)},${escCsv(v)}`).join('\r\n') + '\r\n';
+}
+
 export function generateD212Csv(d: D212Data): string {
   const rows: Array<[string, string]> = [
     ['Declarant', d.declarant.name],

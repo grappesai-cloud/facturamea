@@ -149,6 +149,21 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
         </button>
       </div>
     </div>
+
+    <!-- D101 (impozit pe profit — SRL pe profit) -->
+    <div class="rounded-2xl p-5 bg-white/5 flex flex-col">
+      <div class="flex items-center justify-between mb-3">
+        <span class="text-[20px] font-bold tracking-[-0.03em] text-white font-mono">D101</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-[#A8BED2]">Calcul / CSV</span>
+      </div>
+      <h3 class="text-[16px] font-bold text-white">Impozit pe profit (D101)</h3>
+      <p class="text-[13px] text-[#A8BED2] mt-1.5 flex-1">Pentru SRL pe regim de profit (16%). Calculează rezultatul fiscal anual (venituri − cheltuieli + cheltuieli nedeductibile) și impozitul. Calcul de bază, fără amortizări fiscale/provizioane/sponsorizări — verifică cu contabilul.</p>
+      <div class="mt-4 flex gap-2">
+        <button type="button" data-decl="d101-csv" class="decl-dl flex-1 inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E] transition-colors disabled:opacity-50">
+          <span class="decl-label">Descarcă calculul (CSV)</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <p id="decl-error" class="text-[13px] text-[#DC4B41] mt-4 hidden"></p>
@@ -187,6 +202,7 @@ const years = Array.from({ length: 6 }, (_, i) => currentYear - i);
         case 'd100-csv': return '/api/invoicing/reports/d100?month=' + month + '&year=' + year + '&rate=' + d100Rate() + '&format=csv';
         case 'd212': return '/api/invoicing/reports/d212?year=' + year;
         case 'd212-csv': return '/api/invoicing/reports/d212?year=' + year + '&format=csv';
+        case 'd101-csv': return '/api/invoicing/reports/d101?year=' + year;
         default: return null;
       }
     }
