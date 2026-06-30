@@ -11,6 +11,7 @@ export interface PdfExpenseFields {
   supplierCui: string | null;
   documentNumber: string | null;
   issueDate: string | null; // YYYY-MM-DD
+  currency: string; // RON | EUR | USD | ...
   netCents: number;
   vatCents: number;
   totalCents: number;
@@ -50,6 +51,19 @@ export async function parseExpensePdf(bytes: Uint8Array, ownCui?: string | null)
   return parseExpenseText(text, ownCui);
 }
 
+// Currency tokens we recognise (code or symbol) → ISO code.
+const CUR_RE = /(RON|LEI|EUR(?:O)?|USD|US\$|GBP|CHF|HUF|BGN|PLN|MDL|TRY|€|£|\$)/i;
+function normCur(tok: string): string | null {
+  const t = tok.toUpperCase().replace(/\s/g, '');
+  if (t === 'RON' || t === 'LEI') return 'RON';
+  if (t === 'EUR' || t === 'EURO' || t === '€') return 'EUR';
+  if (t === 'USD' || t === 'US$' || t === '$') return 'USD';
+  if (t === 'GBP' || t === '£') return 'GBP';
+  if (['CHF', 'HUF', 'BGN', 'PLN', 'MDL', 'TRY'].includes(t)) return t;
+  return null;
+}
+const AMT = String.raw`\d[\d.,]*\d|\d`; // a number (1.190,50 / 1190.50 / 5)
+
 // Parse invoice fields from already-extracted text — shared by the PDF text-layer
 // reader and the Tesseract image OCR.
 export async function parseExpenseText(text: string, ownCui?: string | null): Promise<PdfExpenseResult> {
@@ -61,27 +75,69 @@ export async function parseExpenseText(text: string, ownCui?: string | null): Pr
   const uniq = Array.from(new Set(candidates));
   const supplierCui = uniq.find((c) => c !== own) || uniq[0] || null;
 
-  // --- Total: the largest amount tagged as a "total". ---
-  let totalCents = 0;
-  const totalRe = /total[^\n]{0,40}?([\d][\d.,]*\d)/gi;
-  for (const m of text.matchAll(totalRe)) {
-    const c = toCents(m[1]);
-    if (c > totalCents) totalCents = c;
+  // --- Currency: tally every currency token; the most frequent wins (default RON).
+  //     Foreign invoices that also print a RON equivalent still skew to the real
+  //     currency because every line/total carries it. ---
+  const curCounts: Record<string, number> = {};
+  for (const m of text.matchAll(new RegExp(CUR_RE, 'gi'))) {
+    const c = normCur(m[1]); if (c) curCounts[c] = (curCounts[c] || 0) + 1;
   }
-  // Fallback: any "X RON/LEI" amount, take the largest.
+  let currency = 'RON';
+  let best = -1;
+  for (const [c, n] of Object.entries(curCounts)) { if (n > best) { best = n; currency = c; } }
+
+  // --- Total: largest amount near a "total / amount due" label. The value may sit
+  //     on the same line OR the next one (column layouts), so we allow one newline.
+  //     We take the largest such tagged amount (the grand total incl. VAT). ---
+  let totalCents = 0;
+  const totalLabel = /(total\s+de\s+plat[ăa]|total\s+general|total\s+factur[ăa]|sum[ăa]\s+de\s+plat[ăa]|rest\s+de\s+plat[ăa]|grand\s+total|amount\s+due|balance\s+due|total\s+to\s+pay|total)/gi;
+  for (const m of text.matchAll(totalLabel)) {
+    const window = text.slice(m.index! + m[0].length, m.index! + m[0].length + 60);
+    const am = window.match(new RegExp(`(${AMT})`));
+    if (am) { const c = toCents(am[1]); if (c > totalCents) totalCents = c; }
+  }
+  // Fallback: any amount carrying a currency token, take the largest.
   if (totalCents === 0) {
-    for (const m of text.matchAll(/([\d][\d.,]*\d)\s*(?:RON|LEI)\b/gi)) {
-      const c = toCents(m[1]); if (c > totalCents) totalCents = c;
+    const re = new RegExp(`(${AMT})\\s*${CUR_RE.source}|${CUR_RE.source}\\s*(${AMT})`, 'gi');
+    for (const m of text.matchAll(re)) {
+      const c = toCents(m[1] || m[m.length - 1] || ''); if (c > totalCents) totalCents = c;
     }
   }
 
-  // --- VAT (TVA) amount, if explicitly stated. Require a RON/LEI suffix OR a
-  //     decimal so we don't grab the rate ("TVA 19%") as the amount. ---
-  let vatCents = 0;
-  const vatM = text.match(/T\.?V\.?A\.?[^\n]{0,30}?([\d][\d.,]*\d)\s*(?:RON|LEI)\b/i)
-    || text.match(/T\.?V\.?A\.?[^\n]{0,20}?(?:%|cot[ăa])[^\n]{0,12}?([\d][\d.,]*[.,]\d{2})\b/i);
-  if (vatM) vatCents = toCents(vatM[1]);
-  const netCents = totalCents > 0 && vatCents > 0 && vatCents < totalCents ? totalCents - vatCents : 0;
+  // The label and its value often sit on different lines (column layouts), so we
+  // scan the matching line plus the next two non-empty lines for the amount.
+  const lines = text.split('\n').map((l) => l.trim());
+  const netLabel = /total\s+f[ăa]r[ăa]\s+TVA|valoare\s+f[ăa]r[ăa]\s+TVA|baz[ăa]\s+impozabil[ăa]|sub-?total|net\s+amount|total\s+net|f[ăa]r[ăa]\s+TVA|without\s+VAT|excl/i;
+  const amountForLabel = (labelRe: RegExp, opts: { skipPercent?: boolean; exclude?: RegExp } = {}): number => {
+    for (let i = 0; i < lines.length; i++) {
+      const lm = labelRe.exec(lines[i]);
+      if (!lm) continue;
+      if (opts.exclude && opts.exclude.test(lines[i])) continue;
+      // scan from just after the label (same line), then the next two lines.
+      const segs = [lines[i].slice(lm.index + lm[0].length), lines[i + 1] || '', lines[i + 2] || ''];
+      for (const seg of segs) {
+        const re = new RegExp(`(${AMT})(\\s*%)?`, 'g');
+        let mm: RegExpExecArray | null;
+        while ((mm = re.exec(seg))) {
+          if (opts.skipPercent && mm[2]) continue; // a rate like "19%", not the amount
+          const c = toCents(mm[1]);
+          if (c > 0) return c;
+        }
+      }
+    }
+    return 0;
+  };
+
+  // --- VAT (TVA) amount — skip "fără TVA / without VAT" lines and the rate. ---
+  let vatCents = amountForLabel(/T\.?V\.?A\.?|\bVAT\b|\btax\b/i, { skipPercent: true, exclude: netLabel });
+
+  // --- Net (base): explicit subtotal / baza impozabilă, else derived below. ---
+  let netCents = amountForLabel(netLabel);
+
+  // Reconcile the three amounts (total = net + vat) from whichever two we have.
+  if (totalCents > 0 && vatCents > 0 && vatCents < totalCents && netCents === 0) netCents = totalCents - vatCents;
+  else if (totalCents > 0 && netCents > 0 && netCents < totalCents && vatCents === 0) vatCents = totalCents - netCents;
+  else if (totalCents === 0 && netCents > 0 && vatCents > 0) totalCents = netCents + vatCents;
 
   // --- Issue date: first dd.mm.yyyy / dd-mm-yyyy / dd/mm/yyyy. ---
   let issueDate: string | null = null;
@@ -97,7 +153,8 @@ export async function parseExpenseText(text: string, ownCui?: string | null): Pr
     || text.match(/\bnr\.?\s*([A-Za-z0-9\-\/]{2,24})/i);
   if (num) documentNumber = num[1];
 
-  // --- Supplier name from ANAF (free) when we have a CUI. ---
+  // --- Supplier name: from ANAF (free) when we have a RO CUI; otherwise fall back
+  //     to the first prominent company-looking line (foreign suppliers). ---
   let supplierName: string | null = null;
   if (supplierCui) {
     try {
@@ -105,12 +162,18 @@ export async function parseExpenseText(text: string, ownCui?: string | null): Pr
       if ((a as any)?.ok) supplierName = (a as any).name || null;
     } catch { /* offline / rate-limited — leave the name for the user to fill */ }
   }
+  if (!supplierName) {
+    const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const legal = /\b(S\.?R\.?L\.?|S\.?A\.?|S\.?R\.?L\.?-D|PFA|GmbH|Ltd\.?|LLC|Inc\.?|B\.?V\.?|S\.?p\.?A\.?|GmbH|OÜ|Kft|S\.?L\.?)\b/i;
+    const cand = lines.slice(0, 18).find((l) => legal.test(l) && l.length <= 80 && !/factur|invoice/i.test(l));
+    if (cand) supplierName = cand.replace(/\s{2,}/g, ' ').trim();
+  }
 
   // Nothing useful parsed → let the caller decide (manual / AI fallback).
-  if (totalCents <= 0 && !supplierCui) return { ok: false, error: 'pdf-unparsed' };
+  if (totalCents <= 0 && !supplierCui && !supplierName) return { ok: false, error: 'pdf-unparsed' };
 
   return {
     ok: true,
-    fields: { supplierName, supplierCui: supplierCui ? `RO${supplierCui}` : null, documentNumber, issueDate, netCents, vatCents, totalCents, category: null, lineCount: 0 },
+    fields: { supplierName, supplierCui: supplierCui ? `RO${supplierCui}` : null, documentNumber, issueDate, currency, netCents, vatCents, totalCents, category: null, lineCount: 0 },
   };
 }

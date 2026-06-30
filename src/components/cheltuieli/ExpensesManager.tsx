@@ -26,7 +26,7 @@ interface Supplier {
   defaultVatScheme?: string | null;
 }
 
-const CURRENCIES = ['RON', 'EUR', 'USD', 'GBP', 'CHF'];
+const CURRENCIES = ['RON', 'EUR', 'USD', 'GBP', 'CHF', 'HUF', 'BGN', 'PLN', 'MDL', 'TRY'];
 
 const CATEGORIES = ['utilitati', 'chirie', 'combustibil', 'servicii', 'marfa', 'salarii', 'taxe', 'altele'];
 const CAT_LABELS: Record<string, string> = {
@@ -421,9 +421,15 @@ export default function ExpensesManager({ inboxNew = [], efacturaIds = [], anafC
                 <span className="w-8 h-8 rounded-full bg-[#E1FB15]/15 text-[#E1FB15] grid place-items-center"><Wallet className="w-4 h-4" /></span>
                 <h3 className="text-[15px] font-bold text-white">Sume</h3>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><Label className="mb-1.5 block text-xs text-[#A8BED2]">Net (RON)</Label><Input className="bg-white/5 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" step="any" value={form.net} onChange={(e) => setForm({ ...form, net: e.target.value })} placeholder="0.00" /></div>
-                <div><Label className="mb-1.5 block text-xs text-[#A8BED2]">TVA (RON)</Label><Input className="bg-white/5 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" step="any" value={form.vat} onChange={(e) => setForm({ ...form, vat: e.target.value })} placeholder="0.00" /></div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <div>
+                  <Label className="mb-1.5 block text-xs text-[#A8BED2]">Valută</Label>
+                  <Select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
+                    {CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </Select>
+                </div>
+                <div><Label className="mb-1.5 block text-xs text-[#A8BED2]">Net ({form.currency})</Label><Input className="bg-white/5 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" step="any" value={form.net} onChange={(e) => setForm({ ...form, net: e.target.value })} placeholder="0.00" /></div>
+                <div><Label className="mb-1.5 block text-xs text-[#A8BED2]">TVA ({form.currency})</Label><Input className="bg-white/5 text-white placeholder:text-[#8FA6BC] focus:ring-2 focus:ring-[#E1FB15]/40" type="number" step="any" value={form.vat} onChange={(e) => setForm({ ...form, vat: e.target.value })} placeholder="0.00" /></div>
               </div>
               <button type="button" onClick={() => setForm({ ...form, deductible: !form.deductible })} className="mt-4 w-full flex items-center gap-3 text-left p-3 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
                 <span className={`relative shrink-0 w-10 h-6 rounded-full transition-colors ${form.deductible ? 'bg-[#E1FB15]' : 'bg-[#5E6B7C]'}`}>
