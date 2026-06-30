@@ -11,7 +11,7 @@ export default function SupportSheet({ userEmail = '' }: { userEmail?: string })
   const [topic, setTopic] = useState('intrebare');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<{ kind: 'ok' | 'err'; text: string; mailto?: string } | null>(null);
+  const [status, setStatus] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
 
   // Triggers (Settings entry, app footer "Contact", …) are marked with
   // [data-support-open]. Use event delegation on document so it keeps working
@@ -34,17 +34,15 @@ export default function SupportSheet({ userEmail = '' }: { userEmail?: string })
     if (!message.trim()) { setStatus({ kind: 'err', text: 'Mesajul este obligatoriu.' }); return; }
     setBusy(true); setStatus(null);
     try {
-      const res = await fetch('/api/support', {
+      const res = await fetch('/api/public/support', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, topic, message }),
+        body: JSON.stringify({ email, topic, message, source: 'app' }),
       });
       if (!res.ok) throw new Error('fail');
       setStatus({ kind: 'ok', text: 'Mesaj trimis. Îți răspundem cât de curând.' });
       setMessage('');
     } catch {
-      const subj = encodeURIComponent(`[Suport] ${topic}`);
-      const body = encodeURIComponent(`${message}\n\n— ${email}`);
-      setStatus({ kind: 'err', text: 'Nu am putut trimite acum.', mailto: `mailto:contact@facturamea.com?subject=${subj}&body=${body}` });
+      setStatus({ kind: 'err', text: 'Nu am putut trimite acum. Mai încearcă o dată.' });
     } finally { setBusy(false); }
   };
 
@@ -65,9 +63,7 @@ export default function SupportSheet({ userEmail = '' }: { userEmail?: string })
         {status?.kind === 'err' && (
           <div className="flex items-start gap-2 px-4 py-3 rounded-xl bg-[#DC4B41]/15">
             <span className="w-1.5 h-1.5 rounded-full bg-[#DC4B41] mt-1.5 shrink-0" />
-            <p className="text-[13px] text-[#DC4B41]">
-              {status.text}{status.mailto && <> <a className="underline" href={status.mailto}>Trimite pe email</a>.</>}
-            </p>
+            <p className="text-[13px] text-[#DC4B41]">{status.text}</p>
           </div>
         )}
 
@@ -97,7 +93,6 @@ export default function SupportSheet({ userEmail = '' }: { userEmail?: string })
           <button type="submit" disabled={busy} className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] whitespace-nowrap hover:bg-[#D2EA0E] active:scale-95 transition-all disabled:opacity-60">
             {busy ? 'Se trimite…' : 'Trimite mesajul'}
           </button>
-          <a href="mailto:contact@facturamea.com" className="text-[13px] text-[#A8BED2] hover:text-white transition-colors">sau contact@facturamea.com</a>
         </div>
       </form>
     </BottomSheet>

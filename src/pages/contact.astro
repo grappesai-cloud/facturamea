@@ -73,8 +73,9 @@ Astro.response.headers.set('Vary', 'Cookie');
           <label class="block text-sm font-medium text-[#0A0A0A] mb-1">Mesaj</label>
           <textarea required name="message" rows="5" class="w-full px-3 py-2.5 border border-[#E8E8E4] rounded-xl text-sm focus:ring-2 focus:ring-[#FF5C00] focus:border-transparent outline-none resize-none"></textarea>
         </div>
-        <div id="contact-success" class="hidden bg-green-50 text-green-700 px-4 py-3 rounded-xl text-sm">Mulțumim! Se deschide aplicația ta de email pentru a trimite mesajul.</div>
-        <button type="submit" class="w-full px-6 py-2.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl transition shadow-md">
+        <div id="contact-success" class="hidden bg-green-50 text-green-700 px-4 py-3 rounded-xl text-sm">Mulțumim! Am primit mesajul tău și îți răspundem cât de curând.</div>
+        <div id="contact-error" class="hidden bg-red-50 text-red-700 px-4 py-3 rounded-xl text-sm">Nu am putut trimite acum. Mai încearcă o dată.</div>
+        <button id="contact-submit" type="submit" class="w-full px-6 py-2.5 bg-[#FF5C00] hover:bg-[#E04E00] text-white font-semibold rounded-xl transition shadow-md disabled:opacity-60">
           Trimite mesajul
         </button>
       </form>
@@ -82,15 +83,28 @@ Astro.response.headers.set('Vary', 'Cookie');
   </div>
 
   <script>
-    document.getElementById('contact-form')?.addEventListener('submit', (e) => {
+    document.getElementById('contact-form')?.addEventListener('submit', async (e) => {
       e.preventDefault();
       const success = document.getElementById('contact-success');
+      const error = document.getElementById('contact-error');
+      const btn = document.getElementById('contact-submit') as HTMLButtonElement | null;
       const f = e.target as HTMLFormElement;
-      const data = Object.fromEntries(new FormData(f));
-      const subject = encodeURIComponent(`[facturamea] ${data.subject}`);
-      const body = encodeURIComponent(`Nume: ${data.name}\nEmail: ${data.email}\n\n${data.message}`);
-      window.location.href = `mailto:contact@facturamea.com?subject=${subject}&body=${body}`;
-      success?.classList.remove('hidden');
+      const data = Object.fromEntries(new FormData(f)) as Record<string, string>;
+      success?.classList.add('hidden'); error?.classList.add('hidden');
+      if (btn) { btn.disabled = true; btn.textContent = 'Se trimite…'; }
+      try {
+        const r = await fetch('/api/public/support', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: data.name, email: data.email, topic: data.subject, message: data.message, source: 'contact' }),
+        });
+        if (!r.ok) throw new Error('fail');
+        f.reset();
+        success?.classList.remove('hidden');
+      } catch {
+        error?.classList.remove('hidden');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Trimite mesajul'; }
+      }
     });
   </script>
 </PublicLayout>

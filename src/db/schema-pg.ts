@@ -2145,3 +2145,24 @@ export const withholdingEntries = pgTable('withholding_entries', {
 }, (table) => [
   index('idx_withholding_company').on(table.companyId),
 ]);
+
+// Support / contact inbox — in-app "Ajutor" sheet + public /contact form land
+// here and surface only in /admin/mesaje. No email is sent. Self-provisioned at
+// runtime (see lib/support.ts) so it works on prod without a migration run.
+export const supportMessages = pgTable('support_messages', {
+  id: text('id').primaryKey(),
+  userId: text('user_id'),
+  companyId: text('company_id'),
+  name: varchar('name', { length: 200 }),
+  email: varchar('email', { length: 200 }),
+  topic: varchar('topic', { length: 80 }),
+  message: text('message').notNull(),
+  source: varchar('source', { length: 16 }).notNull().default('app'), // app | contact
+  status: varchar('status', { length: 16 }).notNull().default('new'), // new | resolved
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').defaultNow(),
+  resolvedAt: timestamp('resolved_at'),
+  resolvedByUserId: text('resolved_by_user_id'),
+}, (table) => [
+  index('idx_support_messages_status').on(table.status, table.createdAt),
+]);
