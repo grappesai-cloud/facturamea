@@ -52,6 +52,28 @@ const locale = Astro.locals?.locale ?? 'ro';
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     {clientRouter && <ClientRouter fallback="swap" />}
+    {clientRouter && (
+      <script is:inline>
+        {/* Astro ClientRouter + the View Transitions API reject the transition
+            promise with "InvalidStateError: Transition was aborted because of
+            invalid state" when one navigation supersedes another mid-transition.
+            It is benign (the page still swaps) but leaks as an uncaught rejection
+            on nearly every navigation, polluting the console and error monitoring.
+            Swallow this one specific benign error; let everything else through. */}
+        {`(function () {
+          function benign(err) {
+            return !!err && err.name === 'InvalidStateError'
+              && /transition was aborted/i.test(err.message || '');
+          }
+          window.addEventListener('unhandledrejection', function (e) {
+            if (benign(e.reason)) e.preventDefault();
+          });
+          window.addEventListener('error', function (e) {
+            if (benign(e.error)) e.preventDefault();
+          }, true);
+        })();`}
+      </script>
+    )}
     <script is:inline>
       // Native app (Capacitor) shell: login-only experience. No landing page, no
       // account creation. The native bridge injects window.Capacitor at document
