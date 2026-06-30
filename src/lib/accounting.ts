@@ -23,7 +23,7 @@ import {
 const SERVICE_UNITS = new Set(['serviciu', 'oră', 'ora', 'ore', 'abonament', 'lună', 'luna', 'zi', 'an', 'cursă', 'cursa', 'h', 'HUR']);
 import { and, eq, gte, lte, asc, sql, inArray } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
-import { invoiceRonCents } from './invoicing';
+import { invoiceRonCents, expenseRonCents } from './invoicing';
 
 // ─── Types ───────────────────────────────────────────────────────────────
 // Account type, Romanian style: A=Activ, P=Pasiv, B=Bifuncțional, V=Venit, C=Cheltuială.
@@ -435,9 +435,13 @@ export async function postExpense(expenseId: string, createdByUserId?: string | 
 
     await ensureChart(exp.companyId);
 
-    const net = centsOf(exp.netCents);
-    const vat = centsOf(exp.vatCents);
-    const total = centsOf(exp.totalCents);
+    // The ledger is kept in RON: a foreign-currency expense posts its RON value
+    // (converted at the frozen BNR rate), never the raw currency cents — otherwise
+    // a 100 EUR bill would hit 401/6xx as 100 RON. Mirrors invoice posting above.
+    const r = expenseRonCents(exp);
+    const net = centsOf(r.net);
+    const vat = centsOf(r.vat);
+    const total = centsOf(r.total);
 
     const expenseAccount = expenseAccountForCategory(exp.category);
     const desc = `Cheltuială ${exp.documentNumber || ''} · ${exp.supplierNameSnap || 'furnizor'}`.trim();

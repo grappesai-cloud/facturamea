@@ -49,15 +49,20 @@ export const PATCH: APIRoute = async ({ request, locals }) => {
     if (billing) {
       await db.update(billingAddresses).set(patch as any).where(eq(billingAddresses.id, billing.id));
     } else {
-      // No issuer profile yet — seed one (legal_name is NOT NULL).
-      const [co] = await db.select({ name: companies.name, cui: companies.cui, address: companies.address })
-        .from(companies).where(eq(companies.id, companyId)).limit(1);
+      // No issuer profile yet — seed one. legal_name AND city are NOT NULL, so
+      // carry the company's city/country across (city omitted → 23502 on insert).
+      const [co] = await db.select({
+        name: companies.name, cui: companies.cui, address: companies.address,
+        city: companies.city, regCom: companies.regCom,
+      }).from(companies).where(eq(companies.id, companyId)).limit(1);
       await db.insert(billingAddresses).values({
         id: nanoid(),
         companyId,
         legalName: co?.name || 'Firma',
         cui: co?.cui || null,
+        regCom: co?.regCom || null,
         address: co?.address || '',
+        city: co?.city || '',
         countryCode: 'RO',
         isDefault: true,
         iban: (patch.iban as string) ?? null,

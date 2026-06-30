@@ -95,7 +95,8 @@ async function kpisFor(companyId: string) {
   try {
     const yearStartStr = yearStart.toISOString().slice(0, 10);
     const [r] = await db.select({
-      total: sql<number>`COALESCE(SUM(${expenses.totalCents}), 0)`,
+      // Foreign-currency expenses converted to RON at the frozen BNR rate.
+      total: sql<number>`COALESCE(SUM(ROUND(${expenses.totalCents} * (CASE WHEN ${expenses.currency} <> 'RON' THEN COALESCE(${expenses.bnrRate}, 1) ELSE 1 END))), 0)`,
     }).from(expenses).where(and(eq(expenses.companyId, companyId), gte(expenses.issueDate, yearStartStr)));
     out.expensesYear = Number(r?.total ?? 0);
   } catch { /* leave zero */ }
