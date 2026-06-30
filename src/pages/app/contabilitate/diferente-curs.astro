@@ -1,0 +1,117 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { collectFxRevaluation } from '../../../lib/fx-revaluation';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100);
+const fx = (cents: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100);
+
+const now = new Date();
+const monthEnd = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-${String(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate()).padStart(2, '0')}`;
+const date = Astro.url.searchParams.get('date') || monthEnd;
+
+const data = await collectFxRevaluation(companyId, date).catch(() => null);
+---
+
+<AppLayout title="Diferențe de curs" activeTab="contabilitate" breadcrumbTitle="Diferențe de curs">
+  <div class="max-w-[1180px] mx-auto">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6 no-print">
+      <div>
+        <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Diferențe de curs</h1>
+        <p class="text-[13px] text-[#A8BED2] mt-2">Revalorizarea creanțelor și datoriilor în valută la cursul BNR de la data aleasă. Favorabil → 765, nefavorabil → 665.</p>
+      </div>
+      <form method="get" class="flex items-end gap-2">
+        <label class="text-[12px] text-[#A8BED2]">La data<input type="date" name="date" value={date} class="block mt-1 rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white" /></label>
+        <a href={`/api/invoicing/reports/diferente-curs?date=${date}&format=csv`} class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">CSV</a>
+        <button type="button" id="print-btn" class="px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]">Printează</button>
+      </form>
+    </div>
+
+    <div class="print-head hidden"><h2>Diferențe de curs · la {date}</h2></div>
+
+    {!data ? (
+      <p class="text-[14px] text-[#A8BED2]">Nu am putut încărca datele.</p>
+    ) : (
+      <div class="space-y-6">
+        {Object.keys(data.rates).length > 0 && (
+          <div class="flex flex-wrap gap-2 text-[12px] no-print">
+            {Object.entries(data.rates).map(([cur, r]) => (
+              <span class="px-3 py-1.5 rounded-full bg-white/5 text-[#A8BED2]">{cur}: {r ? <strong class="text-white">{r.rate.toFixed(4)}</strong> : <span class="text-[#DC4B41]">curs indisponibil</span>}{r && r.source === 'fallback-nearest' ? ' (cel mai apropiat)' : ''}</span>
+            ))}
+          </div>
+        )}
+
+        <div class="overflow-x-auto rounded-2xl bg-white/5">
+          <table class="w-full text-[13px] text-white border-collapse">
+            <thead>
+              <tr class="text-[#A8BED2] text-left">
+                <th class="px-3 py-2.5 font-semibold">Tip</th>
+                <th class="px-3 py-2.5 font-semibold">Document</th>
+                <th class="px-3 py-2.5 font-semibold">Partener</th>
+                <th class="px-3 py-2.5 font-semibold">Val.</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Rest valută</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Curs vechi</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Curs nou</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Val. veche</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Val. nouă</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Favorabil (765)</th>
+                <th class="px-3 py-2.5 font-semibold text-right">Nefavorabil (665)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.items.length === 0 ? (
+                <tr><td colspan={11} class="px-3 py-6 text-center text-[#A8BED2]">Nicio creanță sau datorie în valută neîncasată la această dată.</td></tr>
+              ) : data.items.map((it) => (
+                <tr class="border-t border-white/10">
+                  <td class="px-3 py-2">{it.kind}</td>
+                  <td class="px-3 py-2 font-mono whitespace-nowrap">{it.doc}</td>
+                  <td class="px-3 py-2">{it.partner}</td>
+                  <td class="px-3 py-2 text-[#A8BED2]">{it.currency}</td>
+                  <td class="px-3 py-2 text-right tabular-nums">{fx(it.remainingForeignCents)}</td>
+                  <td class="px-3 py-2 text-right tabular-nums text-[#A8BED2]">{it.originalRate.toFixed(4)}</td>
+                  <td class="px-3 py-2 text-right tabular-nums">{it.currentRate.toFixed(4)}</td>
+                  <td class="px-3 py-2 text-right tabular-nums text-[#A8BED2]">{ron(it.originalRonCents)}</td>
+                  <td class="px-3 py-2 text-right tabular-nums">{ron(it.currentRonCents)}</td>
+                  <td class="px-3 py-2 text-right tabular-nums text-[#52B788]">{it.favorableCents ? ron(it.favorableCents) : ''}</td>
+                  <td class="px-3 py-2 text-right tabular-nums text-[#E8A33C]">{it.unfavorableCents ? ron(it.unfavorableCents) : ''}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr class="border-t-2 border-white/20 font-bold">
+                <td class="px-3 py-2.5" colspan={9}>TOTAL</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-[#52B788]">{ron(data.totalFavorableCents)}</td>
+                <td class="px-3 py-2.5 text-right tabular-nums text-[#E8A33C]">{ron(data.totalUnfavorableCents)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {data.items.length > 0 && (
+          <div class="rounded-2xl bg-white/5 p-5 text-[13px] text-[#A8BED2] space-y-1.5 max-w-2xl">
+            <p class="text-white font-semibold">Note contabile sugerate (la {date}):</p>
+            {data.totalFavorableCents > 0 && <p>· Diferențe favorabile: <strong class="text-white">765 = {ron(data.totalFavorableCents)}</strong> (creanțe 4111 / datorii 401 ↔ 765).</p>}
+            {data.totalUnfavorableCents > 0 && <p>· Diferențe nefavorabile: <strong class="text-white">665 = {ron(data.totalUnfavorableCents)}</strong> (665 ↔ creanțe 4111 / datorii 401).</p>}
+            <p class="text-[12px] text-[#8FA6BC] pt-1">Conturile bancare în valută se revalorizează separat (nu sunt incluse aici).</p>
+          </div>
+        )}
+      </div>
+    )}
+  </div>
+
+  <style is:global>
+    @media print {
+      .no-print, header, nav, footer, .fm-page > .flex.items-center { display: none !important; }
+      .print-head { display: block !important; color: #000; margin-bottom: 12px; }
+      .print-head h2 { font-size: 16px; font-weight: 700; }
+      body, table, td, th { color: #000 !important; background: #fff !important; }
+      table { font-size: 9px !important; }
+      th, td { border: 0.5px solid #ccc !important; padding: 3px 4px !important; }
+      @page { size: A4 landscape; margin: 12mm; }
+    }
+  </style>
+  <script>document.getElementById('print-btn')?.addEventListener('click', () => window.print());</script>
+</AppLayout>
