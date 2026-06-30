@@ -94,6 +94,64 @@ Returnează DOAR: {"slug":"kebab-case-fara-diacritice","title":"...","keywords":
   };
 }
 
+// ───────────────────────── Claude Code (terminal) path ─────────────────────────
+// The daily blog is generated with the `claude` CLI (Claude Code) running on the
+// user's claude.ai subscription, NOT the pay-per-token Anthropic API. These helpers
+// build a single self-contained prompt and parse the raw CLI output, so the prod
+// endpoint never calls Claude itself — it only hands out the prompt and stores the
+// result. The SLUG + CATEGORIE are emitted on the first lines so publishing is
+// stateless (no need to remember which topic was handed out).
+export const BLOG_SYSTEM_PROMPT = SYSTEM;
+
+export function buildArticlePrompt(topic: BlogTopic | null, usedSlugs: string[]): string {
+  const head = topic
+    ? `Scrie articolul pentru subiectul:
+Titlu de lucru: ${topic.title}
+Categorie: ${topic.category}
+Cuvinte cheie țintă: ${topic.keywords}
+Ce trebuie să acopere: ${topic.brief}
+
+Pe PRIMELE două linii scrie EXACT:
+SLUG: ${topic.slug}
+CATEGORIE: ${topic.category}`
+    : `Alege UN subiect nou, util și căutat în Google pentru un program de facturare din România (facturare, e-Factura, TVA, ANAF, gestiune, contabilitate, antreprenoriat), care NU se suprapune cu sloturile deja folosite: ${usedSlugs.join(', ') || '(niciunul)'}.
+Pe PRIMELE două linii scrie:
+SLUG: <kebab-case-fara-diacritice, nou si unic>
+CATEGORIE: <categoria potrivita>`;
+  return `${SYSTEM}
+
+În PLUS față de formatul de mai sus, pune SLUG: și CATEGORIE: ca PRIMELE două linii, înainte de TITLU:.
+
+${head}
+
+Rafinează titlul pentru SEO. Returnează DOAR în formatul cerut (linii antet, apoi ===CORP=== și DOAR corpul HTML), fără niciun text în plus, fără markdown.`;
+}
+
+export interface ParsedArticle {
+  slug: string; category: string; title: string; description: string;
+  keywords: string; bodyHtml: string; readMinutes: number;
+}
+
+// Parse the raw `claude -p` output (delimiter format) into a storable article.
+export function parseArticle(raw: string): ParsedArticle {
+  const parts = String(raw).split(/===\s*CORP\s*===/i);
+  const headTxt = parts[0] || '';
+  const bodyHtml = (parts[1] || '')
+    .replace(/^```(?:html)?\s*/i, '').replace(/\s*```$/, '')
+    .replace(/—/g, ', ').trim();
+  const grab = (k: string) => headTxt.match(new RegExp(`${k}\\s*:\\s*(.+)`, 'i'))?.[1].trim() || '';
+  const words = bodyHtml.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+  return {
+    slug: grab('SLUG').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 190),
+    category: grab('CATEGORIE').slice(0, 60) || 'Facturare',
+    title: (grab('TITLU')).slice(0, 295).replace(/—/g, ','),
+    description: grab('DESCRIERE').slice(0, 395).replace(/—/g, ','),
+    keywords: grab('KEYWORDS').slice(0, 500),
+    bodyHtml,
+    readMinutes: Math.max(2, Math.round(words / 200)),
+  };
+}
+
 export async function generateArticle(topic: BlogTopic): Promise<GeneratedArticle> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new Error('ANTHROPIC_API_KEY lipsește');

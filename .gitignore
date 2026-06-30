@@ -23,3 +23,7 @@ secrets/
 .DS_Store
 **/.DS_Store
 store-assets/
+
+# blog Claude Code cron
+scripts/.blog-cron.env
+scripts/blog-cron.log
