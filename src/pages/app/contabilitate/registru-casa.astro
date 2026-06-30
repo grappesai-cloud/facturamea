@@ -1,0 +1,101 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { collectCashRegister } from '../../../lib/cash-register';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100);
+
+const now = new Date();
+const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+const monthStart = `${now.getUTCFullYear()}-${mm}-01`;
+const monthEnd = `${now.getUTCFullYear()}-${mm}-${String(new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 0)).getUTCDate()).padStart(2, '0')}`;
+const from = Astro.url.searchParams.get('from') || monthStart;
+const to = Astro.url.searchParams.get('to') || monthEnd;
+
+const data = await collectCashRegister(companyId, from, to).catch(() => null);
+const qs = `from=${from}&to=${to}`;
+---
+
+<AppLayout title="Registru de casă" activeTab="contabilitate" breadcrumbTitle="Registru de casă">
+  <div class="max-w-[1180px] mx-auto">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6 no-print">
+      <div>
+        <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Registru de casă</h1>
+        <p class="text-[13px] text-[#A8BED2] mt-2">Încasări și plăți în numerar, cu sold curent. Sursă: POS cash, chitanțe în numerar, conturi „Casă".</p>
+      </div>
+      <form method="get" class="flex items-end gap-2">
+        <label class="text-[12px] text-[#A8BED2]">De la<input type="date" name="from" value={from} class="block mt-1 rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white" /></label>
+        <label class="text-[12px] text-[#A8BED2]">Până la<input type="date" name="to" value={to} class="block mt-1 rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white" /></label>
+        <button type="submit" class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">Afișează</button>
+        <a href={`/api/invoicing/reports/registru-casa?${qs}&format=csv`} class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">CSV</a>
+        <button type="button" id="print-btn" class="px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]">Printează</button>
+      </form>
+    </div>
+
+    <div class="print-head hidden"><h2>Registru de casă · {from} – {to}</h2></div>
+
+    {!data ? (
+      <p class="text-[14px] text-[#A8BED2]">Nu am putut încărca datele.</p>
+    ) : (
+      <div class="overflow-x-auto rounded-2xl bg-white/5">
+        <table class="w-full text-[13px] text-white border-collapse">
+          <thead>
+            <tr class="text-[#A8BED2] text-left">
+              <th class="px-3 py-2.5 font-semibold">Data</th>
+              <th class="px-3 py-2.5 font-semibold">Document</th>
+              <th class="px-3 py-2.5 font-semibold">Sursă</th>
+              <th class="px-3 py-2.5 font-semibold">Explicație</th>
+              <th class="px-3 py-2.5 font-semibold text-right">Încasări</th>
+              <th class="px-3 py-2.5 font-semibold text-right">Plăți</th>
+              <th class="px-3 py-2.5 font-semibold text-right">Sold</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-t border-white/10 text-[#A8BED2]">
+              <td class="px-3 py-2" colspan={6}>Sold inițial la {from}</td>
+              <td class="px-3 py-2 text-right tabular-nums font-semibold text-white">{ron(data.openingCents)}</td>
+            </tr>
+            {data.rows.length === 0 ? (
+              <tr><td colspan={7} class="px-3 py-6 text-center text-[#A8BED2]">Nicio mișcare de numerar în perioadă.</td></tr>
+            ) : data.rows.map((r) => (
+              <tr class="border-t border-white/10">
+                <td class="px-3 py-2 whitespace-nowrap">{r.date}</td>
+                <td class="px-3 py-2 font-mono whitespace-nowrap">{r.doc || '—'}</td>
+                <td class="px-3 py-2 text-[#A8BED2]">{r.source}</td>
+                <td class="px-3 py-2">{r.explanation}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{r.inCents ? ron(r.inCents) : ''}</td>
+                <td class="px-3 py-2 text-right tabular-nums">{r.outCents ? ron(r.outCents) : ''}</td>
+                <td class="px-3 py-2 text-right tabular-nums font-semibold">{ron(r.balanceCents)}</td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr class="border-t-2 border-white/20 font-bold">
+              <td class="px-3 py-2.5" colspan={4}>TOTAL perioadă · {data.rows.length} mișcări</td>
+              <td class="px-3 py-2.5 text-right tabular-nums">{ron(data.totalsInCents)}</td>
+              <td class="px-3 py-2.5 text-right tabular-nums">{ron(data.totalsOutCents)}</td>
+              <td class="px-3 py-2.5 text-right tabular-nums">{ron(data.closingCents)}</td>
+            </tr>
+            <tr class="text-[#A8BED2]"><td class="px-3 py-1.5" colspan={7}>Sold final la {to}: <strong class="text-white">{ron(data.closingCents)}</strong></td></tr>
+          </tfoot>
+        </table>
+      </div>
+    )}
+  </div>
+
+  <style is:global>
+    @media print {
+      .no-print, header, nav, footer, .fm-page > .flex.items-center { display: none !important; }
+      .print-head { display: block !important; color: #000; margin-bottom: 12px; }
+      .print-head h2 { font-size: 16px; font-weight: 700; }
+      body, table, td, th { color: #000 !important; background: #fff !important; }
+      table { font-size: 10px !important; }
+      th, td { border: 0.5px solid #ccc !important; padding: 3px 5px !important; }
+      @page { size: A4 portrait; margin: 12mm; }
+    }
+  </style>
+  <script>document.getElementById('print-btn')?.addEventListener('click', () => window.print());</script>
+</AppLayout>
