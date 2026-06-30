@@ -2125,3 +2125,23 @@ export const treasuryAdvances = pgTable('treasury_advances', {
 }, (table) => [
   index('idx_treasury_advances_company').on(table.companyId),
 ]);
+
+// Rețineri la sursă (sursă pentru D205) — withheld-at-source payments per income
+// beneficiary (dividends 8%, rent, royalties, other). Self-provisioned in prod.
+export const withholdingEntries = pgTable('withholding_entries', {
+  id: text('id').primaryKey(),
+  companyId: text('company_id').notNull().references(() => companies.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
+  paidDate: date('paid_date', { mode: 'string' }),
+  beneficiaryName: varchar('beneficiary_name', { length: 200 }).notNull(),
+  beneficiaryCnp: varchar('beneficiary_cnp', { length: 20 }),
+  incomeType: varchar('income_type', { length: 40 }).default('dividende'), // dividende | chirii | drepturi_autor | alte
+  grossCents: integer('gross_cents').notNull(),
+  taxPct: doublePrecision('tax_pct').default(8),
+  taxCents: integer('tax_cents').notNull().default(0),
+  netCents: integer('net_cents').notNull().default(0),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_withholding_company').on(table.companyId),
+]);

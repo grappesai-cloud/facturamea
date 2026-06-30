@@ -1,0 +1,113 @@
+---
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { listWithholdings } from '../../../lib/withholding';
+
+const user = Astro.locals.user!;
+if (!user.companyId) return Astro.redirect('/app/setari');
+const companyId = user.companyId;
+
+const ron = (cents: number) => new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format((cents || 0) / 100);
+const now = new Date();
+const year = Number(Astro.url.searchParams.get('year')) || now.getUTCFullYear();
+const today = now.toISOString().slice(0, 10);
+const rows = await listWithholdings(companyId, year).catch(() => []);
+const years = Array.from({ length: 6 }, (_, i) => now.getUTCFullYear() - i);
+const TYPE_LABEL: Record<string, string> = { dividende: 'Dividende', chirii: 'Chirii', drepturi_autor: 'Drepturi de autor', alte: 'Alte venituri' };
+
+const totGross = rows.reduce((s, r) => s + (r.grossCents || 0), 0);
+const totTax = rows.reduce((s, r) => s + (r.taxCents || 0), 0);
+const inputCls = 'w-full rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white placeholder:text-[#8FA6BC] focus:outline-none focus:ring-2 focus:ring-[#E1FB15]/40';
+---
+
+<AppLayout title="Rețineri la sursă (D205)" activeTab="contabilitate" breadcrumbTitle="Rețineri la sursă">
+  <div class="max-w-[1180px] mx-auto">
+    <div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-[30px] sm:text-[40px] font-semibold tracking-[-0.03em] text-white">Rețineri la sursă</h1>
+        <p class="text-[13px] text-[#A8BED2] mt-2">Dividende, chirii, drepturi de autor și alte venituri cu impozit reținut la sursă. Sursa pentru D205 (informativă anuală).</p>
+      </div>
+      <form method="get" class="flex items-end gap-2">
+        <label class="text-[12px] text-[#A8BED2]">Anul
+          <select name="year" class="block mt-1 rounded-xl bg-white/10 px-3 py-2 text-[14px] text-white">{years.map((y) => <option value={y} selected={y === year}>{y}</option>)}</select>
+        </label>
+        <button type="submit" class="px-4 py-2 rounded-full bg-white/10 text-white font-semibold text-[14px] hover:bg-white/15">Afișează</button>
+        <a href={`/api/invoicing/reports/d205?year=${year}`} class="px-4 py-2 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]">Descarcă D205 (CSV)</a>
+      </form>
+    </div>
+
+    <form id="add-form" class="rounded-2xl bg-white/5 p-5 mb-8 grid grid-cols-1 sm:grid-cols-6 gap-3 items-end">
+      <div class="sm:col-span-2"><label class="block text-[12px] text-[#A8BED2] mb-1">Beneficiar</label><input name="beneficiaryName" required class={inputCls} placeholder="Nume" /></div>
+      <div><label class="block text-[12px] text-[#A8BED2] mb-1">CNP</label><input name="beneficiaryCnp" inputmode="numeric" class={inputCls} placeholder="opțional" /></div>
+      <div><label class="block text-[12px] text-[#A8BED2] mb-1">Tip venit</label>
+        <select name="incomeType" class={inputCls}><option value="dividende">Dividende</option><option value="chirii">Chirii</option><option value="drepturi_autor">Drepturi de autor</option><option value="alte">Alte</option></select>
+      </div>
+      <div><label class="block text-[12px] text-[#A8BED2] mb-1">Brut (RON)</label><input name="grossRon" type="number" step="0.01" min="0" required class={inputCls} placeholder="0,00" /></div>
+      <div><label class="block text-[12px] text-[#A8BED2] mb-1">Impozit %</label><input name="taxPct" type="number" step="0.1" min="0" max="100" value="8" class={inputCls} /></div>
+      <div class="sm:col-span-2"><label class="block text-[12px] text-[#A8BED2] mb-1">Data plății</label><input name="paidDate" type="date" value={today} required class={inputCls} /></div>
+      <div class="sm:col-span-4 flex items-center gap-3">
+        <button type="submit" class="px-5 py-2.5 rounded-full bg-[#E1FB15] text-[#07090f] font-bold text-[14px] hover:bg-[#D2EA0E]">Adaugă</button>
+        <span id="add-status" class="text-[13px] text-[#A8BED2]"></span>
+      </div>
+    </form>
+
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="rounded-2xl bg-white/5 p-4"><div class="text-[12px] text-[#A8BED2]">Total venit brut {year}</div><div class="text-[22px] font-bold text-white tabular-nums">{ron(totGross)} RON</div></div>
+      <div class="rounded-2xl bg-white/5 p-4"><div class="text-[12px] text-[#A8BED2]">Total impozit reținut</div><div class="text-[22px] font-bold text-[#E8A33C] tabular-nums">{ron(totTax)} RON</div></div>
+    </div>
+
+    <div class="overflow-x-auto rounded-2xl bg-white/5">
+      <table class="w-full text-[13px] text-white border-collapse">
+        <thead>
+          <tr class="text-[#A8BED2] text-left">
+            <th class="px-3 py-2.5 font-semibold">Data</th>
+            <th class="px-3 py-2.5 font-semibold">Beneficiar</th>
+            <th class="px-3 py-2.5 font-semibold">CNP</th>
+            <th class="px-3 py-2.5 font-semibold">Tip</th>
+            <th class="px-3 py-2.5 font-semibold text-right">Brut</th>
+            <th class="px-3 py-2.5 font-semibold text-right">Impozit</th>
+            <th class="px-3 py-2.5 font-semibold text-right">Net</th>
+            <th class="px-3 py-2.5 font-semibold"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 ? (
+            <tr><td colspan={8} class="px-3 py-6 text-center text-[#A8BED2]">Nicio reținere înregistrată pentru {year}.</td></tr>
+          ) : rows.map((r) => (
+            <tr class="border-t border-white/10">
+              <td class="px-3 py-2 whitespace-nowrap">{r.paidDate}</td>
+              <td class="px-3 py-2">{r.beneficiaryName}</td>
+              <td class="px-3 py-2 font-mono text-[#A8BED2]">{r.beneficiaryCnp || '—'}</td>
+              <td class="px-3 py-2 text-[#A8BED2]">{TYPE_LABEL[r.incomeType || 'alte'] || r.incomeType}</td>
+              <td class="px-3 py-2 text-right tabular-nums">{ron(r.grossCents)}</td>
+              <td class="px-3 py-2 text-right tabular-nums text-[#E8A33C]">{ron(r.taxCents)}</td>
+              <td class="px-3 py-2 text-right tabular-nums">{ron(r.netCents)}</td>
+              <td class="px-3 py-2 text-right"><button type="button" data-del={r.id} class="text-[12px] text-[#DC4B41]/80 hover:text-[#DC4B41]">Șterge</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="text-[12px] text-[#8FA6BC] mt-4 max-w-2xl">Contabil: dividende — impozit 457 → 446; plată 446 → 5121. D205 se depune anual (până în ultima zi a lunii februarie pentru anul precedent).</p>
+  </div>
+
+  <script>
+    document.addEventListener('astro:page-load', () => {
+      const f = document.getElementById('add-form') as HTMLFormElement | null;
+      const st = document.getElementById('add-status');
+      f?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (st) st.textContent = 'Se salvează...';
+        try {
+          const res = await fetch('/api/contabilitate/retineri', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(f))) });
+          const d = await res.json().catch(() => ({}));
+          if (res.ok) location.reload(); else if (st) st.textContent = d.error || 'Eroare.';
+        } catch { if (st) st.textContent = 'Eroare conexiune.'; }
+      });
+      document.querySelectorAll('[data-del]').forEach((btn) => btn.addEventListener('click', async () => {
+        if (!confirm('Ștergi această înregistrare?')) return;
+        const res = await fetch(`/api/contabilitate/retineri/${btn.getAttribute('data-del')}`, { method: 'DELETE' });
+        if (res.ok) location.reload();
+      }));
+    });
+  </script>
+</AppLayout>
